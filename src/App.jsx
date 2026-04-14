@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 import { useAuth } from './context/AuthContext'
+import { Analytics } from '@vercel/analytics/react'
 
 import AdminLayout from './components/layouts/AdminLayout'
 import AvvocatoLayout from './components/layouts/AvvocatoLayout'
@@ -189,6 +190,7 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Analytics />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

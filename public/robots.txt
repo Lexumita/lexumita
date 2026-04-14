@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /portale
+Disallow: /verifica
+Disallow: /area-personale
+
+Sitemap: https://www.lexum.it/sitemap.xml
