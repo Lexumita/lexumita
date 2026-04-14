@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #0B1F2A;
+    color: #F4F7F8;
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: #C9A45C;
+    color: #0B1F2A;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0B1F2A;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #C9A45C;
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+
+  /* Gold shimmer text */
+  .text-oro-shimmer {
+    background: linear-gradient(90deg,
+        #C9A45C 0%,
+        #f0d98a 40%,
+        #C9A45C 60%,
+        #e8c98a 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+  }
+
+  /* Gold text static */
+  .text-oro-static {
+    background: linear-gradient(135deg, #C9A45C 0%, #e8c98a 50%, #b8903f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply relative inline-flex items-center gap-2 px-8 py-4 font-body font-medium text-petrolio rounded-none overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, #C9A45C 0%, #e8c98a 50%, #C9A45C 100%);
+    background-size: 200% auto;
+  }
+
+  .btn-primary:hover {
+    background-position: right center;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(201, 164, 92, 0.35);
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply relative inline-flex items-center gap-2 px-8 py-4 font-body font-medium text-nebbia border border-oro/40 rounded-none transition-all duration-300;
+  }
+
+  .btn-secondary:hover {
+    @apply border-oro text-oro;
+    background: rgba(201, 164, 92, 0.07);
+  }
+
+  /* Section label */
+  .section-label {
+    @apply inline-flex items-center gap-2 text-xs font-body font-medium tracking-[0.2em] uppercase text-salvia;
+  }
+
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: #7FA39A;
+  }
+
+  /* Card dark */
+  .card-dark {
+    @apply bg-slate border border-white/5 rounded-none p-8 transition-all duration-300;
+  }
+
+  .card-dark:hover {
+    @apply border-oro/30;
+    box-shadow: 0 0 40px rgba(201, 164, 92, 0.08);
+    transform: translateY(-4px);
+  }
+
+  /* Divider oro */
+  .divider-oro {
+    @apply w-12 h-px bg-oro my-4;
+  }
+
+  /* Noise overlay */
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    pointer-events: none;
+  }
+}
+
+/* Staggered animation delays */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+/* Opacity 0 until animation starts */
+.animate-fade-up,
+.animate-fade-in {
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
