@@ -21,6 +21,7 @@ import RegistrazioneLex from '@/pages/auth/RegistrazioneLex'
 import Login from './pages/auth/Login'
 import Registrati from './pages/auth/Registrati'
 import { RecuperaPassword, ResetPassword } from './pages/auth/Password'
+import EmailVerificata from './pages/auth/EmailVerificata'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
 import TerminiServizio from '@/pages/TerminiServizio'
 
@@ -116,6 +117,7 @@ export default function App() {
             <Route path="/registrati" element={<Registrati />} />
             <Route path="/recupera-password" element={<RecuperaPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/email-verificata" element={<EmailVerificata />} />
             <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
             <Route path="/termini" element={<VetrinaLayout><TerminiServizio /></VetrinaLayout>} />
 

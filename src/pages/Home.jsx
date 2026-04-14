@@ -545,10 +545,10 @@ export default function ComeFunziona() {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {[
                 { n: '01', t: 'Gestisci', d: 'Pratica, cliente, attività, udienze e scadenze in un solo ambiente.' },
-                { n: '02', t: 'Organizza', d: 'Documenti caricati, ordinati e collegati al caso.' },
+                { n: '02', t: 'Organizza', d: 'Documenti caricati, ordinati e collegati ognuno al proprio caso.' },
                 { n: '03', t: 'Coinvolgi', d: 'Il cliente accede all\'area riservata e condivide materiali.' },
                 { n: '04', t: 'Cerca', d: 'Banca dati e archivio digitale per trovare ciò che serve.' },
-                { n: '05', t: 'Approfondisci', d: 'Lex AI per analisi normativa e strategie su misura.' },
+                { n: '05', t: 'Approfondisci', d: 'Utilizza Lex AI per analisi normativa e strategie su misura.' },
               ].map((s, i) => (
                 <FadeIn key={i} delay={i * 0.1}>
                   <div className="bg-slate border border-white/5 p-5 hover:border-oro/20 transition-all group text-center relative">
@@ -684,7 +684,7 @@ export default function ComeFunziona() {
               <Sparkles size={20} className="text-oro" />
             </div>
             <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-4">
-              Provala il primo mese<br />
+              Provala Gratis per una settimana<br />
               <span className="text-oro">a un prezzo bassissimo.</span>
             </h2>
             <div className="w-12 h-px bg-gradient-to-r from-transparent via-oro/50 to-transparent mx-auto my-6" />
