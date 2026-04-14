@@ -120,6 +120,7 @@ export default function ChatWidget() {
 
     // Non mostrare il widget agli avvocati — hanno già /assistenza
     if (loading) return null
+    if (!profilo && utente) return null
     if (profilo?.role === 'avvocato') return null
     if (profilo?.role === 'admin') return null
     if (profilo?.role === 'cliente') return null

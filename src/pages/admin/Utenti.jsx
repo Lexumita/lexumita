@@ -119,6 +119,72 @@ function TabellaUtenti({ data, loading }) {
   )
 }
 
+function DocumentiVerifica({ userId }) {
+  const [docs, setDocs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function carica() {
+      const { data } = await supabase.storage
+        .from('verification-docs')
+        .list(userId)
+      setDocs(data ?? [])
+      setLoading(false)
+    }
+    carica()
+  }, [userId])
+
+  async function apriDoc(path) {
+    const { data } = await supabase.storage
+      .from('verification-docs')
+      .createSignedUrl(`${userId}/${path}`, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  const LABEL = {
+    identita: 'Documento identità',
+    albo: 'Iscrizione Albo',
+    laurea: 'Laurea',
+  }
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-4">
+      <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
+    </div>
+  )
+
+  return (
+    <div className="bg-petrolio/40 border border-white/5 p-4">
+      <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Documenti caricati</p>
+      {docs.length === 0 ? (
+        <p className="font-body text-xs text-nebbia/25 italic">Nessun documento caricato</p>
+      ) : (
+        <div className="space-y-2">
+          {docs.map(doc => {
+            const tipo = doc.name.split('.')[0]
+            return (
+              <button
+                key={doc.name}
+                onClick={() => apriDoc(doc.name)}
+                className="w-full flex items-center gap-3 p-2.5 bg-slate border border-white/5 hover:border-oro/20 transition-colors text-left"
+              >
+                <FileText size={13} className="text-oro/50 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-xs text-nebbia/70">{LABEL[tipo] ?? doc.name}</p>
+                  <p className="font-body text-[10px] text-nebbia/25">
+                    {(doc.metadata?.size / 1024).toFixed(0)} KB
+                  </p>
+                </div>
+                <span className="font-body text-xs text-oro/50">Apri →</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────
 // TAB VERIFICHE
 // ─────────────────────────────────────────────────────────────
@@ -191,13 +257,7 @@ function TabVerifiche({ data, loading, onDecision }) {
             {selected.studio && <p className="font-body text-sm text-nebbia/40">{selected.studio}</p>}
             <p className="font-body text-sm text-nebbia/40">{selected.email}</p>
           </div>
-          <div className="bg-petrolio/40 border border-white/5 p-4">
-            <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Documenti caricati</p>
-            <div className="flex items-center gap-2 p-2 border border-white/5">
-              <FileText size={13} className="text-nebbia/30" />
-              <span className="font-body text-xs text-nebbia/50">I documenti caricati dall'utente appariranno qui</span>
-            </div>
-          </div>
+          <DocumentiVerifica userId={selected.id} />
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
               Motivazione <span className="text-nebbia/25 normal-case tracking-normal">(obbligatoria in caso di rifiuto)</span>
