@@ -252,7 +252,7 @@ function useDashboard(meId, ids, periodo) {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD SINGOLA
 // ─────────────────────────────────────────────────────────────
-function DashboardSingola({ profile, meId }) {
+function DashboardSingola({ profile, meId, showTrialFeedback, setShowTrialFeedback }) {
   const [periodo, setPeriodo] = useState(defaultPeriodo)
   const { data, loading } = useDashboard(meId, [meId], periodo)
 
@@ -510,5 +510,5 @@ export default function AvvocatoDashboard() {
   )
 
   if (isStudio) return <DashboardStudio profile={profile} meId={meId} collaboratoriIds={collaboratoriIds} />
-  return <DashboardSingola profile={profile} meId={meId} />
+  return <DashboardSingola profile={profile} meId={meId} showTrialFeedback={showTrialFeedback} setShowTrialFeedback={setShowTrialFeedback} />
 }
