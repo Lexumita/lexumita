@@ -36,11 +36,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     const [cercando, setCercando] = useState(false)
     const [errore, setErrore] = useState(null)
     const [conversazione, setConversazione] = useState([])
-    const bottomRef = useRef(null)
-
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [conversazione, cercando])
 
     async function cerca() {
         if (!domanda.trim()) return
@@ -198,7 +193,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             <span className="font-body text-xs text-nebbia/40">sta analizzando...</span>
                         </div>
                     )}
-                    <div ref={bottomRef} />
                 </div>
             )}
 
@@ -228,6 +222,14 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     <p className="font-body text-xs text-nebbia/30">
                         {codice ? `Descrivi il caso o la norma che cerchi in questo codice...` : `Descrivi il caso legale — Lex cercherà in tutti i codici...`}
                     </p>
+                )}
+                {conversazione.length === 0 && (
+                    <div className="bg-petrolio/60 border border-salvia/10 px-4 py-3 mb-2">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            💡 <span className="text-nebbia/60">Per una ricerca più precisa</span>, specifica: fase processuale, tribunale e ruolo del cliente.<br />
+                            <span className="text-nebbia/30">Es: "Il mio cliente è imputato per omicidio colposo, fase dibattimentale, Tribunale di Milano"</span>
+                        </p>
+                    </div>
                 )}
                 <textarea
                     rows={3}
