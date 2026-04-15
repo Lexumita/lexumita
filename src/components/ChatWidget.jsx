@@ -19,7 +19,8 @@ export default function ChatWidget() {
     const bottomRef = useRef(null)
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user ?? null
             setUtente(user)
             if (user) {
                 supabase.from('profiles')

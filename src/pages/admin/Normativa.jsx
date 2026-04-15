@@ -81,23 +81,38 @@ export default function AdminNormativa() {
         setEmbeddings(true); setMsgEmbed(null)
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            let processateTotali = 0; let erroriTotali = 0
+
             let rimanenti = stats.totale - stats.conEmbedding
+
             while (rimanenti > 0) {
-                const res = await fetch(
-                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-embeddings`,
-                    { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } }
+                // Lancia 5 chiamate in parallelo
+                const chiamate = Array(5).fill(null).map(() =>
+                    fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-embeddings`,
+                        { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } }
+                    ).then(r => r.json()).catch(() => ({ ok: false, processate: 0, errori: 0, rimanenti: rimanenti }))
                 )
-                const json = await res.json()
-                if (!json.ok) { setMsgEmbed({ tipo: 'err', testo: json.error }); break }
-                processateTotali += json.processate
-                erroriTotali += json.errori
-                rimanenti = json.rimanenti
+
+                const risultati = await Promise.all(chiamate)
+
+                let processateTotali = 0
+                let erroriTotali = 0
+                risultati.forEach(json => {
+                    if (json.ok) {
+                        processateTotali += json.processate ?? 0
+                        erroriTotali += json.errori ?? 0
+                        rimanenti = json.rimanenti ?? rimanenti
+                    }
+                })
+
+                // Aggiorna UI
                 setStats(prev => ({ ...prev, conEmbedding: prev.totale - rimanenti }))
-                setMsgEmbed({ tipo: 'ok', testo: `Processati ${processateTotali} — rimanenti: ${rimanenti}` })
-                if (json.completato) break
-                await new Promise(r => setTimeout(r, 3000))
+                setMsgEmbed({ tipo: 'ok', testo: `Processati ${processateTotali} in questo round — rimanenti: ${rimanenti}` })
+
+                if (rimanenti <= 0) break
+                await new Promise(r => setTimeout(r, 1000))
             }
+
             caricaDati()
         } catch (e) {
             setMsgEmbed({ tipo: 'err', testo: e.message })
