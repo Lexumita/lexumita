@@ -2,10 +2,70 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { PageHeader, StatCard, Badge } from '@/components/shared'
-import { Upload, Cpu, RefreshCw, ChevronRight, Trash2, AlertCircle, BookOpen } from 'lucide-react'
+import { PageHeader, StatCard } from '@/components/shared'
+import {
+    Upload, Cpu, RefreshCw, ChevronRight, Trash2,
+    AlertCircle, BookOpen, Flag, Globe, Archive
+} from 'lucide-react'
 
+// ─── CONFIG PER OGNI FONTE ────────────────────────────────────
+const CONFIG_IT = {
+    key: 'it',
+    labelStats: 'Codici caricati',
+    tabella: 'norme',
+    rpcStats: 'get_stats_per_codice',
+    tabellaLabel: 'codici_norme',
+    bucketStorage: 'normattiva',
+    permetteImport: true,
+    permetteEmbedding: true,
+    permetteDelete: true,
+    rotta: '/admin/normativa',
+}
+
+const CONFIG_UE = {
+    key: 'ue',
+    labelStats: 'Categorie presenti',
+    tabella: 'norme_ue',
+    rpcStats: 'get_stats_per_categoria_ue',
+    tabellaLabel: 'codici_norme_ue',
+    bucketStorage: null,
+    permetteImport: false,
+    permetteEmbedding: false,
+    permetteDelete: false,
+    rotta: '/admin/normativa-ue',
+}
+
+// ─── COMPONENTE PRINCIPALE ────────────────────────────────────
 export default function AdminNormativa() {
+    const [tab, setTab] = useState('it')
+
+    return (
+        <div className="space-y-5">
+            {/* Tab selector */}
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <button onClick={() => setTab('it')}
+                    className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'it' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <Flag size={13} /> Normativa Italiana
+                </button>
+                <button onClick={() => setTab('ue')}
+                    className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <Globe size={13} /> Normativa UE
+                </button>
+                <button onClick={() => setTab('archivio')}
+                    className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'archivio' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <Archive size={13} /> Archivio normativo
+                </button>
+            </div>
+
+            {tab === 'it' && <VistaCodici config={CONFIG_IT} titolo="Normativa Italiana" />}
+            {tab === 'ue' && <VistaCodici config={CONFIG_UE} titolo="Normativa UE" />}
+            {tab === 'archivio' && <VistaArchivio />}
+        </div>
+    )
+}
+
+// ─── VISTA CODICI / CATEGORIE (IT e UE) ───────────────────────
+function VistaCodici({ config, titolo }) {
     const navigate = useNavigate()
 
     const [codici, setCodici] = useState([])
@@ -18,29 +78,32 @@ export default function AdminNormativa() {
     const [msgImport, setMsgImport] = useState(null)
     const [msgEmbed, setMsgEmbed] = useState(null)
 
-    useEffect(() => { caricaDati() }, [])
+    useEffect(() => { caricaDati() }, [config.key])
 
     async function caricaDati() {
         setLoading(true)
         try {
-            // Label
-            const { data: labelData } = await supabase
-                .from('codici_norme').select('codice, label')
-            const mappa = {}
-            for (const r of labelData ?? []) mappa[r.codice] = r.label
-            setCodiciLabel(mappa)
+            // Label (solo per IT)
+            if (config.tabellaLabel) {
+                const { data: labelData } = await supabase
+                    .from(config.tabellaLabel).select('codice, label')
+                const mappa = {}
+                for (const r of labelData ?? []) mappa[r.codice] = r.label
+                setCodiciLabel(mappa)
+            } else {
+                setCodiciLabel({})
+            }
 
             // Stats globali
             const { count: totale } = await supabase
-                .from('norme').select('*', { count: 'exact', head: true })
+                .from(config.tabella).select('*', { count: 'exact', head: true })
             const { count: conEmbedding } = await supabase
-                .from('norme').select('*', { count: 'exact', head: true })
+                .from(config.tabella).select('*', { count: 'exact', head: true })
                 .not('embedding', 'is', null)
             setStats({ totale: totale ?? 0, conEmbedding: conEmbedding ?? 0 })
 
-            // Codici con conteggio
-            const { data: codiciData } = await supabase
-                .rpc('get_stats_per_codice')
+            // Codici/Categorie con conteggio
+            const { data: codiciData } = await supabase.rpc(config.rpcStats)
             setCodici(codiciData ?? [])
         } finally {
             setLoading(false)
@@ -70,7 +133,7 @@ export default function AdminNormativa() {
                 if (json.ok) { totOk += json.totale_articoli; totErrori += json.errori }
                 else totErrori++
             }
-            setMsgImport({ tipo: 'ok', testo: `✅ Import completato — ${totOk} articoli, ${totErrori} errori` })
+            setMsgImport({ tipo: 'ok', testo: `Import completato — ${totOk} articoli, ${totErrori} errori` })
             caricaDati()
         } catch (e) {
             setMsgImport({ tipo: 'err', testo: e.message })
@@ -85,7 +148,6 @@ export default function AdminNormativa() {
             let rimanenti = stats.totale - stats.conEmbedding
 
             while (rimanenti > 0) {
-                // Lancia 5 chiamate in parallelo
                 const chiamate = Array(5).fill(null).map(() =>
                     fetch(
                         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-embeddings`,
@@ -105,7 +167,6 @@ export default function AdminNormativa() {
                     }
                 })
 
-                // Aggiorna UI
                 setStats(prev => ({ ...prev, conEmbedding: prev.totale - rimanenti }))
                 setMsgEmbed({ tipo: 'ok', testo: `Processati ${processateTotali} in questo round — rimanenti: ${rimanenti}` })
 
@@ -120,8 +181,8 @@ export default function AdminNormativa() {
     }
 
     async function eliminaCodice(codice) {
-        if (!confirm(`Eliminare tutti gli articoli del codice "${codiciLabel[codice] ?? codice}"? Questa azione non è reversibile.`)) return
-        await supabase.from('norme').delete().eq('codice', codice)
+        if (!confirm(`Eliminare tutti gli articoli del codice "${codiciLabel[codice] ?? codice}"? Questa azione non e reversibile.`)) return
+        await supabase.from(config.tabella).delete().eq('codice', codice)
         caricaDati()
     }
 
@@ -131,24 +192,29 @@ export default function AdminNormativa() {
 
     return (
         <div className="space-y-5">
-            <PageHeader label="Admin" title="Normativa" subtitle={`${stats.totale.toLocaleString()} articoli nel database`} />
+            <PageHeader label="Admin" title={titolo} subtitle={`${stats.totale.toLocaleString()} articoli nel database`} />
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="Articoli totali" value={stats.totale.toLocaleString()} colorClass="text-oro" />
-                <StatCard label="Codici caricati" value={codici.length} colorClass="text-salvia" />
+                <StatCard label={config.labelStats} value={codici.length} colorClass="text-salvia" />
                 <StatCard label="Con embedding" value={stats.conEmbedding.toLocaleString()} colorClass="text-nebbia" />
                 <StatCard label="Copertura AI" value={`${embedPct}%`} colorClass={embedPct === 100 ? 'text-salvia' : 'text-oro'} />
             </div>
 
             {/* Azioni */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="bg-slate border border-white/5 p-5 space-y-4">
+                <div className={`bg-slate border border-white/5 p-5 space-y-4 ${!config.permetteImport ? 'opacity-40' : ''}`}>
                     <div className="flex items-start gap-3">
                         <Upload size={16} className="text-oro mt-0.5 shrink-0" />
                         <div>
                             <p className="font-body text-sm font-medium text-nebbia">Importa norme da Storage</p>
-                            <p className="font-body text-xs text-nebbia/40 mt-1">Legge tutti i JSON dal bucket <span className="text-oro/60">normattiva</span> e li inserisce nel database.</p>
+                            <p className="font-body text-xs text-nebbia/40 mt-1">
+                                {config.permetteImport
+                                    ? <>Legge tutti i JSON dal bucket <span className="text-oro/60">{config.bucketStorage}</span> e li inserisce nel database.</>
+                                    : <>Import non disponibile per questa fonte — i dati sono caricati via script dedicato.</>
+                                }
+                            </p>
                         </div>
                     </div>
                     {msgImport && (
@@ -156,20 +222,25 @@ export default function AdminNormativa() {
                             <AlertCircle size={11} />{msgImport.testo}
                         </p>
                     )}
-                    <button onClick={avviaImport} disabled={importando}
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40">
+                    <button onClick={avviaImport} disabled={importando || !config.permetteImport}
+                        className="flex items-center justify-center gap-2 w-full py-3 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         {importando
                             ? <><span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" /> Importazione...</>
                             : <><Upload size={14} /> Importa norme</>}
                     </button>
                 </div>
 
-                <div className="bg-slate border border-white/5 p-5 space-y-4">
+                <div className={`bg-slate border border-white/5 p-5 space-y-4 ${!config.permetteEmbedding ? 'opacity-40' : ''}`}>
                     <div className="flex items-start gap-3">
                         <Cpu size={16} className="text-salvia mt-0.5 shrink-0" />
                         <div>
                             <p className="font-body text-sm font-medium text-nebbia">Genera embeddings AI</p>
-                            <p className="font-body text-xs text-nebbia/40 mt-1">Genera i vettori OpenAI per gli articoli senza embedding.</p>
+                            <p className="font-body text-xs text-nebbia/40 mt-1">
+                                {config.permetteEmbedding
+                                    ? <>Genera i vettori OpenAI per gli articoli senza embedding.</>
+                                    : <>Usa lo script Python locale — molto piu veloce dell edge function.</>
+                                }
+                            </p>
                         </div>
                     </div>
                     {msgEmbed && (
@@ -177,8 +248,8 @@ export default function AdminNormativa() {
                             <AlertCircle size={11} />{msgEmbed.testo}
                         </p>
                     )}
-                    <button onClick={avviaEmbeddings} disabled={embeddings}
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40">
+                    <button onClick={avviaEmbeddings} disabled={embeddings || !config.permetteEmbedding}
+                        className="flex items-center justify-center gap-2 w-full py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         {embeddings
                             ? <><span className="animate-spin w-4 h-4 border-2 border-salvia border-t-transparent rounded-full" /> Generazione...</>
                             : <><Cpu size={14} /> Genera embeddings ({stats.totale - stats.conEmbedding} rimanenti)</>}
@@ -186,9 +257,9 @@ export default function AdminNormativa() {
                 </div>
             </div>
 
-            {/* Lista codici */}
+            {/* Lista codici/categorie */}
             <div className="flex items-center justify-between">
-                <p className="section-label">Codici nel database</p>
+                <p className="section-label">{config.key === 'ue' ? 'Categorie nel database' : 'Codici nel database'}</p>
                 <button onClick={caricaDati} className="text-nebbia/30 hover:text-nebbia transition-colors">
                     <RefreshCw size={13} />
                 </button>
@@ -198,7 +269,9 @@ export default function AdminNormativa() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-white/5">
-                            <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Codice</th>
+                            <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">
+                                {config.key === 'ue' ? 'Categoria' : 'Codice'}
+                            </th>
                             <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Articoli</th>
                             <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Embedding</th>
                             <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Aggiornato</th>
@@ -213,11 +286,13 @@ export default function AdminNormativa() {
                         ) : codici.length === 0 ? (
                             <tr><td colSpan={5} className="px-4 py-20 text-center">
                                 <BookOpen size={24} className="text-nebbia/20 mx-auto mb-3" />
-                                <p className="font-body text-sm text-nebbia/30">Nessun codice importato</p>
+                                <p className="font-body text-sm text-nebbia/30">
+                                    {config.key === 'ue' ? 'Nessuna categoria trovata' : 'Nessun codice importato'}
+                                </p>
                             </td></tr>
                         ) : codici.map(c => (
                             <tr key={c.codice} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
-                                onClick={() => navigate(`/admin/normativa/${c.codice}`)}>
+                                onClick={() => navigate(`${config.rotta}/${c.codice}`)}>
                                 <td className="px-4 py-3">
                                     <p className="font-body text-sm font-medium text-nebbia">{codiciLabel[c.codice] ?? c.codice}</p>
                                     <p className="font-body text-xs text-nebbia/30 mt-0.5">{c.codice}</p>
@@ -239,14 +314,16 @@ export default function AdminNormativa() {
                                 </td>
                                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                                     <div className="flex items-center gap-3">
-                                        <button onClick={() => navigate(`/admin/normativa/${c.codice}`)}
+                                        <button onClick={() => navigate(`${config.rotta}/${c.codice}`)}
                                             className="text-nebbia/30 hover:text-oro transition-colors">
                                             <ChevronRight size={14} />
                                         </button>
-                                        <button onClick={() => eliminaCodice(c.codice)}
-                                            className="text-nebbia/30 hover:text-red-400 transition-colors">
-                                            <Trash2 size={13} />
-                                        </button>
+                                        {config.permetteDelete && (
+                                            <button onClick={() => eliminaCodice(c.codice)}
+                                                className="text-nebbia/30 hover:text-red-400 transition-colors">
+                                                <Trash2 size={13} />
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -254,6 +331,95 @@ export default function AdminNormativa() {
                     </tbody>
                 </table>
             </div>
+        </div>
+    )
+}
+
+// ─── VISTA ARCHIVIO (solo contatori, no lista) ───────────────
+function VistaArchivio() {
+    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({ totale: 0, conEmbedding: 0 })
+
+    useEffect(() => { caricaStats() }, [])
+
+    async function caricaStats() {
+        setLoading(true)
+        try {
+            const { count: totale } = await supabase
+                .from('norme_archivio').select('*', { count: 'exact', head: true })
+            const { count: conEmbedding } = await supabase
+                .from('norme_archivio').select('*', { count: 'exact', head: true })
+                .not('embedding', 'is', null)
+            setStats({ totale: totale ?? 0, conEmbedding: conEmbedding ?? 0 })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const embedPct = stats.totale > 0
+        ? Math.round((stats.conEmbedding / stats.totale) * 100)
+        : 0
+
+    const senzaEmbedding = stats.totale - stats.conEmbedding
+
+    return (
+        <div className="space-y-5">
+            <PageHeader
+                label="Admin"
+                title="Archivio normativo"
+                subtitle="Fonte grezza non categorizzata — accessibile solo via ricerca Lex"
+            />
+
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                </div>
+            ) : (
+                <>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <StatCard label="Record totali" value={stats.totale.toLocaleString()} colorClass="text-oro" />
+                        <StatCard label="Con embedding" value={stats.conEmbedding.toLocaleString()} colorClass="text-salvia" />
+                        <StatCard label="Senza embedding" value={senzaEmbedding.toLocaleString()} colorClass="text-nebbia" />
+                        <StatCard label="Copertura AI" value={`${embedPct}%`} colorClass={embedPct === 100 ? 'text-salvia' : 'text-oro'} />
+                    </div>
+
+                    {/* Info box */}
+                    <div className="bg-slate border border-white/5 p-5 space-y-3">
+                        <div className="flex items-start gap-3">
+                            <Archive size={16} className="text-oro mt-0.5 shrink-0" />
+                            <div>
+                                <p className="font-body text-sm font-medium text-nebbia">Archivio non categorizzato</p>
+                                <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
+                                    Questa tabella contiene la raccolta estesa di norme italiane senza categorizzazione.
+                                    Non viene mostrata nella ricerca tradizionale dell avvocato — ha troppi record e la ricerca full-text sarebbe infruttuosa.
+                                    Lex la usa come fallback quando la ricerca nei codici curati non restituisce risultati sufficienti.
+                                </p>
+                                <p className="font-body text-xs text-nebbia/40 mt-3">
+                                    Categorizzazione futura: in roadmap. Per ora, genera gli embeddings via script Python locale.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Azione embedding (disabilitata) */}
+                    <div className="bg-slate border border-white/5 p-5 space-y-4 opacity-40">
+                        <div className="flex items-start gap-3">
+                            <Cpu size={16} className="text-salvia mt-0.5 shrink-0" />
+                            <div>
+                                <p className="font-body text-sm font-medium text-nebbia">Genera embeddings AI</p>
+                                <p className="font-body text-xs text-nebbia/40 mt-1">
+                                    Usa lo script Python locale — con ~400k record l edge function e troppo lenta.
+                                </p>
+                            </div>
+                        </div>
+                        <button disabled
+                            className="flex items-center justify-center gap-2 w-full py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm disabled:cursor-not-allowed">
+                            <Cpu size={14} /> Genera embeddings ({senzaEmbedding.toLocaleString()} rimanenti)
+                        </button>
+                    </div>
+                </>
+            )}
         </div>
     )
 }

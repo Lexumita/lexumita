@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
     ArrowRight, BookOpen, TrendingUp, Users, Sparkles,
-    Shield, Check, ChevronDown, Brain, Star, Zap, Lock, FileText
+    Shield, Check, ChevronDown, Brain, Star, Zap, Lock, FileText, FileSignature
 } from 'lucide-react'
 
 // ─── Scroll animation hook ───────────────────────────────────
@@ -213,6 +213,11 @@ export default function PerAvvocati() {
                                 icon: Brain, accent: 'salvia',
                                 t: 'Lavori in un sistema più intelligente',
                                 d: 'Le sentenze pubblicate diventano parte di un ambiente in cui Lex AI aiuta a trovare i contenuti più rilevanti.',
+                            },
+                            {
+                                icon: FileSignature, accent: 'oro',
+                                t: 'Generi atti in minuti',
+                                d: 'Diffide, comparse, istanze, precetti e impugnazioni. Lex AI compila i template con i dati della pratica e produce un atto pronto da rivedere ed esportare.',
                             },
                             {
                                 icon: Zap, accent: 'oro',

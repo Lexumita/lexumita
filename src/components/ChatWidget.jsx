@@ -1,12 +1,21 @@
 // src/components/ChatWidget.jsx
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { MessageSquare, X, Send, ArrowRight, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const ADMIN_ID = '007b9362-a2f2-46b4-8e66-8fa0ac56b936'
 
+const ROUTE_PROTETTE = [
+    '/dashboard', '/clienti', '/pratiche', '/calendario',
+    '/sentenze', '/pagamenti', '/assistenza', '/profilo',
+    '/studio', '/archivio', '/normativa', '/banca-dati',
+    '/portale', '/verifica', '/user/', '/admin/',
+    '/area-personale'
+]
+
 export default function ChatWidget() {
+    const location = useLocation()
     const [aperto, setAperto] = useState(false)
     const [utente, setUtente] = useState(null)
     const [profilo, setProfilo] = useState(null)
@@ -42,7 +51,6 @@ export default function ChatWidget() {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messaggi])
 
-    // Realtime messaggi
     useEffect(() => {
         if (!ticket) return
         const channel = supabase
@@ -61,7 +69,6 @@ export default function ChatWidget() {
     }, [ticket, aperto])
 
     async function caricaOCreaTicket() {
-        // Cerca ticket aperto esistente
         const { data: esistente } = await supabase
             .from('ticket_assistenza')
             .select('id, stato, oggetto')
@@ -82,7 +89,6 @@ export default function ChatWidget() {
             setMessaggi(msgs ?? [])
             setNonLetti(0)
         } else {
-            // Crea nuovo ticket
             const ruolo = profilo?.role ?? 'lex_user'
             const { data: nuovo } = await supabase
                 .from('ticket_assistenza')
@@ -119,7 +125,9 @@ export default function ChatWidget() {
         setInviando(false)
     }
 
-    // Non mostrare il widget agli avvocati — hanno già /assistenza
+    // Nascondi su route protette
+    const suRoutaProtetta = ROUTE_PROTETTE.some(r => location.pathname.startsWith(r))
+    if (suRoutaProtetta) return null
     if (loading) return null
     if (!profilo && utente) return null
     if (profilo?.role === 'avvocato') return null
@@ -146,13 +154,7 @@ export default function ChatWidget() {
                     </div>
 
                     {/* Corpo */}
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <span className="animate-spin w-5 h-5 border-2 border-salvia border-t-transparent rounded-full" />
-                        </div>
-
-                    ) : !utente ? (
-                        /* Non loggato */
+                    {!utente ? (
                         <div className="p-6 space-y-5">
                             <div className="text-center space-y-3">
                                 <div className="w-12 h-12 flex items-center justify-center border border-salvia/25 bg-salvia/5 mx-auto">
@@ -181,10 +183,8 @@ export default function ChatWidget() {
                         </div>
 
                     ) : (
-                        /* Loggato — chat */
                         <>
                             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ maxHeight: '320px' }}>
-                                {/* Messaggio benvenuto */}
                                 {messaggi.length === 0 && (
                                     <div className="bg-salvia/5 border border-salvia/15 px-4 py-3">
                                         <p className="font-body text-xs text-nebbia/60 leading-relaxed">
@@ -212,7 +212,6 @@ export default function ChatWidget() {
                                 <div ref={bottomRef} />
                             </div>
 
-                            {/* Input */}
                             <div className="border-t border-white/5 p-3 flex gap-2">
                                 <textarea
                                     rows={2}

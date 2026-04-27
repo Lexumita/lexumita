@@ -8,7 +8,7 @@ const ROLE_HOME = {
   admin: '/admin/dashboard',
   avvocato: '/dashboard',
   cliente: '/portale',
-  user: '/verifica',
+  user: '/area',
 }
 
 export default function Login() {

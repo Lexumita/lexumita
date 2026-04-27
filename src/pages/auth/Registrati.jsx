@@ -31,7 +31,7 @@ export default function Registrati() {
     setLoading(true)
     try {
       const { data, error: authErr } = await supabase.auth.signUp({
-        email: form.email.trim(),
+        email: form.email.trim().toLowerCase(),
         password: form.password,
         options: {
           data: {
@@ -43,16 +43,16 @@ export default function Registrati() {
       })
       if (authErr) throw authErr
 
-      await supabase.from('profiles').upsert({
+      // Crea il profilo. Il trigger DB assegna automaticamente 5 crediti benvenuto.
+      const { error: profErr } = await supabase.from('profiles').upsert({
         id: data.user.id,
         nome: form.nome.trim(),
         cognome: form.cognome.trim(),
-        email: form.email.trim(),
+        email: form.email.trim().toLowerCase(),
         studio: form.studio.trim() || null,
-        tipo_account: form.studio.trim() ? 'titolare' : 'singolo',
         role: 'user',
-        verification_status: 'none',
       })
+      if (profErr) throw profErr
 
       setSuccess(true)
     } catch (err) {
@@ -70,7 +70,7 @@ export default function Registrati() {
           <h2 className="font-display text-3xl font-light text-nebbia mb-3">Controlla la tua email</h2>
           <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed">
             Abbiamo inviato un link di conferma a <span className="text-oro">{form.email}</span>.<br />
-            Clicca il link per attivare il tuo account.
+            Clicca il link per attivare il tuo account e iniziare a usare Lex AI con 5 ricerche gratuite.
           </p>
           <p className="font-body text-xs text-nebbia/30">
             Non hai ricevuto nulla? Controlla la cartella spam.
@@ -129,7 +129,7 @@ export default function Registrati() {
         <p className="section-label mb-6">Registrazione</p>
         <h1 className="font-display text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
         <p className="font-body text-sm text-nebbia/40 mb-8 leading-relaxed">
-          Dopo la registrazione potrai caricare i documenti per la verifica e diventare avvocato sulla piattaforma.
+          Inizia subito con 5 ricerche Lex AI gratuite. Se sei un avvocato, dopo la registrazione potrai verificare la tua identità e accedere a tutte le funzionalità di Lexum.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -141,21 +141,22 @@ export default function Registrati() {
 
           {/* Studio — opzionale */}
           <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widets uppercase mb-2">
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
               Nome studio
               <span className="ml-2 text-nebbia/25 normal-case tracking-normal">— opzionale</span>
             </label>
             <input
               type="text"
-              placeholder="Es. Studio Rossi & Associati"
+              placeholder="Es. Studio Rossi e Associati"
               value={form.studio}
               onChange={e => setForm(f => ({ ...f, studio: e.target.value }))}
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25"
             />
             <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
-              Se lavori con altri colleghi inserisci il nome dello studio. Potrai aggiungerlo o modificarlo anche in seguito dal tuo profilo.
+              Se sei un avvocato e lavori in uno studio, inserisci qui il nome. Servirà in fase di verifica. Puoi modificarlo anche dopo dal tuo profilo.
             </p>
           </div>
+
           {pwdField('password', 'Password *', showPwd, () => setShowPwd(v => !v))}
           {pwdField('conferma', 'Conferma password *', showConferma, () => setShowConferma(v => !v))}
 

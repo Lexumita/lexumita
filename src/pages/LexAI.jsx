@@ -67,12 +67,14 @@ function LexBoxPublic() {
             setUtente(user)
             if (user) {
                 supabase.from('crediti_ai')
-                    .select('crediti_totali, crediti_usati')
+                    .select('crediti_totali, crediti_usati, tipo')
                     .eq('user_id', user.id)
-                    .gte('periodo_fine', new Date().toISOString())
-                    .order('created_at', { ascending: false })
-                    .limit(1).maybeSingle()
-                    .then(({ data }) => setCrediti(data))
+                    .or(`periodo_fine.is.null,periodo_fine.gte.${new Date().toISOString()}`)
+                    .then(({ data }) => {
+                        const totale = (data ?? []).reduce((acc, c) => acc + c.crediti_totali, 0);
+                        const usati = (data ?? []).reduce((acc, c) => acc + c.crediti_usati, 0);
+                        setCrediti({ crediti_totali: totale, crediti_usati: usati });
+                    })
             }
             setLoadingAuth(false)
         })
@@ -144,7 +146,7 @@ function LexBoxPublic() {
                 </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-                <Link to="/registrati-lex"
+                <Link to="/registrati"
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.01]">
                     <Sparkles size={13} /> Prova gratis — 3 ricerche
                 </Link>
@@ -312,7 +314,7 @@ export default function LexAI() {
                     <div className="flex justify-center mb-8">
                         <div className="inline-flex items-center gap-2 px-4 py-2 border border-salvia/25 bg-salvia/5">
                             <Sparkles size={11} className="text-salvia" />
-                            <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Intelligenza artificiale legale BETA V. 1.5</span>
+                            <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Intelligenza artificiale legale BETA V. 1</span>
                         </div>
                     </div>
 
@@ -763,6 +765,7 @@ export default function LexAI() {
                                         { t: 'Banca dati sentenze acquistabili', locked: false },
                                         { t: 'Integrazione con pratiche e clienti', locked: false },
                                         { t: 'Generazione strategia da ricerche', locked: false },
+                                        { t: 'Atti pronti compilati con i dati della pratica', locked: false },
                                         { t: 'Gestionale completo per lo studio', locked: false },
                                     ].map(({ t }, i) => (
                                         <div key={i} className="flex items-center gap-3 p-3 bg-petrolio/40 border border-oro/10">
@@ -822,7 +825,7 @@ export default function LexAI() {
                             <Sparkles size={20} className="text-salvia" />
                         </div>
                         <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-4">
-                            Attiva Lex AI (BETA V. 1.5)
+                            Attiva Lex AI (BETA V. 1)
                         </h2>
                         <div className="w-12 h-px bg-gradient-to-r from-transparent via-salvia/50 to-transparent mx-auto my-6" />
                         <p className="font-body text-sm text-nebbia/40 leading-relaxed mb-10 max-w-lg mx-auto">
@@ -830,7 +833,7 @@ export default function LexAI() {
                             e lavorare con una base più affidabile.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-                            <Link to="/registrati-lex" className="flex items-center gap-2.5 px-10 py-4 bg-salvia text-petrolio font-body text-sm font-medium hover:bg-salvia/90 transition-all hover:scale-[1.02] shadow-xl shadow-salvia/20">
+                            <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-salvia text-petrolio font-body text-sm font-medium hover:bg-salvia/90 transition-all hover:scale-[1.02] shadow-xl shadow-salvia/20">
                                 Prova gratis — 3 ricerche <ArrowRight size={15} />
                             </Link>
                             <Link to="/per-avvocati" className="font-body text-sm text-nebbia/35 hover:text-nebbia/60 transition-colors">

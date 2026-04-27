@@ -14,6 +14,7 @@ const TIPO_CONFIG = {
   seat_addon: { label: 'Seat add-on', variant: 'gray' },
   accesso_singolo: { label: 'Accesso doc.', variant: 'gray' },
   crediti_ai: { label: 'Crediti AI', variant: 'salvia' },
+  spazio_archiviazione: { label: 'Storage', variant: 'salvia' },
   gratuito: { label: 'Gratuito', variant: 'salvia' },
 }
 
@@ -70,7 +71,7 @@ export function AdminProdotti() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Prodotto', 'Tipo', 'Posti', 'Crediti AI', 'Banca dati', 'Monetizzazione', 'Prezzo', 'Durata', '% Revenue', 'Stato', ''].map(h => (
+                {['Prodotto', 'Tipo', 'Posti', 'Crediti AI', 'Storage', 'Banca dati', 'Monetizzazione', 'Prezzo', 'Durata', '% Revenue', 'Stato', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -78,22 +79,28 @@ export function AdminProdotti() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={12} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun prodotto trovato
                   </td>
                 </tr>
               ) : rows.map(p => {
                 const tc = TIPO_CONFIG[p.tipo] ?? TIPO_CONFIG.abbonamento
                 const isAbb = p.tipo === 'abbonamento'
+                const isStorage = p.tipo === 'spazio_archiviazione'
                 return (
                   <tr key={p.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                     <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{p.nome}</td>
                     <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai') ? <Dash /> : p.posti === null ? 'illim.' : p.posti}
+                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage)
+                        ? <Dash />
+                        : p.posti === null ? 'illim.' : p.posti}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.crediti_ai_mensili > 0 ? p.crediti_ai_mensili : <Dash />}
+                    </td>
+                    <td className="px-4 py-3 font-body text-sm text-nebbia/60">
+                      {p.spazio_gb > 0 ? `${p.spazio_gb} GB` : <Dash />}
                     </td>
                     <td className="px-4 py-3">
                       {isAbb
@@ -107,7 +114,7 @@ export function AdminProdotti() {
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-oro font-medium">EUR {p.prezzo}</td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {p.durata_mesi ? `${p.durata_mesi} mesi` : <Dash />}
+                      {p.durata_mesi ? `${p.durata_mesi} ${p.durata_mesi === 1 ? 'mese' : 'mesi'}` : <Dash />}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.revenue_pct ? `${p.revenue_pct}%` : <Dash />}
@@ -143,7 +150,8 @@ export function AdminProdottiForm() {
     nome: '', tipo: 'abbonamento', prezzo: '',
     posti: '1', durata_mesi: '12',
     include_banca_dati: false, include_monetizzazione: false,
-    revenue_pct: '', crediti_ai_mensili: '0', solo_lex_user: false, attivo: true,
+    revenue_pct: '', crediti_ai_mensili: '0', spazio_gb: '0',
+    attivo: true,
   })
   const [loading, setLoading] = useState(isEdit)
   const [salvando, setSalvando] = useState(false)
@@ -159,7 +167,11 @@ export function AdminProdottiForm() {
   const isAddon = form.tipo === 'seat_addon'
   const isAccesso = form.tipo === 'accesso_singolo'
   const isCreditiAI = form.tipo === 'crediti_ai'
+  const isStorage = form.tipo === 'spazio_archiviazione'
   const isGratuito = form.tipo === 'gratuito'
+
+  // Tipi che richiedono campo durata_mesi
+  const haDurata = isAbb || isStorage || isGratuito
 
   // Quanti posti ha il prodotto
   const postiNum = parseInt(form.posti) || 0
@@ -180,7 +192,7 @@ export function AdminProdottiForm() {
         include_monetizzazione: data.include_monetizzazione,
         revenue_pct: data.revenue_pct ?? '',
         crediti_ai_mensili: data.crediti_ai_mensili ?? '0',
-        solo_lex_user: data.solo_lex_user ?? false,
+        spazio_gb: data.spazio_gb ?? '0',
         attivo: data.attivo,
       })
       setLoading(false)
@@ -194,8 +206,9 @@ export function AdminProdottiForm() {
     if (!form.nome.trim()) return setErrore('Il nome è obbligatorio')
     if (!isGratuito && (!form.prezzo || isNaN(parseFloat(form.prezzo)))) return setErrore('Il prezzo è obbligatorio')
     if ((isAbb || isGratuito) && (!form.posti || parseInt(form.posti) < 1)) return setErrore('I posti devono essere almeno 1')
-    if ((isAbb || isGratuito) && (!form.durata_mesi || parseInt(form.durata_mesi) < 1)) return setErrore('La durata è obbligatoria')
+    if (haDurata && (!form.durata_mesi || parseInt(form.durata_mesi) < 1)) return setErrore('La durata è obbligatoria')
     if (isAccesso && (!form.revenue_pct || isNaN(parseInt(form.revenue_pct)))) return setErrore('La % revenue è obbligatoria')
+    if (isStorage && (!form.spazio_gb || parseInt(form.spazio_gb) < 1)) return setErrore('Indica i GB del pacchetto')
 
     setSalvando(true)
     try {
@@ -204,12 +217,12 @@ export function AdminProdottiForm() {
         tipo: form.tipo,
         prezzo: isGratuito ? 0 : parseFloat(form.prezzo),
         posti: (isAbb || isAddon || isGratuito) ? parseInt(form.posti) : null,
-        durata_mesi: (isAbb || isGratuito) ? parseInt(form.durata_mesi) || null : null,
+        durata_mesi: haDurata ? parseInt(form.durata_mesi) || null : null,
         include_banca_dati: (isAbb || isGratuito) ? form.include_banca_dati : false,
         include_monetizzazione: (isAbb || isGratuito) ? form.include_monetizzazione : false,
         revenue_pct: isAccesso ? parseInt(form.revenue_pct) : null,
         crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
-        solo_lex_user: isCreditiAI ? form.solo_lex_user : false,
+        spazio_gb: (isAbb || isStorage || isGratuito) ? parseInt(form.spazio_gb) || 0 : 0,
         attivo: form.attivo,
       }
 
@@ -234,9 +247,15 @@ export function AdminProdottiForm() {
     { v: 'abbonamento', l: 'Abbonamento', desc: 'Piano per avvocato o studio — posti determina il tipo' },
     { v: 'seat_addon', l: 'Seat add-on', desc: 'Aggiunge posti a uno studio esistente' },
     { v: 'accesso_singolo', l: 'Accesso singolo', desc: 'Acquisto di una singola sentenza dalla banca dati' },
-    { v: 'crediti_ai', l: 'Crediti AI', desc: 'Pacchetto crediti AI acquistabili separatamente' },
+    { v: 'crediti_ai', l: 'Crediti AI', desc: 'Pacchetto crediti AI acquistabili separatamente — non scadono mai' },
+    { v: 'spazio_archiviazione', l: 'Storage', desc: 'Pacchetto GB extra per archivio documenti — pagamento una tantum con scadenza' },
     { v: 'gratuito', l: 'Gratuito', desc: 'Prova gratuita a tempo limitato — attivabile una sola volta per avvocato' },
   ]
+
+  // Opzioni durata in base al tipo
+  const opzioniDurata = isStorage
+    ? [['1', '1 mese'], ['6', '6 mesi'], ['12', '12 mesi']]
+    : [['6', '6 mesi'], ['12', '12 mesi']]
 
   if (loading) {
     return (
@@ -318,15 +337,20 @@ export function AdminProdottiForm() {
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Prezzo (EUR) *</label>
             <input type="number" step="0.01" min="0" {...f('prezzo')} placeholder="499"
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+            {isStorage && (
+              <p className="font-body text-xs text-nebbia/40 mt-1.5">
+                Pagamento una tantum per la durata indicata. Alla scadenza, l'utente potrà rinnovare manualmente.
+              </p>
+            )}
           </div>
         )}
 
-        {/* Durata — solo abbonamento */}
-        {(isAbb || isGratuito) && (
+        {/* Durata — abbonamento, storage, gratuito */}
+        {haDurata && (
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Durata *</label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {[['6', '6 mesi'], ['12', '12 mesi']].map(([v, l]) => (
+            <div className={`grid gap-3 mb-3 ${opzioniDurata.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {opzioniDurata.map(([v, l]) => (
                 <button key={v} type="button" onClick={() => setForm(p => ({ ...p, durata_mesi: v }))}
                   className={`py-3 px-4 text-left border transition-all ${String(form.durata_mesi) === v ? 'bg-oro/10 border-oro/40 text-oro' : 'text-nebbia/50 border-white/10 hover:border-oro/20'}`}>
                   <p className="font-body text-sm font-medium">{l}</p>
@@ -394,20 +418,75 @@ export function AdminProdottiForm() {
           </div>
         )}
 
-        {/* Crediti AI — per abbonamento e crediti_ai */}
+        {/* Crediti AI — per abbonamento, crediti_ai e gratuito */}
         {(isAbb || isCreditiAI || isGratuito) && (
           <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widests uppercase mb-2">
-              Crediti AI {isAbb ? '/ mese inclusi' : 'nel pacchetto'} *
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              Crediti AI {isAbb ? '/ mese inclusi' : isGratuito ? 'inclusi nella prova' : 'nel pacchetto'} *
             </label>
             <input type="number" min="0" {...f('crediti_ai_mensili')} placeholder="100"
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-            <p className="font-body text-xs text-nebbia/25 mt-1.5">
-              {isAbb
-                ? 'Crediti AI inclusi ogni mese nel piano. 0 = nessun credito AI incluso.'
-                : 'Numero di crediti AI che l\'utente riceve con questo acquisto.'
-              }
-            </p>
+
+            {/* Info chiarificatore sul tipo di crediti generati */}
+            <div className="mt-2 p-3 border bg-petrolio/40 border-white/5 flex items-start gap-2">
+              <Info size={13} className="text-salvia/60 shrink-0 mt-0.5" />
+              <div className="font-body text-xs text-nebbia/50 leading-relaxed">
+                {isAbb && (
+                  <>
+                    Genera crediti di tipo <span className="text-oro">piano</span> ad ogni rinnovo mensile.
+                    Scadono ogni mese, si rinnovano alla data di acquisto e si consumano per primi.
+                  </>
+                )}
+                {isCreditiAI && (
+                  <>
+                    Genera crediti di tipo <span className="text-salvia">topup</span>.
+                    Non scadono mai e si consumano per ultimi (dopo piano e benvenuto).
+                  </>
+                )}
+                {isGratuito && (
+                  <>
+                    Genera crediti di tipo <span className="text-oro">piano</span> con scadenza
+                    pari alla durata della prova. Vengono persi al termine del trial.
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Storage / Spazio archiviazione — per abbonamento, spazio_archiviazione e gratuito */}
+        {(isAbb || isStorage || isGratuito) && (
+          <div>
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              {isAbb ? 'Storage incluso (GB) *' : isGratuito ? 'Storage incluso nella prova (GB) *' : 'GB del pacchetto *'}
+            </label>
+            <input type="number" min="0" {...f('spazio_gb')} placeholder="50"
+              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+
+            <div className="mt-2 p-3 border bg-petrolio/40 border-white/5 flex items-start gap-2">
+              <Info size={13} className="text-salvia/60 shrink-0 mt-0.5" />
+              <div className="font-body text-xs text-nebbia/50 leading-relaxed">
+                {isAbb && (
+                  <>
+                    GB <span className="text-oro">condivisi a livello studio</span> (titolare + collaboratori).
+                    Disponibili finché il piano è attivo. Alla scadenza l'archivio passa in sola lettura.
+                    0 = nessuno spazio incluso (l'utente dovrà comprare un pacchetto storage separato).
+                  </>
+                )}
+                {isStorage && (
+                  <>
+                    Pacchetto GB extra <span className="text-salvia">una tantum</span> con scadenza pari alla durata indicata.
+                    Si somma allo spazio del piano. Alla scadenza, se l'utente non rinnova, lo spazio cala
+                    e i nuovi upload vengono bloccati (i file esistenti restano leggibili).
+                  </>
+                )}
+                {isGratuito && (
+                  <>
+                    GB inclusi nella prova gratuita. Spariscono al termine del trial.
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -417,22 +496,6 @@ export function AdminProdottiForm() {
             <p className="font-body text-xs text-nebbia/40 leading-relaxed">
               Il seat add-on aggiunge posti a uno studio esistente. La validità segue la scadenza del piano base.
             </p>
-          </div>
-        )}
-
-        {/* Solo lex_user */}
-        {isCreditiAI && (
-          <div className="flex items-center gap-3 p-4 bg-petrolio/40 border border-white/5">
-            <input
-              type="checkbox"
-              id="solo_lex_user"
-              checked={form.solo_lex_user ?? false}
-              onChange={e => setForm(p => ({ ...p, solo_lex_user: e.target.checked }))}
-              className="accent-salvia w-4 h-4"
-            />
-            <label htmlFor="solo_lex_user" className="font-body text-sm text-nebbia/70 cursor-pointer">
-              Visibile solo agli utenti Lex AI — non agli avvocati
-            </label>
           </div>
         )}
 

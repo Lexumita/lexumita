@@ -7,7 +7,7 @@ import {
   Plus, Search, Upload, Send, Lock, FileText, MessageSquare,
   CreditCard, StickyNote, User, FolderOpen, ArrowRight, Sparkles,
   ChevronUp, ChevronDown, ArrowUpDown, Edit2, Check, X,
-  Calendar, Clock, AlertCircle, CheckCircle, Download, Trash2
+  Calendar, Clock, AlertCircle, CheckCircle, Download, Trash2, Building2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -45,6 +45,12 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function nomeCliente(c) {
+  if (!c) return ''
+  if (c.tipo_soggetto === 'persona_giuridica') return c.ragione_sociale ?? c.nome ?? '—'
+  return `${c.nome ?? ''} ${c.cognome ?? ''}`.trim() || '—'
+}
+
 function SortTh({ label, field, sortField, sortDir, onSort }) {
   const active = sortField === field
   return (
@@ -57,6 +63,36 @@ function SortTh({ label, field, sortField, sortDir, onSort }) {
         </span>
       </button>
     </th>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// SWITCHER PF / PG
+// ─────────────────────────────────────────────────────────────
+function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
+  return (
+    <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-fit">
+      <button
+        type="button"
+        onClick={() => !disabled && onChange('persona_fisica')}
+        disabled={disabled}
+        className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_fisica'
+          ? 'bg-oro/10 text-oro border border-oro/30'
+          : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <User size={13} /> Persona fisica
+      </button>
+      <button
+        type="button"
+        onClick={() => !disabled && onChange('persona_giuridica')}
+        disabled={disabled}
+        className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_giuridica'
+          ? 'bg-oro/10 text-oro border border-oro/30'
+          : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <Building2 size={13} /> Persona giuridica
+      </button>
+    </div>
   )
 }
 
@@ -393,11 +429,11 @@ function TabPagamenti({ clienteId, avvocatoId }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate border border-white/5 p-4">
             <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Da incassare</p>
-            <p className="font-display text-2xl font-semibold text-oro">€ {totaleAperto.toFixed(2)}</p>
+            <p className="font-display text-2xl font-semibold text-oro">EUR {totaleAperto.toFixed(2)}</p>
           </div>
           <div className="bg-slate border border-white/5 p-4">
             <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Incassato</p>
-            <p className="font-display text-2xl font-semibold text-salvia">€ {totalePagato.toFixed(2)}</p>
+            <p className="font-display text-2xl font-semibold text-salvia">EUR {totalePagato.toFixed(2)}</p>
           </div>
         </div>
       )}
@@ -415,14 +451,14 @@ function TabPagamenti({ clienteId, avvocatoId }) {
               <input {...f('numero')} className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50" />
             </div>
             <div>
-              <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Importo (€) *</label>
+              <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Importo (EUR) *</label>
               <input type="number" step="0.01" min="0" placeholder="0.00" {...f('importo')}
                 className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
             </div>
           </div>
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Descrizione</label>
-            <input placeholder="Es. Consulenza legale — Ottobre 2024" {...f('descrizione')}
+            <input placeholder="Es. Consulenza legale" {...f('descrizione')}
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
           </div>
           {pratiche.length > 0 && (
@@ -472,7 +508,7 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                     return (
                       <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                         <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                        <td className="px-4 py-3 font-body text-sm font-semibold text-oro">€ {parseFloat(fatt.importo).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {parseFloat(fatt.importo).toFixed(2)}</td>
                         <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
                         <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
                         <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>
@@ -629,7 +665,7 @@ function TabComunicazioni({ clienteId }) {
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Titolo *</label>
             <input value={form.titolo} onChange={e => setForm(p => ({ ...p, titolo: e.target.value }))}
-              placeholder="Es. Documenti mancanti, aggiornamento pratica..."
+              placeholder="Es. Documenti mancanti..."
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
           </div>
           <div className="flex gap-3">
@@ -700,8 +736,6 @@ function PannelloPratica({ pratica, onClose }) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto space-y-4">
-
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Pratica</p>
@@ -717,16 +751,12 @@ function PannelloPratica({ pratica, onClose }) {
           )}
         </div>
       </div>
-
-      {/* Bottone modifica */}
       <Link
         to={`/pratiche/${pratica.id}`}
         className="flex items-center justify-center gap-2 w-full py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors"
       >
         <ArrowRight size={13} /> Apri e modifica pratica completa
       </Link>
-
-      {/* Dettagli */}
       <div className="bg-petrolio/40 border border-white/5 p-4 space-y-2">
         <p className="section-label mb-2">Dettagli</p>
         {[
@@ -741,8 +771,6 @@ function PannelloPratica({ pratica, onClose }) {
           </div>
         ))}
       </div>
-
-      {/* Udienza */}
       {pratica.prossima_udienza ? (
         <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-500/25">
           <Calendar size={16} className="text-red-400" />
@@ -754,22 +782,18 @@ function PannelloPratica({ pratica, onClose }) {
       ) : (
         <EmptyState icon={Calendar} title="Nessuna scadenza" />
       )}
-
-      {/* Note */}
       {pratica.note && (
         <div className="bg-petrolio/40 border border-white/5 p-4">
           <p className="section-label mb-2">Note interne</p>
           <p className="font-body text-sm text-nebbia/60 leading-relaxed whitespace-pre-line line-clamp-4">{pratica.note}</p>
         </div>
       )}
-
       {loadingExtra ? (
         <div className="flex justify-center py-4">
           <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
         </div>
       ) : (
         <>
-          {/* Documenti */}
           <div className="bg-petrolio/40 border border-white/5 p-4">
             <p className="section-label mb-3">Documenti ({documenti.length})</p>
             {documenti.length === 0 ? (
@@ -784,8 +808,6 @@ function PannelloPratica({ pratica, onClose }) {
               </div>
             ))}
           </div>
-
-          {/* Ricerche */}
           <div className="bg-petrolio/40 border border-white/5 p-4">
             <p className="section-label mb-3">Ricerche ({ricerche.length})</p>
             {ricerche.length === 0 ? (
@@ -811,9 +833,6 @@ function PannelloPratica({ pratica, onClose }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────
-// 1. LISTA CLIENTI
-// ─────────────────────────────────────────────────────────────
 function ProssimiAppuntamenti({ clienteId }) {
   const [appuntamenti, setAppuntamenti] = useState([])
 
@@ -840,8 +859,7 @@ function ProssimiAppuntamenti({ clienteId }) {
       <p className="section-label mb-3">Prossimi appuntamenti</p>
       <div className="space-y-2">
         {appuntamenti.map(a => (
-          <div key={a.id} className={`flex items-center gap-3 p-3 border ${a.tipo === 'udienza' ? 'bg-red-900/10 border-red-500/20' : 'bg-petrolio/40 border-white/5'
-            }`}>
+          <div key={a.id} className={`flex items-center gap-3 p-3 border ${a.tipo === 'udienza' ? 'bg-red-900/10 border-red-500/20' : 'bg-petrolio/40 border-white/5'}`}>
             <Calendar size={13} className={a.tipo === 'udienza' ? 'text-red-400 shrink-0' : 'text-nebbia/30 shrink-0'} />
             <div className="min-w-0 flex-1">
               <p className="font-body text-sm text-nebbia truncate">{a.titolo}</p>
@@ -861,9 +879,13 @@ function ProssimiAppuntamenti({ clienteId }) {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// 1. LISTA CLIENTI
+// ─────────────────────────────────────────────────────────────
 export function AvvocatoClienti() {
   const [search, setSearch] = useState('')
   const [avvF, setAvvF] = useState('')
+  const [tipoF, setTipoF] = useState('')
   const [sortField, setSortField] = useState('cognome')
   const [sortDir, setSortDir] = useState('asc')
   const [clienti, setClienti] = useState([])
@@ -883,7 +905,6 @@ export function AvvocatoClienti() {
         .select('posti_acquistati, titolare_id')
         .eq('id', user.id).single()
 
-      // Determina se è titolare di studio
       const haStudio = (profilo?.posti_acquistati ?? 1) > 1
       setIsStudio(haStudio)
 
@@ -898,7 +919,7 @@ export function AvvocatoClienti() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, nome, cognome, email, telefono, created_at, avvocato_id')
+        .select('id, nome, cognome, ragione_sociale, tipo_soggetto, email, telefono, created_at, avvocato_id')
         .eq('role', 'cliente')
         .in('avvocato_id', ids)
         .order('cognome')
@@ -918,7 +939,11 @@ export function AvvocatoClienti() {
   const rows = clienti
     .filter(c => {
       if (avvF && c.avvocato_id !== avvF) return false
-      if (search) return `${c.nome} ${c.cognome} ${c.email}`.toLowerCase().includes(search.toLowerCase())
+      if (tipoF && c.tipo_soggetto !== tipoF) return false
+      if (search) {
+        const s = search.toLowerCase()
+        return `${nomeCliente(c)} ${c.email}`.toLowerCase().includes(s)
+      }
       return true
     })
     .sort((a, b) => {
@@ -942,6 +967,12 @@ export function AvvocatoClienti() {
           <input placeholder="Cerca nome, email..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
         </div>
+        <select value={tipoF} onChange={e => setTipoF(e.target.value)}
+          className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+          <option value="">Tutti i tipi</option>
+          <option value="persona_fisica">Persone fisiche</option>
+          <option value="persona_giuridica">Persone giuridiche</option>
+        </select>
         {isStudio && collaboratori.length > 0 && (
           <select value={avvF} onChange={e => setAvvF(e.target.value)}
             className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
@@ -949,8 +980,8 @@ export function AvvocatoClienti() {
             {collaboratori.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
           </select>
         )}
-        {(search || avvF) && (
-          <button onClick={() => { setSearch(''); setAvvF('') }}
+        {(search || avvF || tipoF) && (
+          <button onClick={() => { setSearch(''); setAvvF(''); setTipoF('') }}
             className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors px-3 py-2.5 border border-white/5 hover:border-red-500/30">
             Reset
           </button>
@@ -979,7 +1010,15 @@ export function AvvocatoClienti() {
                 <tr><td colSpan={isStudio ? 6 : 5} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun cliente trovato</td></tr>
               ) : rows.map(c => (
                 <tr key={c.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
-                  <td className="px-4 py-3"><p className="font-body text-sm font-medium text-nebbia">{c.nome} {c.cognome}</p></td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {c.tipo_soggetto === 'persona_giuridica'
+                        ? <Building2 size={12} className="text-nebbia/30 shrink-0" />
+                        : <User size={12} className="text-nebbia/30 shrink-0" />
+                      }
+                      <p className="font-body text-sm font-medium text-nebbia">{nomeCliente(c)}</p>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-body text-sm text-nebbia/60">{c.email}</td>
                   <td className="px-4 py-3 font-body text-sm text-nebbia/50">{c.telefono ?? '—'}</td>
                   {isStudio && (
@@ -1006,11 +1045,23 @@ export function AvvocatoClienti() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 2. NUOVO CLIENTE
+// 2. NUOVO CLIENTE — con switcher PF/PG
 // ─────────────────────────────────────────────────────────────
 export function AvvocatoClientiNuovo() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', telefono: '', cf: '', indirizzo: '', note: '', avvocato_id: '' })
+  const [tipo, setTipo] = useState('persona_fisica')
+  const [form, setForm] = useState({
+    // PF
+    nome: '', cognome: '', cf: '',
+    // PG
+    ragione_sociale: '', partita_iva: '', sede_legale: '',
+    rappr_nome: '', rappr_cognome: '', rappr_cf: '', rappr_carica: '',
+    // Comuni
+    email: '', telefono: '', pec: '',
+    indirizzo: '',
+    note: '',
+    avvocato_id: '',
+  })
   const [collaboratori, setCollaboratori] = useState([])
   const [isStudio, setIsStudio] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -1034,23 +1085,47 @@ export function AvvocatoClientiNuovo() {
 
   async function handleSubmit(e) {
     e.preventDefault(); setErrore('')
-    if (!form.nome.trim()) return setErrore('Il nome è obbligatorio')
-    if (!form.cognome.trim()) return setErrore('Il cognome è obbligatorio')
+
+    if (tipo === 'persona_fisica') {
+      if (!form.nome.trim()) return setErrore('Il nome è obbligatorio')
+      if (!form.cognome.trim()) return setErrore('Il cognome è obbligatorio')
+    } else {
+      if (!form.ragione_sociale.trim()) return setErrore('La ragione sociale è obbligatoria')
+    }
     if (!form.email.trim()) return setErrore("L'email è obbligatoria")
     if (!/\S+@\S+\.\S+/.test(form.email)) return setErrore('Email non valida')
+
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      const payload = {
+        tipo_soggetto: tipo,
+        email: form.email.trim().toLowerCase(),
+        telefono: form.telefono.trim() || null,
+        pec: form.pec.trim() || null,
+        cf: form.cf.trim() || null,
+        indirizzo: form.indirizzo.trim() || null,
+        note: form.note.trim() || null,
+        avvocato_id: form.avvocato_id || null,
+      }
+
+      if (tipo === 'persona_fisica') {
+        payload.nome = form.nome.trim()
+        payload.cognome = form.cognome.trim()
+      } else {
+        payload.ragione_sociale = form.ragione_sociale.trim()
+        payload.partita_iva = form.partita_iva.trim() || null
+        payload.sede_legale = form.sede_legale.trim() || null
+        payload.rappr_nome = form.rappr_nome.trim() || null
+        payload.rappr_cognome = form.rappr_cognome.trim() || null
+        payload.rappr_cf = form.rappr_cf.trim() || null
+        payload.rappr_carica = form.rappr_carica.trim() || null
+      }
+
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-cliente`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          nome: form.nome.trim(), cognome: form.cognome.trim(),
-          email: form.email.trim().toLowerCase(),
-          telefono: form.telefono.trim() || null, cf: form.cf.trim() || null,
-          indirizzo: form.indirizzo.trim() || null, note: form.note.trim() || null,
-          avvocato_id: form.avvocato_id || null,
-        }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
@@ -1076,19 +1151,56 @@ export function AvvocatoClientiNuovo() {
       <PageHeader label="Clienti" title="Nuovo cliente" />
       <form onSubmit={handleSubmit}>
         <div className="bg-slate border border-white/5 p-6 space-y-5">
-          <p className="section-label">Dati anagrafici</p>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Nome *" placeholder="Anna"  {...f('nome')} />
-            <InputField label="Cognome *" placeholder="Rossi" {...f('cognome')} />
+          <div>
+            <p className="section-label mb-3">Tipo di soggetto</p>
+            <SwitcherTipoSoggetto value={tipo} onChange={setTipo} />
           </div>
-          <InputField label="Email *" type="email" placeholder="anna@email.it" {...f('email')} />
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Telefono" placeholder="+39 333 000 1111"    {...f('telefono')} />
-            <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501Z"    {...f('cf')} />
+
+          {tipo === 'persona_fisica' ? (
+            <>
+              <p className="section-label">Dati anagrafici</p>
+              <div className="grid grid-cols-2 gap-4">
+                <InputField label="Nome *" placeholder="Anna" {...f('nome')} />
+                <InputField label="Cognome *" placeholder="Rossi" {...f('cognome')} />
+              </div>
+              <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501Z" {...f('cf')} />
+            </>
+          ) : (
+            <>
+              <p className="section-label">Dati società</p>
+              <InputField label="Ragione sociale *" placeholder="Alfa Srl" {...f('ragione_sociale')} />
+              <div className="grid grid-cols-2 gap-4">
+                <InputField label="Partita IVA" placeholder="12345678901" {...f('partita_iva')} />
+                <InputField label="Codice fiscale" placeholder="se diverso da P.IVA" {...f('cf')} />
+              </div>
+              <InputField label="Sede legale" placeholder="Via Roma 1, Milano" {...f('sede_legale')} />
+
+              <div className="border-t border-white/8 pt-5 space-y-4">
+                <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Rappresentante legale <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span></p>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Nome" placeholder="Mario" {...f('rappr_nome')} />
+                  <InputField label="Cognome" placeholder="Bianchi" {...f('rappr_cognome')} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Codice fiscale" placeholder="CF rappresentante" {...f('rappr_cf')} />
+                  <InputField label="Carica" placeholder="Es. Amministratore Unico" {...f('rappr_carica')} />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="border-t border-white/8 pt-5 space-y-4">
+            <p className="section-label">Contatti</p>
+            <InputField label="Email *" type="email" placeholder="email@esempio.it" {...f('email')} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Telefono" placeholder="+39 333 000 1111" {...f('telefono')} />
+              <InputField label="PEC" placeholder="cliente@pec.it" {...f('pec')} />
+            </div>
+            <InputField label="Indirizzo" placeholder={tipo === 'persona_fisica' ? 'Residenza' : 'Sede operativa (se diversa dalla sede legale)'} {...f('indirizzo')} />
           </div>
-          <InputField label="Indirizzo" placeholder="Via Roma 1, Milano" {...f('indirizzo')} />
+
           {isStudio && collaboratori.length > 0 && (
-            <div>
+            <div className="border-t border-white/8 pt-5">
               <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Avvocato assegnato *</label>
               <select value={form.avvocato_id} onChange={e => setForm(p => ({ ...p, avvocato_id: e.target.value }))}
                 className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50">
@@ -1097,8 +1209,13 @@ export function AvvocatoClientiNuovo() {
               </select>
             </div>
           )}
-          <TextareaField label="Note iniziali" placeholder="Primo contatto, situazione generale..." rows={3} {...f('note')} />
+
+          <div className="border-t border-white/8 pt-5">
+            <TextareaField label="Note iniziali" placeholder="Primo contatto, situazione generale..." rows={3} {...f('note')} />
+          </div>
+
           {errore && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errore}</div>}
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => navigate('/clienti')} className="btn-secondary text-sm flex-1">Annulla</button>
             <button type="submit" disabled={loading} className="btn-primary text-sm flex-1 justify-center">
@@ -1112,7 +1229,7 @@ export function AvvocatoClientiNuovo() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 3. DETTAGLIO CLIENTE
+// 3. DETTAGLIO CLIENTE — con tutti i campi PF/PG
 // ─────────────────────────────────────────────────────────────
 export function AvvocatoClientiDettaglio() {
   const { id } = useParams()
@@ -1126,6 +1243,7 @@ export function AvvocatoClientiDettaglio() {
   const [editPanoramica, setEditPanoramica] = useState(false)
   const [formCliente, setFormCliente] = useState({})
   const [salvandoCliente, setSalvandoCliente] = useState(false)
+  const [erroreCliente, setErroreCliente] = useState('')
   const [avvocatoId, setAvvocatoId] = useState('')
   const [meId, setMeId] = useState(null)
 
@@ -1136,9 +1254,12 @@ export function AvvocatoClientiDettaglio() {
       setMeId(user.id)
 
       const { data: c } = await supabase.from('profiles')
-        .select('id, nome, cognome, email, telefono, cf, indirizzo, note_iniziali, avvocato_id, created_at')
+        .select('id, tipo_soggetto, nome, cognome, ragione_sociale, partita_iva, sede_legale, rappr_nome, rappr_cognome, rappr_cf, rappr_carica, email, telefono, pec, cf, data_nascita, luogo_nascita, indirizzo, comune, provincia, cap, note_iniziali, avvocato_id, created_at')
         .eq('id', id).single()
-      if (c) { setCliente(c); setFormCliente(c); setAvvocatoId(c.avvocato_id ?? '') }
+      if (c) {
+        const cliente = { ...c, tipo_soggetto: c.tipo_soggetto ?? 'persona_fisica' }
+        setCliente(cliente); setFormCliente(cliente); setAvvocatoId(c.avvocato_id ?? '')
+      }
 
       const { data: pr } = await supabase.from('pratiche').select('*').eq('cliente_id', id).order('created_at', { ascending: false })
       setPratiche(pr ?? [])
@@ -1155,15 +1276,59 @@ export function AvvocatoClientiDettaglio() {
   }, [id])
 
   async function salvaCliente() {
-    setSalvandoCliente(true)
-    await supabase.from('profiles').update({
-      nome: formCliente.nome, cognome: formCliente.cognome,
-      email: formCliente.email, telefono: formCliente.telefono,
-      cf: formCliente.cf, indirizzo: formCliente.indirizzo,
-      avvocato_id: avvocatoId || null,
-    }).eq('id', id)
-    setCliente(prev => ({ ...prev, ...formCliente, avvocato_id: avvocatoId }))
-    setEditPanoramica(false); setSalvandoCliente(false)
+    setErroreCliente(''); setSalvandoCliente(true)
+    try {
+      const tipo = formCliente.tipo_soggetto ?? 'persona_fisica'
+      const payload = {
+        tipo_soggetto: tipo,
+        email: formCliente.email,
+        telefono: formCliente.telefono || null,
+        pec: formCliente.pec || null,
+        cf: formCliente.cf || null,
+        indirizzo: formCliente.indirizzo || null,
+        comune: formCliente.comune || null,
+        provincia: formCliente.provincia || null,
+        cap: formCliente.cap || null,
+        avvocato_id: avvocatoId || null,
+        aggiornato_da: meId,
+      }
+
+      if (tipo === 'persona_fisica') {
+        payload.nome = formCliente.nome
+        payload.cognome = formCliente.cognome
+        payload.data_nascita = formCliente.data_nascita || null
+        payload.luogo_nascita = formCliente.luogo_nascita || null
+        // Pulisci campi PG se presenti
+        payload.ragione_sociale = null
+        payload.partita_iva = null
+        payload.sede_legale = null
+        payload.rappr_nome = null
+        payload.rappr_cognome = null
+        payload.rappr_cf = null
+        payload.rappr_carica = null
+      } else {
+        payload.nome = formCliente.ragione_sociale
+        payload.cognome = null
+        payload.ragione_sociale = formCliente.ragione_sociale
+        payload.partita_iva = formCliente.partita_iva || null
+        payload.sede_legale = formCliente.sede_legale || null
+        payload.rappr_nome = formCliente.rappr_nome || null
+        payload.rappr_cognome = formCliente.rappr_cognome || null
+        payload.rappr_cf = formCliente.rappr_cf || null
+        payload.rappr_carica = formCliente.rappr_carica || null
+        payload.data_nascita = null
+        payload.luogo_nascita = null
+      }
+
+      const { error } = await supabase.from('profiles').update(payload).eq('id', id)
+      if (error) throw new Error(error.message)
+      setCliente(prev => ({ ...prev, ...payload }))
+      setEditPanoramica(false)
+    } catch (err) {
+      setErroreCliente(err.message)
+    } finally {
+      setSalvandoCliente(false)
+    }
   }
 
   const fc = k => ({ value: formCliente[k] ?? '', onChange: e => setFormCliente(p => ({ ...p, [k]: e.target.value })) })
@@ -1175,13 +1340,19 @@ export function AvvocatoClientiDettaglio() {
   if (loading) return <div className="flex items-center justify-center py-40"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" /></div>
   if (!cliente) return <div className="space-y-5"><BackButton to="/clienti" label="Tutti i clienti" /><p className="font-body text-sm text-nebbia/40">Cliente non trovato.</p></div>
 
+  const isPF = (cliente.tipo_soggetto ?? 'persona_fisica') === 'persona_fisica'
+  const formIsPF = (formCliente.tipo_soggetto ?? 'persona_fisica') === 'persona_fisica'
+
   return (
     <div className="space-y-5">
       <BackButton to="/clienti" label="Tutti i clienti" />
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <p className="section-label mb-2">Scheda cliente</p>
-          <h1 className="font-display text-4xl font-light text-nebbia">{cliente.nome} {cliente.cognome}</h1>
+          <p className="section-label mb-2 flex items-center gap-2">
+            {isPF ? <User size={11} /> : <Building2 size={11} />}
+            {isPF ? 'Cliente · Persona fisica' : 'Cliente · Persona giuridica'}
+          </p>
+          <h1 className="font-display text-4xl font-light text-nebbia">{nomeCliente(cliente)}</h1>
           <p className="font-body text-sm text-nebbia/40 mt-1">{cliente.email} · {cliente.telefono ?? '—'}</p>
         </div>
         {isStudio && (
@@ -1218,36 +1389,156 @@ export function AvvocatoClientiDettaglio() {
                   <button onClick={salvaCliente} disabled={salvandoCliente} className="flex items-center gap-1 font-body text-xs text-salvia">
                     {salvandoCliente ? <span className="animate-spin w-3 h-3 border border-salvia border-t-transparent rounded-full" /> : <Check size={12} />} Salva
                   </button>
-                  <button onClick={() => { setFormCliente({ ...cliente }); setEditPanoramica(false) }} className="font-body text-xs text-nebbia/30 hover:text-red-400"><X size={12} /></button>
+                  <button onClick={() => { setFormCliente({ ...cliente }); setEditPanoramica(false); setErroreCliente('') }} className="font-body text-xs text-nebbia/30 hover:text-red-400"><X size={12} /></button>
                 </div>
               }
             </div>
+
             {editPanoramica ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField label="Nome"    {...fc('nome')} />
-                  <InputField label="Cognome" {...fc('cognome')} />
+              <div className="space-y-4">
+                <SwitcherTipoSoggetto
+                  value={formCliente.tipo_soggetto ?? 'persona_fisica'}
+                  onChange={t => setFormCliente(p => ({ ...p, tipo_soggetto: t }))}
+                />
+
+                {formIsPF ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField label="Nome" {...fc('nome')} />
+                      <InputField label="Cognome" {...fc('cognome')} />
+                    </div>
+                    <InputField label="Codice fiscale" {...fc('cf')} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data nascita</label>
+                        <input type="date" {...fc('data_nascita')}
+                          className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50" />
+                      </div>
+                      <InputField label="Luogo nascita" placeholder="Es. Milano" {...fc('luogo_nascita')} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <InputField label="Ragione sociale" {...fc('ragione_sociale')} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <InputField label="Partita IVA" {...fc('partita_iva')} />
+                      <InputField label="Codice fiscale" {...fc('cf')} />
+                    </div>
+                    <InputField label="Sede legale" {...fc('sede_legale')} />
+                    <div className="border-t border-white/8 pt-3 space-y-3">
+                      <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Rappresentante legale</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <InputField label="Nome" {...fc('rappr_nome')} />
+                        <InputField label="Cognome" {...fc('rappr_cognome')} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <InputField label="CF rappresentante" {...fc('rappr_cf')} />
+                        <InputField label="Carica" placeholder="Es. Amministratore Unico" {...fc('rappr_carica')} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="border-t border-white/8 pt-3 space-y-3">
+                  <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Contatti</p>
+                  <InputField label="Email" type="email" {...fc('email')} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputField label="Telefono" {...fc('telefono')} />
+                    <InputField label="PEC" {...fc('pec')} />
+                  </div>
                 </div>
-                <InputField label="Email" type="email" {...fc('email')} />
-                <InputField label="Telefono"                    {...fc('telefono')} />
-                <InputField label="Codice fiscale"              {...fc('cf')} />
-                <InputField label="Indirizzo"                   {...fc('indirizzo')} />
+
+                <div className="border-t border-white/8 pt-3 space-y-3">
+                  <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Indirizzo</p>
+                  <InputField label="Indirizzo" placeholder="Via Roma 1" {...fc('indirizzo')} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <InputField label="Comune" {...fc('comune')} />
+                    </div>
+                    <InputField label="Provincia" placeholder="MI" {...fc('provincia')} />
+                  </div>
+                  <InputField label="CAP" {...fc('cap')} />
+                </div>
+
+                {erroreCliente && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {erroreCliente}</div>}
               </div>
             ) : (
               <div className="space-y-3">
-                {[
-                  ['Nome completo', `${cliente.nome} ${cliente.cognome}`],
-                  ['Email', cliente.email],
-                  ['Telefono', cliente.telefono || '—'],
+                {isPF ? [
+                  ['Nome completo', `${cliente.nome ?? ''} ${cliente.cognome ?? ''}`.trim() || '—'],
                   ['Codice fiscale', cliente.cf || '—'],
-                  ['Indirizzo', cliente.indirizzo || '—'],
-                  ...(isStudio ? [['Avvocato assegnato', nomeAvvocato]] : []),
+                  ['Data nascita', cliente.data_nascita ? new Date(cliente.data_nascita).toLocaleDateString('it-IT') : '—'],
+                  ['Luogo nascita', cliente.luogo_nascita || '—'],
+                ].map(([l, v]) => (
+                  <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
+                    <span className="font-body text-sm text-nebbia">{v}</span>
+                  </div>
+                )) : [
+                  ['Ragione sociale', cliente.ragione_sociale || '—'],
+                  ['Partita IVA', cliente.partita_iva || '—'],
+                  ['Codice fiscale', cliente.cf || '—'],
+                  ['Sede legale', cliente.sede_legale || '—'],
                 ].map(([l, v]) => (
                   <div key={l} className="flex justify-between border-b border-white/5 pb-2">
                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
                     <span className="font-body text-sm text-nebbia">{v}</span>
                   </div>
                 ))}
+
+                {!isPF && (cliente.rappr_nome || cliente.rappr_cognome || cliente.rappr_carica) && (
+                  <div className="border-t border-white/5 pt-3 mt-3 space-y-2">
+                    <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Rappresentante legale</p>
+                    {[
+                      ['Nome', `${cliente.rappr_nome ?? ''} ${cliente.rappr_cognome ?? ''}`.trim() || '—'],
+                      ['Codice fiscale', cliente.rappr_cf || '—'],
+                      ['Carica', cliente.rappr_carica || '—'],
+                    ].map(([l, v]) => (
+                      <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
+                        <span className="font-body text-sm text-nebbia/70">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="border-t border-white/5 pt-3 mt-3 space-y-2">
+                  <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Contatti</p>
+                  {[
+                    ['Email', cliente.email],
+                    ['Telefono', cliente.telefono || '—'],
+                    ['PEC', cliente.pec || '—'],
+                  ].map(([l, v]) => (
+                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
+                      <span className="font-body text-sm text-nebbia/70">{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-white/5 pt-3 mt-3 space-y-2">
+                  <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Indirizzo</p>
+                  {[
+                    ['Indirizzo', cliente.indirizzo || '—'],
+                    ['Comune', cliente.comune || '—'],
+                    ['Provincia', cliente.provincia || '—'],
+                    ['CAP', cliente.cap || '—'],
+                  ].map(([l, v]) => (
+                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
+                      <span className="font-body text-sm text-nebbia/70">{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {isStudio && (
+                  <div className="border-t border-white/5 pt-3 mt-3">
+                    <div className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Avvocato assegnato</span>
+                      <span className="font-body text-sm text-nebbia">{nomeAvvocato}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1264,7 +1555,7 @@ export function AvvocatoClientiDettaglio() {
             {pratiche.length === 0 ? (
               <div className="bg-slate border border-white/5 p-8 text-center"><p className="font-body text-sm text-nebbia/30">Nessuna pratica — creane una</p></div>
             ) : pratiche.map(p => {
-              const sc = STATI_PRATICA[p.stato] ?? STATI_PRATICA.in_corso
+              const sc = STATI_PRATICA[p.stato] ?? STATI_PRATICA.aperta
               const sel = praticaSelezionata?.id === p.id
               return (
                 <button key={p.id} onClick={() => setPraticaSelezionata(sel ? null : p)}

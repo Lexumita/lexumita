@@ -6,7 +6,7 @@ import logo from '@/assets/logo.png'
 import {
   LayoutDashboard, Users, Package,
   BookOpen, CreditCard, Headphones,
-  LogOut, Menu, ChevronRight
+  LogOut, Menu, ChevronRight, Gavel
 } from 'lucide-react'
 
 export default function AdminLayout({ children }) {
@@ -14,6 +14,7 @@ export default function AdminLayout({ children }) {
   const [badgeUtenti, setBadgeUtenti] = useState(0)
   const [badgePagamenti, setBadgePagamenti] = useState(0)
   const [badgeAssistenza, setBadgeAssistenza] = useState(0)
+  const [badgeSentenze, setBadgeSentenze] = useState(0)
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -64,9 +65,16 @@ export default function AdminLayout({ children }) {
         ticketDaRispondere = Object.values(ultimoPerTicket).filter(m => m.autore_tipo !== 'admin').length
       }
 
+      // 4. Sentenze: in_revisione
+      const { count: sentenzeInRevisione } = await supabase
+        .from('sentenze')
+        .select('id', { count: 'exact', head: true })
+        .eq('stato', 'in_revisione')
+
       setBadgeUtenti(daVerificare ?? 0)
       setBadgePagamenti(richiesteInAttesa ?? 0)
       setBadgeAssistenza(ticketDaRispondere)
+      setBadgeSentenze(sentenzeInRevisione ?? 0)
     }
 
     caricaBadge()
@@ -74,12 +82,12 @@ export default function AdminLayout({ children }) {
 
   const NAV = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/admin/utenti', label: 'Utenti', icon: Users },
+    { path: '/admin/utenti', label: 'Utenti', icon: Users, badge: badgeUtenti },
     { path: '/admin/prodotti', label: 'Prodotti', icon: Package },
-    { path: '/admin/sentenze', label: 'Banca dati', icon: BookOpen },
+    { path: '/admin/sentenze', label: 'Sentenze', icon: Gavel, badge: badgeSentenze },
     { path: '/admin/normativa', label: 'Normativa', icon: BookOpen },
-    { path: '/admin/pagamenti', label: 'Pagamenti', icon: CreditCard },
-    { path: '/admin/assistenza', label: 'Assistenza', icon: Headphones },
+    { path: '/admin/pagamenti', label: 'Pagamenti', icon: CreditCard, badge: badgePagamenti },
+    { path: '/admin/assistenza', label: 'Assistenza', icon: Headphones, badge: badgeAssistenza },
   ]
 
   async function handleSignOut() {
@@ -105,7 +113,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-          {NAV.map(({ path, label, icon: Icon }) => (
+          {NAV.map(({ path, label, icon: Icon, badge }) => (
             <NavLink
               key={path}
               to={path}
@@ -118,6 +126,11 @@ export default function AdminLayout({ children }) {
             >
               <Icon size={16} strokeWidth={1.5} />
               <span className="flex-1">{label}</span>
+              {badge > 0 && (
+                <span className="font-body text-[10px] px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  {badge}
+                </span>
+              )}
               <ChevronRight size={13} className="opacity-0 group-hover:opacity-30 transition-opacity" />
             </NavLink>
           ))}

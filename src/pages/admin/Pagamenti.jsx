@@ -23,6 +23,19 @@ const STATO_RIC_BADGE = {
     rifiutata: { label: 'Rifiutata', variant: 'red' },
 }
 
+// ─── Helper per label e variant tipo prodotto ───────────────
+const TIPO_PRODOTTO_CONFIG = {
+    abbonamento: { label: 'Abbonamento', variant: 'oro' },
+    seat_addon: { label: 'Seat add-on', variant: 'warning' },
+    accesso_singolo: { label: 'Accesso', variant: 'salvia' },
+    crediti_ai: { label: 'Crediti AI', variant: 'salvia' },
+    spazio_archiviazione: { label: 'Storage', variant: 'salvia' },
+}
+
+function tipoConfig(tipo) {
+    return TIPO_PRODOTTO_CONFIG[tipo] ?? { label: tipo ?? '—', variant: 'gray' }
+}
+
 function SortTh({ label, field, sortField, sortDir, onSort }) {
     const active = sortField === field
     return (
@@ -82,10 +95,14 @@ function TabPagamenti() {
         carica()
     }, [])
 
-    const totale = dati.filter(p => p.stato === 'completato').reduce((a, p) => a + parseFloat(p.importo ?? 0), 0)
+    // Stats per tipo
+    const completate = dati.filter(p => p.stato === 'completato')
+    const totale = completate.reduce((a, p) => a + parseFloat(p.importo ?? 0), 0)
     const nFalliti = dati.filter(p => p.stato === 'fallito').length
-    const nAbb = dati.filter(p => p.tipo === 'abbonamento' || p.tipo === 'seat_addon').length
-    const nAccessi = dati.filter(p => p.tipo === 'accesso_singolo').length
+    const nAbb = completate.filter(p => p.tipo === 'abbonamento' || p.tipo === 'seat_addon').length
+    const nCrediti = completate.filter(p => p.tipo === 'crediti_ai').length
+    const nStorage = completate.filter(p => p.tipo === 'spazio_archiviazione').length
+    const nAccessi = completate.filter(p => p.tipo === 'accesso_singolo').length
 
     const rows = dati.filter(p => {
         if (tipoF && p.tipo !== tipoF) return false
@@ -104,9 +121,12 @@ function TabPagamenti() {
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* 6 stats: Revenue + 4 tipi + Falliti */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <StatCard label="Revenue totale" value={`€ ${totale.toFixed(2)}`} colorClass="text-oro" />
                 <StatCard label="Abbonamenti" value={nAbb} colorClass="text-salvia" />
+                <StatCard label="Crediti AI" value={nCrediti} colorClass="text-salvia" />
+                <StatCard label="Storage" value={nStorage} colorClass="text-salvia" />
                 <StatCard label="Accessi singoli" value={nAccessi} colorClass="text-nebbia/60" />
                 <StatCard label="Falliti" value={nFalliti} colorClass={nFalliti > 0 ? 'text-red-400' : 'text-nebbia/30'} />
             </div>
@@ -122,6 +142,8 @@ function TabPagamenti() {
                     <option value="">Tutti i tipi</option>
                     <option value="abbonamento">Abbonamento</option>
                     <option value="seat_addon">Seat add-on</option>
+                    <option value="crediti_ai">Crediti AI</option>
+                    <option value="spazio_archiviazione">Storage</option>
                     <option value="accesso_singolo">Accesso singolo</option>
                 </select>
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
@@ -167,9 +189,8 @@ function TabPagamenti() {
                                 <tr><td colSpan={6} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun pagamento trovato</td></tr>
                             ) : rows.map(p => {
                                 const sb = STATO_PAG_BADGE[p.stato] ?? STATO_PAG_BADGE.completato
+                                const tc = tipoConfig(p.tipo)
                                 const nome = `${p.utente?.nome ?? ''} ${p.utente?.cognome ?? ''}`.trim() || '—'
-                                const tipoLabel = p.tipo === 'abbonamento' ? 'Abbonamento' : p.tipo === 'seat_addon' ? 'Seat add-on' : 'Accesso'
-                                const tipoVariant = p.tipo === 'abbonamento' ? 'oro' : p.tipo === 'seat_addon' ? 'warning' : 'salvia'
                                 return (
                                     <tr key={p.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString('it-IT')}</td>
@@ -179,7 +200,7 @@ function TabPagamenti() {
                                         </td>
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/70">{p.prodotto_nome ?? '—'}</td>
                                         <td className="px-4 py-3 font-body text-sm text-oro font-medium">€ {parseFloat(p.importo).toFixed(2)}</td>
-                                        <td className="px-4 py-3"><Badge label={tipoLabel} variant={tipoVariant} /></td>
+                                        <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                                         <td className="px-4 py-3"><Badge label={sb.label} variant={sb.variant} /></td>
                                     </tr>
                                 )

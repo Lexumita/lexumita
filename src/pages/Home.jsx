@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight, Sparkles, FolderOpen, Users, FileText,
   BookOpen, Shield, Zap, ChevronDown, Check, Scale,
-  Search, Brain, Lock
+  Search, Brain, Lock, FileSignature
 } from 'lucide-react'
 
 // ─── Scroll animation hook ───────────────────────────────────
@@ -133,7 +133,7 @@ export default function ComeFunziona() {
       {/* ══════════════════════════════════════════
           1. HERO
       ══════════════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center pt-32 md:pt-28 overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-oro/[0.04] rounded-full blur-3xl" />
@@ -154,7 +154,7 @@ export default function ComeFunziona() {
             Il modo più veloce per{' '}
             <br className="hidden md:block" />
             <span className="text-oro-shimmer">gestire, cercare</span>{' '}
-            e lavorare
+            e lavorare{' '}
             <br className="hidden md:block" />
             un caso legale.
           </h1>
@@ -458,6 +458,7 @@ export default function ComeFunziona() {
                   { icon: Brain, t: 'Conversazione continua', d: 'Approfondisci, cambia angolazione, chiedi follow-up. La conversazione si sviluppa nel tempo.' },
                   { icon: Sparkles, t: 'Strategia su misura', d: 'Legge tutte le ricerche della pratica e genera una strategia processuale personalizzata.' },
                   { icon: BookOpen, t: 'Sentenze correlate', d: 'Suggerisce quali sentenze della banca dati vale la pena consultare, basandosi sul caso.' },
+                  { icon: FileSignature, t: 'Atti già compilati', d: 'Legge i dati della pratica e produce diffide, comparse, istanze e altri atti pronti per l\'esportazione.' },
                 ].map(({ icon: I, t, d }, i) => (
                   <FadeIn key={i} delay={0.1 + i * 0.08}>
                     <div className="flex gap-4 p-4 bg-slate border border-white/5 hover:border-salvia/20 transition-colors group">
@@ -529,7 +530,105 @@ export default function ComeFunziona() {
       </section>
 
       {/* ══════════════════════════════════════════
-          6. COME FUNZIONA
+          6. GENERAZIONE DOCUMENTI
+      ══════════════════════════════════════════ */}
+      <section className="py-24 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <FadeIn delay={0.1}>
+              <div className="space-y-4">
+                <span className="inline-block font-body text-xs px-3 py-1 bg-salvia/10 border border-salvia/20 text-salvia">
+                  Novità
+                </span>
+                <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro">
+                  <FileSignature size={18} />
+                </div>
+                <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia">
+                  Atti già compilati,{' '}
+                  <span className="text-oro">pronti al deposito.</span>
+                </h3>
+                <p className="font-body text-sm text-nebbia/50 leading-relaxed">
+                  Diffide, comparse, istanze, atti di precetto, appelli. Scegli il template
+                  dalla pratica e Lex AI lo compila leggendo i dati di cliente, controparte
+                  e fascicolo. L'atto arriva in pochi minuti, formattato e modificabile.
+                </p>
+                <ul className="space-y-2 pt-2">
+                  {[
+                    'Sei categorie: stragiudiziale, introduttivo, difensivo, istruttorio, esecutivo, impugnazione',
+                    'Compilazione automatica con dati pratica e parti',
+                    'Modifica testuale prima dell\'esportazione',
+                    'Output in formato .docx pronto da firmare',
+                  ].map((p, i) => (
+                    <li key={i} className="flex items-center gap-2 font-body text-xs text-nebbia/40">
+                      <div className="w-1 h-1 rounded-full bg-oro shrink-0" />{p}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={0.2}>
+              <div className="bg-slate border border-oro/15 overflow-hidden">
+                {/* Header documento */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-petrolio/60">
+                  <div className="flex items-center gap-2">
+                    <FileSignature size={13} className="text-oro" />
+                    <span className="font-body text-xs text-nebbia/60">Diffida_Rossi_vs_Acme.docx</span>
+                  </div>
+                  <span className="font-body text-[10px] px-2 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia uppercase tracking-widest">
+                    Generato
+                  </span>
+                </div>
+
+                {/* Corpo simulato */}
+                <div className="p-6 space-y-4 bg-nebbia/[0.02]">
+                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">
+                    Stragiudiziale · Diffida ad adempiere
+                  </p>
+
+                  <div className="text-center">
+                    <p className="font-display text-sm text-nebbia/80 mb-1">Spett.le ACME S.r.l.</p>
+                    <p className="font-body text-xs text-nebbia/40">
+                      Via Roma 12 — 20121 Milano (MI)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-justify">
+                    <p className="font-body text-xs text-nebbia/55 leading-relaxed">
+                      <span className="text-oro/80">Il sottoscritto Avv. Mario Bianchi</span>,
+                      con studio in Milano, in nome e per conto del proprio assistito{' '}
+                      <span className="text-oro/80">Sig. Mario Rossi</span>, premesso che…
+                    </p>
+                    <p className="font-body text-xs text-nebbia/45 leading-relaxed">
+                      …con la presente <span className="font-medium text-nebbia/70">DIFFIDA</span>{' '}
+                      la S.V. ad adempiere entro e non oltre 15 giorni…
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <div className="flex-1 h-px bg-white/5" />
+                    <span className="font-body text-[10px] text-nebbia/25 uppercase tracking-widest">
+                      4 sezioni · modificabili
+                    </span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+                </div>
+
+                {/* Footer azioni */}
+                <div className="flex items-center justify-between px-4 py-3 border-t border-white/5 bg-petrolio/40">
+                  <span className="flex items-center gap-1.5 font-body text-[10px] text-salvia/60">
+                    <Sparkles size={10} /> Compilato con Lex AI dai dati pratica
+                  </span>
+                  <span className="font-body text-[10px] text-oro/60">Esporta .docx →</span>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          7. COME FUNZIONA
       ══════════════════════════════════════════ */}
       <section id="howto" className="py-24 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
@@ -587,7 +686,7 @@ export default function ComeFunziona() {
       </section>
 
       {/* ══════════════════════════════════════════
-          7. PERCHÉ LEXUM + FIDUCIA
+          8. PERCHÉ LEXUM + FIDUCIA
       ══════════════════════════════════════════ */}
       <section className="py-24 px-6 bg-slate/20 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
@@ -667,7 +766,7 @@ export default function ComeFunziona() {
       </section>
 
       {/* ══════════════════════════════════════════
-          8. CTA FINALE
+          9. CTA FINALE
       ══════════════════════════════════════════ */}
       <section className="py-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
@@ -684,8 +783,8 @@ export default function ComeFunziona() {
               <Sparkles size={20} className="text-oro" />
             </div>
             <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-4">
-              Provala Gratis per una settimana<br />
-              <span className="text-oro">a un prezzo bassissimo.</span>
+              Provalo{' '}<br />
+              <span className="text-oro">Gratis una settimana.</span>
             </h2>
             <div className="w-12 h-px bg-gradient-to-r from-transparent via-oro/50 to-transparent mx-auto my-6" />
             <p className="font-body text-sm text-nebbia/40 leading-relaxed mb-10 max-w-lg mx-auto">
