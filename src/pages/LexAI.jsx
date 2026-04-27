@@ -791,9 +791,7 @@ export default function LexAI() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
                             {[
                                 'Non sostituisce l\'avvocato',
-                                'Non fornisce strategie processuali in questa versione',
                                 'Non dà accesso alle sentenze riservate',
-                                'Non trasforma il diritto in una risposta automatica',
                             ].map((t, i) => (
                                 <FadeIn key={i} delay={i * 0.06}>
                                     <div className="flex items-start gap-3 p-4 bg-slate border border-white/5">
