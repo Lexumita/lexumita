@@ -4,10 +4,117 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { PageHeader } from '@/components/shared'
+import { BackButton } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
-import { ChevronLeft, BookOpen, Globe, Archive, AlertCircle, ExternalLink } from 'lucide-react'
+import EtichetteAssegnate from '@/components/EtichetteAssegnate'
+import {
+    BookOpen, Globe, Archive, AlertCircle, ExternalLink,
+    Calendar, Save, CheckCircle, Search
+} from 'lucide-react'
 
+// ═══════════════════════════════════════════════════════════════
+// AGGIUNGI A PRATICA — stesso pattern di Sentenza/Prassi
+// ═══════════════════════════════════════════════════════════════
+function AggiungiAPratica({ norma, tipoFonte, codiceLabel }) {
+    const { profile } = useAuth()
+    const [aperto, setAperto] = useState(false)
+    const [cerca, setCerca] = useState('')
+    const [pratiche, setPratiche] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [salvando, setSalvando] = useState(false)
+    const [salvato, setSalvato] = useState(null)
+    const [errore, setErrore] = useState(null)
+
+    async function cercaPratiche(q) {
+        setCerca(q)
+        if (!q.trim()) { setPratiche([]); return }
+        setLoading(true)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { data } = await supabase
+                .from('pratiche')
+                .select('id, titolo, cliente:cliente_id(nome, cognome)')
+                .eq('avvocato_id', user.id)
+                .eq('stato', 'aperta')
+                .ilike('titolo', `%${q}%`)
+                .limit(5)
+            setPratiche(data ?? [])
+        } finally { setLoading(false) }
+    }
+
+    async function aggiungi(pratica) {
+        setSalvando(true); setErrore(null)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const titolo = `${norma.articolo}${codiceLabel ? ` — ${codiceLabel}` : ''}`
+            await supabase.from('note_interne').insert({
+                pratica_id: pratica.id,
+                autore_id: user.id,
+                tipo: 'norma',
+                testo: norma.testo ?? '',
+                metadati: {
+                    domanda: `Norma: ${titolo}`,
+                    norma_id: norma.id,
+                    tipo_fonte: tipoFonte,
+                    codice: norma.codice,
+                    articolo: norma.articolo,
+                    rubrica: norma.rubrica,
+                    ts: new Date().toISOString(),
+                }
+            })
+            setSalvato(pratica.titolo)
+            setAperto(false)
+        } catch (e) { setErrore(e.message) }
+        finally { setSalvando(false) }
+    }
+
+    if (salvato) return (
+        <p className="font-body text-sm text-salvia flex items-center gap-2">
+            <CheckCircle size={14} /> Aggiunta alla pratica "{salvato}"
+        </p>
+    )
+
+    if (profile?.role !== 'avvocato') return null
+
+    return (
+        <div>
+            <button onClick={() => setAperto(!aperto)} className="btn-secondary text-sm flex items-center gap-2">
+                <Save size={13} /> {aperto ? 'Annulla' : 'Aggiungi a pratica'}
+            </button>
+            {aperto && (
+                <div className="mt-3 bg-slate border border-white/10 p-4 space-y-3">
+                    <p className="font-body text-xs text-nebbia/50">Cerca la pratica a cui aggiungere:</p>
+                    <div className="relative">
+                        <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                        <input
+                            placeholder="Cerca pratica per nome..."
+                            value={cerca}
+                            onChange={e => cercaPratiche(e.target.value)}
+                            autoFocus
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-3 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                        />
+                        {loading && <span className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />}
+                    </div>
+                    {!loading && cerca && pratiche.length === 0 && (
+                        <p className="font-body text-xs text-nebbia/30">Nessuna pratica trovata</p>
+                    )}
+                    {pratiche.map(p => (
+                        <button key={p.id} onClick={() => aggiungi(p)} disabled={salvando}
+                            className="w-full text-left px-3 py-2.5 bg-petrolio border border-white/5 hover:border-oro/30 transition-colors">
+                            <p className="font-body text-sm text-nebbia">{p.titolo}</p>
+                            {p.cliente && <p className="font-body text-xs text-nebbia/30 mt-0.5">{p.cliente.nome} {p.cliente.cognome}</p>}
+                        </button>
+                    ))}
+                    {errore && <p className="font-body text-xs text-red-400">{errore}</p>}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPALE
+// ═══════════════════════════════════════════════════════════════
 export function NormaDettaglio() {
     const { id } = useParams()
     const navigate = useNavigate()
@@ -18,6 +125,7 @@ export function NormaDettaglio() {
     const [codiceLabel, setCodiceLabel] = useState(null)
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState(null)
+    const [refreshEtichette, setRefreshEtichette] = useState(0)
 
     useEffect(() => {
         carica()
@@ -37,7 +145,6 @@ export function NormaDettaglio() {
             if (dataNorme) {
                 setNorma(dataNorme)
                 setTipoFonte('norme')
-                // Recupera label codice
                 const { data: cd } = await supabase
                     .from('codici_norme')
                     .select('label')
@@ -76,7 +183,6 @@ export function NormaDettaglio() {
                 return
             }
 
-            // Nessuna trovata
             setErrore('Norma non trovata')
         } catch (e) {
             setErrore(e.message)
@@ -85,38 +191,22 @@ export function NormaDettaglio() {
         }
     }
 
-    function tornaIndietro() {
-        if (window.history.length > 1) navigate(-1)
-        else navigate('/banca-dati')
-    }
+    if (loading) return (
+        <div className="flex items-center justify-center py-40">
+            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+        </div>
+    )
 
-    if (loading) {
-        return (
-            <div className="p-6">
-                <div className="flex items-center justify-center py-20">
-                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
-                </div>
+    if (errore || !norma) return (
+        <div className="space-y-5">
+            <BackButton to={window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'} label="Banca dati" />
+            <div className="bg-slate border border-red-500/20 p-8 flex flex-col items-center text-center gap-3">
+                <AlertCircle size={28} className="text-red-400" />
+                <p className="font-body text-sm text-red-400">{errore ?? 'Norma non trovata'}</p>
+                <p className="font-body text-xs text-nebbia/30 mt-2">ID: {id}</p>
             </div>
-        )
-    }
-
-    if (errore || !norma) {
-        return (
-            <div className="p-6 space-y-5">
-                <button
-                    onClick={tornaIndietro}
-                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
-                >
-                    <ChevronLeft size={13} /> Indietro
-                </button>
-                <div className="bg-slate border border-red-400/20 p-12 text-center">
-                    <AlertCircle size={32} className="text-red-400/50 mx-auto mb-3" />
-                    <p className="font-body text-sm text-nebbia/60">{errore ?? 'Norma non trovata'}</p>
-                    <p className="font-body text-xs text-nebbia/30 mt-2">ID: {id}</p>
-                </div>
-            </div>
-        )
-    }
+        </div>
+    )
 
     // Etichette / icone per tipo fonte
     const fonteConfig = {
@@ -145,7 +235,7 @@ export function NormaDettaglio() {
     const cfg = fonteConfig[tipoFonte]
     const FonteIcon = cfg.icon
 
-    // Costruisci riferimento di intestazione
+    // Riferimento di intestazione
     let riferimento = ''
     if (tipoFonte === 'norme') {
         riferimento = `${norma.articolo}${codiceLabel ? ` — ${codiceLabel}` : ''}`
@@ -160,59 +250,83 @@ export function NormaDettaglio() {
     const isAvvocato = profile?.role === 'avvocato'
 
     return (
-        <div className="p-6 space-y-5 max-w-4xl">
-            {/* Breadcrumb / back */}
-            <button
-                onClick={tornaIndietro}
-                className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
-            >
-                <ChevronLeft size={13} /> Torna alla banca dati
-            </button>
+        <div className="space-y-5">
+            <BackButton to={window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'} label="Banca dati" />
 
-            {/* Header */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`inline-flex items-center gap-1.5 font-body text-xs px-2.5 py-1 border ${cfg.badgeBorder} ${cfg.badgeBg} ${cfg.color}`}>
-                        <FonteIcon size={11} />
-                        {cfg.label}
-                    </span>
-                    {norma.vigente === false && (
-                        <span className="font-body text-xs text-red-400/70 border border-red-400/30 bg-red-400/5 px-2 py-1">
-                            Non vigente
-                        </span>
+            {/* Intestazione — stesso pattern di SentenzaDettaglio/PrassiDettaglio */}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <p className="section-label !m-0">{cfg.label}</p>
+                        {norma.vigente === false && (
+                            <span className="font-body text-xs text-red-400/70 border border-red-400/30 bg-red-400/5 px-2 py-0.5">
+                                Non vigente
+                            </span>
+                        )}
+                        {norma.tipo_elemento && norma.tipo_elemento !== 'articolo' && (
+                            <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                                {norma.tipo_elemento}
+                            </span>
+                        )}
+                    </div>
+                    <h1 className="font-display text-3xl text-nebbia leading-snug">{riferimento}</h1>
+                    {norma.rubrica && (
+                        <p className="font-body text-sm text-nebbia/60 italic mt-2">{norma.rubrica}</p>
                     )}
-                    {norma.tipo_elemento && norma.tipo_elemento !== 'articolo' && (
-                        <span className="font-body text-xs text-nebbia/50 border border-white/10 px-2 py-1 uppercase tracking-wider">
-                            {norma.tipo_elemento}
-                        </span>
+
+                    {/* Riferimenti aggiuntivi */}
+                    {tipoFonte === 'archivio' && norma.titolo_doc && (
+                        <p className="font-body text-sm text-nebbia/40 mt-2">{norma.titolo_doc}</p>
+                    )}
+                    {tipoFonte === 'ue' && (
+                        <div className="font-body text-sm text-nebbia/40 space-y-0.5 mt-2">
+                            {norma.titolo_doc && <p>{norma.titolo_doc}</p>}
+                            {norma.titolo_breve && <p className="text-nebbia/30">{norma.titolo_breve}</p>}
+                            {norma.celex && (
+                                <p className="font-mono text-xs text-nebbia/30 mt-1">CELEX: {norma.celex}</p>
+                            )}
+                        </div>
+                    )}
+                    {tipoFonte === 'norme' && norma.libro && (
+                        <p className="font-body text-xs text-nebbia/40 mt-2">
+                            {norma.libro}
+                            {norma.titolo && ` › ${norma.titolo}`}
+                            {norma.capo && ` › ${norma.capo}`}
+                        </p>
+                    )}
+
+                    {/* Date */}
+                    {(norma.data_vigenza || norma.data_pubblicazione) && (
+                        <div className="flex items-center gap-3 flex-wrap mt-2">
+                            {norma.data_pubblicazione && (
+                                <p className="font-body text-xs text-nebbia/30 flex items-center gap-1.5">
+                                    <Calendar size={11} /> Pubblicata il {new Date(norma.data_pubblicazione).toLocaleDateString('it-IT')}
+                                </p>
+                            )}
+                            {norma.data_vigenza && (
+                                <p className="font-body text-xs text-nebbia/30 flex items-center gap-1.5">
+                                    <Calendar size={11} /> In vigore dal {new Date(norma.data_vigenza).toLocaleDateString('it-IT')}
+                                </p>
+                            )}
+                        </div>
                     )}
                 </div>
 
-                <h1 className="font-display text-3xl text-nebbia">{riferimento}</h1>
-
-                {norma.rubrica && (
-                    <p className="font-display text-lg text-nebbia/70 italic">{norma.rubrica}</p>
-                )}
-
-                {/* Riferimenti aggiuntivi per archivio/UE */}
-                {tipoFonte === 'archivio' && norma.titolo_doc && (
-                    <p className="font-body text-sm text-nebbia/50">{norma.titolo_doc}</p>
-                )}
-                {tipoFonte === 'ue' && (
-                    <div className="font-body text-sm text-nebbia/50 space-y-0.5">
-                        {norma.titolo_doc && <p>{norma.titolo_doc}</p>}
-                        {norma.titolo_breve && <p className="text-nebbia/40">{norma.titolo_breve}</p>}
-                        {norma.celex && (
-                            <p className="font-mono text-xs text-nebbia/40 mt-2">CELEX: {norma.celex}</p>
-                        )}
+                {/* Azioni in alto a destra (solo avvocati) */}
+                {isAvvocato && (
+                    <div className="shrink-0 flex flex-col items-end gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <AggiungiAPratica norma={norma} tipoFonte={tipoFonte} codiceLabel={codiceLabel} />
+                            <AggiungiAEtichetta
+                                elemento={{ tipo: 'norma', id: norma.id }}
+                                onCambio={() => setRefreshEtichette(k => k + 1)}
+                            />
+                        </div>
+                        <EtichetteAssegnate
+                            elemento={{ tipo: 'norma', id: norma.id }}
+                            refreshKey={refreshEtichette}
+                        />
                     </div>
-                )}
-                {tipoFonte === 'norme' && norma.libro && (
-                    <p className="font-body text-xs text-nebbia/40">
-                        {norma.libro}
-                        {norma.titolo && ` › ${norma.titolo}`}
-                        {norma.capo && ` › ${norma.capo}`}
-                    </p>
                 )}
             </div>
 
@@ -227,42 +341,21 @@ export function NormaDettaglio() {
                 )}
             </div>
 
-            {/* Metadati aggiuntivi */}
-            {(norma.data_vigenza || norma.data_pubblicazione || norma.urn) && (
-                <div className="bg-slate border border-white/5 p-4 space-y-2">
-                    <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Riferimenti</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-body">
-                        {norma.data_vigenza && (
-                            <div>
-                                <span className="text-nebbia/40">Data vigenza:</span>
-                                <span className="text-nebbia/70 ml-2">{new Date(norma.data_vigenza).toLocaleDateString('it-IT')}</span>
-                            </div>
-                        )}
-                        {norma.data_pubblicazione && (
-                            <div>
-                                <span className="text-nebbia/40">Data pubblicazione:</span>
-                                <span className="text-nebbia/70 ml-2">{new Date(norma.data_pubblicazione).toLocaleDateString('it-IT')}</span>
-                            </div>
-                        )}
-                        {norma.urn && (
-                            <div className="md:col-span-3">
-                                <span className="text-nebbia/40">URN:</span>
-                                <span className="text-nebbia/70 ml-2 font-mono break-all">{norma.urn}</span>
-                            </div>
-                        )}
+            {/* URN (solo se presente, isolato in card) */}
+            {norma.urn && (
+                <div className="bg-slate border border-white/5 p-5">
+                    <p className="section-label mb-3">Riferimenti</p>
+                    <div className="flex items-start gap-2 font-body text-xs">
+                        <span className="text-nebbia/40 shrink-0">URN:</span>
+                        <span className="text-nebbia/70 font-mono break-all">{norma.urn}</span>
                     </div>
                 </div>
             )}
 
-            {/* Azioni: aggiungi a etichetta (solo avvocati) */}
-            {isAvvocato && (
-                <div className="flex flex-wrap gap-2">
-                    <AggiungiAEtichetta
-                        elemento={{ tipo: 'norma', id: norma.id }}
-                        variant="default"
-                    />
-                </div>
-            )}
+            {/* Footer info */}
+            <div className="pt-4 border-t border-white/5">
+                <p className="font-body text-xs text-nebbia/25 text-center">ID: {norma.id}</p>
+            </div>
         </div>
     )
 }

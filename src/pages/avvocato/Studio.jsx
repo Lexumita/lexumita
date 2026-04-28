@@ -861,12 +861,10 @@ export default function AvvocatoStudio() {
 
                 {/* Stats — solo avvocato con piano */}
                 {!isUser && hasPiano && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
                         <StatCard label="Accessi" value={`${postiUsati}/${postiAcquistati}`} colorClass={postiLiberi === 0 ? 'text-amber-400' : 'text-nebbia/60'} />
                         <StatCard label="Crediti AI" value={crediti.totale} colorClass={creditiAZero ? 'text-red-400' : creditiBassi ? 'text-amber-400' : 'text-salvia'} />
                         <StatCard label="Storage" value={`${storage.occupato_gb.toFixed(1)} / ${storage.gb_totali} GB`} colorClass={storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-salvia'} />
-                        <StatCard label="GB piano" value={storage.gb_piano} colorClass="text-nebbia/60" />
-                        <StatCard label="GB extra" value={storage.gb_topup} colorClass="text-nebbia/60" />
                         <StatCard
                             label="Scadenza"
                             value={profilo?.abbonamento_scadenza ? new Date(profilo.abbonamento_scadenza).toLocaleDateString('it-IT') : '—'}
@@ -937,7 +935,7 @@ export default function AvvocatoStudio() {
                                     ['Scadenza', profilo?.abbonamento_scadenza ? new Date(profilo.abbonamento_scadenza).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
                                     ['Accessi', `${postiUsati} / ${postiAcquistati}`],
                                     ['Crediti AI disponibili', `${crediti.totale} (${crediti.piano} piano · ${crediti.benvenuto} benvenuto · ${crediti.topup} extra)`],
-                                    ['Spazio archivio', `${storage.occupato_gb.toFixed(2)} GB occupati su ${storage.gb_totali} GB disponibili`],
+                                    ['Spazio archivio', `${storage.occupato_gb.toFixed(2)} GB su ${storage.gb_totali} GB (${storage.gb_piano} GB piano · ${storage.gb_topup} GB extra)`],
                                     ['GB inclusi nel piano', `${storage.gb_piano} GB`],
                                     ['GB extra acquistati', `${storage.gb_topup} GB`],
                                     ['Banca dati', profilo?.include_banca_dati ? 'Inclusa' : 'Non inclusa'],

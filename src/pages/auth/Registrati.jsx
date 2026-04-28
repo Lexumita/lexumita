@@ -30,7 +30,7 @@ export default function Registrati() {
     setErrors({})
     setLoading(true)
     try {
-      const { data, error: authErr } = await supabase.auth.signUp({
+      const { error: authErr } = await supabase.auth.signUp({
         email: form.email.trim().toLowerCase(),
         password: form.password,
         options: {
@@ -43,16 +43,8 @@ export default function Registrati() {
       })
       if (authErr) throw authErr
 
-      // Crea il profilo. Il trigger DB assegna automaticamente 5 crediti benvenuto.
-      const { error: profErr } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        nome: form.nome.trim(),
-        cognome: form.cognome.trim(),
-        email: form.email.trim().toLowerCase(),
-        studio: form.studio.trim() || null,
-        role: 'user',
-      })
-      if (profErr) throw profErr
+      // Il trigger DB handle_new_user crea automaticamente il profilo
+      // leggendo nome/cognome/studio dai metadata.
 
       setSuccess(true)
     } catch (err) {

@@ -517,11 +517,47 @@ function SezioneCliente({ utente }) {
 // ─────────────────────────────────────────────────────────────
 // SEZIONE USER
 // ─────────────────────────────────────────────────────────────
+// Helper inline per renderizzare campo: "Etichetta — valore" o "—"
+function CampoRiga({ label, value }) {
+  const display = value === null || value === undefined || value === '' ? '—' : value
+  return (
+    <div className="flex justify-between items-start gap-3 border-b border-white/5 pb-2">
+      <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0">{label}</span>
+      <span className="font-body text-sm text-nebbia text-right break-words">{display}</span>
+    </div>
+  )
+}
+
 function SezioneUser({ utente, onDecision }) {
   const [motivazione, setMotivazione] = useState('')
   const [elaborando, setElaborando] = useState(false)
   const [errore, setErrore] = useState('')
   const [decisione, setDecisione] = useState(utente.verification_status)
+  const [docs, setDocs] = useState([])
+  const [loadingDocs, setLoadingDocs] = useState(true)
+  const [emailStatus, setEmailStatus] = useState(null)
+
+  // Carica documenti di verifica + stato email
+  useEffect(() => {
+    async function caricaDati() {
+      setLoadingDocs(true)
+      const [{ data: docsData }, { data: emailData }] = await Promise.all([
+        supabase.storage.from('verification-docs').list(utente.id),
+        supabase.rpc('admin_get_email_status', { p_user_id: utente.id }),
+      ])
+      setDocs(docsData ?? [])
+      setEmailStatus(Array.isArray(emailData) ? emailData[0] : emailData)
+      setLoadingDocs(false)
+    }
+    caricaDati()
+  }, [utente.id])
+
+  async function apriDoc(name) {
+    const { data } = await supabase.storage
+      .from('verification-docs')
+      .createSignedUrl(`${utente.id}/${name}`, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
 
   async function handleDecisione(tipo) {
     if (tipo === 'rejected' && !motivazione.trim()) return setErrore('La motivazione è obbligatoria per il rifiuto')
@@ -543,41 +579,193 @@ function SezioneUser({ utente, onDecision }) {
     } catch (err) { setErrore(err.message) } finally { setElaborando(false) }
   }
 
-  if (decisione === 'approved') return (
-    <div className="bg-salvia/5 border border-salvia/20 p-6 flex items-center gap-4">
-      <CheckCircle size={24} className="text-salvia shrink-0" />
-      <div>
-        <p className="font-body text-sm font-medium text-salvia">Verifica approvata</p>
-        <p className="font-body text-xs text-nebbia/40 mt-0.5">L'utente può ora scegliere il piano di abbonamento.</p>
-      </div>
-    </div>
-  )
-
-  if (decisione === 'rejected') return (
-    <div className="bg-red-900/10 border border-red-500/20 p-6 flex items-center gap-4">
-      <XCircle size={24} className="text-red-400 shrink-0" />
-      <div><p className="font-body text-sm font-medium text-red-400">Verifica rifiutata</p></div>
-    </div>
-  )
+  const isPersonaGiuridica = utente.tipo_soggetto === 'persona_giuridica'
+  const haDatiAvvocato = utente.foro || utente.numero_albo || utente.pec || utente.data_iscrizione_albo
+  const haDatiResidenza = utente.indirizzo || utente.comune || utente.cap || utente.provincia
+  const haNoteAdmin = utente.note_admin || utente.verification_note
+  const labelDocs = { identita: 'Documento identità', albo: 'Iscrizione Albo', laurea: 'Laurea' }
 
   return (
     <div className="space-y-4">
-      <div className={`border p-4 flex items-center gap-3 ${utente.verification_status === 'pending' ? 'bg-amber-900/10 border-amber-500/20' : 'bg-slate border-white/5'}`}>
-        <div className={`w-2 h-2 rounded-full shrink-0 ${utente.verification_status === 'pending' ? 'bg-amber-400' : 'bg-nebbia/20'}`} />
-        <p className="font-body text-sm text-nebbia/60">
-          {utente.verification_status === 'pending' ? 'Verifica identità in attesa di revisione' : 'Nessun documento caricato'}
+      {/* Status verifica */}
+      <div className={`border p-4 flex items-center gap-3 ${decisione === 'approved' ? 'bg-salvia/5 border-salvia/20' :
+        decisione === 'rejected' ? 'bg-red-900/10 border-red-500/20' :
+          decisione === 'pending' ? 'bg-amber-900/10 border-amber-500/20' :
+            'bg-slate border-white/5'
+        }`}>
+        <div className={`w-2 h-2 rounded-full shrink-0 ${decisione === 'approved' ? 'bg-salvia' :
+          decisione === 'rejected' ? 'bg-red-400' :
+            decisione === 'pending' ? 'bg-amber-400' :
+              'bg-nebbia/20'
+          }`} />
+        <p className={`font-body text-sm flex-1 ${decisione === 'approved' ? 'text-salvia' :
+          decisione === 'rejected' ? 'text-red-400' :
+            decisione === 'pending' ? 'text-amber-400' :
+              'text-nebbia/60'
+          }`}>
+          {decisione === 'approved' ? 'Verifica approvata — l\'utente può accedere come avvocato' :
+            decisione === 'rejected' ? 'Verifica rifiutata' :
+              decisione === 'pending' ? 'Verifica identità in attesa di revisione' :
+                'Nessuna richiesta di verifica'}
         </p>
+        {utente.prova_gratuita_usata && (
+          <span className="font-body text-xs px-2 py-0.5 bg-white/5 border border-white/10 text-nebbia/50">
+            Trial usato
+          </span>
+        )}
       </div>
-      <div className="bg-slate border border-white/5 p-5">
-        <p className="section-label mb-4">Documenti caricati</p>
-        <div className="flex items-center gap-2 p-3 border border-white/5">
-          <FileText size={13} className="text-nebbia/30" />
-          <span className="font-body text-xs text-nebbia/40">I documenti caricati appariranno qui.</span>
+
+      {/* Anagrafica */}
+      <div className="bg-slate border border-white/5 p-5 space-y-3">
+        <p className="section-label mb-3">Anagrafica</p>
+        <CampoRiga label="Nome completo" value={`${utente.nome ?? ''} ${utente.cognome ?? ''}`.trim() || null} />
+        <div className="flex justify-between items-start gap-3 border-b border-white/5 pb-2">
+          <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0">Email</span>
+          <div className="flex items-center gap-2 text-right">
+            <span className="font-body text-sm text-nebbia break-all">{utente.email ?? '—'}</span>
+            {emailStatus && (
+              emailStatus.email_confirmed ? (
+                <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/30 text-salvia uppercase tracking-wider whitespace-nowrap shrink-0">
+                  ✓ Verificata
+                </span>
+              ) : (
+                <span className="font-body text-[10px] px-1.5 py-0.5 bg-amber-400/10 border border-amber-400/30 text-amber-400 uppercase tracking-wider whitespace-nowrap shrink-0">
+                  Non verificata
+                </span>
+              )
+            )}
+          </div>
         </div>
+        <CampoRiga label="Telefono" value={utente.telefono} />
+        <CampoRiga label="Codice fiscale" value={utente.cf} />
+        <CampoRiga label="Data di nascita" value={utente.data_nascita ? new Date(utente.data_nascita).toLocaleDateString('it-IT') : null} />
+        <CampoRiga label="Luogo di nascita" value={utente.luogo_nascita} />
       </div>
-      {utente.verification_status === 'pending' && (
-        <div className="bg-slate border border-white/5 p-5 space-y-4">
-          <p className="section-label">Decisione</p>
+
+      {/* Residenza/Indirizzo */}
+      {haDatiResidenza && (
+        <div className="bg-slate border border-white/5 p-5 space-y-3">
+          <p className="section-label mb-3">Residenza</p>
+          <CampoRiga label="Indirizzo" value={utente.indirizzo} />
+          <CampoRiga label="Comune" value={utente.comune} />
+          <CampoRiga label="Provincia" value={utente.provincia} />
+          <CampoRiga label="CAP" value={utente.cap} />
+        </div>
+      )}
+
+      {/* Dati professionali (se compilati) */}
+      {(haDatiAvvocato || utente.specializzazioni?.length > 0 || utente.studio || utente.partita_iva) && (
+        <div className="bg-slate border border-white/5 p-5 space-y-3">
+          <p className="section-label mb-3">Dati professionali</p>
+          <CampoRiga label="Studio" value={utente.studio} />
+          <CampoRiga label="Foro" value={utente.foro} />
+          <CampoRiga label="Numero Albo" value={utente.numero_albo} />
+          <CampoRiga label="Iscritto dal" value={utente.data_iscrizione_albo ? new Date(utente.data_iscrizione_albo).toLocaleDateString('it-IT') : null} />
+          <CampoRiga label="PEC" value={utente.pec} />
+          <CampoRiga label="Partita IVA" value={utente.partita_iva} />
+          {utente.specializzazioni?.length > 0 && (
+            <div className="flex justify-between items-start gap-3 border-b border-white/5 pb-2">
+              <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0">Specializzazioni</span>
+              <div className="flex flex-wrap gap-1 justify-end">
+                {utente.specializzazioni.map(s => (
+                  <span key={s} className="font-body text-xs px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/70">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Persona giuridica (se applicabile) */}
+      {isPersonaGiuridica && (
+        <div className="bg-slate border border-white/5 p-5 space-y-3">
+          <p className="section-label mb-3">Persona giuridica</p>
+          <CampoRiga label="Ragione sociale" value={utente.ragione_sociale} />
+          <CampoRiga label="Sede legale" value={utente.sede_legale} />
+          <CampoRiga label="Legale rappresentante" value={utente.rappr_nome || utente.rappr_cognome ? `${utente.rappr_nome ?? ''} ${utente.rappr_cognome ?? ''}`.trim() : null} />
+          <CampoRiga label="CF rappresentante" value={utente.rappr_cf} />
+          <CampoRiga label="Carica" value={utente.rappr_carica} />
+        </div>
+      )}
+
+      {/* Account */}
+      <div className="bg-slate border border-white/5 p-5 space-y-3">
+        <p className="section-label mb-3">Account</p>
+        <CampoRiga label="Ruolo" value={utente.role} />
+        <CampoRiga label="Tipo account" value={utente.tipo_account} />
+        <CampoRiga label="Tipo soggetto" value={utente.tipo_soggetto} />
+        <CampoRiga label="Visibile pubblicamente" value={utente.visibile_pubblicamente ? 'Sì' : 'No'} />
+        <CampoRiga label="Stripe customer ID" value={utente.stripe_customer_id} />
+        <CampoRiga label="Registrato il" value={new Date(utente.created_at).toLocaleString('it-IT')} />
+        <CampoRiga label="Ultimo aggiornamento" value={utente.updated_at ? new Date(utente.updated_at).toLocaleString('it-IT') : null} />
+        <CampoRiga label="Email verificata il" value={emailStatus?.email_confirmed_at ? new Date(emailStatus.email_confirmed_at).toLocaleString('it-IT') : null} />
+        <CampoRiga label="Ultimo accesso" value={emailStatus?.last_sign_in_at ? new Date(emailStatus.last_sign_in_at).toLocaleString('it-IT') : null} />
+      </div>
+
+      {/* Note admin (se presenti) */}
+      {haNoteAdmin && (
+        <div className="bg-amber-900/5 border border-amber-500/15 p-5 space-y-3">
+          <p className="section-label mb-2 flex items-center gap-2">
+            <Lock size={11} className="text-amber-400" />
+            Note interne admin
+          </p>
+          {utente.note_admin && (
+            <div>
+              <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Note admin</p>
+              <p className="font-body text-sm text-nebbia/70 leading-relaxed whitespace-pre-line">{utente.note_admin}</p>
+            </div>
+          )}
+          {utente.verification_note && (
+            <div>
+              <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Note verifica</p>
+              <p className="font-body text-sm text-nebbia/70 leading-relaxed whitespace-pre-line">{utente.verification_note}</p>
+            </div>
+          )}
+          {utente.note_iniziali && (
+            <div>
+              <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Note iniziali</p>
+              <p className="font-body text-sm text-nebbia/70 leading-relaxed whitespace-pre-line">{utente.note_iniziali}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Documenti di verifica */}
+      <div className="bg-slate border border-white/5 p-5">
+        <p className="section-label mb-4">Documenti di verifica</p>
+        {loadingDocs ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="flex items-center gap-2 p-3 border border-white/5">
+            <FileText size={13} className="text-nebbia/30" />
+            <span className="font-body text-xs text-nebbia/40">Nessun documento caricato.</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {docs.map(d => {
+              const tipo = d.name.split('.')[0]
+              return (
+                <button key={d.name} onClick={() => apriDoc(d.name)}
+                  className="w-full flex items-center gap-3 p-3 bg-petrolio border border-white/5 hover:border-oro/20 transition-colors text-left">
+                  <FileText size={13} className="text-oro/50 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-body text-sm text-nebbia/70">{labelDocs[tipo] ?? d.name}</p>
+                    <p className="font-body text-[10px] text-nebbia/30 mt-0.5">{formatSize(d.metadata?.size)}</p>
+                  </div>
+                  <span className="font-body text-xs text-oro/60">Apri →</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Decisione (solo se in pending) */}
+      {decisione === 'pending' && (
+        <div className="bg-slate border border-oro/20 p-5 space-y-4">
+          <p className="section-label">Decisione verifica</p>
           <textarea rows={3} value={motivazione} onChange={e => setMotivazione(e.target.value)}
             placeholder="Motivazione (obbligatoria in caso di rifiuto)..."
             className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25" />

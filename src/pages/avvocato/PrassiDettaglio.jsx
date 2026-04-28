@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { BackButton, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
+import EtichetteAssegnate from '@/components/EtichetteAssegnate'
 import {
     FileText, Calendar, BookOpen, Scale,
     AlertCircle, CheckCircle, Search, Save,
@@ -151,6 +152,7 @@ export default function PrassiDettaglio() {
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState(null)
     const [pdfUrl, setPdfUrl] = useState(null)
+    const [refreshEtichette, setRefreshEtichette] = useState(0)
 
     useEffect(() => {
         async function carica() {
@@ -250,10 +252,17 @@ export default function PrassiDettaglio() {
                     )}
                 </div>
 
-                <div className="shrink-0 flex flex-wrap items-start gap-2">
-                    <AggiungiAPratica prassi={p} />
-                    <AggiungiAEtichetta
+                <div className="shrink-0 flex flex-col items-end gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <AggiungiAPratica prassi={p} />
+                        <AggiungiAEtichetta
+                            elemento={{ tipo: 'prassi', id: p.id }}
+                            onCambio={() => setRefreshEtichette(k => k + 1)}
+                        />
+                    </div>
+                    <EtichetteAssegnate
                         elemento={{ tipo: 'prassi', id: p.id }}
+                        refreshKey={refreshEtichette}
                     />
                 </div>
             </div>

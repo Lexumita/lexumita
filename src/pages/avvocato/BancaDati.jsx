@@ -1,7 +1,6 @@
-// src/pages/avvocato/Normativa.jsx
-// Pagina "Banca dati" (ex-Normativa) — 3 tab primari: Italiana | UE | Sentenze
-// - Italiana/UE: logica esistente (ricerca globale + griglia codici)
-// - Sentenze: NUOVO — unisce giurisprudenza_navigabile + sentenze avvocati
+// src/pages/avvocato/BancaDati.jsx
+// Pagina "Banca dati" — 4 tab primari: Italiana | UE | Sentenze | Prassi
+// Salvataggio in pratica tramite popover inline (no pannello laterale)
 
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -53,7 +52,6 @@ function useCreditiAI() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        // Leggi TUTTI i record di crediti dell'utente
         const { data } = await supabase
             .from('crediti_ai')
             .select('crediti_totali, crediti_usati, periodo_fine, tipo')
@@ -64,13 +62,10 @@ function useCreditiAI() {
             return
         }
 
-        // Somma i residui dei record validi (non scaduti)
         const now = new Date()
         const totale = data.reduce((acc, row) => {
             const residui = row.crediti_totali - row.crediti_usati
             const scaduto = row.periodo_fine && new Date(row.periodo_fine) < now
-            // periodo_fine NULL = no scadenza (benvenuto/topup)
-            // periodo_fine futuro = piano attivo
             return acc + (residui > 0 && !scaduto ? residui : 0)
         }, 0)
 
@@ -79,8 +74,6 @@ function useCreditiAI() {
 
     useEffect(() => {
         caricaCrediti()
-
-        // Ricarica quando la finestra torna in focus (es. dopo aver acquistato crediti in altra tab)
         function onFocus() { caricaCrediti() }
         window.addEventListener('focus', onFocus)
         return () => window.removeEventListener('focus', onFocus)
@@ -90,18 +83,33 @@ function useCreditiAI() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LEX ANIMAZIONE — SVG inline durante l'attesa
+// LEX ANIMAZIONE — invariato
 // ═══════════════════════════════════════════════════════════════
 function LexAnimazione({ faseAttiva }) {
-    const testoFase = {
-        analisi: 'Lex sta analizzando la tua domanda',
-        ricerca: 'Identifico le fonti rilevanti',
-        sintesi: 'Compongo la risposta',
-    }
-    const testoVisibile = faseAttiva ? testoFase[faseAttiva] : null
+    const frasiRotative = [
+        'Sto ricercando nell\'archivio Lex',
+        'Identifico le fonti rilevanti',
+        'Confronto sentenze e giurisprudenza',
+        'Analizzo le interpretazioni dottrinali',
+        'Consulto codici e normative',
+        'Verifico le prassi amministrative',
+        'Sto sfogliando le pagine giuste',
+        'Compongo una risposta strutturata',
+    ]
+
+    const [indiceFrase, setIndiceFrase] = useState(0)
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndiceFrase((i) => (i + 1) % frasiRotative.length)
+        }, 3500)
+        return () => clearInterval(interval)
+    }, [])
+
+    const testoVisibile = frasiRotative[indiceFrase]
 
     return (
-        <div className="bg-petrolio border border-oro/15 px-3 py-4 max-w-[420px] mx-auto">
+        <div className="px-3 py-4 max-w-[600px] mx-auto">
             <style>{`
             .lex-stage {
                 position: relative;
@@ -111,28 +119,22 @@ function LexAnimazione({ faseAttiva }) {
             }
                 .lex-stage svg { width: 100%; height: 100%; display: block; }
 
-                /* ─── Raggio scansione (loop su 27s totali, 3 cicli da 9s) ─── */
                 .lex-ray {
                     animation: lexRayCycle 27s ease-in-out infinite;
                 }
                 @keyframes lexRayCycle {
-                    /* CICLO 1: scansiona verso libro A (sx) */
                     0%   { transform: translateX(-30px); opacity: 0; }
                     3%   { opacity: 0.8; }
                     8%   { transform: translateX(85px); opacity: 0.9; }
                     12%  { transform: translateX(85px); opacity: 1; }
                     16%  { transform: translateX(85px); opacity: 0; }
                     33%  { transform: translateX(85px); opacity: 0; }
-
-                    /* CICLO 2: scansiona verso libro B (centro) */
                     34%  { transform: translateX(-30px); opacity: 0; }
                     37%  { opacity: 0.8; }
                     42%  { transform: translateX(180px); opacity: 0.9; }
                     46%  { transform: translateX(180px); opacity: 1; }
                     50%  { transform: translateX(180px); opacity: 0; }
                     66%  { transform: translateX(180px); opacity: 0; }
-
-                    /* CICLO 3: scansiona verso libro C (dx) */
                     67%  { transform: translateX(-30px); opacity: 0; }
                     70%  { opacity: 0.8; }
                     78%  { transform: translateX(290px); opacity: 0.9; }
@@ -141,7 +143,6 @@ function LexAnimazione({ faseAttiva }) {
                     100% { transform: translateX(290px); opacity: 0; }
                 }
 
-                /* ─── Libro A si illumina (fase 1, 0-33%) ─── */
                 .lex-book-a {
                     animation: lexBookGlowA 27s ease-in-out infinite;
                 }
@@ -153,7 +154,6 @@ function LexAnimazione({ faseAttiva }) {
                     32%, 100% { fill: #243447; stroke: rgba(201, 164, 92, 0.2); stroke-width: 1; transform: translateY(0); }
                 }
 
-                /* ─── Libro B si illumina (fase 2, 33-66%) ─── */
                 .lex-book-b {
                     animation: lexBookGlowB 27s ease-in-out infinite;
                 }
@@ -165,7 +165,6 @@ function LexAnimazione({ faseAttiva }) {
                     66%, 100% { fill: #243447; stroke: rgba(201, 164, 92, 0.2); stroke-width: 1; transform: translateY(0); }
                 }
 
-                /* ─── Libro C si illumina (fase 3, 66-100%) ─── */
                 .lex-book-c {
                     animation: lexBookGlowC 27s ease-in-out infinite;
                 }
@@ -177,12 +176,7 @@ function LexAnimazione({ faseAttiva }) {
                     100% { fill: #243447; stroke: rgba(201, 164, 92, 0.2); stroke-width: 1; transform: translateY(0); }
                 }
 
-                /* ─── Libro aperto A (sopra il libro A che si è abbassato) ─── */
-                .lex-open-a {
-                    opacity: 0;
-                    transform-origin: center;
-                    animation: lexOpenA 27s ease-in-out infinite;
-                }
+                .lex-open-a { opacity: 0; transform-origin: center; animation: lexOpenA 27s ease-in-out infinite; }
                 @keyframes lexOpenA {
                     0%, 16% { opacity: 0; transform: translateY(20px) scale(0.7); }
                     20% { opacity: 1; transform: translateY(0) scale(1); }
@@ -190,11 +184,7 @@ function LexAnimazione({ faseAttiva }) {
                     32% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                     100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                 }
-                .lex-open-b {
-                    opacity: 0;
-                    transform-origin: center;
-                    animation: lexOpenB 27s ease-in-out infinite;
-                }
+                .lex-open-b { opacity: 0; transform-origin: center; animation: lexOpenB 27s ease-in-out infinite; }
                 @keyframes lexOpenB {
                     0%, 50% { opacity: 0; transform: translateY(20px) scale(0.7); }
                     54% { opacity: 1; transform: translateY(0) scale(1); }
@@ -202,11 +192,7 @@ function LexAnimazione({ faseAttiva }) {
                     66% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                     100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                 }
-                .lex-open-c {
-                    opacity: 0;
-                    transform-origin: center;
-                    animation: lexOpenC 27s ease-in-out infinite;
-                }
+                .lex-open-c { opacity: 0; transform-origin: center; animation: lexOpenC 27s ease-in-out infinite; }
                 @keyframes lexOpenC {
                     0%, 86% { opacity: 0; transform: translateY(20px) scale(0.7); }
                     90% { opacity: 1; transform: translateY(0) scale(1); }
@@ -214,36 +200,32 @@ function LexAnimazione({ faseAttiva }) {
                     100% { opacity: 0; transform: translateY(-10px) scale(0.95); }
                 }
 
-                /* ─── Particelle: 3 cicli con tempi diversi ─── */
-                .lex-particle-a {
-                    opacity: 0;
-                    animation: lexParticleA 27s ease-in-out infinite;
-                }
+                .lex-particle-a { opacity: 0; animation: lexParticleA 27s ease-in-out infinite; }
                 @keyframes lexParticleA {
                     0%, 22% { opacity: 0; transform: translateY(0); }
                     24% { opacity: 1; transform: translateY(-5px); }
                     30% { opacity: 0.6; transform: translateY(-25px); }
                     33%, 100% { opacity: 0; transform: translateY(-35px); }
                 }
-                .lex-particle-b {
-                    opacity: 0;
-                    animation: lexParticleB 27s ease-in-out infinite;
-                }
+                .lex-particle-b { opacity: 0; animation: lexParticleB 27s ease-in-out infinite; }
                 @keyframes lexParticleB {
                     0%, 56% { opacity: 0; transform: translateY(0); }
                     58% { opacity: 1; transform: translateY(-5px); }
                     64% { opacity: 0.6; transform: translateY(-25px); }
                     67%, 100% { opacity: 0; transform: translateY(-35px); }
                 }
-                .lex-particle-c {
-                    opacity: 0;
-                    animation: lexParticleC 27s ease-in-out infinite;
-                }
+                .lex-particle-c { opacity: 0; animation: lexParticleC 27s ease-in-out infinite; }
                 @keyframes lexParticleC {
                     0%, 92% { opacity: 0; transform: translateY(0); }
                     94% { opacity: 1; transform: translateY(-5px); }
                     99% { opacity: 0.6; transform: translateY(-25px); }
                     100% { opacity: 0; transform: translateY(-35px); }
+                }
+
+                .lex-fade-text { animation: lexFadeIn 0.6s ease-out; }
+                @keyframes lexFadeIn {
+                    0%   { opacity: 0; transform: translateY(4px); }
+                    100% { opacity: 1; transform: translateY(0); }
                 }
 
                 .lex-dots-container { display: inline-flex; gap: 3px; margin-left: 6px; align-items: center; }
@@ -266,7 +248,7 @@ function LexAnimazione({ faseAttiva }) {
             `}</style>
 
             <div className="lex-stage">
-                <svg viewBox="0 0 540 240" xmlns="http://www.w3.org/2000/svg" role="img">
+                <svg viewBox="62 27 416 185" xmlns="http://www.w3.org/2000/svg" role="img">
                     <title>Lex sta cercando</title>
                     <line x1="60" y1="172" x2="480" y2="172" stroke="rgba(201, 164, 92, 0.4)" strokeWidth="0.8" />
 
@@ -281,7 +263,6 @@ function LexAnimazione({ faseAttiva }) {
                     <line x1="134" y1="120" x2="146" y2="120" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
                     <line x1="134" y1="125" x2="146" y2="125" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
-                    {/* ★ LIBRO A — posizione 4 (x=155-177) */}
                     <rect className="lex-book-a" x="155" y="96" width="22" height="76" rx="1" fill="#243447" stroke="rgba(201, 164, 92, 0.2)" strokeWidth="1" />
                     <line x1="161" y1="112" x2="171" y2="112" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
@@ -295,7 +276,6 @@ function LexAnimazione({ faseAttiva }) {
                     <rect x="228" y="103" width="24" height="69" rx="1" fill="#243447" stroke="rgba(201, 164, 92, 0.2)" strokeWidth="1" />
                     <line x1="234" y1="118" x2="246" y2="118" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
-                    {/* ★ LIBRO B — posizione 8 (x=255-281) */}
                     <rect className="lex-book-b" x="255" y="90" width="26" height="82" rx="1.5" fill="#243447" stroke="rgba(201, 164, 92, 0.2)" strokeWidth="1" />
                     <line x1="261" y1="115" x2="275" y2="115" stroke="rgba(201, 164, 92, 0.4)" strokeWidth="0.5" />
                     <line x1="261" y1="125" x2="275" y2="125" stroke="rgba(201, 164, 92, 0.4)" strokeWidth="0.5" />
@@ -311,7 +291,6 @@ function LexAnimazione({ faseAttiva }) {
                     <rect x="336" y="93" width="22" height="79" rx="1" fill="#243447" stroke="rgba(201, 164, 92, 0.2)" strokeWidth="1" />
                     <line x1="342" y1="109" x2="352" y2="109" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
-                    {/* ★ LIBRO C — posizione 12 (x=361-381) */}
                     <rect className="lex-book-c" x="361" y="106" width="20" height="66" rx="1" fill="#1d2c3a" stroke="rgba(201, 164, 92, 0.2)" strokeWidth="1" />
                     <line x1="366" y1="121" x2="376" y2="121" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
@@ -322,7 +301,6 @@ function LexAnimazione({ faseAttiva }) {
                     <line x1="415" y1="111" x2="427" y2="111" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
                     <line x1="415" y1="116" x2="427" y2="116" stroke="rgba(201, 164, 92, 0.3)" strokeWidth="0.5" />
 
-                    {/* ─── Raggio (singolo, riposizionato dai keyframes) ─── */}
                     <g className="lex-ray">
                         <ellipse cx="80" cy="135" rx="22" ry="55" fill="#C9A45C" opacity="0.18" />
                         <ellipse cx="80" cy="135" rx="14" ry="45" fill="#C9A45C" opacity="0.25" />
@@ -330,7 +308,6 @@ function LexAnimazione({ faseAttiva }) {
                         <line x1="80" y1="80" x2="80" y2="180" stroke="#C9A45C" strokeWidth="0.5" opacity="0.6" />
                     </g>
 
-                    {/* ─── LIBRO APERTO A (sopra libro A) ─── */}
                     <g className="lex-open-a" transform="translate(-115, 0)">
                         <path d="M 240 195 L 240 145 Q 240 142 243 142 L 268 142 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
                         <path d="M 268 142 L 293 142 Q 296 142 296 145 L 296 195 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
@@ -347,7 +324,6 @@ function LexAnimazione({ faseAttiva }) {
                         <line x1="268" y1="142" x2="268" y2="195" stroke="#C9A45C" strokeWidth="0.5" opacity="0.6" />
                     </g>
 
-                    {/* ─── LIBRO APERTO B (sopra libro B, posizione originale) ─── */}
                     <g className="lex-open-b">
                         <path d="M 240 195 L 240 145 Q 240 142 243 142 L 268 142 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
                         <path d="M 268 142 L 293 142 Q 296 142 296 145 L 296 195 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
@@ -364,7 +340,6 @@ function LexAnimazione({ faseAttiva }) {
                         <line x1="268" y1="142" x2="268" y2="195" stroke="#C9A45C" strokeWidth="0.5" opacity="0.6" />
                     </g>
 
-                    {/* ─── LIBRO APERTO C (sopra libro C) ─── */}
                     <g className="lex-open-c" transform="translate(105, 0)">
                         <path d="M 240 195 L 240 145 Q 240 142 243 142 L 268 142 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
                         <path d="M 268 142 L 293 142 Q 296 142 296 145 L 296 195 L 268 195 Z" fill="#F4F7F8" stroke="#C9A45C" strokeWidth="0.8" opacity="0.95" />
@@ -381,7 +356,6 @@ function LexAnimazione({ faseAttiva }) {
                         <line x1="268" y1="142" x2="268" y2="195" stroke="#C9A45C" strokeWidth="0.5" opacity="0.6" />
                     </g>
 
-                    {/* ─── PARTICELLE: 3 set, uno per libro ─── */}
                     <g transform="translate(140, 140)">
                         <circle className="lex-particle-a" cx="0" cy="0" r="1.5" fill="#C9A45C" />
                         <circle className="lex-particle-a" cx="8" cy="0" r="1.2" fill="#C9A45C" style={{ animationDelay: '0.3s' }} />
@@ -404,7 +378,10 @@ function LexAnimazione({ faseAttiva }) {
 
             <div className="text-center mt-3 min-h-[24px]">
                 {testoVisibile && (
-                    <span className="font-body text-sm text-nebbia/70 tracking-wide inline-flex items-center">
+                    <span
+                        key={indiceFrase}
+                        className="lex-fade-text font-body text-sm text-nebbia/70 tracking-wide inline-flex items-center"
+                    >
                         {testoVisibile}
                         <span className="lex-dots-container">
                             <span className="lex-dot" />
@@ -419,9 +396,199 @@ function LexAnimazione({ faseAttiva }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// AGGIUNGI A PRATICA — popover inline con cerca
+// Stesso pattern di AggiungiAEtichetta
+// ═══════════════════════════════════════════════════════════════
+function AggiungiAPratica({ ricerca, onRicercaSalvata, ricercaSalvataId, setRicercaSalvataId, variant = 'default' }) {
+    const { profile } = useAuth()
+    const [aperto, setAperto] = useState(false)
+    const [cerca, setCerca] = useState('')
+    const [pratiche, setPratiche] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [salvando, setSalvando] = useState(null)
+    const [salvatoIn, setSalvatoIn] = useState(null)
+    const [errore, setErrore] = useState(null)
+    const containerRef = useRef(null)
+
+    useEffect(() => {
+        if (!aperto) return
+        function handleClick(e) {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setAperto(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [aperto])
+
+    useEffect(() => {
+        if (!aperto) return
+        async function carica() {
+            setLoading(true)
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                const { data } = await supabase
+                    .from('pratiche')
+                    .select('id, titolo, cliente:cliente_id(nome, cognome)')
+                    .eq('avvocato_id', user.id)
+                    .eq('stato', 'aperta')
+                    .order('updated_at', { ascending: false })
+                    .limit(50)
+                setPratiche(data ?? [])
+            } finally {
+                setLoading(false)
+            }
+        }
+        carica()
+    }, [aperto])
+
+    async function salva(pratica) {
+        setSalvando(pratica.id)
+        setErrore(null)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+
+            if (ricercaSalvataId) {
+                // Riga già creata da un altro bottone (es. etichetta): aggiorna pratica_id
+                const { error } = await supabase
+                    .from('ricerche')
+                    .update({ pratica_id: pratica.id })
+                    .eq('id', ricercaSalvataId)
+                if (error) throw new Error(error.message)
+            } else {
+                // Prima volta: crea la riga
+                const { data, error } = await supabase
+                    .from('ricerche')
+                    .insert({
+                        pratica_id: pratica.id,
+                        user_id: user.id,
+                        autore_id: user.id,
+                        tipo: ricerca.tipo,
+                        titolo: ricerca.domanda,
+                        contenuto: ricerca.tipo === 'ricerca_ai' ? ricerca.risposta : ricerca.testo,
+                        metadati: {
+                            sentenze: ricerca.sentenze ?? false,
+                            codice: ricerca.codice ?? null,
+                            ts: new Date().toISOString(),
+                        }
+                    })
+                    .select('id')
+                    .single()
+                if (error) throw new Error(error.message)
+                if (setRicercaSalvataId) setRicercaSalvataId(data.id)
+            }
+
+            setSalvatoIn(pratica)
+            setAperto(false)
+            if (onRicercaSalvata) onRicercaSalvata()
+        } catch (e) {
+            setErrore(e.message)
+        } finally {
+            setSalvando(null)
+        }
+    }
+
+    if (profile?.role !== 'avvocato') return null
+
+    if (salvatoIn) return (
+        <span className="font-body text-xs text-salvia flex items-center gap-1.5 px-3 py-2 border border-salvia/30 bg-salvia/5">
+            <Sparkles size={11} /> Salvato in "{salvatoIn.titolo}"
+        </span>
+    )
+
+    const buttonClass = variant === 'compact'
+        ? 'flex items-center gap-1.5 px-2.5 py-1.5 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors font-body text-xs'
+        : 'flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors'
+
+    const pratichefiltrate = cerca.trim()
+        ? pratiche.filter(p => p.titolo.toLowerCase().includes(cerca.toLowerCase()))
+        : pratiche
+
+    return (
+        <div ref={containerRef} className="relative inline-block">
+            <button
+                type="button"
+                onClick={() => setAperto(v => !v)}
+                className={buttonClass}
+            >
+                <FileText size={variant === 'compact' ? 11 : 13} />
+                <span>Salva in pratica</span>
+            </button>
+
+            {aperto && (
+                <div className="absolute z-50 mt-2 w-80 bg-slate border border-white/10 shadow-2xl">
+                    <div className="p-3 border-b border-white/5">
+                        <div className="relative">
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                            <input
+                                autoFocus
+                                value={cerca}
+                                onChange={e => setCerca(e.target.value)}
+                                placeholder="Cerca pratica..."
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-8 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                            />
+                            <button
+                                onClick={() => setAperto(false)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-nebbia"
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto">
+                        {loading ? (
+                            <div className="p-4 flex items-center justify-center gap-2 text-nebbia/30">
+                                <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
+                                <span className="font-body text-xs">Caricamento...</span>
+                            </div>
+                        ) : pratichefiltrate.length === 0 ? (
+                            <p className="p-4 text-center font-body text-xs text-nebbia/25">
+                                {cerca ? 'Nessuna pratica trovata' : 'Nessuna pratica aperta'}
+                            </p>
+                        ) : (
+                            pratichefiltrate.map(p => {
+                                const isLoading = salvando === p.id
+                                return (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => salva(p)}
+                                        disabled={isLoading}
+                                        className="w-full text-left px-3 py-2.5 hover:bg-petrolio/50 transition-colors border-b border-white/5 last:border-0 disabled:opacity-50"
+                                    >
+                                        <p className="font-body text-sm text-nebbia/80 truncate">{p.titolo}</p>
+                                        {p.cliente && (
+                                            <p className="font-body text-xs text-nebbia/30 mt-0.5 truncate">
+                                                {p.cliente.nome} {p.cliente.cognome}
+                                            </p>
+                                        )}
+                                        {isLoading && (
+                                            <span className="font-body text-xs text-oro mt-1 flex items-center gap-1">
+                                                <span className="animate-spin w-2.5 h-2.5 border border-oro border-t-transparent rounded-full" />
+                                                Salvataggio...
+                                            </span>
+                                        )}
+                                    </button>
+                                )
+                            })
+                        )}
+                    </div>
+
+                    {errore && (
+                        <div className="p-2 bg-red-900/15 border-t border-red-500/20">
+                            <p className="font-body text-xs text-red-400">{errore}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // LEX — RICERCA AI (multi-agent streaming)
 // ═══════════════════════════════════════════════════════════════
-function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggiornaMessaggi, praticaAttiva, onRicercaSalvata }) {
+function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggiornaMessaggi, onRicercaSalvata }) {
     const [domanda, setDomanda] = useState('')
     const [cercando, setCercando] = useState(false)
     const [errore, setErrore] = useState(null)
@@ -430,10 +597,11 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     const [streamingTesto, setStreamingTesto] = useState('')
     const [meta, setMeta] = useState(null)
 
-    // ID conversazione persistente per gestire approfondimenti server-side
     const [clientConversationId, setClientConversationId] = useState(() => crypto.randomUUID())
 
-    // Ref per cancellare lo stream se necessario
+    // Riga `ricerche` condivisa tra "Salva in pratica" e "Aggiungi a etichetta"
+    const [ricercaSalvataId, setRicercaSalvataId] = useState(null)
+
     const abortControllerRef = useRef(null)
 
     async function cerca(domandaInput, opzioni = {}) {
@@ -520,7 +688,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
                             if (eventoCorrente === 'fase') {
                                 if (data.fase === 'rigetto' || data.fase === 'no_copertura') {
-                                    setFaseCorrente(null)  // skip animazione per template
+                                    setFaseCorrente(null)
                                 } else {
                                     setFaseCorrente(data.fase)
                                 }
@@ -529,7 +697,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             if (eventoCorrente === 'chunk') {
                                 testoAccumulato += data.text ?? ''
                                 setStreamingTesto(testoAccumulato)
-                                if (faseCorrente !== null) setFaseCorrente(null)  // ferma animazione al primo chunk
+                                if (faseCorrente !== null) setFaseCorrente(null)
                             }
 
                             if (eventoCorrente === 'done') {
@@ -542,13 +710,12 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 setErrore(data.error ?? 'Errore nello streaming')
                             }
                         } catch (e) {
-                            // ignore malformed payload
+                            // ignore malformed
                         }
                     }
                 }
             }
 
-            // Stream completato: consolida il messaggio
             const messaggioCompleto = {
                 role: 'assistant',
                 content: testoAccumulato,
@@ -596,6 +763,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         setFaseCorrente(null)
         setMeta(null)
         setClientConversationId(crypto.randomUUID())
+        setRicercaSalvataId(null)
         if (onAggiornaMessaggi) onAggiornaMessaggi([])
     }
 
@@ -607,7 +775,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         })
     }
 
-    // Componenti markdown custom: link in nuova tab, niente reload
     const markdownComponents = {
         h2: ({ children }) => <h2 className="font-display text-base font-semibold text-nebbia mt-4 mb-2">{children}</h2>,
         h3: ({ children }) => <h3 className="font-body text-sm font-semibold text-nebbia/80 mt-3 mb-1">{children}</h3>,
@@ -621,23 +788,18 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         a: ({ href, children }) => {
             if (!href) return <span>{children}</span>
 
-            // Determina il prefisso corretto in base al path corrente
-            // (avvocato sta su /banca-dati, user sta su /area)
             const isAreaUtente = window.location.pathname.startsWith('/area')
             const prefix = isAreaUtente ? '/area' : '/banca-dati'
 
             let finalHref = href
 
-            // Riscrivi i link interni adattandoli al contesto
             if (href.startsWith('/banca-dati/norma/')) {
                 const id = href.split('/').pop()
                 finalHref = `${prefix}/norma/${id}`
             } else if (href.startsWith('/banca-dati/archivio/')) {
-                // Archivio gestito dalla stessa pagina norma (cerca multi-tabella)
                 const id = href.split('/').pop()
                 finalHref = `${prefix}/norma/${id}`
             } else if (href.startsWith('/banca-dati/')) {
-                // Altri link banca-dati (lexum, avvocato, prassi) → adatta solo il prefisso
                 finalHref = href.replace('/banca-dati/', `${prefix}/`)
             }
 
@@ -704,7 +866,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                         {m.content}
                                     </ReactMarkdown>
 
-                                    {/* MARKETPLACE — sentenze annotate da colleghi */}
                                     {m.meta?.sentenze_marketplace?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
                                             <div className="flex items-center gap-2">
@@ -737,7 +898,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                         </div>
                                     )}
 
-                                    {/* APPROFONDIMENTI SUGGERITI */}
                                     {m.meta?.approfondimenti_disponibili?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
                                             <div className="flex items-center gap-2">
@@ -777,19 +937,16 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                         </div>
                     ))}
 
-                    {/* Streaming in corso: animazione + testo che si scrive */}
                     {cercando && (
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <span className="font-body text-xs font-medium text-salvia/70">Lex</span>
                             </div>
 
-                            {/* Animazione visibile prima del primo chunk */}
                             {streamingTesto.length === 0 && (
                                 <LexAnimazione faseAttiva={faseCorrente} />
                             )}
 
-                            {/* Testo che si scrive progressivamente */}
                             {streamingTesto.length > 0 && (
                                 <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2">
                                     <ReactMarkdown components={markdownComponents}>
@@ -803,10 +960,10 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 </div>
             )}
 
-            {/* Salvataggio in pratica + etichetta — visibili dopo almeno una risposta */}
+            {/* Salvataggio in pratica + etichetta — popover inline entrambi */}
             {conversazione.length >= 2 && !cercando && (
-                <div className="px-5 pb-3 flex flex-wrap gap-2 [&>button]:h-[38px] [&>div>button]:h-[38px]">
-                    <SalvaInPratica
+                <div className="px-5 pb-3 flex flex-wrap gap-2 [&>div>button]:h-[38px]">
+                    <AggiungiAPratica
                         ricerca={{
                             tipo: 'ricerca_ai',
                             domanda: conversazione[0]?.content ?? '',
@@ -817,8 +974,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             sentenze: conversazione.some(m => m.meta?.sentenze_marketplace?.length > 0),
                             codice
                         }}
-                        praticaAttiva={praticaAttiva}
                         onRicercaSalvata={onRicercaSalvata}
+                        ricercaSalvataId={ricercaSalvataId}
+                        setRicercaSalvataId={setRicercaSalvataId}
                     />
                     <AggiungiAEtichetta
                         elemento={{ tipo: 'ricerca_ai' }}
@@ -833,6 +991,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             tipo_query: 'banca_dati',
                             ts: new Date().toISOString(),
                         }}
+                        ricercaIdEsterno={ricercaSalvataId}
+                        onRicercaCreata={setRicercaSalvataId}
                     />
                 </div>
             )}
@@ -901,75 +1061,10 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SALVA IN PRATICA (helper)
+// TAB NORMATIVA (Italiana + UE)
 // ═══════════════════════════════════════════════════════════════
-function SalvaInPratica({ ricerca, praticaAttiva, onRicercaSalvata }) {
-    const { profile } = useAuth()
-    const [salvando, setSalvando] = useState(false)
-    const [salvato, setSalvato] = useState(false)
-    const [errore, setErrore] = useState(null)
-
-    async function salva() {
-        if (!praticaAttiva) return
-        setSalvando(true); setErrore(null)
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            await supabase.from('ricerche').insert({
-                pratica_id: praticaAttiva.id,
-                user_id: user.id,
-                autore_id: user.id,
-                tipo: ricerca.tipo,
-                titolo: ricerca.domanda,
-                contenuto: ricerca.tipo === 'ricerca_ai' ? ricerca.risposta : ricerca.testo,
-                metadati: {
-                    sentenze: ricerca.sentenze ?? false,
-                    codice: ricerca.codice ?? null,
-                    ts: new Date().toISOString(),
-                }
-            })
-            setSalvato(true)
-            if (onRicercaSalvata) onRicercaSalvata()
-        } catch (e) {
-            setErrore(e.message)
-        } finally {
-            setSalvando(false)
-        }
-    }
-
-    if (salvato) return (
-        <p className="font-body text-xs text-salvia flex items-center gap-1.5 mt-2">
-            <Sparkles size={10} /> Salvato in "{praticaAttiva?.titolo}"
-        </p>
-    )
-
-    // Solo gli avvocati hanno pratiche
-    if (profile?.role !== 'avvocato') return null
-
-    return (
-        <div className="mt-2 space-y-1">
-            <button
-                onClick={salva}
-                disabled={salvando || !praticaAttiva}
-                className="flex items-center gap-2 px-4 py-2 border font-body text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-oro/10 border-oro/30 text-oro hover:bg-oro/20"
-            >
-                {salvando
-                    ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
-                    : <Save size={13} />
-                }
-                {praticaAttiva
-                    ? `Salva in "${praticaAttiva.titolo}"`
-                    : 'Seleziona una pratica per salvare'
-                }
-            </button>
-            {errore && <p className="font-body text-xs text-red-400">{errore}</p>}
-        </div>
-    )
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB NORMATIVA (Italiana + UE) — riuso della logica esistente
-// ═══════════════════════════════════════════════════════════════
-function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refreshPannello, setRefreshPannello, messaggiConversazione, setMessaggiConversazione }) {
+function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggiConversazione, setMessaggiConversazione }) {
+    const navigate = useNavigate()
     const [dataset, setDataset] = useState(datasetFonte)
     const config = dataset === 'ue' ? CONFIG_UE : CONFIG_IT
 
@@ -998,7 +1093,6 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
     const [tab, setTab] = useState('tradizionale')
     const [articoloAperto, setArticoloAperto] = useState(null)
 
-    // Reset al cambio dataset (IT <-> UE)
     useEffect(() => {
         setVista('catalogo')
         setCodice(null)
@@ -1128,7 +1222,6 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
 
     return (
         <div className="space-y-5">
-            {/* Vista CATALOGO */}
             {vista === 'catalogo' && (
                 <>
                     <div className="flex gap-2">
@@ -1204,21 +1297,31 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
                                                 <tr key={`${n.id}-testo`} className="border-b border-white/5 bg-petrolio/20">
                                                     <td colSpan={4} className="px-4 py-4">
                                                         <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaTradGlobale) }} />
-                                                        <div className="mt-3 flex flex-wrap items-start gap-2">
-                                                            <SalvaInPratica
+                                                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                            <AggiungiAPratica
                                                                 ricerca={{
                                                                     tipo: 'ricerca_manuale',
                                                                     domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''}${dataset === 'ue' ? ` (${docLabel(n)})` : ''}`,
                                                                     testo: n.testo,
                                                                     codice: dataset === 'ue' ? (n.categorie_lex?.[0] ?? null) : n.codice
                                                                 }}
-                                                                praticaAttiva={praticaAttiva}
-                                                                onRicercaSalvata={() => setRefreshPannello(p => p + 1)}
+                                                                variant="compact"
                                                             />
                                                             <AggiungiAEtichetta
                                                                 elemento={{ tipo: 'norma', id: n.id }}
                                                                 variant="compact"
                                                             />
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                                    navigate(`${prefix}/norma/${n.id}`)
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs ml-auto"
+                                                            >
+                                                                Apri pagina dedicata <ChevronRight size={11} />
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1230,7 +1333,6 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
                         </div>
                     )}
 
-                    {/* Griglia categorie */}
                     {loadingCodici ? (
                         <div className="flex items-center justify-center py-20">
                             <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
@@ -1243,7 +1345,6 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
                                             <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{codiciLabel[c.codice] ?? c.codice}</p>
-                                            <p className="font-body text-xs text-nebbia/30 mt-0.5">{c.totale?.toLocaleString()} articoli</p>
                                         </div>
                                         <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
                                     </div>
@@ -1254,14 +1355,13 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
                 </>
             )}
 
-            {/* Vista CODICE */}
             {vista === 'codice' && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                         <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> {dataset === 'ue' ? 'Tutte le categorie' : 'Tutti i codici'}
                         </button>
-                        <p className="font-display text-xl text-nebbia">{labelSelezionato} <span className="font-body text-sm text-nebbia/40 ml-2">({totaleNorme.toLocaleString()} articoli)</span></p>
+                        <p className="font-display text-xl text-nebbia">{labelSelezionato}</p>
                     </div>
 
                     <div className="flex gap-2">
@@ -1326,21 +1426,31 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
                                             <tr key={`${n.id}-testo`} className="border-b border-white/5 bg-petrolio/20">
                                                 <td colSpan={3} className="px-4 py-4">
                                                     <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaTrad) }} />
-                                                    <div className="mt-3 flex flex-wrap items-start gap-2">
-                                                        <SalvaInPratica
+                                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                        <AggiungiAPratica
                                                             ricerca={{
                                                                 tipo: 'ricerca_manuale',
                                                                 domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''}${dataset === 'ue' ? ` (${docLabel(n)})` : ''}`,
                                                                 testo: n.testo,
                                                                 codice: dataset === 'ue' ? (n.categorie_lex?.[0] ?? null) : n.codice
                                                             }}
-                                                            praticaAttiva={praticaAttiva}
-                                                            onRicercaSalvata={() => setRefreshPannello(p => p + 1)}
+                                                            variant="compact"
                                                         />
                                                         <AggiungiAEtichetta
                                                             elemento={{ tipo: 'norma', id: n.id }}
                                                             variant="compact"
                                                         />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                                navigate(`${prefix}/norma/${n.id}`)
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs ml-auto"
+                                                        >
+                                                            Apri pagina dedicata <ChevronRight size={11} />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1370,42 +1480,39 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, praticaAttiva, refres
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAB SENTENZE — nuovo
+// TAB SENTENZE — invariato (non aveva bottoni di salvataggio)
 // ═══════════════════════════════════════════════════════════════
-function TabSentenze({ praticaAttiva, setRefreshPannello }) {
+function TabSentenze() {
     const navigate = useNavigate()
 
-    // Dati base
     const [categorieRaggruppate, setCategorieRaggruppate] = useState([])
     const [conteggiPerCategoria, setConteggiPerCategoria] = useState({})
     const [organiDisponibili, setOrganiDisponibili] = useState([])
     const [loading, setLoading] = useState(true)
 
-    // Navigazione
-    const [vista, setVista] = useState('catalogo') // 'catalogo' | 'categoria'
+    const [vista, setVista] = useState('catalogo')
     const [categoriaSelezionata, setCategoriaSelezionata] = useState(null)
 
-    // Filtri vista categoria
     const [ricerca, setRicerca] = useState('')
     const [ricercaAttiva, setRicercaAttiva] = useState('')
     const [filtroAnno, setFiltroAnno] = useState('')
     const [filtroOrgano, setFiltroOrgano] = useState('')
     const [filtroTipo, setFiltroTipo] = useState('')
-    const [filtroFonte, setFiltroFonte] = useState('tutte') // tutte | gratuite | pagamento
+    const [filtroFonte, setFiltroFonte] = useState('tutte')
 
-    // Risultati
     const [risultati, setRisultati] = useState([])
+    const [totaleSentenze, setTotaleSentenze] = useState(0)
+    const [paginaSentenze, setPaginaSentenze] = useState(0)
     const [loadingRisultati, setLoadingRisultati] = useState(false)
 
-    // Prezzo default sentenze avvocati
     const [prezzoAccesso, setPrezzoAccesso] = useState(15)
 
-    // ── CARICAMENTO INIZIALE: categorie + conteggi ──
+    const PER_PAGINA_SENTENZE = 50
+
     useEffect(() => {
         async function caricaDatiBase() {
             setLoading(true)
 
-            // 1. Categorie raggruppate per macro_label
             const { data: cat } = await supabase
                 .from('codici_lex')
                 .select('codice, label, macro_area, macro_label, ordine')
@@ -1436,7 +1543,6 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
             }
             setConteggiPerCategoria(conteggi)
 
-            // 3. Prezzo sentenza
             const { data: prod } = await supabase
                 .from('prodotti').select('prezzo').eq('tipo', 'accesso_singolo').eq('attivo', true).maybeSingle()
             if (prod) setPrezzoAccesso(prod.prezzo)
@@ -1446,52 +1552,103 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
         caricaDatiBase()
     }, [])
 
-    // ── CARICAMENTO RISULTATI CATEGORIA ──
+    useEffect(() => {
+        // Reset pagina quando cambiano filtri/categoria
+        setPaginaSentenze(0)
+    }, [categoriaSelezionata?.codice, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte])
+
     useEffect(() => {
         if (vista !== 'categoria' || !categoriaSelezionata) return
         caricaSentenzeCategoria()
-    }, [vista, categoriaSelezionata, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte])
+    }, [vista, categoriaSelezionata, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte, paginaSentenze])
 
     async function caricaSentenzeCategoria() {
         setLoadingRisultati(true)
 
-        const fetchers = []
+        // Strategia paginazione:
+        // Per evitare merge complicati di due paginazioni separate (giurisprudenza + sentenze),
+        // quando "tutte" sono attive: prima leggiamo i count totali, poi facciamo
+        // una richiesta range proporzionale a ciascuna fonte.
+        // Più semplice: per filtroFonte='gratuite' o 'pagamento' è una singola fonte,
+        // per 'tutte' usiamo il count per dare a ciascuna metà del page size.
 
-        // Query giurisprudenza (gratuita) — tramite view
-        if (filtroFonte !== 'pagamento') {
-            let q = supabase
-                .from('giurisprudenza_navigabile')
-                .select('id, fonte, organo, organo_macro, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto')
-                .contains('categorie_lex', [categoriaSelezionata.codice])
-                .eq('vigente', true)
-            if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
-            if (filtroOrgano) q = q.eq('organo_macro', filtroOrgano)
-            if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
-            if (ricercaAttiva.trim()) {
-                q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-            }
-            fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).limit(100))
-        }
-
-        // Query sentenze avvocati (a pagamento)
-        if (filtroFonte !== 'gratuite') {
-            let q = supabase
-                .from('sentenze')
-                .select('id, fonte, organo, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto, autore_id, autore:autore_id(nome, cognome)')
-                .contains('categorie_lex', [categoriaSelezionata.codice])
-                .eq('stato', 'pubblica')
-            if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
-            if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
-            if (ricercaAttiva.trim()) {
-                q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-            }
-            fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).limit(100))
-        }
+        const PER_PAGINA = PER_PAGINA_SENTENZE
+        const offsetStart = paginaSentenze * PER_PAGINA
+        const offsetEnd = offsetStart + PER_PAGINA - 1
 
         try {
+            // Conta righe totali in entrambe le tabelle (con filtri applicati)
+            const countFetchers = []
+            if (filtroFonte !== 'pagamento') {
+                let qc = supabase
+                    .from('giurisprudenza_navigabile')
+                    .select('id', { count: 'exact', head: true })
+                    .contains('categorie_lex', [categoriaSelezionata.codice])
+                    .eq('vigente', true)
+                if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
+                if (filtroOrgano) qc = qc.eq('organo_macro', filtroOrgano)
+                if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
+                if (ricercaAttiva.trim()) {
+                    qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+                }
+                countFetchers.push(qc)
+            } else countFetchers.push(null)
+
+            if (filtroFonte !== 'gratuite') {
+                let qc = supabase
+                    .from('sentenze')
+                    .select('id', { count: 'exact', head: true })
+                    .contains('categorie_lex', [categoriaSelezionata.codice])
+                    .eq('stato', 'pubblica')
+                if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
+                if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
+                if (ricercaAttiva.trim()) {
+                    qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+                }
+                countFetchers.push(qc)
+            } else countFetchers.push(null)
+
+            const [countGiur, countSent] = await Promise.all(countFetchers.map(f => f ?? Promise.resolve({ count: 0 })))
+            const totGiur = countGiur?.count ?? 0
+            const totSent = countSent?.count ?? 0
+            const totale = totGiur + totSent
+            setTotaleSentenze(totale)
+
+            // Recupera entrambe le fonti con range completo (offsetStart..offsetEnd di ciascuna)
+            // poi mergiamo, ordiniamo per data e prendiamo le prime PER_PAGINA.
+            // Questo è semplice e corretto per page size piccolo.
+            const fetchers = []
+            if (filtroFonte !== 'pagamento') {
+                let q = supabase
+                    .from('giurisprudenza_navigabile')
+                    .select('id, fonte, organo, organo_macro, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto')
+                    .contains('categorie_lex', [categoriaSelezionata.codice])
+                    .eq('vigente', true)
+                if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
+                if (filtroOrgano) q = q.eq('organo_macro', filtroOrgano)
+                if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
+                if (ricercaAttiva.trim()) {
+                    q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+                }
+                fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).range(offsetStart, offsetEnd))
+            }
+
+            if (filtroFonte !== 'gratuite') {
+                let q = supabase
+                    .from('sentenze')
+                    .select('id, fonte, organo, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto, autore_id, autore:autore_id(nome, cognome)')
+                    .contains('categorie_lex', [categoriaSelezionata.codice])
+                    .eq('stato', 'pubblica')
+                if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
+                if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
+                if (ricercaAttiva.trim()) {
+                    q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+                }
+                fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).range(offsetStart, offsetEnd))
+            }
+
             const responses = await Promise.all(fetchers)
 
-            // Normalizza i record con un campo "sorgente" per distinguerli nella UI
             let merged = []
             if (filtroFonte !== 'pagamento' && responses[0]?.data) {
                 merged = merged.concat(responses[0].data.map(r => ({ ...r, sorgente: 'giurisprudenza' })))
@@ -1501,20 +1658,21 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
                 merged = merged.concat(responses[sentIdx].data.map(r => ({
                     ...r,
                     sorgente: 'sentenza_avvocato',
-                    organo_macro: null,  // le sentenze avvocati non hanno questo campo, useremo `organo` nudo
+                    organo_macro: null,
                 })))
             }
 
-            // Ordina per data_pubblicazione desc (fallback data_deposito, poi anno)
             merged.sort((a, b) => {
                 const dA = a.data_pubblicazione ?? a.data_deposito ?? (a.anno ? `${a.anno}-01-01` : '')
                 const dB = b.data_pubblicazione ?? b.data_deposito ?? (b.anno ? `${b.anno}-01-01` : '')
                 return dB.localeCompare(dA)
             })
 
+            // Tronca a PER_PAGINA per garantire dimensione costante della pagina
+            merged = merged.slice(0, PER_PAGINA)
+
             setRisultati(merged)
 
-            // Aggiorna lista organi disponibili in questa categoria (sommati)
             const organi = new Set()
             for (const r of merged) {
                 if (r.organo_macro) organi.add(r.organo_macro)
@@ -1568,7 +1726,6 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
         { v: 'relazione', l: 'Relazione' },
     ]
 
-    // ── VISTA CATALOGO: griglia categorie raggruppate per macro-area ──
     if (vista === 'catalogo') {
         if (loading) return (
             <div className="flex items-center justify-center py-20">
@@ -1589,21 +1746,17 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
                                 <h3 className="font-display text-base font-medium text-nebbia">{gruppo.macro}</h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {categorieConRisultati.map(c => {
-                                    const count = conteggiPerCategoria[c.codice] ?? 0
-                                    return (
-                                        <button key={c.codice} onClick={() => apriCategoria(c)}
-                                            className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{c.label}</p>
-                                                    <p className="font-body text-xs text-nebbia/30 mt-0.5">{count.toLocaleString('it-IT')} sentenze</p>
-                                                </div>
-                                                <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
+                                {categorieConRisultati.map(c => (
+                                    <button key={c.codice} onClick={() => apriCategoria(c)}
+                                        className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{c.label}</p>
                                             </div>
-                                        </button>
-                                    )
-                                })}
+                                            <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )
@@ -1612,7 +1765,6 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
         )
     }
 
-    // ── VISTA CATEGORIA: risultati + filtri ──
     const annoCorrente = new Date().getFullYear()
     const anniOpzioni = Array.from({ length: 20 }, (_, i) => annoCorrente - i)
 
@@ -1622,13 +1774,9 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
                 <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                     <ChevronLeft size={13} /> Tutte le categorie
                 </button>
-                <p className="font-display text-xl text-nebbia">
-                    {categoriaSelezionata.label}
-                    <span className="font-body text-sm text-nebbia/40 ml-2">({risultati.length.toLocaleString('it-IT')} risultati)</span>
-                </p>
+                <p className="font-display text-xl text-nebbia">{categoriaSelezionata.label}</p>
             </div>
 
-            {/* Ricerca + Filtri */}
             <div className="bg-slate border border-white/5 p-4 space-y-3">
                 <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -1694,7 +1842,6 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
                 </div>
             </div>
 
-            {/* Risultati */}
             {loadingRisultati ? (
                 <div className="flex items-center justify-center py-16">
                     <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
@@ -1704,109 +1851,121 @@ function TabSentenze({ praticaAttiva, setRefreshPannello }) {
                     <p className="font-body text-sm text-nebbia/40">Nessuna sentenza trovata con questi filtri</p>
                 </div>
             ) : (
-                <div className="space-y-3">
-                    {risultati.map(s => {
-                        const isGratuita = s.sorgente === 'giurisprudenza'
-                        const dataVisibile = s.data_pubblicazione ?? s.data_deposito
-                        const titolo = titoloSentenza(s)
-                        const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
-                        const targetPath = isGratuita
-                            ? `${prefix}/lexum/${s.id}`
-                            : `${prefix}/avvocato/${s.id}`
+                <>
+                    <div className="space-y-3">
+                        {risultati.map(s => {
+                            const isGratuita = s.sorgente === 'giurisprudenza'
+                            const dataVisibile = s.data_pubblicazione ?? s.data_deposito
+                            const titolo = titoloSentenza(s)
+                            const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                            const targetPath = isGratuita
+                                ? `${prefix}/lexum/${s.id}`
+                                : `${prefix}/avvocato/${s.id}`
 
-                        return (
-                            <button
-                                key={`${s.sorgente}-${s.id}`}
-                                onClick={() => navigate(targetPath)}
-                                className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                            <span className="font-body text-xs text-nebbia/60">{titolo}</span>
-                                            {s.tipo_provvedimento && (
-                                                <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
-                                                    {labelTipoProvvedimento(s.tipo_provvedimento)}
-                                                </span>
+                            return (
+                                <button
+                                    key={`${s.sorgente}-${s.id}`}
+                                    onClick={() => navigate(targetPath)}
+                                    className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                <span className="font-body text-xs text-nebbia/60">{titolo}</span>
+                                                {s.tipo_provvedimento && (
+                                                    <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                                                        {labelTipoProvvedimento(s.tipo_provvedimento)}
+                                                    </span>
+                                                )}
+                                                {dataVisibile && (
+                                                    <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
+                                                        <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '—'}</h3>
+                                            {s.principio_diritto && (
+                                                <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
                                             )}
-                                            {dataVisibile && (
-                                                <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
-                                                    <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
-                                                </span>
+                                            {!isGratuita && s.autore && (
+                                                <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
                                             )}
                                         </div>
-                                        <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '—'}</h3>
-                                        {s.principio_diritto && (
-                                            <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
-                                        )}
-                                        {!isGratuita && s.autore && (
-                                            <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
-                                        )}
-                                    </div>
 
-                                    <div className="shrink-0 flex flex-col items-end gap-2">
-                                        {isGratuita ? (
-                                            <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
-                                                Gratuita
-                                            </span>
-                                        ) : (
-                                            <>
-                                                <span className="font-display text-lg font-semibold text-oro">EUR {prezzoAccesso}</span>
-                                                <span className="font-body text-xs text-oro/60">accesso singolo</span>
-                                            </>
-                                        )}
+                                        <div className="shrink-0 flex flex-col items-end gap-2">
+                                            {isGratuita ? (
+                                                <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
+                                                    Gratuita
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <span className="font-display text-lg font-semibold text-oro">EUR {prezzoAccesso}</span>
+                                                    <span className="font-body text-xs text-oro/60">accesso singolo</span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+
+                    {totaleSentenze > PER_PAGINA_SENTENZE && (
+                        <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
+                            <p className="font-body text-xs text-nebbia/30">
+                                {paginaSentenze * PER_PAGINA_SENTENZE + 1}–{Math.min((paginaSentenze + 1) * PER_PAGINA_SENTENZE, totaleSentenze)} di {totaleSentenze.toLocaleString('it-IT')}
+                            </p>
+                            <div className="flex gap-2">
+                                <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
+                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * PER_PAGINA_SENTENZE >= totaleSentenze}
+                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     )
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAB PRASSI — atti amministrativi (Agenzia Entrate, Garante Privacy, ecc.)
+// TAB PRASSI — invariato (non aveva bottoni di salvataggio)
 // ═══════════════════════════════════════════════════════════════
 function TabPrassi() {
     const navigate = useNavigate()
 
-    // Dati base
     const [enti, setEnti] = useState([])
     const [conteggiPerEnte, setConteggiPerEnte] = useState({})
     const [loading, setLoading] = useState(true)
 
-    // Navigazione
-    const [vista, setVista] = useState('catalogo')  // 'catalogo' | 'ente'
+    const [vista, setVista] = useState('catalogo')
     const [enteSelezionato, setEnteSelezionato] = useState(null)
 
-    // Filtri vista ente
     const [ricerca, setRicerca] = useState('')
     const [ricercaAttiva, setRicercaAttiva] = useState('')
     const [filtroAnno, setFiltroAnno] = useState('')
     const [filtroCategoria, setFiltroCategoria] = useState('')
 
-    // Risultati
     const [risultati, setRisultati] = useState([])
+    const [totalePrassi, setTotalePrassi] = useState(0)
+    const [paginaPrassi, setPaginaPrassi] = useState(0)
     const [loadingRisultati, setLoadingRisultati] = useState(false)
 
-    // Mappa categorie per UI
+    const PER_PAGINA_PRASSI = 50
+
     const [mappaCategorie, setMappaCategorie] = useState({})
 
-    // ── CARICAMENTO INIZIALE ──
     useEffect(() => {
         async function caricaDatiBase() {
             setLoading(true)
 
-            // 1. Lista enti dal master
             const { data: entiData } = await supabase
                 .from('enti')
                 .select('codice, label, descrizione, macro_area, ordine')
                 .order('ordine')
             setEnti(entiData ?? [])
 
-            // 2. Conteggi per ente (count delle prassi per fonte)
             const { data: prassiCounts } = await supabase
                 .from('prassi')
                 .select('fonte')
@@ -1816,7 +1975,6 @@ function TabPrassi() {
             }
             setConteggiPerEnte(conteggi)
 
-            // 3. Mappa categorie per labels
             const { data: cat } = await supabase
                 .from('codici_lex')
                 .select('codice, label')
@@ -1829,18 +1987,25 @@ function TabPrassi() {
         caricaDatiBase()
     }, [])
 
-    // ── CARICAMENTO PRASSI DELL'ENTE ──
+    useEffect(() => {
+        // Reset pagina quando cambiano filtri/ente
+        setPaginaPrassi(0)
+    }, [enteSelezionato?.codice, ricercaAttiva, filtroAnno, filtroCategoria])
+
     useEffect(() => {
         if (vista !== 'ente' || !enteSelezionato) return
         caricaPrassi()
-    }, [vista, enteSelezionato, ricercaAttiva, filtroAnno, filtroCategoria])
+    }, [vista, enteSelezionato, ricercaAttiva, filtroAnno, filtroCategoria, paginaPrassi])
 
     async function caricaPrassi() {
         setLoadingRisultati(true)
 
+        const offsetStart = paginaPrassi * PER_PAGINA_PRASSI
+        const offsetEnd = offsetStart + PER_PAGINA_PRASSI - 1
+
         let q = supabase
             .from('prassi')
-            .select('id, fonte, numero, anno, data_pubblicazione, data_emanazione, oggetto, sintesi, categorie_lex')
+            .select('id, fonte, numero, anno, data_pubblicazione, data_emanazione, oggetto, sintesi, categorie_lex', { count: 'exact' })
             .eq('fonte', enteSelezionato.codice)
             .eq('vigente', true)
 
@@ -1850,11 +2015,12 @@ function TabPrassi() {
             q = q.or(`oggetto.ilike.%${ricercaAttiva}%,sintesi.ilike.%${ricercaAttiva}%`)
         }
 
-        const { data } = await q
+        const { data, count } = await q
             .order('data_pubblicazione', { ascending: false, nullsFirst: false })
-            .limit(100)
+            .range(offsetStart, offsetEnd)
 
         setRisultati(data ?? [])
+        setTotalePrassi(count ?? 0)
         setLoadingRisultati(false)
     }
 
@@ -1873,7 +2039,6 @@ function TabPrassi() {
 
     function avviaRicerca() { setRicercaAttiva(ricerca) }
 
-    // ── VISTA CATALOGO ──
     if (vista === 'catalogo') {
         if (loading) return (
             <div className="flex items-center justify-center py-20">
@@ -1881,7 +2046,6 @@ function TabPrassi() {
             </div>
         )
 
-        // Filtra solo enti con count > 0 (nascondi quelli vuoti)
         const entiVisibili = enti.filter(e => (conteggiPerEnte[e.codice] ?? 0) > 0)
 
         if (entiVisibili.length === 0) {
@@ -1894,36 +2058,25 @@ function TabPrassi() {
         }
 
         return (
-            <div className="space-y-3">
-                <p className="font-body text-xs text-nebbia/40">
-                    {entiVisibili.length} {entiVisibili.length === 1 ? 'ente disponibile' : 'enti disponibili'}
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {entiVisibili.map(e => {
-                        const count = conteggiPerEnte[e.codice] ?? 0
-                        return (
-                            <button key={e.codice} onClick={() => apriEnte(e)}
-                                className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors leading-snug">{e.label}</p>
-                                        <p className="font-body text-xs text-nebbia/30 mt-1">{count.toLocaleString('it-IT')} prassi</p>
-                                    </div>
-                                    <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0 mt-0.5" />
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {entiVisibili.map(e => (
+                    <button key={e.codice} onClick={() => apriEnte(e)}
+                        className="bg-slate border border-white/5 px-4 py-3.5 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">
+                                {e.label}
+                            </p>
+                            <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
+                        </div>
+                    </button>
+                ))}
             </div>
         )
     }
 
-    // ── VISTA ENTE ──
     const annoCorrente = new Date().getFullYear()
     const anniOpzioni = Array.from({ length: 25 }, (_, i) => annoCorrente - i)
 
-    // Categorie effettivamente presenti nelle prassi caricate (filtro dinamico)
     const categorieUsate = new Set()
     for (const r of risultati) {
         for (const c of r.categorie_lex ?? []) categorieUsate.add(c)
@@ -1936,13 +2089,9 @@ function TabPrassi() {
                 <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                     <ChevronLeft size={13} /> Tutti gli enti
                 </button>
-                <p className="font-body text-lg font-medium text-nebbia">
-                    {enteSelezionato.label}
-                    <span className="font-body text-sm text-nebbia/40 ml-2">({risultati.length.toLocaleString('it-IT')} risultati)</span>
-                </p>
+                <p className="font-body text-lg font-medium text-nebbia">{enteSelezionato.label}</p>
             </div>
 
-            {/* Ricerca + filtri */}
             <div className="bg-slate border border-white/5 p-4 space-y-3">
                 <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -1994,7 +2143,6 @@ function TabPrassi() {
                 </div>
             </div>
 
-            {/* Risultati */}
             {loadingRisultati ? (
                 <div className="flex items-center justify-center py-16">
                     <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
@@ -2004,133 +2152,75 @@ function TabPrassi() {
                     <p className="font-body text-sm text-nebbia/40">Nessuna prassi trovata con questi filtri</p>
                 </div>
             ) : (
-                <div className="space-y-3">
-                    {risultati.map(p => {
-                        const dataVisibile = p.data_pubblicazione ?? p.data_emanazione
-                        const riferimento = [p.numero && `n. ${p.numero}`, p.anno].filter(Boolean).join(' · ')
-                        return (
-                            <button
-                                key={p.id}
-                                onClick={() => navigate(`${window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'}/prassi/${p.id}`)}
-                                className="w-full text-left bg-slate border border-white/5 hover:border-salvia/20 p-5 transition-all"
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                            {riferimento && (
-                                                <span className="font-body text-xs text-nebbia/60">{riferimento}</span>
-                                            )}
-                                            {dataVisibile && (
-                                                <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
-                                                    <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{p.oggetto ?? '—'}</h3>
-                                        {p.sintesi && (
-                                            <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{p.sintesi}</p>
-                                        )}
-                                        {(p.categorie_lex ?? []).length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {p.categorie_lex.slice(0, 4).map(c => (
-                                                    <span key={c} className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5">
-                                                        {mappaCategorie[c] ?? c}
+                <>
+                    <div className="space-y-3">
+                        {risultati.map(p => {
+                            const dataVisibile = p.data_pubblicazione ?? p.data_emanazione
+                            const riferimento = [p.numero && `n. ${p.numero}`, p.anno].filter(Boolean).join(' · ')
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => navigate(`${window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'}/prassi/${p.id}`)}
+                                    className="w-full text-left bg-slate border border-white/5 hover:border-salvia/20 p-5 transition-all"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                {riferimento && (
+                                                    <span className="font-body text-xs text-nebbia/60">{riferimento}</span>
+                                                )}
+                                                {dataVisibile && (
+                                                    <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
+                                                        <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
                                                     </span>
-                                                ))}
-                                                {p.categorie_lex.length > 4 && (
-                                                    <span className="font-body text-[10px] text-nebbia/30">+{p.categorie_lex.length - 4}</span>
                                                 )}
                                             </div>
-                                        )}
+                                            <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{p.oggetto ?? '—'}</h3>
+                                            {p.sintesi && (
+                                                <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{p.sintesi}</p>
+                                            )}
+                                            {(p.categorie_lex ?? []).length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {p.categorie_lex.slice(0, 4).map(c => (
+                                                        <span key={c} className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5">
+                                                            {mappaCategorie[c] ?? c}
+                                                        </span>
+                                                    ))}
+                                                    {p.categorie_lex.length > 4 && (
+                                                        <span className="font-body text-[10px] text-nebbia/30">+{p.categorie_lex.length - 4}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="shrink-0 flex flex-col items-end gap-2">
+                                            <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
+                                                Gratuita
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="shrink-0 flex flex-col items-end gap-2">
-                                        <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
-                                            Gratuita
-                                        </span>
-                                    </div>
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+
+                    {totalePrassi > PER_PAGINA_PRASSI && (
+                        <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
+                            <p className="font-body text-xs text-nebbia/30">
+                                {paginaPrassi * PER_PAGINA_PRASSI + 1}–{Math.min((paginaPrassi + 1) * PER_PAGINA_PRASSI, totalePrassi)} di {totalePrassi.toLocaleString('it-IT')}
+                            </p>
+                            <div className="flex gap-2">
+                                <button onClick={() => setPaginaPrassi(p => Math.max(0, p - 1))} disabled={paginaPrassi === 0}
+                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                <button onClick={() => setPaginaPrassi(p => p + 1)} disabled={(paginaPrassi + 1) * PER_PAGINA_PRASSI >= totalePrassi}
+                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     )
 }
-
-// ═══════════════════════════════════════════════════════════════
-// PANNELLO PRATICA (invariato)
-// ═══════════════════════════════════════════════════════════════
-function PannelloPratica({ praticaAttiva, setPraticaAttiva, onRicercaSalvata, refresh }) {
-    const [cerca, setCerca] = useState('')
-    const [suggerite, setSuggerite] = useState([])
-    const [loading, setLoading] = useState(false)
-
-    async function cercaPratiche(q) {
-        setCerca(q)
-        if (!q.trim()) { setSuggerite([]); return }
-        setLoading(true)
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            const { data } = await supabase
-                .from('pratiche')
-                .select('id, titolo, cliente:cliente_id(nome, cognome)')
-                .eq('avvocato_id', user.id)
-                .eq('stato', 'aperta')
-                .ilike('titolo', `%${q}%`)
-                .limit(8)
-            setSuggerite(data ?? [])
-        } finally { setLoading(false) }
-    }
-
-    if (!praticaAttiva) return (
-        <div className="p-4 space-y-4">
-            <p className="section-label mb-2">Seleziona pratica</p>
-            <p className="font-body text-xs text-nebbia/40 mb-3">Cerca e seleziona una pratica per salvare le ricerche.</p>
-            <div className="relative">
-                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-                <input
-                    placeholder="Cerca per nome pratica..."
-                    value={cerca}
-                    onChange={e => cercaPratiche(e.target.value)}
-                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-3 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
-                />
-                {loading && <span className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />}
-            </div>
-            {suggerite.length > 0 && (
-                <div className="bg-petrolio border border-white/10">
-                    {suggerite.map(p => (
-                        <button key={p.id}
-                            onClick={() => { setPraticaAttiva(p); setCerca(''); setSuggerite([]) }}
-                            className="w-full text-left px-3 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-                        >
-                            <p className="font-body text-sm text-nebbia">{p.titolo}</p>
-                            {p.cliente && <p className="font-body text-xs text-nebbia/30 mt-0.5">{p.cliente.nome} {p.cliente.cognome}</p>}
-                        </button>
-                    ))}
-                </div>
-            )}
-            {!loading && cerca && suggerite.length === 0 && (
-                <p className="font-body text-xs text-nebbia/30 mt-2">Nessuna pratica trovata</p>
-            )}
-        </div>
-    )
-
-    return (
-        <div className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-                <div>
-                    <p className="font-body text-xs text-oro uppercase tracking-widest mb-1">Pratica attiva</p>
-                    <p className="font-display text-base text-nebbia">{praticaAttiva.titolo}</p>
-                </div>
-                <button onClick={() => setPraticaAttiva(null)} className="text-nebbia/30 hover:text-red-400 transition-colors shrink-0 mt-1">
-                    <X size={14} />
-                </button>
-            </div>
-        </div>
-    )
-}
-
 // ═══════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPALE — "Banca dati"
 // ═══════════════════════════════════════════════════════════════
@@ -2140,160 +2230,74 @@ export function BancaDati() {
     const { crediti, setCrediti } = useCreditiAI()
     const [messaggiConversazione, setMessaggiConversazione] = useState([])
 
-    // Tab principale
     const [tabAttivo, setTabAttivo] = useState('italiana')
 
-    // Pannello pratica
-    const [pannelloAperto, setPannello] = useState(false)
-    const [praticaAttiva, setPraticaAttiva] = useState(null)
-    const [refreshPannello, setRefreshPannello] = useState(0)
-
     return (
-        <div className="flex min-h-screen">
+        <div className="space-y-5 p-6">
 
-            {/* ── CONTENUTO PRINCIPALE ── */}
-            <div className="flex-1 min-w-0 overflow-y-auto">
-                <div className="space-y-5 p-6">
+            {/* Header */}
+            <PageHeader
+                label="Banca dati"
+                title="Codici, leggi, sentenze e prassi"
+                subtitle="Ricerca con Lex AI o sfoglia normativa italiana, europea, giurisprudenza e prassi amministrativa"
+            />
 
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <PageHeader
-                            label="Banca dati"
-                            title="Codici, leggi, sentenze e prassi"
-                            subtitle="Ricerca con Lex AI o sfoglia normativa italiana, europea, giurisprudenza e prassi amministrativa"
-                        />
-                        <div className="flex items-center gap-3">
-                            {isAvvocato && (
-                                <button
-                                    onClick={() => setPannello(!pannelloAperto)}
-                                    className="relative flex items-center gap-2 px-4 py-2.5 bg-slate border border-white/10 text-nebbia/60 font-body text-sm hover:text-nebbia hover:border-white/20 transition-colors"
-                                >
-                                    <FileText size={13} />
-                                    <span className="hidden sm:inline">Seleziona una Pratica e allega Ricerca</span>
-                                    {praticaAttiva && (
-                                        <span className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 bg-oro rounded-full" />
-                                    )}
-                                </button>
-                            )}
-                        </div>
-                    </div>
+            {/* Lex — sempre attivo, cross-fonte */}
+            <RicercaAI
+                codice={null}
+                crediti={crediti}
+                setCrediti={setCrediti}
+                messaggi={messaggiConversazione}
+                onAggiornaMessaggi={setMessaggiConversazione}
+            />
 
-                    {/* Lex — sempre attivo, cross-fonte */}
-                    <RicercaAI
-                        codice={null}
-                        crediti={crediti}
-                        setCrediti={setCrediti}
-                        messaggi={messaggiConversazione}
-                        onAggiornaMessaggi={setMessaggiConversazione}
-                        praticaAttiva={praticaAttiva}
-                        onRicercaSalvata={() => setRefreshPannello(p => p + 1)}
-                    />
-
-                    {/* ── Tab primario Italiana | UE | Sentenze ── */}
-                    <div className="!mt-10 pt-6 border-t border-white/5 space-y-5">
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <p className="section-label !m-0">Sfoglia</p>
-                            <div className="flex gap-1 bg-slate border border-white/5 p-1">
-                                <button onClick={() => setTabAttivo('italiana')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'italiana' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                    <Flag size={12} /> Italiana
-                                </button>
-                                <button onClick={() => setTabAttivo('ue')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                    <Globe size={12} /> UE
-                                </button>
-                                <button onClick={() => setTabAttivo('sentenze')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'sentenze' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                    <Landmark size={12} /> Sentenze
-                                </button>
-                                <button onClick={() => setTabAttivo('prassi')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'prassi' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                    <ScrollText size={12} /> Prassi
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Contenuto del tab */}
-                        {tabAttivo === 'italiana' && (
-                            <TabNormativa
-                                datasetFonte="it"
-                                key="it"
-                                crediti={crediti}
-                                setCrediti={setCrediti}
-                                praticaAttiva={praticaAttiva}
-                                refreshPannello={refreshPannello}
-                                setRefreshPannello={setRefreshPannello}
-                                messaggiConversazione={messaggiConversazione}
-                                setMessaggiConversazione={setMessaggiConversazione}
-                            />
-                        )}
-                        {tabAttivo === 'ue' && (
-                            <TabNormativa
-                                datasetFonte="ue"
-                                key="ue"
-                                crediti={crediti}
-                                setCrediti={setCrediti}
-                                praticaAttiva={praticaAttiva}
-                                refreshPannello={refreshPannello}
-                                setRefreshPannello={setRefreshPannello}
-                                messaggiConversazione={messaggiConversazione}
-                                setMessaggiConversazione={setMessaggiConversazione}
-                            />
-                        )}
-                        {tabAttivo === 'sentenze' && (
-                            <TabSentenze
-                                praticaAttiva={praticaAttiva}
-                                setRefreshPannello={setRefreshPannello}
-                            />
-                        )}
-                        {tabAttivo === 'prassi' && (
-                            <TabPrassi />
-                        )}
+            {/* Tab primario Italiana | UE | Sentenze | Prassi */}
+            <div className="!mt-10 pt-6 border-t border-white/5 space-y-5">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <p className="section-label !m-0">Sfoglia</p>
+                    <div className="flex gap-1 bg-slate border border-white/5 p-1">
+                        <button onClick={() => setTabAttivo('italiana')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'italiana' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <Flag size={12} /> Italiana
+                        </button>
+                        <button onClick={() => setTabAttivo('ue')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <Globe size={12} /> UE
+                        </button>
+                        <button onClick={() => setTabAttivo('sentenze')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'sentenze' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <Landmark size={12} /> Sentenze
+                        </button>
+                        <button onClick={() => setTabAttivo('prassi')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'prassi' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <ScrollText size={12} /> Prassi
+                        </button>
                     </div>
                 </div>
+
+                {tabAttivo === 'italiana' && (
+                    <TabNormativa
+                        datasetFonte="it"
+                        key="it"
+                        crediti={crediti}
+                        setCrediti={setCrediti}
+                        messaggiConversazione={messaggiConversazione}
+                        setMessaggiConversazione={setMessaggiConversazione}
+                    />
+                )}
+                {tabAttivo === 'ue' && (
+                    <TabNormativa
+                        datasetFonte="ue"
+                        key="ue"
+                        crediti={crediti}
+                        setCrediti={setCrediti}
+                        messaggiConversazione={messaggiConversazione}
+                        setMessaggiConversazione={setMessaggiConversazione}
+                    />
+                )}
+                {tabAttivo === 'sentenze' && <TabSentenze />}
+                {tabAttivo === 'prassi' && <TabPrassi />}
             </div>
-
-            {/* ── PANNELLO PRATICA — solo avvocati ── */}
-            {isAvvocato && pannelloAperto && (
-                <>
-                    <div className="hidden lg:flex flex-col w-[35%] max-w-md border-l border-white/5 bg-slate overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
-                            <p className="font-body text-sm font-medium text-nebbia">Pratica</p>
-                            <button onClick={() => setPannello(false)} className="text-nebbia/30 hover:text-nebbia transition-colors">
-                                <X size={14} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                            <PannelloPratica
-                                praticaAttiva={praticaAttiva}
-                                setPraticaAttiva={setPraticaAttiva}
-                                onRicercaSalvata={() => setRefreshPannello(p => p + 1)}
-                                refresh={refreshPannello}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="lg:hidden fixed inset-0 z-50">
-                        <div className="absolute inset-0 bg-black/60" onClick={() => setPannello(false)} />
-                        <div className="absolute bottom-0 left-0 right-0 bg-slate border-t border-white/10 max-h-[70vh] flex flex-col">
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-                                <p className="font-body text-sm font-medium text-nebbia">Pratica</p>
-                                <button onClick={() => setPannello(false)} className="text-nebbia/30 hover:text-nebbia transition-colors">
-                                    <X size={14} />
-                                </button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto">
-                                <PannelloPratica
-                                    praticaAttiva={praticaAttiva}
-                                    setPraticaAttiva={setPraticaAttiva}
-                                    onRicercaSalvata={() => setRefreshPannello(p => p + 1)}
-                                    refresh={refreshPannello}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     )
 }

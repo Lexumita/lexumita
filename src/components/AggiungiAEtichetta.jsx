@@ -36,6 +36,8 @@ export default function AggiungiAEtichetta({
     metadati = {},
     variant = 'default',
     onCambio,
+    ricercaIdEsterno = null,
+    onRicercaCreata = null,
 }) {
     const [aperto, setAperto] = useState(false)
     const [etichette, setEtichette] = useState([])
@@ -45,10 +47,47 @@ export default function AggiungiAEtichetta({
     const [salvando, setSalvando] = useState(null) // id dell'etichetta in fase di salvataggio
     const [creando, setCreando] = useState(false)
     const [errore, setErrore] = useState('')
-    const [elementoId, setElementoId] = useState(elemento?.id ?? null)
+    const [elementoId, setElementoId] = useState(elemento?.id ?? ricercaIdEsterno ?? null)
+
+    // Sincronizza se il sibling SalvaInPratica crea la riga prima di noi
+    useEffect(() => {
+        if (ricercaIdEsterno && ricercaIdEsterno !== elementoId) {
+            setElementoId(ricercaIdEsterno)
+        }
+    }, [ricercaIdEsterno])
 
     const containerRef = useRef(null)
+    const buttonRef = useRef(null)
     const inputRef = useRef(null)
+    const [posizione, setPosizione] = useState({ top: 0, left: 0 })
+
+    // Calcola posizione popover quando si apre
+    useEffect(() => {
+        if (!aperto || !buttonRef.current) return
+        function calcolaPosizione() {
+            const rect = buttonRef.current.getBoundingClientRect()
+            const popWidth = 288 // w-72 = 18rem = 288px
+            // Allinea il popover sotto al bottone, ancorato a destra
+            let left = rect.right - popWidth
+            // Se uscirebbe a sinistra, ancora a sinistra del bottone
+            if (left < 8) left = rect.left
+            // Se anche così uscirebbe a destra, fissa al bordo destro - 8px
+            if (left + popWidth > window.innerWidth - 8) {
+                left = window.innerWidth - popWidth - 8
+            }
+            setPosizione({
+                top: rect.bottom + 8,
+                left,
+            })
+        }
+        calcolaPosizione()
+        window.addEventListener('resize', calcolaPosizione)
+        window.addEventListener('scroll', calcolaPosizione, true)
+        return () => {
+            window.removeEventListener('resize', calcolaPosizione)
+            window.removeEventListener('scroll', calcolaPosizione, true)
+        }
+    }, [aperto])
 
     // Chiudi al click fuori
     useEffect(() => {
@@ -129,6 +168,7 @@ export default function AggiungiAEtichetta({
             .single()
         if (error) throw new Error(error.message)
         setElementoId(data.id)
+        if (onRicercaCreata) onRicercaCreata(data.id)
         return data.id
     }
 
@@ -229,15 +269,17 @@ export default function AggiungiAEtichetta({
     const mostraCrea = cerca.trim().length > 0 && !matchEsatto
 
     // Stile pulsante in base alla variante
+    // 'default' usa stile uguale a btn-secondary (padding + border) per allinearsi visivamente a "Aggiungi a pratica"
     const buttonClass = variant === 'compact'
         ? 'flex items-center gap-1.5 px-2.5 py-1.5 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors font-body text-xs'
-        : 'flex items-center gap-2 px-3 py-2 border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro transition-colors font-body text-sm'
+        : 'btn-secondary text-sm flex items-center gap-2'
 
     const numAssegnate = assegnate.size
 
     return (
         <div ref={containerRef} className="relative inline-block">
             <button
+                ref={buttonRef}
                 type="button"
                 onClick={() => setAperto(v => !v)}
                 className={buttonClass}
@@ -252,7 +294,10 @@ export default function AggiungiAEtichetta({
             </button>
 
             {aperto && (
-                <div className="absolute z-50 mt-2 w-72 bg-slate border border-white/10 shadow-2xl">
+                <div
+                    className="fixed z-[100] w-72 bg-slate border border-white/10 shadow-2xl"
+                    style={{ top: posizione.top, left: posizione.left }}
+                >
                     {/* Search bar */}
                     <div className="p-3 border-b border-white/5">
                         <div className="relative">

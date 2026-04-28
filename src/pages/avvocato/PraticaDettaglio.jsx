@@ -227,6 +227,10 @@ export default function PraticaDettaglio() {
     const { id } = useParams()
     const navigate = useNavigate()
 
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [id])
+
     const [pratica, setPratica] = useState(null)
     const [collabPratica, setCP] = useState([])
     const [collabs, setCollabs] = useState([])

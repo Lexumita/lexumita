@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, Badge } from '@/components/shared'
-import { CheckCircle, Clock, AlertCircle, Loader2, Check } from 'lucide-react'
+import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale } from 'lucide-react'
 
 export default function UserProfilo() {
     const { profile } = useAuth()
@@ -14,6 +14,19 @@ export default function UserProfilo() {
         telefono: profile?.telefono ?? '',
     })
     const [datiOriginali, setDatiOriginali] = useState({ ...form })
+
+    // Sincronizza form quando profile arriva (caso async)
+    useEffect(() => {
+        if (profile) {
+            const init = {
+                nome: profile.nome ?? '',
+                cognome: profile.cognome ?? '',
+                telefono: profile.telefono ?? '',
+            }
+            setForm(init)
+            setDatiOriginali(init)
+        }
+    }, [profile])
     const [salvandoDati, setSalvandoDati] = useState(false)
     const [okDati, setOkDati] = useState(false)
     const [errDati, setErrDati] = useState('')
@@ -110,6 +123,13 @@ export default function UserProfilo() {
                         {!profile?.verification_status && <span className="font-body text-sm text-nebbia/30">Non inviata</span>}
                     </div>
                 </div>
+
+                {isRejected && profile?.verification_note && (
+                    <div className="mt-2 bg-red-900/10 border border-red-500/20 p-3">
+                        <p className="font-body text-xs text-red-400/80 uppercase tracking-widest mb-1">Motivo del rifiuto</p>
+                        <p className="font-body text-sm text-red-400 leading-relaxed">{profile.verification_note}</p>
+                    </div>
+                )}
             </div>
 
             {/* Dati personali */}

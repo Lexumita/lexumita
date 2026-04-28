@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
 import { PageHeader, Badge } from '@/components/shared'
 import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -29,8 +28,6 @@ function Campo({ label, value, placeholder = '—', type = 'text', disabled = fa
 }
 
 export default function AvvocatoProfilo() {
-    const { profile } = useAuth()
-
     const [loading, setLoading] = useState(true)
     const [tipoAccount, setTipoAccount] = useState(null)
     const [verificato, setVerificato] = useState(false)
@@ -79,7 +76,9 @@ export default function AvvocatoProfilo() {
                         cognome: profilo.cognome ?? '',
                         telefono: profilo.telefono ?? '',
                         email: profilo.email ?? user.email ?? '',
-                        specializzazioni: profilo.specializzazioni ?? '',
+                        specializzazioni: Array.isArray(profilo.specializzazioni)
+                            ? profilo.specializzazioni.join(', ')
+                            : (profilo.specializzazioni ?? ''),
                         studio: profilo.studio ?? '',
                     }
                     setDati(d)
@@ -125,7 +124,9 @@ export default function AvvocatoProfilo() {
                 cognome: dati.cognome.trim(),
                 telefono: dati.telefono.trim() || null,
                 studio: dati.studio.trim() || null,
-                specializzazioni: dati.specializzazioni.trim() || null,
+                specializzazioni: dati.specializzazioni.trim()
+                    ? dati.specializzazioni.split(',').map(s => s.trim()).filter(Boolean)
+                    : null,
             }).eq('id', user.id)
             if (error) throw new Error(error.message)
             setDatiOriginali(dati); setEditingDati(false); setOkDati(true)
@@ -169,7 +170,6 @@ export default function AvvocatoProfilo() {
         finally { setSalvandoPwd(false) }
     }
 
-    const isTitolare = tipoAccount === 'titolare'
     const isMembro = tipoAccount === 'membro' || tipoAccount === 'referente'
     const tipoLabel = { titolare: 'Titolare studio', referente: 'Referente studio', membro: 'Membro studio', singolo: 'Avvocato singolo' }[tipoAccount ?? ''] ?? '—'
 
@@ -248,7 +248,7 @@ export default function AvvocatoProfilo() {
                 <Campo label="Telefono" value={dati.telefono} placeholder="+39 333 1234567"
                     editing={editingDati} onChange={v => setDati(d => ({ ...d, telefono: v }))} />
                 <Campo label="Email" value={dati.email} disabled={true} editing={editingDati} onChange={() => { }} />
-                <Campo label="Specializzazioni" value={dati.specializzazioni} placeholder="Diritto civile, Diritto commerciale..."
+                <Campo label="Specializzazioni" value={dati.specializzazioni} placeholder="Diritto civile, Diritto commerciale (separate da virgola)"
                     editing={editingDati} onChange={v => setDati(d => ({ ...d, specializzazioni: v }))} />
 
                 {errDati && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errDati}</div>}
@@ -372,7 +372,7 @@ export default function AvvocatoProfilo() {
                             </div>
                         ))}
                         {errPwd && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errPwd}</div>}
-                        <button onClick={handleCambiaPwd} disabled={salvandoPwd || !pwd.nuova} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40">
+                        <button onClick={handleCambiaPwd} disabled={salvandoPwd || !pwd.nuova || !pwd.conferma} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40">
                             {salvandoPwd ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : <><Check size={14} /> Aggiorna password</>}
                         </button>
                     </>

@@ -39,20 +39,6 @@ export default function Login() {
         .single()
 
       const role = profile?.role ?? 'user'
-
-      // User: redirect in base allo stato verifica
-      if (role === 'user') {
-        if (!profile?.verification_status || profile.verification_status === 'none') {
-          return navigate('/verifica')
-        }
-        if (profile.verification_status === 'pending') {
-          return navigate('/verifica/stato')
-        }
-        if (profile.verification_status === 'approved') {
-          return navigate('/studio')
-        }
-      }
-
       navigate(ROLE_HOME[role] ?? '/')
     } catch (err) {
       setError(err.message === 'Invalid login credentials'

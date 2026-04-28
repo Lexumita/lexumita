@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import {
-  LogOut, Menu, X, Sparkles,
+  LogOut, Menu, X, Sparkles, Plus,
   Home, Search, ShieldCheck, CreditCard, Headphones, User, ChevronRight,
   Clock, CheckCircle, XCircle
 } from 'lucide-react'
@@ -36,7 +36,7 @@ export default function UserLayout({ children }) {
   const isPending = status === 'pending'
   const isApproved = status === 'approved'
   const isRejected = status === 'rejected'
-  const isUnverified = !status
+  const isUnverified = !status || status === 'none'
 
   // Voce sidebar verifica (nascosta se rejected)
   const verifyItem = isRejected ? null : isUnverified
@@ -46,7 +46,7 @@ export default function UserLayout({ children }) {
       : { path: '/verifica/stato', label: 'Verifica identità', icon: ShieldCheck, badge: 'Approvata', badgeColor: 'salvia' }
 
   const NAV = [
-    { path: '/area', label: 'Home', icon: Home, end: true },
+    { path: '/area', label: 'Banca Dati', icon: Home, end: true },
     { path: '/area/ricerche', label: 'Ricerche', icon: Search },
     ...(verifyItem ? [verifyItem] : []),
     { path: '/area/acquista', label: 'Acquista', icon: CreditCard },
@@ -60,7 +60,7 @@ export default function UserLayout({ children }) {
       icon: Clock, color: 'amber',
       text: 'I tuoi documenti sono in revisione. Riceverai una risposta entro 24-48 ore.',
     }
-      : isApproved && !profile?.piano_attivo ? {
+      : isApproved && !profile?.piano_id ? {
         icon: CheckCircle, color: 'salvia',
         text: 'Verifica completata! Acquista un piano per accedere a pratiche, clienti e tutte le funzionalità Lexum.',
         link: { to: '/area/acquista', label: 'Vedi piani →' },
@@ -160,9 +160,11 @@ export default function UserLayout({ children }) {
           <div /> {/* spacer */}
           <div className="flex items-center gap-4">
             <Link to="/area/acquista"
+              title="Acquista crediti AI"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-petrolio border border-salvia/20 hover:border-salvia/40 transition-colors group">
               <Sparkles size={13} className="text-salvia" />
               <span className="font-body text-sm text-nebbia/80 group-hover:text-nebbia transition-colors">{crediti}</span>
+              <Plus size={10} className="text-nebbia/30 group-hover:text-salvia transition-colors" />
             </Link>
             <span className="font-body text-sm text-nebbia/60">
               {profile?.nome ? `${profile.nome} ${profile.cognome ?? ''}`.trim() : profile?.email}
@@ -180,6 +182,7 @@ export default function UserLayout({ children }) {
             className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-petrolio border border-salvia/20">
             <Sparkles size={12} className="text-salvia" />
             <span className="font-body text-xs text-nebbia/80">{crediti}</span>
+            <Plus size={9} className="text-nebbia/40" />
           </Link>
         </div>
 

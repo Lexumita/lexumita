@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import {
     Tag, Search, Loader2, BookOpen, Sparkles, Landmark, ScrollText,
     Trash2, X, ExternalLink, MessageSquare, ArrowLeft, AlertCircle, FolderOpen
@@ -21,6 +22,11 @@ const TIPI_RICERCA = ['ricerca_ai', 'ricerca_manuale', 'chat_lex']
 export default function EtichettaDettaglio() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { profile } = useAuth()
+
+    // Path base role-aware
+    const basePathRicerche = profile?.role === 'avvocato' ? '/ricerche' : '/area/ricerche'
+    const basePathBancaDati = profile?.role === 'avvocato' ? '/banca-dati' : '/area'
 
     const [etichetta, setEtichetta] = useState(null)
     const [contenuti, setContenuti] = useState([])
@@ -67,7 +73,6 @@ export default function EtichettaDettaglio() {
 
     async function arricchisciContenuto(rel) {
         try {
-            // Tutti e 3 i tipi di ricerca caricano dalla stessa tabella
             if (TIPI_RICERCA.includes(rel.tipo)) {
                 const { data } = await supabase
                     .from('ricerche')
@@ -163,7 +168,7 @@ export default function EtichettaDettaglio() {
 
     if (errore) return (
         <div className="space-y-5">
-            <Link to="/area/ricerche" className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+            <Link to={basePathRicerche} className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                 <ArrowLeft size={11} /> Tutte le ricerche
             </Link>
             <div className="bg-slate border border-red-500/20 p-8 text-center">
@@ -176,24 +181,21 @@ export default function EtichettaDettaglio() {
     if (!etichetta) return null
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 px-6 pt-2 pb-6">
 
-            <Link to="/area/ricerche" className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+            <Link to={basePathRicerche} className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                 <ArrowLeft size={11} /> Tutte le ricerche
             </Link>
 
-            {/* Header etichetta */}
-            <div className="flex items-start gap-3 min-w-0">
-                <div className="w-4 h-4 rounded-full shrink-0 mt-2"
+            {/* Header etichetta — Etichetta + nome inline */}
+            <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                <div className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: etichetta.colore || '#7FA39A' }} />
-                <div className="min-w-0">
-                    <p className="section-label mb-1">Etichetta</p>
-                    <h1 className="font-display text-3xl font-light text-nebbia">{etichetta.nome}</h1>
-                    <p className="font-body text-xs text-nebbia/30 mt-1">
-                        {contenuti.length} {contenuti.length === 1 ? 'elemento' : 'elementi'} ·
-                        creata il {new Date(etichetta.created_at).toLocaleDateString('it-IT')}
-                    </p>
-                </div>
+                <p className="section-label !m-0">Etichetta</p>
+                <h1 className="font-display text-3xl font-light text-nebbia leading-none">{etichetta.nome}</h1>
+                <p className="font-body text-xs text-nebbia/30">
+                    · {contenuti.length} {contenuti.length === 1 ? 'elemento' : 'elementi'} · creata il {new Date(etichetta.created_at).toLocaleDateString('it-IT')}
+                </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -267,6 +269,7 @@ export default function EtichettaDettaglio() {
                                     eliminando={eliminando === c.id}
                                     aperto={contenutoAperto === c.id}
                                     onToggleApri={() => setContenutoAperto(contenutoAperto === c.id ? null : c.id)}
+                                    basePathBancaDati={basePathBancaDati}
                                 />
                             ))}
                         </div>
@@ -298,7 +301,7 @@ export default function EtichettaDettaglio() {
 // ═══════════════════════════════════════════════════════════════
 // CARD CONTENUTO
 // ═══════════════════════════════════════════════════════════════
-function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleApri }) {
+function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleApri, basePathBancaDati }) {
 
     // ── RICERCA (ai/manuale/chat_lex) ──
     if (TIPI_RICERCA.includes(c.tipo)) {
@@ -371,7 +374,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
     // ── NORMA ──
     if (c.tipo === 'norma') {
         return (
-            <Link to={`/banca-dati/norma/${c.dati.id}`}
+            <Link to={`${basePathBancaDati}/norma/${c.dati.id}`}
                 className="block bg-slate border border-white/5 hover:border-oro/20 transition-colors p-4 group">
                 <div className="flex items-start gap-3">
                     <BookOpen size={14} className="text-oro/70 shrink-0 mt-0.5" />
@@ -408,8 +411,8 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
     // ── SENTENZA ──
     if (c.tipo === 'sentenza') {
         const link = c.fonte_sentenza === 'lexum'
-            ? `/banca-dati/lexum/${c.dati.id}`
-            : `/banca-dati/avvocato/${c.dati.id}`
+            ? `${basePathBancaDati}/lexum/${c.dati.id}`
+            : `${basePathBancaDati}/avvocato/${c.dati.id}`
         const titolo = [c.dati.organo, c.dati.sezione, c.dati.numero && `n. ${c.dati.numero}`, c.dati.anno].filter(Boolean).join(' · ')
         return (
             <Link to={link}
@@ -443,7 +446,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
     // ── PRASSI ──
     if (c.tipo === 'prassi') {
         return (
-            <Link to={`/banca-dati/prassi/${c.dati.id}`}
+            <Link to={`${basePathBancaDati}/prassi/${c.dati.id}`}
                 className="block bg-slate border border-white/5 hover:border-salvia/20 transition-colors p-4 group">
                 <div className="flex items-start gap-3">
                     <ScrollText size={14} className="text-salvia/70 shrink-0 mt-0.5" />

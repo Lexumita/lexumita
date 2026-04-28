@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { BackButton, PageHeader, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
+import EtichetteAssegnate from '@/components/EtichetteAssegnate'
 import {
     FileText, Calendar, Gavel, BookOpen, Scale,
     AlertCircle, CheckCircle, Lock, Search, Save,
@@ -258,6 +259,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
     const [sentenza, setSentenza] = useState(null)
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState(null)
+    const [refreshEtichette, setRefreshEtichette] = useState(0)
 
     // Paywall state (solo per fonte='avvocato')
     const [haAccesso, setHaAccesso] = useState(false)
@@ -521,10 +523,17 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                 </div>
 
                 {haAccesso && (
-                    <div className="shrink-0 flex flex-wrap items-start gap-2">
-                        <AggiungiAPratica sentenza={s} sorgente={fonte} />
-                        <AggiungiAEtichetta
+                    <div className="shrink-0 flex flex-col items-end gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <AggiungiAPratica sentenza={s} sorgente={fonte} />
+                            <AggiungiAEtichetta
+                                elemento={{ tipo: 'sentenza', id: s.id }}
+                                onCambio={() => setRefreshEtichette(k => k + 1)}
+                            />
+                        </div>
+                        <EtichetteAssegnate
                             elemento={{ tipo: 'sentenza', id: s.id }}
+                            refreshKey={refreshEtichette}
                         />
                     </div>
                 )}

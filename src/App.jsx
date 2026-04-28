@@ -148,6 +148,8 @@ export default function App() {
             <Route path="/admin/assistenza" element={<Adm><AdminAssistenza /></Adm>} />
             <Route path="/admin/assistenza/:id" element={<Adm><AdminAssistenzaDettaglio /></Adm>} />
             <Route path="/admin/normativa" element={<Adm><AdminNormativa /></Adm>} />
+            <Route path="/admin/normativa/:tipo/:slug" element={<Adm><AdminNormativaDettaglio /></Adm>} />
+            {/* Retrocompat: vecchia rotta /admin/normativa/:codice → /admin/normativa/it/:codice */}
             <Route path="/admin/normativa/:codice" element={<Adm><AdminNormativaDettaglio /></Adm>} />
 
             {/* ═══════════════════════════════════════════════════════
@@ -173,9 +175,9 @@ export default function App() {
             <Route path="/archivio/:id" element={<Avv><ArchivioDettaglio /></Avv>} />
             <Route path="/profilo" element={<Avv><AvvocatoProfilo /></Avv>} />
 
-            {/* Ricerche avvocato (stesso componente del user) */}
+            {/* Ricerche avvocato */}
             <Route path="/ricerche" element={<Avv><Ricerche /></Avv>} />
-            <Route path="/ricerche/:id" element={<Avv><EtichettaDettaglio /></Avv>} />
+            <Route path="/etichette/:id" element={<Avv><EtichettaDettaglio /></Avv>} />
 
             {/* Banca dati avvocato (con pannello pratiche attivo) */}
             <Route path="/banca-dati" element={<BancaDatiSharedAvv><BancaDati /></BancaDatiSharedAvv>} />
@@ -210,7 +212,7 @@ export default function App() {
             {/* Home utente = banca dati embedded */}
             <Route path="/area" element={<Usr><BancaDati /></Usr>} />
             <Route path="/area/ricerche" element={<Usr><Ricerche /></Usr>} />
-            <Route path="/area/ricerche/:id" element={<Usr><EtichettaDettaglio /></Usr>} />
+            <Route path="/area/etichette/:id" element={<Usr><EtichettaDettaglio /></Usr>} />
             <Route path="/area/acquista" element={<Usr><Acquista /></Usr>} />
             <Route path="/area/assistenza" element={<Usr><UserAssistenza /></Usr>} />
             <Route path="/area/assistenza/nuovo" element={<Usr><UserAssistenzaNuovo /></Usr>} />
@@ -236,11 +238,11 @@ export default function App() {
             <Route path="/abbonamenti/checkout" element={<Navigate to="/area/acquista" replace />} />
             <Route path="/normativa" element={<Navigate to="/banca-dati" replace />} />
 
-            {/* Vecchie rotte etichette → ricerche */}
+            {/* Vecchie rotte ricerche/:id → etichette/:id (canonical change) */}
+            <Route path="/ricerche/:id" element={<RicercheToEtichetta />} />
+            <Route path="/area/ricerche/:id" element={<AreaRicercheToEtichetta />} />
             <Route path="/etichette" element={<Navigate to="/ricerche" replace />} />
-            <Route path="/etichette/:id" element={<EtichettaRedirect />} />
             <Route path="/area/etichette" element={<Navigate to="/area/ricerche" replace />} />
-            <Route path="/area/etichette/:id" element={<EtichettaAreaRedirect />} />
 
             {/* Vecchie rotte /user/* → /area/* */}
             <Route path="/user/assistenza" element={<Navigate to="/area/assistenza" replace />} />
@@ -273,12 +275,12 @@ function UserRedirectAssistenza() {
   return <Navigate to={path} replace />
 }
 
-// ─── Redirect etichette → ricerche con ID dinamico ───
-function EtichettaRedirect() {
-  const path = window.location.pathname.replace('/etichette/', '/ricerche/')
+// ─── Redirect ricerche/:id → etichette/:id (rinominato per chiarezza) ───
+function RicercheToEtichetta() {
+  const path = window.location.pathname.replace('/ricerche/', '/etichette/')
   return <Navigate to={path} replace />
 }
-function EtichettaAreaRedirect() {
-  const path = window.location.pathname.replace('/area/etichette/', '/area/ricerche/')
+function AreaRicercheToEtichetta() {
+  const path = window.location.pathname.replace('/area/ricerche/', '/area/etichette/')
   return <Navigate to={path} replace />
 }

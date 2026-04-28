@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { PageHeader, StatCard } from '@/components/shared'
 import {
     Upload, Cpu, RefreshCw, ChevronRight, Trash2,
-    AlertCircle, BookOpen, Flag, Globe, Archive
+    AlertCircle, BookOpen, Flag, Globe, Archive, Scale
 } from 'lucide-react'
 
-// ─── CONFIG PER OGNI FONTE ────────────────────────────────────
+// ─── CONFIG TAB ITALIANA / UE ────────────────────────────────────
 const CONFIG_IT = {
     key: 'it',
     labelStats: 'Codici caricati',
@@ -19,7 +19,7 @@ const CONFIG_IT = {
     permetteImport: true,
     permetteEmbedding: true,
     permetteDelete: true,
-    rotta: '/admin/normativa',
+    rotta: '/admin/normativa/it',
 }
 
 const CONFIG_UE = {
@@ -32,7 +32,7 @@ const CONFIG_UE = {
     permetteImport: false,
     permetteEmbedding: false,
     permetteDelete: false,
-    rotta: '/admin/normativa-ue',
+    rotta: '/admin/normativa/ue',
 }
 
 // ─── COMPONENTE PRINCIPALE ────────────────────────────────────
@@ -42,7 +42,7 @@ export default function AdminNormativa() {
     return (
         <div className="space-y-5">
             {/* Tab selector */}
-            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit flex-wrap">
                 <button onClick={() => setTab('it')}
                     className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'it' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                     <Flag size={13} /> Normativa Italiana
@@ -55,11 +55,16 @@ export default function AdminNormativa() {
                     className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'archivio' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                     <Archive size={13} /> Archivio normativo
                 </button>
+                <button onClick={() => setTab('sentenze')}
+                    className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'sentenze' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <Scale size={13} /> Giurisprudenza
+                </button>
             </div>
 
             {tab === 'it' && <VistaCodici config={CONFIG_IT} titolo="Normativa Italiana" />}
             {tab === 'ue' && <VistaCodici config={CONFIG_UE} titolo="Normativa UE" />}
             {tab === 'archivio' && <VistaArchivio />}
+            {tab === 'sentenze' && <VistaSentenze />}
         </div>
     )
 }
@@ -83,7 +88,6 @@ function VistaCodici({ config, titolo }) {
     async function caricaDati() {
         setLoading(true)
         try {
-            // Label (solo per IT)
             if (config.tabellaLabel) {
                 const { data: labelData } = await supabase
                     .from(config.tabellaLabel).select('codice, label')
@@ -94,7 +98,6 @@ function VistaCodici({ config, titolo }) {
                 setCodiciLabel({})
             }
 
-            // Stats globali
             const { count: totale } = await supabase
                 .from(config.tabella).select('*', { count: 'exact', head: true })
             const { count: conEmbedding } = await supabase
@@ -102,7 +105,6 @@ function VistaCodici({ config, titolo }) {
                 .not('embedding', 'is', null)
             setStats({ totale: totale ?? 0, conEmbedding: conEmbedding ?? 0 })
 
-            // Codici/Categorie con conteggio
             const { data: codiciData } = await supabase.rpc(config.rpcStats)
             setCodici(codiciData ?? [])
         } finally {
@@ -194,7 +196,6 @@ function VistaCodici({ config, titolo }) {
         <div className="space-y-5">
             <PageHeader label="Admin" title={titolo} subtitle={`${stats.totale.toLocaleString()} articoli nel database`} />
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="Articoli totali" value={stats.totale.toLocaleString()} colorClass="text-oro" />
                 <StatCard label={config.labelStats} value={codici.length} colorClass="text-salvia" />
@@ -202,7 +203,6 @@ function VistaCodici({ config, titolo }) {
                 <StatCard label="Copertura AI" value={`${embedPct}%`} colorClass={embedPct === 100 ? 'text-salvia' : 'text-oro'} />
             </div>
 
-            {/* Azioni */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className={`bg-slate border border-white/5 p-5 space-y-4 ${!config.permetteImport ? 'opacity-40' : ''}`}>
                     <div className="flex items-start gap-3">
@@ -257,7 +257,6 @@ function VistaCodici({ config, titolo }) {
                 </div>
             </div>
 
-            {/* Lista codici/categorie */}
             <div className="flex items-center justify-between">
                 <p className="section-label">{config.key === 'ue' ? 'Categorie nel database' : 'Codici nel database'}</p>
                 <button onClick={caricaDati} className="text-nebbia/30 hover:text-nebbia transition-colors">
@@ -335,10 +334,12 @@ function VistaCodici({ config, titolo }) {
     )
 }
 
-// ─── VISTA ARCHIVIO (solo contatori, no lista) ───────────────
+// ─── VISTA ARCHIVIO — lista per tipo_atto ───────────────
 function VistaArchivio() {
+    const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [stats, setStats] = useState({ totale: 0, conEmbedding: 0 })
+    const [tipiAtto, setTipiAtto] = useState([])
 
     useEffect(() => { caricaStats() }, [])
 
@@ -351,6 +352,29 @@ function VistaArchivio() {
                 .from('norme_archivio').select('*', { count: 'exact', head: true })
                 .not('embedding', 'is', null)
             setStats({ totale: totale ?? 0, conEmbedding: conEmbedding ?? 0 })
+
+            // Raggruppa per tipo_atto via RPC se esiste, altrimenti fallback select
+            const { data: tipiData, error: tipiErr } = await supabase
+                .rpc('get_stats_per_tipo_atto_archivio')
+
+            if (tipiErr || !tipiData) {
+                // Fallback: query manuale con aggregazione lato client (limitata)
+                const { data: rows } = await supabase
+                    .from('norme_archivio')
+                    .select('tipo_atto')
+                    .limit(50000)
+                const mappa = {}
+                for (const r of rows ?? []) {
+                    const k = r.tipo_atto ?? 'altro'
+                    mappa[k] = (mappa[k] ?? 0) + 1
+                }
+                const lista = Object.entries(mappa)
+                    .map(([tipo_atto, totale]) => ({ tipo_atto, totale }))
+                    .sort((a, b) => b.totale - a.totale)
+                setTipiAtto(lista)
+            } else {
+                setTipiAtto(tipiData)
+            }
         } finally {
             setLoading(false)
         }
@@ -359,7 +383,6 @@ function VistaArchivio() {
     const embedPct = stats.totale > 0
         ? Math.round((stats.conEmbedding / stats.totale) * 100)
         : 0
-
     const senzaEmbedding = stats.totale - stats.conEmbedding
 
     return (
@@ -376,49 +399,175 @@ function VistaArchivio() {
                 </div>
             ) : (
                 <>
-                    {/* Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <StatCard label="Record totali" value={stats.totale.toLocaleString()} colorClass="text-oro" />
-                        <StatCard label="Con embedding" value={stats.conEmbedding.toLocaleString()} colorClass="text-salvia" />
-                        <StatCard label="Senza embedding" value={senzaEmbedding.toLocaleString()} colorClass="text-nebbia" />
+                        <StatCard label="Tipi di atto" value={tipiAtto.length} colorClass="text-salvia" />
+                        <StatCard label="Con embedding" value={stats.conEmbedding.toLocaleString()} colorClass="text-nebbia" />
                         <StatCard label="Copertura AI" value={`${embedPct}%`} colorClass={embedPct === 100 ? 'text-salvia' : 'text-oro'} />
                     </div>
 
-                    {/* Info box */}
-                    <div className="bg-slate border border-white/5 p-5 space-y-3">
+                    <div className="bg-slate border border-white/5 p-5">
                         <div className="flex items-start gap-3">
                             <Archive size={16} className="text-oro mt-0.5 shrink-0" />
                             <div>
                                 <p className="font-body text-sm font-medium text-nebbia">Archivio non categorizzato</p>
                                 <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
-                                    Questa tabella contiene la raccolta estesa di norme italiane senza categorizzazione.
-                                    Non viene mostrata nella ricerca tradizionale dell avvocato — ha troppi record e la ricerca full-text sarebbe infruttuosa.
-                                    Lex la usa come fallback quando la ricerca nei codici curati non restituisce risultati sufficienti.
-                                </p>
-                                <p className="font-body text-xs text-nebbia/40 mt-3">
-                                    Categorizzazione futura: in roadmap. Per ora, genera gli embeddings via script Python locale.
+                                    Raccolta estesa di norme italiane senza categorizzazione. Lex la usa come fallback quando la ricerca nei codici curati non basta.
+                                    Embeddings via script Python locale (l'edge function è troppo lenta per ~400k record).
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Azione embedding (disabilitata) */}
-                    <div className="bg-slate border border-white/5 p-5 space-y-4 opacity-40">
-                        <div className="flex items-start gap-3">
-                            <Cpu size={16} className="text-salvia mt-0.5 shrink-0" />
-                            <div>
-                                <p className="font-body text-sm font-medium text-nebbia">Genera embeddings AI</p>
-                                <p className="font-body text-xs text-nebbia/40 mt-1">
-                                    Usa lo script Python locale — con ~400k record l edge function e troppo lenta.
-                                </p>
-                            </div>
-                        </div>
-                        <button disabled
-                            className="flex items-center justify-center gap-2 w-full py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm disabled:cursor-not-allowed">
-                            <Cpu size={14} /> Genera embeddings ({senzaEmbedding.toLocaleString()} rimanenti)
+                    <div className="flex items-center justify-between">
+                        <p className="section-label">Tipi di atto presenti</p>
+                        <button onClick={caricaStats} className="text-nebbia/30 hover:text-nebbia transition-colors">
+                            <RefreshCw size={13} />
                         </button>
                     </div>
+
+                    <div className="bg-slate border border-white/5 overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Tipo atto</th>
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Articoli</th>
+                                    <th className="px-4 py-3" />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tipiAtto.length === 0 ? (
+                                    <tr><td colSpan={3} className="px-4 py-20 text-center">
+                                        <p className="font-body text-sm text-nebbia/30">Nessun tipo atto trovato</p>
+                                    </td></tr>
+                                ) : tipiAtto.map(t => (
+                                    <tr key={t.tipo_atto} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                        onClick={() => navigate(`/admin/normativa/archivio/${encodeURIComponent(t.tipo_atto)}`)}>
+                                        <td className="px-4 py-3 font-body text-sm font-medium text-nebbia capitalize">
+                                            {t.tipo_atto?.replace(/_/g, ' ') ?? '—'}
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium">{t.totale?.toLocaleString()}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <ChevronRight size={14} className="text-nebbia/30 inline" />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </>
+            )}
+        </div>
+    )
+}
+
+// ─── VISTA SENTENZE — lista per categoria_lex ───────────
+function VistaSentenze() {
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({ totale: 0 })
+    const [categorie, setCategorie] = useState([])
+    const [mappaLabel, setMappaLabel] = useState({})
+
+    useEffect(() => { caricaDati() }, [])
+
+    async function caricaDati() {
+        setLoading(true)
+        try {
+            const { count: totale } = await supabase
+                .from('giurisprudenza').select('*', { count: 'exact', head: true })
+            setStats({ totale: totale ?? 0 })
+
+            // Carica labels categorie_lex
+            const { data: cat } = await supabase
+                .from('codici_lex').select('codice, label, macro_label')
+            const mappa = {}
+            for (const c of cat ?? []) mappa[c.codice] = c.label
+            setMappaLabel(mappa)
+
+            // Conteggio per categoria via fetch lato client (giurisprudenza ha array categorie_lex)
+            const { data: rows } = await supabase
+                .from('giurisprudenza')
+                .select('categorie_lex')
+                .eq('vigente', true)
+            const conteggi = {}
+            for (const r of rows ?? []) {
+                for (const c of r.categorie_lex ?? []) {
+                    conteggi[c] = (conteggi[c] ?? 0) + 1
+                }
+            }
+            const lista = Object.entries(conteggi)
+                .map(([codice, totale]) => ({ codice, totale, label: mappa[codice] ?? codice }))
+                .sort((a, b) => b.totale - a.totale)
+            setCategorie(lista)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="space-y-5">
+            <PageHeader
+                label="Admin"
+                title="Giurisprudenza"
+                subtitle={`${stats.totale.toLocaleString()} sentenze pubbliche del corpus Lexum`}
+            />
+
+            <div className="bg-slate border border-white/5 p-5">
+                <div className="flex items-start gap-3">
+                    <Scale size={16} className="text-oro mt-0.5 shrink-0" />
+                    <div>
+                        <p className="font-body text-sm font-medium text-nebbia">Sentenze pubbliche (gratuite)</p>
+                        <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
+                            Corpus di giurisprudenza pubblica accessibile a tutti gli avvocati senza pagamento.
+                            Le sentenze caricate dagli avvocati con monetizzazione sono in <a href="/admin/sentenze" className="text-oro hover:text-oro/80">Admin / Sentenze</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <p className="section-label">Categorie con sentenze</p>
+                <button onClick={caricaDati} className="text-nebbia/30 hover:text-nebbia transition-colors">
+                    <RefreshCw size={13} />
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                </div>
+            ) : (
+                <div className="bg-slate border border-white/5 overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-white/5">
+                                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Categoria</th>
+                                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Sentenze</th>
+                                <th className="px-4 py-3" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {categorie.length === 0 ? (
+                                <tr><td colSpan={3} className="px-4 py-20 text-center">
+                                    <p className="font-body text-sm text-nebbia/30">Nessuna categoria trovata</p>
+                                </td></tr>
+                            ) : categorie.map(c => (
+                                <tr key={c.codice} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                    onClick={() => navigate(`/admin/normativa/sentenze/${c.codice}`)}>
+                                    <td className="px-4 py-3">
+                                        <p className="font-body text-sm font-medium text-nebbia">{c.label}</p>
+                                        <p className="font-body text-xs text-nebbia/30 mt-0.5">{c.codice}</p>
+                                    </td>
+                                    <td className="px-4 py-3 font-body text-sm text-oro font-medium">{c.totale.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right">
+                                        <ChevronRight size={14} className="text-nebbia/30 inline" />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     )

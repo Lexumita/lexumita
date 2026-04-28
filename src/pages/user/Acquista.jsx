@@ -74,39 +74,47 @@ export default function Acquista() {
 
     async function caricaProdotti() {
         setLoadingProdotti(true)
-
-        // Pacchetti crediti AI
-        const { data: cred } = await supabase
-            .from('prodotti')
-            .select('id, nome, prezzo, crediti_ai_mensili, descrizione')
-            .eq('tipo', 'crediti_ai')
-            .eq('attivo', true)
-            .order('prezzo')
-        setPacchettiCrediti(cred ?? [])
-
-        // Abbonamenti (solo se verificato)
-        if (isApproved) {
-            const { data: abb } = await supabase
+        setErrore('')
+        try {
+            // Pacchetti crediti AI
+            const { data: cred, error: errCred } = await supabase
                 .from('prodotti')
-                .select('*')
-                .eq('tipo', 'abbonamento')
+                .select('id, nome, prezzo, crediti_ai_mensili')
+                .eq('tipo', 'crediti_ai')
                 .eq('attivo', true)
                 .order('prezzo')
-            setAbbonamenti(abb ?? [])
+            if (errCred) throw new Error(`Errore caricamento crediti: ${errCred.message}`)
+            setPacchettiCrediti(cred ?? [])
 
-            // Seat addon (solo se ha piano studio)
-            if (haPianoStudio) {
-                const { data: seats } = await supabase
+            // Abbonamenti (solo se verificato)
+            if (isApproved) {
+                const { data: abb, error: errAbb } = await supabase
                     .from('prodotti')
-                    .select('id, nome, prezzo, descrizione')
-                    .eq('tipo', 'seat_addon')
+                    .select('*')
+                    .eq('tipo', 'abbonamento')
                     .eq('attivo', true)
                     .order('prezzo')
-                setSeatAddon(seats ?? [])
-            }
-        }
+                if (errAbb) throw new Error(`Errore caricamento abbonamenti: ${errAbb.message}`)
+                setAbbonamenti(abb ?? [])
 
-        setLoadingProdotti(false)
+                // Seat addon (solo se ha piano studio)
+                if (haPianoStudio) {
+                    const { data: seats, error: errSeats } = await supabase
+                        .from('prodotti')
+                        .select('id, nome, prezzo')
+                        .eq('tipo', 'seat_addon')
+                        .eq('attivo', true)
+                        .order('prezzo')
+                    if (errSeats) throw new Error(`Errore caricamento posti: ${errSeats.message}`)
+                    setSeatAddon(seats ?? [])
+                }
+            }
+        } catch (err) {
+            setErrore(err.message)
+            console.error('caricaProdotti:', err)
+        } finally {
+            setLoadingProdotti(false)
+        }
     }
 
     async function acquista(prodottoId, contesto = '') {
@@ -270,7 +278,7 @@ export default function Acquista() {
                     loading={loadingProdotti}
                     acquistando={acquistando}
                     onAcquista={acquista}
-                    piano_attivo={profile?.piano_attivo}
+                    piano_attivo={!!profile?.piano_id}
                 />
             )}
 
@@ -286,23 +294,60 @@ export default function Acquista() {
                 />
             )}
 
-            {/* CTA "diventa avvocato" per non verificati */}
-            {!isApproved && (
-                <div className="bg-slate border border-oro/20 p-6">
-                    <div className="flex items-start gap-3">
-                        <Shield size={18} className="text-oro shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                            <p className="font-body text-sm font-medium text-nebbia mb-1">Sei un avvocato?</p>
-                            <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
-                                Verifica la tua identità e accedi a piani con crediti mensili inclusi, gestionale completo, banca dati sentenze e molto altro.
-                            </p>
-                            <Link to="/verifica" className="btn-primary text-xs">
-                                Inizia la verifica <ArrowRight size={12} />
-                            </Link>
+            {/* CTA verifica — varia in base allo stato */}
+            {!isApproved && (() => {
+                const stato = profile?.verification_status
+                if (stato === 'pending') {
+                    return (
+                        <div className="bg-slate border border-amber-500/20 p-6 flex items-start gap-3">
+                            <Shield size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-body text-sm font-medium text-amber-400 mb-1">Verifica in corso</p>
+                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
+                                    Stiamo esaminando i tuoi documenti. Riceverai una notifica via email entro 24-48 ore.
+                                </p>
+                                <Link to="/verifica/stato" className="font-body text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1.5">
+                                    Vedi stato verifica <ArrowRight size={12} />
+                                </Link>
+                            </div>
+                        </div>
+                    )
+                }
+                if (stato === 'rejected') {
+                    return (
+                        <div className="bg-slate border border-red-500/20 p-6 flex items-start gap-3">
+                            <Shield size={18} className="text-red-400 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-body text-sm font-medium text-red-400 mb-1">Verifica non approvata</p>
+                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
+                                    {profile?.verification_note
+                                        ? `Motivo: ${profile.verification_note}`
+                                        : 'Puoi riprovare ricaricando i documenti corretti.'}
+                                </p>
+                                <Link to="/verifica" className="font-body text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5">
+                                    Riprova la verifica <ArrowRight size={12} />
+                                </Link>
+                            </div>
+                        </div>
+                    )
+                }
+                return (
+                    <div className="bg-slate border border-oro/20 p-6">
+                        <div className="flex items-start gap-3">
+                            <Shield size={18} className="text-oro shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-body text-sm font-medium text-nebbia mb-1">Sei un avvocato?</p>
+                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
+                                    Verifica la tua identità e accedi a piani con crediti mensili inclusi, gestionale completo, banca dati sentenze e molto altro.
+                                </p>
+                                <Link to="/verifica" className="btn-primary text-xs">
+                                    Inizia la verifica <ArrowRight size={12} />
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            })()}
 
             {/* Footer trust */}
             <p className="font-body text-xs text-nebbia/20 text-center pt-4">
@@ -343,12 +388,7 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
                         <p className="font-body text-xs text-nebbia/40 mt-1">
                             {p.crediti_ai_mensili} crediti · EUR {prezzoPerCredito}/credito
                         </p>
-                        {p.descrizione && (
-                            <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed flex-1">
-                                {p.descrizione}
-                            </p>
-                        )}
-                        <p className="font-body text-[10px] text-nebbia/30 mt-3 italic">Non scadono mai</p>
+                        <p className="font-body text-[10px] text-nebbia/30 mt-3 italic flex-1">Non scadono mai</p>
                         <button
                             onClick={() => onAcquista(p.id)}
                             disabled={isLoading}
@@ -443,8 +483,8 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
                                 onClick={() => onAcquista(p.id)}
                                 disabled={isLoading}
                                 className={`w-full justify-center text-sm flex items-center gap-2 py-2.5 font-body disabled:opacity-40 ${isHighlight
-                                        ? 'bg-oro text-petrolio hover:bg-oro/90 transition-colors'
-                                        : 'border border-oro/30 text-oro hover:bg-oro/10 transition-colors'
+                                    ? 'bg-oro text-petrolio hover:bg-oro/90 transition-colors'
+                                    : 'border border-oro/30 text-oro hover:bg-oro/10 transition-colors'
                                     }`}
                             >
                                 {isLoading
@@ -496,12 +536,7 @@ function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati
                                     <CreditCard size={13} className="text-oro" />
                                     <p className="font-body text-sm font-medium text-nebbia">{s.nome}</p>
                                 </div>
-                                <p className="font-display text-3xl font-light text-oro mt-2">EUR {s.prezzo}</p>
-                                {s.descrizione && (
-                                    <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed flex-1">
-                                        {s.descrizione}
-                                    </p>
-                                )}
+                                <p className="font-display text-3xl font-light text-oro mt-2 flex-1">EUR {s.prezzo}</p>
                                 <button
                                     onClick={() => onAcquista(s.id)}
                                     disabled={isLoading}

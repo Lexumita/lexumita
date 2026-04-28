@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import {
   LayoutDashboard, Users, Package,
@@ -11,83 +10,17 @@ import {
 
 export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false)
-  const [badgeUtenti, setBadgeUtenti] = useState(0)
-  const [badgePagamenti, setBadgePagamenti] = useState(0)
-  const [badgeAssistenza, setBadgeAssistenza] = useState(0)
-  const [badgeSentenze, setBadgeSentenze] = useState(0)
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(() => {
-    async function caricaBadge() {
-      // 1. Utenti: user con verification_status = 'pending'
-      const { count: daVerificare } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'user')
-        .eq('verification_status', 'pending')
-
-      // 2. Pagamenti: transazioni in_attesa
-      const { count: richiesteInAttesa } = await supabase
-        .from('transazioni')
-        .select('id', { count: 'exact', head: true })
-        .eq('stato', 'in_attesa')
-
-      // 3. Assistenza: ticket "Supporto Lexum" aperti dove l'ultimo
-      //    messaggio NON è dell'admin — stessa logica dell'altra piattaforma
-      const { data: tickets } = await supabase
-        .from('ticket_assistenza')
-        .select('id')
-        .eq('stato', 'aperto')
-        .in('mittente_ruolo', ['user', 'avvocato'])
-
-      let ticketDaRispondere = 0
-      if (tickets && tickets.length > 0) {
-        const ids = tickets.map(t => t.id)
-
-        // Per ogni ticket prendi l'ultimo messaggio
-        const { data: ultimiMsg } = await supabase
-          .from('messaggi_ticket')
-          .select('ticket_id, autore_tipo, created_at')
-          .in('ticket_id', ids)
-          .order('created_at', { ascending: false })
-
-        // Raggruppa: tieni solo l'ultimo messaggio per ticket
-        const ultimoPerTicket = {}
-        for (const m of ultimiMsg ?? []) {
-          if (!ultimoPerTicket[m.ticket_id]) {
-            ultimoPerTicket[m.ticket_id] = m
-          }
-        }
-
-        // Conta i ticket dove l'ultimo messaggio NON è dell'admin
-        ticketDaRispondere = Object.values(ultimoPerTicket).filter(m => m.autore_tipo !== 'admin').length
-      }
-
-      // 4. Sentenze: in_revisione
-      const { count: sentenzeInRevisione } = await supabase
-        .from('sentenze')
-        .select('id', { count: 'exact', head: true })
-        .eq('stato', 'in_revisione')
-
-      setBadgeUtenti(daVerificare ?? 0)
-      setBadgePagamenti(richiesteInAttesa ?? 0)
-      setBadgeAssistenza(ticketDaRispondere)
-      setBadgeSentenze(sentenzeInRevisione ?? 0)
-    }
-
-    caricaBadge()
-  }, [location.pathname]) // si aggiorna ad ogni cambio pagina
 
   const NAV = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/admin/utenti', label: 'Utenti', icon: Users, badge: badgeUtenti },
+    { path: '/admin/utenti', label: 'Utenti', icon: Users },
     { path: '/admin/prodotti', label: 'Prodotti', icon: Package },
-    { path: '/admin/sentenze', label: 'Sentenze', icon: Gavel, badge: badgeSentenze },
+    { path: '/admin/sentenze', label: 'Sentenze', icon: Gavel },
     { path: '/admin/normativa', label: 'Normativa', icon: BookOpen },
-    { path: '/admin/pagamenti', label: 'Pagamenti', icon: CreditCard, badge: badgePagamenti },
-    { path: '/admin/assistenza', label: 'Assistenza', icon: Headphones, badge: badgeAssistenza },
+    { path: '/admin/pagamenti', label: 'Pagamenti', icon: CreditCard },
+    { path: '/admin/assistenza', label: 'Assistenza', icon: Headphones },
   ]
 
   async function handleSignOut() {
@@ -113,7 +46,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-          {NAV.map(({ path, label, icon: Icon, badge }) => (
+          {NAV.map(({ path, label, icon: Icon }) => (
             <NavLink
               key={path}
               to={path}
@@ -126,11 +59,6 @@ export default function AdminLayout({ children }) {
             >
               <Icon size={16} strokeWidth={1.5} />
               <span className="flex-1">{label}</span>
-              {badge > 0 && (
-                <span className="font-body text-[10px] px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                  {badge}
-                </span>
-              )}
               <ChevronRight size={13} className="opacity-0 group-hover:opacity-30 transition-opacity" />
             </NavLink>
           ))}
