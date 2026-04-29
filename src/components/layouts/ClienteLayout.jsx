@@ -39,7 +39,7 @@ export default function ClienteLayout({ children }) {
         lg:translate-x-0 lg:static lg:z-auto
       `}>
         <div className="flex items-center justify-center px-5 py-6 border-b border-white/5">
-          <img src={logo} alt="Lexum" className="h-14 w-auto" />
+          <img src={logo} alt="Lexum" className="h-16 w-auto" />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
@@ -78,7 +78,7 @@ export default function ClienteLayout({ children }) {
       <div className="flex-1 flex flex-col min-w-0">
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-slate">
           <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia"><Menu size={20} /></button>
-          <img src={logo} alt="Lexum" className="h-7 w-auto" />
+          <img src={logo} alt="Lexum" className="h-10 w-auto" />
         </div>
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>

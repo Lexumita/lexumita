@@ -2233,11 +2233,11 @@ export function BancaDati() {
     const [tabAttivo, setTabAttivo] = useState('italiana')
 
     return (
-        <div className="space-y-5 p-6">
+        <div className="space-y-5 pb-24">
 
             {/* Header */}
             <PageHeader
-                label="Banca dati"
+                label="Banca Dati"
                 title="Codici, leggi, sentenze e prassi"
                 subtitle="Ricerca con Lex AI o sfoglia normativa italiana, europea, giurisprudenza e prassi amministrativa"
             />

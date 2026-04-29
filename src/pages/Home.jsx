@@ -418,7 +418,7 @@ export default function ComeFunziona() {
                         <span key={t} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{t}</span>
                       ))}
                     </div>
-                    <span className="font-body text-xs text-oro font-medium">EUR 10</span>
+                    <span className="font-body text-xs text-oro font-medium">1.99€</span>
                   </div>
                 </div>
               </div>

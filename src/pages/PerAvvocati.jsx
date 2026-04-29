@@ -159,7 +159,7 @@ export default function PerAvvocati() {
                                         <p className="font-body text-sm text-nebbia">Responsabilità medica — Trib. Milano 2019</p>
                                         <p className="font-body text-xs text-salvia mt-0.5">Disponibile in banca dati Lexum</p>
                                     </div>
-                                    <span className="ml-auto font-body text-sm font-medium text-oro border border-oro/30 px-3 py-1.5">EUR 10</span>
+                                    <span className="ml-auto font-body text-sm font-medium text-oro border border-oro/30 px-3 py-1.5">1.99€</span>
                                 </div>
 
                                 <div className="bg-salvia/5 border border-salvia/15 p-4 flex items-center gap-3">
@@ -461,7 +461,7 @@ export default function PerAvvocati() {
                                                         <p className="font-body text-xs text-nebbia/70">{t}</p>
                                                         <p className="font-body text-[10px] text-nebbia/30 mt-0.5">{s}</p>
                                                     </div>
-                                                    <span className="font-body text-xs text-oro border border-oro/20 px-2 py-0.5">EUR 10</span>
+                                                    <span className="font-body text-xs text-oro border border-oro/20 px-2 py-0.5">1.99€</span>
                                                 </div>
                                             ))}
                                         </div>

@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import ReactMarkdown from 'react-markdown'
+import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import {
     Sparkles, Search, Plus, X, Loader2, AlertCircle, Check, Save,
     Tag, Edit2, Trash2, Filter, FolderOpen, MessageSquare,
@@ -477,7 +478,7 @@ export default function Ricerche() {
 
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <p className="section-label mb-2">Pensiero legale</p>
+                    <p className="section-label mb-2">Le mie ricerche legali</p>
                     <h1 className="font-display text-4xl font-light text-nebbia">Ricerche</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-1">
                         Tutto quello che hai pensato, ricercato e taggato — ricerche, norme, sentenze e prassi.
@@ -1059,18 +1060,24 @@ function CardElemento({
 
                 <div className="flex items-center gap-2 flex-wrap mt-auto">
                     {etichetteElemento.map(e => (
-                        <span
+                        <button
                             key={e.id}
-                            className="flex items-center gap-2 font-body text-xs font-medium px-2.5 py-1 border"
+                            type="button"
+                            onClick={(ev) => {
+                                ev.stopPropagation()
+                                navigate(`${basePathEtichette}/${e.id}`)
+                            }}
+                            className="flex items-center gap-2 font-body text-xs font-medium px-2.5 py-1 border transition-all hover:opacity-80"
                             style={{
                                 borderColor: `${e.colore}80`,
                                 color: e.colore,
                                 backgroundColor: `${e.colore}22`
                             }}
+                            title={`Apri etichetta "${e.nome}"`}
                         >
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: e.colore }} />
                             {e.nome}
-                        </span>
+                        </button>
                     ))}
                 </div>
 
@@ -1106,7 +1113,7 @@ function CardElemento({
             </div>
 
             {aperto && TIPI_RICERCA.includes(el.kind) && (
-                <div className="px-4 pb-4 pt-3 border-t border-white/5 bg-petrolio/30">
+                <div className="px-4 pb-4 pt-3 border-t border-white/5 bg-petrolio/30 space-y-3">
                     <div className="font-body text-sm text-nebbia/70 leading-relaxed">
                         <ReactMarkdown
                             components={{
@@ -1120,6 +1127,13 @@ function CardElemento({
                         >
                             {el.contenuto}
                         </ReactMarkdown>
+                    </div>
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-end">
+                        <AggiungiAEtichetta
+                            elemento={{ tipo: el.kind, id: el.id }}
+                            variant="compact"
+                            onCambio={onAggiornata}
+                        />
                     </div>
                 </div>
             )}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Tag, Check, Plus, X, Loader2, Search } from 'lucide-react'
+import { Tag, Check, Plus, X, Loader2, Search, AlertCircle } from 'lucide-react'
 
 const PALETTE = [
     '#C9A45C', // oro
@@ -15,6 +15,29 @@ const PALETTE = [
 
 function coloreCasuale() {
     return PALETTE[Math.floor(Math.random() * PALETTE.length)]
+}
+
+/**
+ * Traduce errori comuni Postgres/Supabase in messaggi utente comprensibili.
+ * In particolare intercetta il trigger `elementi_etichette_cap_per_etichetta`
+ * che blocca gli insert quando l'etichetta è satura (default 30 elementi).
+ */
+function formattaErroreEtichetta(error) {
+    const msg = error?.message ?? ''
+
+    // Trigger DB: "Limite di N elementi per etichetta raggiunto"
+    if (msg.includes('Limite di') && msg.includes('per etichetta')) {
+        const match = msg.match(/Limite di (\d+)/)
+        const limite = match ? match[1] : '30'
+        return `Etichetta piena (max ${limite} elementi). Rimuovi qualcosa o usa un'altra etichetta.`
+    }
+
+    // Unique constraint: stesso elemento già taggato
+    if (msg.includes('elementi_etichette_unique') || msg.includes('duplicate key')) {
+        return 'Questo elemento è già in questa etichetta.'
+    }
+
+    return msg
 }
 
 /**
@@ -106,6 +129,15 @@ export default function AggiungiAEtichetta({
         if (aperto) inputRef.current?.focus()
     }, [aperto])
 
+    // Reset errore quando si chiude o si cambia ricerca
+    useEffect(() => {
+        if (!aperto) setErrore('')
+    }, [aperto])
+
+    useEffect(() => {
+        if (cerca) setErrore('')
+    }, [cerca])
+
     // Carica etichette dell'utente + assegnazioni esistenti per questo elemento
     useEffect(() => {
         if (!aperto) return
@@ -135,7 +167,7 @@ export default function AggiungiAEtichetta({
                     setAssegnate(new Set((ass ?? []).map(a => a.etichetta_id)))
                 }
             } catch (err) {
-                setErrore(err.message)
+                setErrore(formattaErroreEtichetta(err))
             } finally {
                 setLoading(false)
             }
@@ -197,7 +229,7 @@ export default function AggiungiAEtichetta({
                     return s
                 })
             } else {
-                // Aggiungi
+                // Aggiungi — può fallire se l'etichetta è piena (trigger DB)
                 const { error } = await supabase
                     .from('elementi_etichette')
                     .insert({
@@ -211,7 +243,7 @@ export default function AggiungiAEtichetta({
             }
             onCambio?.()
         } catch (err) {
-            setErrore(err.message)
+            setErrore(formattaErroreEtichetta(err))
         } finally {
             setSalvando(null)
         }
@@ -240,6 +272,7 @@ export default function AggiungiAEtichetta({
             setEtichette(prev => [...prev, nuova].sort((a, b) => a.nome.localeCompare(b.nome)))
 
             // Assegna l'elemento alla nuova etichetta
+            // (etichetta appena creata = 0 elementi, il limite non scatterà mai qui)
             const id = await creaRicercaAiSeServe()
             const { error: errAssegna } = await supabase
                 .from('elementi_etichette')
@@ -255,7 +288,7 @@ export default function AggiungiAEtichetta({
             setCerca('')
             onCambio?.()
         } catch (err) {
-            setErrore(err.message)
+            setErrore(formattaErroreEtichetta(err))
         } finally {
             setCreando(false)
         }
@@ -378,8 +411,9 @@ export default function AggiungiAEtichetta({
                     </div>
 
                     {errore && (
-                        <div className="p-2 bg-red-900/15 border-t border-red-500/20">
-                            <p className="font-body text-xs text-red-400">{errore}</p>
+                        <div className="p-3 bg-red-900/15 border-t border-red-500/20 flex items-start gap-2">
+                            <AlertCircle size={12} className="text-red-400 shrink-0 mt-0.5" />
+                            <p className="font-body text-xs text-red-400 leading-relaxed">{errore}</p>
                         </div>
                     )}
                 </div>

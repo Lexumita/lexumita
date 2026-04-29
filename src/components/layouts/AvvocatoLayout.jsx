@@ -110,7 +110,7 @@ export default function AvvocatoLayout({ children }) {
         lg:translate-x-0 lg:static lg:z-auto
       `}>
         <Link to="/dashboard" onClick={() => setOpen(false)} className="flex items-center justify-center px-5 py-6 border-b border-white/5 group">
-          <img src={logo} alt="Lexum" className="h-14 w-auto transition-transform group-hover:scale-105" />
+          <img src={logo} alt="Lexum" className="h-16 w-auto transition-transform group-hover:scale-105" />
         </Link>
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
@@ -164,8 +164,8 @@ export default function AvvocatoLayout({ children }) {
               <Link to="/studio?tab=acquista"
                 title={scaduto ? 'Piano scaduto - rinnova subito' : `Piano in scadenza tra ${giorni} ${giorni === 1 ? 'giorno' : 'giorni'}`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors group ${scadenzaCritica || scaduto
-                    ? 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 hover:border-red-500/50'
-                    : 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
+                  ? 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 hover:border-red-500/50'
+                  : 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
                   }`}>
                 <AlertTriangle size={13} className={scadenzaCritica || scaduto ? 'text-red-400' : 'text-amber-400'} />
                 <span className={`font-body text-sm ${scadenzaCritica || scaduto ? 'text-red-400' : 'text-amber-400'}`}>
@@ -179,10 +179,10 @@ export default function AvvocatoLayout({ children }) {
               <Link to="/studio?tab=acquista"
                 title={`${storage.occupato_gb.toFixed(1)} GB occupati su ${storage.gb_totali} GB`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors group ${storagePieno
-                    ? 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 hover:border-red-500/50'
-                    : storageQuasiPieno
-                      ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
-                      : 'bg-petrolio border border-white/10 hover:border-salvia/30'
+                  ? 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 hover:border-red-500/50'
+                  : storageQuasiPieno
+                    ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
+                    : 'bg-petrolio border border-white/10 hover:border-salvia/30'
                   }`}>
                 <HardDrive size={13} className={
                   storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-nebbia/50 group-hover:text-salvia'
@@ -217,7 +217,7 @@ export default function AvvocatoLayout({ children }) {
         {/* Header mobile */}
         <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-slate">
           <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia"><Menu size={20} /></button>
-          <img src={logo} alt="Lexum" className="h-7 w-auto" />
+          <img src={logo} alt="Lexum" className="h-10 w-auto" />
 
           <div className="ml-auto flex items-center gap-1.5">
             {/* Scadenza mobile */}
@@ -225,8 +225,8 @@ export default function AvvocatoLayout({ children }) {
               <Link to="/studio?tab=acquista"
                 title={scaduto ? 'Piano scaduto' : `${giorni}g alla scadenza`}
                 className={`flex items-center gap-1 px-2 py-1 ${scadenzaCritica || scaduto
-                    ? 'bg-red-500/10 border border-red-500/30'
-                    : 'bg-amber-500/10 border border-amber-500/30'
+                  ? 'bg-red-500/10 border border-red-500/30'
+                  : 'bg-amber-500/10 border border-amber-500/30'
                   }`}>
                 <AlertTriangle size={11} className={scadenzaCritica || scaduto ? 'text-red-400' : 'text-amber-400'} />
                 <span className={`font-body text-xs ${scadenzaCritica || scaduto ? 'text-red-400' : 'text-amber-400'}`}>
@@ -240,10 +240,10 @@ export default function AvvocatoLayout({ children }) {
               <Link to="/studio?tab=acquista"
                 title={`${storage.occupato_gb.toFixed(1)}/${storage.gb_totali} GB`}
                 className={`flex items-center gap-1 px-2 py-1 ${storagePieno
-                    ? 'bg-red-500/10 border border-red-500/30'
-                    : storageQuasiPieno
-                      ? 'bg-amber-500/10 border border-amber-500/30'
-                      : 'bg-petrolio border border-white/10'
+                  ? 'bg-red-500/10 border border-red-500/30'
+                  : storageQuasiPieno
+                    ? 'bg-amber-500/10 border border-amber-500/30'
+                    : 'bg-petrolio border border-white/10'
                   }`}>
                 <HardDrive size={11} className={
                   storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-nebbia/50'

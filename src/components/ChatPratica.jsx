@@ -143,7 +143,14 @@ export default function ChatPratica({ praticaId }) {
 
     // Scroll automatico in fondo a ogni nuovo messaggio o chunk
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+        // Skip al primo mount per non scrollare la pagina principale
+        // quando ChatPratica viene montato con messaggi precaricati
+        if (messaggi.length === 0) return
+
+        bottomRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'  // ← chiave: scrolla solo il container interno
+        })
     }, [messaggi])
 
     // Carica crediti residui al mount + on focus

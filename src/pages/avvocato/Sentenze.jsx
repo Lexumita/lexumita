@@ -494,7 +494,9 @@ export function AvvocatoSentenze() {
 
   return (
     <div className="space-y-5">
-      <PageHeader label="Banca dati" title="Sentenze"
+      <PageHeader label="Mie Sentenze"
+        title="Sentenze"
+        subtitle="Carica sentenze e tieni d'occhio i tuoi guadagni"
         action={tab === 'sentenze' ? (
           <div className="flex gap-3">
             <Link to="/banca-dati?tab=sentenze" className="btn-secondary text-sm flex items-center gap-2">

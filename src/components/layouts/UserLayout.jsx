@@ -100,7 +100,7 @@ export default function UserLayout({ children }) {
       `}>
         {/* Logo cliccabile → /area */}
         <Link to="/area" onClick={() => setOpen(false)} className="flex items-center justify-center px-5 py-6 border-b border-white/5 group">
-          <img src={logo} alt="Lexum" className="h-14 w-auto transition-transform group-hover:scale-105" />
+          <img src={logo} alt="Lexum" className="h-16 w-auto transition-transform group-hover:scale-105" />
         </Link>
 
         {/* Nav */}
@@ -177,7 +177,7 @@ export default function UserLayout({ children }) {
           <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia">
             <Menu size={20} />
           </button>
-          <img src={logo} alt="Lexum" className="h-7 w-auto" />
+          <img src={logo} alt="Lexum" className="h-10 w-auto" />
           <Link to="/area/acquista"
             className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-petrolio border border-salvia/20">
             <Sparkles size={12} className="text-salvia" />

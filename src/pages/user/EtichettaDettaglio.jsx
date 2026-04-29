@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import {
     Tag, Search, Loader2, BookOpen, Sparkles, Landmark, ScrollText,
     Trash2, X, ExternalLink, MessageSquare, ArrowLeft, AlertCircle,
@@ -288,6 +289,7 @@ export default function EtichettaDettaglio() {
                                     aperto={contenutoAperto === c.id}
                                     onToggleApri={() => setContenutoAperto(contenutoAperto === c.id ? null : c.id)}
                                     basePathBancaDati={basePathBancaDati}
+                                    onAggiornata={caricaTutto}
                                 />
                             ))}
                         </div>
@@ -314,7 +316,7 @@ export default function EtichettaDettaglio() {
 // ═══════════════════════════════════════════════════════════════
 // CARD CONTENUTO (invariata)
 // ═══════════════════════════════════════════════════════════════
-function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleApri, basePathBancaDati }) {
+function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleApri, basePathBancaDati, onAggiornata }) {
 
     if (TIPI_RICERCA.includes(c.tipo)) {
         const Icon = c.tipo === 'chat_lex' ? MessageSquare : c.tipo === 'ricerca_manuale' ? Search : Sparkles
@@ -362,7 +364,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     </div>
                 </div>
                 {aperto && (
-                    <div className="px-4 pb-4 pt-2 border-t border-white/5 bg-petrolio/30">
+                    <div className="px-4 pb-4 pt-2 border-t border-white/5 bg-petrolio/30 space-y-3">
                         <div className="font-body text-sm text-nebbia/70 leading-relaxed">
                             <ReactMarkdown
                                 components={{
@@ -376,6 +378,13 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                             >
                                 {c.dati.contenuto}
                             </ReactMarkdown>
+                        </div>
+                        <div className="pt-3 border-t border-white/5 flex items-center justify-end">
+                            <AggiungiAEtichetta
+                                elemento={{ tipo: c.tipo, id: c.dati.id }}
+                                variant="compact"
+                                onCambio={onAggiornata}
+                            />
                         </div>
                     </div>
                 )}

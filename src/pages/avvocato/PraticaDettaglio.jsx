@@ -449,7 +449,7 @@ export default function PraticaDettaglio() {
     )
 
     if (!pratica) return (
-        <div className="space-y-5 p-6">
+        <div className="space-y-5 px-6 pt-10 pb-24">
             <BackToPratiche />
             <p className="font-body text-sm text-nebbia/40">Pratica non trovata.</p>
         </div>
@@ -468,7 +468,7 @@ export default function PraticaDettaglio() {
         : null
 
     return (
-        <div className="space-y-5 p-6">
+        <div className="space-y-5 px-6 pb-20">
             {/* ═══════════════ Header ═══════════════ */}
             <div className="flex items-start justify-between gap-4">
                 <div>
