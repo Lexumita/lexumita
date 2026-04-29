@@ -37,6 +37,7 @@ import { AdminPagamenti, AdminCompensi } from './pages/admin/Pagamenti'
 import { AdminAssistenza, AdminAssistenzaDettaglio } from './pages/admin/Assistenza'
 import AdminNormativa from './pages/admin/Normativa'
 import AdminNormativaDettaglio from './pages/admin/NormativaDettaglio'
+import LexLogs from './pages/admin/LexLogs'
 
 // ── Avvocato ──
 import AvvocatoDashboard from './pages/avvocato/Dashboard'
@@ -151,6 +152,7 @@ export default function App() {
             <Route path="/admin/normativa/:tipo/:slug" element={<Adm><AdminNormativaDettaglio /></Adm>} />
             {/* Retrocompat: vecchia rotta /admin/normativa/:codice → /admin/normativa/it/:codice */}
             <Route path="/admin/normativa/:codice" element={<Adm><AdminNormativaDettaglio /></Adm>} />
+            <Route path="/admin/lex-logs" element={<Adm><LexLogs /></Adm>} />
 
             {/* ═══════════════════════════════════════════════════════
                 AVVOCATO

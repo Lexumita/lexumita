@@ -102,7 +102,7 @@ function LexAnimazione({ faseAttiva }) {
     useEffect(() => {
         const interval = setInterval(() => {
             setIndiceFrase((i) => (i + 1) % frasiRotative.length)
-        }, 3500)
+        }, 4000)
         return () => clearInterval(interval)
     }, [])
 

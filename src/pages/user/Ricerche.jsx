@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -42,12 +42,24 @@ function evidenziaParola(testo, cerca) {
     return testo.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
 }
 
-// ─── Genera chiave univoca polimorfica per un elemento ───
+function evidenziaParoleMultiple(testo, parole, classe = 'bg-salvia/30') {
+    if (!parole?.length || !testo) return testo ?? ''
+    let risultato = testo
+    // Ordina dalle più lunghe alle più corte per evitare match parziali
+    const ordinate = [...parole].sort((a, b) => b.length - a.length)
+    for (const parola of ordinate) {
+        if (!parola?.trim()) continue
+        const escaped = parola.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`(${escaped})`, 'gi')
+        risultato = risultato.replace(regex, `<mark class="${classe} text-nebbia rounded px-0.5">$1</mark>`)
+    }
+    return risultato
+}
+
 function chiaveElemento(el) {
     return `${el.kind}:${el.id}`
 }
 
-// ─── Estrae testo searchable per ricerca tradizionale ───
 function corpusElemento(el) {
     if (TIPI_RICERCA.includes(el.kind)) {
         return `${el.titolo ?? ''} ${el.contenuto ?? ''}`.toLowerCase()
@@ -69,44 +81,64 @@ export default function Ricerche() {
     const [searchParams, setSearchParams] = useSearchParams()
     const navigate = useNavigate()
 
-    // Path base per etichette in funzione del ruolo (avvocato vs user)
     const basePathEtichette = profile?.role === 'avvocato' ? '/etichette' : '/area/etichette'
     const basePathBancaDati = profile?.role === 'avvocato' ? '/banca-dati' : '/area'
 
-    // Dati
-    const [elementi, setElementi] = useState([])  // mix di ricerche/norme/sentenze/prassi
+    const [elementi, setElementi] = useState([])
     const [etichette, setEtichette] = useState([])
     const [pratiche, setPratiche] = useState([])
-    const [tagsByElemento, setTagsByElemento] = useState({}) // { 'kind:id': [etichetta_ids] }
+    const [tagsByElemento, setTagsByElemento] = useState({})
     const [loading, setLoading] = useState(true)
 
-    // Filtri
     const [cerca, setCerca] = useState('')
+    const [cercaApplicata, setCercaApplicata] = useState('')
     const [tipoAttivo, setTipoAttivo] = useState('tutti')
     const [praticaSelezionata, setPraticaSelezionata] = useState(searchParams.get('pratica') ?? '')
 
-    // UI
-    const [contenutoAperto, setContenutoAperto] = useState(null)  // chiave 'kind:id'
+    const [contenutoAperto, setContenutoAperto] = useState(null)
     const [mostraGestioneEtichette, setMostraGestioneEtichette] = useState(false)
     const [mostraNuovaRicerca, setMostraNuovaRicerca] = useState(false)
     const [mostraNuovaEtichetta, setMostraNuovaEtichetta] = useState(false)
     const [errore, setErrore] = useState('')
 
-    // Selezione + confronto
     const [modalitaSelezione, setModalitaSelezione] = useState(false)
-    const [selezionate, setSelezionate] = useState([])  // array di chiavi 'kind:id'
+    const [selezionate, setSelezionate] = useState([])
     const [vistaConfronto, setVistaConfronto] = useState(false)
 
-    // Ricerca con Lex (semantica)
-    const [modalitaCerca, setModalitaCerca] = useState('tradizionale')
-    const [cercaLex, setCercaLex] = useState('')
     const [cercandoLex, setCercandoLex] = useState(false)
-    const [risultatiLexChiavi, setRisultatiLexChiavi] = useState(null)  // array di 'kind:id' o null
-    const [ragionamentoLex, setRagionamentoLex] = useState('')
+    const [risultatiLexChiavi, setRisultatiLexChiavi] = useState(null)
+    const [paroleChiaveLex, setParoleChiaveLex] = useState([])
+    const [rateLimitInfo, setRateLimitInfo] = useState({ rimasti: 30, limite: 30 })
+    const [erroreLex, setErroreLex] = useState('')
 
     const [conteggioOrfane, setConteggioOrfane] = useState(0)
 
     useEffect(() => { caricaTutto() }, [])
+    useEffect(() => { caricaRateLimit() }, [])
+
+    async function caricaRateLimit() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+            const { data } = await supabase
+                .from('lex_search_rate_limit')
+                .select('data_giorno, conteggio')
+                .eq('user_id', user.id)
+                .maybeSingle()
+
+            const oggi = new Date().toISOString().slice(0, 10)
+            if (!data || data.data_giorno !== oggi) {
+                setRateLimitInfo({ rimasti: 30, limite: 30 })
+            } else {
+                setRateLimitInfo({
+                    rimasti: Math.max(0, 30 - data.conteggio),
+                    limite: 30
+                })
+            }
+        } catch {
+            // silenzioso, defaulta a 30
+        }
+    }
 
     async function caricaTutto() {
         setLoading(true)
@@ -115,7 +147,6 @@ export default function Ricerche() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            // 1. Carica ricerche, etichette, pratiche, tag relations
             const [
                 { data: r },
                 { data: e },
@@ -144,17 +175,14 @@ export default function Ricerche() {
             setEtichette(e ?? [])
             setPratiche(p ?? [])
 
-            // 2. Identifica gli ID di norme/sentenze/prassi che sono taggate
             const idsPerTipo = { norma: [], sentenza: [], prassi: [] }
             for (const rel of relAll ?? []) {
                 if (idsPerTipo[rel.tipo]) idsPerTipo[rel.tipo].push(rel.elemento_id)
             }
-            // dedup
             for (const k of Object.keys(idsPerTipo)) {
                 idsPerTipo[k] = [...new Set(idsPerTipo[k])]
             }
 
-            // 3. Carica i record di norme/sentenze/prassi taggate
             const [normeRes, giurRes, sentRes, prassiRes] = await Promise.all([
                 idsPerTipo.norma.length > 0
                     ? supabase.from('norme')
@@ -178,12 +206,11 @@ export default function Ricerche() {
                     : Promise.resolve({ data: [] }),
             ])
 
-            // 4. Costruisci array unificato
             const elementiUnificati = []
 
             for (const ric of r ?? []) {
                 elementiUnificati.push({
-                    kind: ric.tipo, // 'ricerca_ai' | 'ricerca_manuale' | 'chat_lex'
+                    kind: ric.tipo,
                     id: ric.id,
                     titolo: ric.titolo,
                     contenuto: ric.contenuto,
@@ -205,7 +232,6 @@ export default function Ricerche() {
                     created_at: null,
                 })
             }
-            // Sentenze: merge giurisprudenza + sentenze avvocati
             for (const s of giurRes.data ?? []) {
                 elementiUnificati.push({
                     kind: 'sentenza',
@@ -222,7 +248,6 @@ export default function Ricerche() {
                 })
             }
             for (const s of sentRes.data ?? []) {
-                // evita doppi (id duplicati tra le due tabelle è improbabile, ma lo dedup
                 if (!elementiUnificati.find(x => x.kind === 'sentenza' && x.id === s.id)) {
                     elementiUnificati.push({
                         kind: 'sentenza',
@@ -252,7 +277,6 @@ export default function Ricerche() {
                 })
             }
 
-            // Ordina: prima quelli con created_at, dal più recente
             elementiUnificati.sort((a, b) => {
                 if (!a.created_at && !b.created_at) return 0
                 if (!a.created_at) return 1
@@ -262,7 +286,6 @@ export default function Ricerche() {
 
             setElementi(elementiUnificati)
 
-            // 5. Costruisci mappa tag per elemento (chiave 'kind:id')
             const map = {}
             for (const rel of relAll ?? []) {
                 const k = `${rel.tipo}:${rel.elemento_id}`
@@ -271,7 +294,6 @@ export default function Ricerche() {
             }
             setTagsByElemento(map)
 
-            // 6. Conta orfane (solo ricerche)
             const tagSet = new Set(
                 Object.keys(map).filter(k => TIPI_RICERCA.some(t => k.startsWith(t + ':')))
                     .map(k => k.split(':')[1])
@@ -285,11 +307,9 @@ export default function Ricerche() {
         }
     }
 
-    // ─── Filtri ───
     const elementiFiltrati = useMemo(() => {
         let base = elementi
 
-        // Se Lex ha filtrato, prendi solo quelli ordinati per rilevanza
         if (risultatiLexChiavi !== null) {
             const setKeys = new Set(risultatiLexChiavi)
             base = elementi
@@ -300,22 +320,21 @@ export default function Ricerche() {
         }
 
         return base.filter(el => {
-            // Filtro tipo
             if (tipoAttivo !== 'tutti' && el.kind !== tipoAttivo) return false
-
-            // Filtro pratica (solo le ricerche hanno pratica_id)
             if (praticaSelezionata) {
                 if (!TIPI_RICERCA.includes(el.kind)) return false
                 if (el.pratica_id !== praticaSelezionata) return false
             }
-
-            // Cerca testuale
-            if (cerca.trim()) {
-                if (!corpusElemento(el).includes(cerca.toLowerCase())) return false
+            // Quando Lex ha filtrato, NON applichiamo anche il match letterale
+            // (Lex ha già selezionato semanticamente). La barra di ricerca rimane visibile
+            // per consentire di iniziare una nuova ricerca, ma il filtraggio letterale
+            // si attiva solo se Lex non è attivo E l'utente ha cliccato "Cerca".
+            if (risultatiLexChiavi === null && cercaApplicata.trim()) {
+                if (!corpusElemento(el).includes(cercaApplicata.toLowerCase())) return false
             }
             return true
         })
-    }, [elementi, tipoAttivo, praticaSelezionata, cerca, tagsByElemento, risultatiLexChiavi])
+    }, [elementi, tipoAttivo, praticaSelezionata, cercaApplicata, tagsByElemento, risultatiLexChiavi])
 
     useEffect(() => {
         const params = {}
@@ -327,26 +346,40 @@ export default function Ricerche() {
         setTipoAttivo('tutti')
         setPraticaSelezionata('')
         setCerca('')
+        setCercaApplicata('')
         azzeraRicercaLex()
     }
 
-    function azzeraRicercaLex() {
-        setCercaLex('')
-        setRisultatiLexChiavi(null)
-        setRagionamentoLex('')
+    function applicaCercaTradizionale() {
+        // Click esplicito su "Cerca" → applica il testo corrente al filtro
+        setCercaApplicata(cerca)
+        // Se Lex era attivo, lo azzera (mutuo esclusione)
+        if (risultatiLexChiavi !== null) azzeraRicercaLex()
     }
 
-    async function cercaConLex() {
-        if (!cercaLex.trim()) return
-        setCercandoLex(true)
-        setRagionamentoLex('')
+    function azzeraRicercaLex() {
         setRisultatiLexChiavi(null)
+        setParoleChiaveLex([])
+        setErroreLex('')
+    }
+
+    function cercaConLexDallaBarra() {
+        if (!cerca.trim()) return
+        if (rateLimitInfo.rimasti <= 0) return
+        if (elementi.length > 100) return
+        cercaConLexConValore(cerca)
+    }
+
+    async function cercaConLexConValore(query) {
+        if (!query.trim()) return
+        if (rateLimitInfo.rimasti <= 0) return
+
+        setCercandoLex(true)
+        setErroreLex('')
+        setRisultatiLexChiavi(null)
+        setParoleChiaveLex([])
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            // ⚠️ ENDPOINT DA SOSTITUIRE: ricerca semantica nel pensiero legale dell'utente
-            // Il body invia tutti gli elementi (kind+id+testo). La risposta deve essere:
-            //   { keys: ["ricerca_ai:uuid", "norma:uuid", ...], ragionamento: "markdown" }
-            // ordinati per rilevanza decrescente.
             const res = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lex-search-pensiero`,
                 {
@@ -356,7 +389,7 @@ export default function Ricerche() {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        query: cercaLex,
+                        query,
                         elementi: elementi.map(el => ({
                             key: chiaveElemento(el),
                             kind: el.kind,
@@ -365,19 +398,41 @@ export default function Ricerche() {
                     }),
                 }
             )
-            if (!res.ok) throw new Error(`Errore ${res.status}`)
+
             const json = await res.json()
+
+            if (res.status === 429) {
+                setErroreLex(json.error ?? 'Limite giornaliero raggiunto')
+                if (json.limite) {
+                    setRateLimitInfo({ rimasti: 0, limite: json.limite })
+                }
+                return
+            }
+
+            if (res.status === 400 && json.troppo_grande) {
+                setErroreLex(json.error)
+                return
+            }
+
+            if (!res.ok) throw new Error(json.error ?? `Errore ${res.status}`)
+
             setRisultatiLexChiavi(json.keys ?? [])
-            setRagionamentoLex(json.ragionamento ?? '')
+            setParoleChiaveLex(json.parole_chiave ?? [])
+            if (json.rate_limit) {
+                setRateLimitInfo({
+                    rimasti: json.rate_limit.rimasti,
+                    limite: json.rate_limit.limite
+                })
+            }
         } catch (e) {
             console.error('Errore ricerca Lex:', e)
+            setErroreLex(e.message ?? 'Errore durante la ricerca')
             setRisultatiLexChiavi([])
         } finally {
             setCercandoLex(false)
         }
     }
 
-    // ─── Selezione ───
     function avviaSelezione() {
         setModalitaSelezione(true)
         setSelezionate([])
@@ -420,7 +475,6 @@ export default function Ricerche() {
     return (
         <div className="space-y-5 pb-24">
 
-            {/* ═══════════════ Header ═══════════════ */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <p className="section-label mb-2">Pensiero legale</p>
@@ -430,7 +484,6 @@ export default function Ricerche() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    {/* Vista confronto attiva: chip + Chiudi confronto */}
                     {vistaConfronto && (
                         <>
                             <div className="flex items-center gap-2 px-3 py-2 border border-salvia/20 bg-salvia/5">
@@ -449,7 +502,6 @@ export default function Ricerche() {
                         </>
                     )}
 
-                    {/* Modalità selezione attiva: contatore + Annulla + Confronta affiancati */}
                     {modalitaSelezione && !vistaConfronto && (
                         <>
                             <div className="flex items-center gap-2 px-3 py-2 border border-salvia/20 bg-salvia/5">
@@ -475,7 +527,6 @@ export default function Ricerche() {
                         </>
                     )}
 
-                    {/* Modalità normale: bottoni Confronta + Nuova ricerca */}
                     {!modalitaSelezione && !vistaConfronto && (
                         <>
                             {elementi.length >= 2 && (
@@ -497,7 +548,6 @@ export default function Ricerche() {
                 </div>
             </div>
 
-            {/* ═══════════════ Banner orfane ═══════════════ */}
             {conteggioOrfane >= SOGLIA_AVVISO && !vistaConfronto && (
                 <div className={`flex items-start gap-3 p-4 border ${conteggioOrfane >= LIMITE_ORFANE
                     ? 'bg-red-500/10 border-red-500/30'
@@ -516,7 +566,6 @@ export default function Ricerche() {
                 </div>
             )}
 
-            {/* ═══════════════ VISTA CONFRONTO ═══════════════ */}
             {vistaConfronto ? (
                 <PannelloConfronto
                     elementi={elementiSelezionati}
@@ -531,86 +580,121 @@ export default function Ricerche() {
                 />
             ) : (
                 <>
-                    {/* ═══════════════ Pannello ricerca ═══════════════ */}
                     <div className="bg-slate border border-white/5 p-4 space-y-3">
-                        <div className="flex gap-1 bg-petrolio border border-white/5 p-1 w-fit">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            Cerca tra le tue ricerche, norme, sentenze e prassi. Usa la ricerca tradizionale per parole chiave letterali, o Lex per query in linguaggio naturale.
+                        </p>
+
+                        <div className="relative">
+                            <textarea
+                                rows={2}
+                                placeholder="Es. responsabilità medica, oppure: tutto quello che ho ragionato sulla chirurgia estetica..."
+                                value={cerca}
+                                onChange={e => {
+                                    const nuovoValore = e.target.value
+                                    setCerca(nuovoValore)
+                                    // Se l'utente svuota la barra, azzera anche il filtro applicato (regola: testo vuoto = nessun filtro)
+                                    if (nuovoValore.trim() === '') {
+                                        setCercaApplicata('')
+                                        if (risultatiLexChiavi !== null) {
+                                            setRisultatiLexChiavi(null)
+                                            setParoleChiaveLex([])
+                                        }
+                                    } else if (risultatiLexChiavi !== null) {
+                                        // Se Lex era attivo e l'utente sta riscrivendo, azzera Lex (mutuo esclusione)
+                                        setRisultatiLexChiavi(null)
+                                        setParoleChiaveLex([])
+                                    }
+                                }}
+                                onKeyDown={e => {
+                                    // Cmd/Ctrl+Enter → Cerca con Lex
+                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                        cercaConLexDallaBarra()
+                                    }
+                                    // Enter semplice → Cerca tradizionale
+                                    else if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        if (cerca.trim()) applicaCercaTradizionale()
+                                    }
+                                }}
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25"
+                            />
+                            {cerca && (
+                                <button
+                                    onClick={() => { setCerca(''); setCercaApplicata(''); azzeraRicercaLex() }}
+                                    className="absolute top-2 right-2 text-nebbia/30 hover:text-nebbia p-1"
+                                    title="Svuota"
+                                >
+                                    <X size={13} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
                             <button
-                                onClick={() => { setModalitaCerca('tradizionale'); azzeraRicercaLex() }}
-                                className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${modalitaCerca === 'tradizionale' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}
+                                onClick={applicaCercaTradizionale}
+                                disabled={!cerca.trim() || cerca === cercaApplicata}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed h-[38px]"
+                                title={cerca === cercaApplicata && cerca.trim()
+                                    ? 'Filtro già applicato'
+                                    : 'Filtra letteralmente sui contenuti'}
                             >
-                                <Search size={11} /> Tradizionale
+                                <Search size={13} /> Cerca
                             </button>
+
                             <button
-                                onClick={() => { setModalitaCerca('lex'); setCerca('') }}
-                                className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${modalitaCerca === 'lex' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}
+                                onClick={cercaConLexDallaBarra}
+                                disabled={cercandoLex || !cerca.trim() || rateLimitInfo.rimasti <= 0 || elementi.length > 100}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed h-[38px]"
+                                title={rateLimitInfo.rimasti <= 0
+                                    ? 'Hai raggiunto le 30 ricerche giornaliere. Reset a mezzanotte.'
+                                    : elementi.length > 100
+                                        ? 'Hai più di 100 elementi: filtra prima per tipo o pratica'
+                                        : 'Ricerca semantica con Lex'}
                             >
-                                <Sparkles size={11} /> Cerca con Lex
+                                {cercandoLex
+                                    ? <><Loader2 size={13} className="animate-spin" /> Lex sta cercando...</>
+                                    : <>
+                                        <Sparkles size={13} /> Cerca con Lex
+                                        <span className="text-[11px] text-salvia/60 font-normal">
+                                            (gratuito · {rateLimitInfo.rimasti}/{rateLimitInfo.limite} oggi)
+                                        </span>
+                                    </>
+                                }
                             </button>
                         </div>
 
-                        {modalitaCerca === 'tradizionale' ? (
-                            <div className="relative">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-                                <input
-                                    placeholder="Cerca nel testo di ricerche, norme, sentenze, prassi..."
-                                    value={cerca}
-                                    onChange={e => setCerca(e.target.value)}
-                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
-                                />
-                                {cerca && (
-                                    <button onClick={() => setCerca('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-nebbia">
-                                        <X size={13} />
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <p className="font-body text-xs text-nebbia/35 leading-relaxed">
-                                    Descrivi cosa stai cercando — Lex troverà gli elementi più pertinenti tra ricerche, norme, sentenze e prassi taggate.
-                                </p>
-                                <textarea
-                                    rows={2}
-                                    placeholder="Es. Tutto quello che ho ragionato sulla responsabilità extracontrattuale..."
-                                    value={cercaLex}
-                                    onChange={e => setCercaLex(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) cercaConLex() }}
-                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25"
-                                />
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={cercaConLex}
-                                        disabled={cercandoLex || !cercaLex.trim()}
-                                        className="flex items-center gap-2 px-4 py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
-                                    >
-                                        {cercandoLex
-                                            ? <><Loader2 size={13} className="animate-spin" /> Lex sta cercando...</>
-                                            : <><Sparkles size={13} /> Cerca con Lex</>
-                                        }
-                                    </button>
-                                    {risultatiLexChiavi !== null && (
-                                        <button
-                                            onClick={azzeraRicercaLex}
-                                            className="flex items-center gap-1 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors"
-                                        >
-                                            <X size={11} /> Azzera ricerca
-                                        </button>
-                                    )}
+                        {elementi.length > 100 && (
+                            <p className="font-body text-xs text-amber-400/80 flex items-center gap-1.5">
+                                <AlertCircle size={11} />
+                                Hai {elementi.length} elementi. Per usare Lex, restringi prima per tipo o pratica (max 100).
+                            </p>
+                        )}
+
+                        {erroreLex && (
+                            <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
+                                <AlertCircle size={11} /> {erroreLex}
+                            </p>
+                        )}
+
+                        {risultatiLexChiavi !== null && (
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-salvia/5 border border-salvia/20">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Sparkles size={12} className="text-salvia shrink-0" />
+                                    <p className="font-body text-xs text-salvia">
+                                        Lex ha trovato <strong>{risultatiLexChiavi.length}</strong> {risultatiLexChiavi.length === 1 ? 'elemento' : 'elementi'}
+                                    </p>
                                 </div>
-                                {ragionamentoLex && (
-                                    <div className="bg-petrolio/40 border border-salvia/15 p-3">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <Sparkles size={12} className="text-salvia" />
-                                            <p className="font-body text-xs font-medium text-salvia">Analisi Lex</p>
-                                        </div>
-                                        <p className="font-body text-xs text-nebbia/55 leading-relaxed">{ragionamentoLex}</p>
-                                    </div>
-                                )}
+                                <button
+                                    onClick={azzeraRicercaLex}
+                                    className="flex items-center gap-1 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors shrink-0"
+                                >
+                                    <X size={11} /> Azzera Lex
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {/* ═══════════════ Filtri ═══════════════ */}
                     <div className="flex items-start gap-3 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Filter size={12} className="text-nebbia/30" />
@@ -691,7 +775,6 @@ export default function Ricerche() {
                         )}
                     </div>
 
-                    {/* ═══════════════ Lista ═══════════════ */}
                     {elementiFiltrati.length === 0 ? (
                         <div className="bg-slate border border-white/5 py-16 text-center">
                             <Sparkles size={32} className="text-nebbia/15 mx-auto mb-3" />
@@ -726,7 +809,9 @@ export default function Ricerche() {
                                         isSelezionata={selezionate.includes(key)}
                                         canSelezionare={selezionate.length < MAX_CONFRONTO || selezionate.includes(key)}
                                         onToggleSelezione={() => toggleSelezione(key)}
-                                        cerca={cerca}
+                                        cerca={cercaApplicata}
+                                        paroleChiaveLex={paroleChiaveLex}
+                                        attivoLex={risultatiLexChiavi !== null}
                                         basePathEtichette={basePathEtichette}
                                         basePathBancaDati={basePathBancaDati}
                                         navigate={navigate}
@@ -738,7 +823,6 @@ export default function Ricerche() {
                 </>
             )}
 
-            {/* ═══════════════ Modali ═══════════════ */}
             {mostraNuovaRicerca && (
                 <ModaleNuovaRicerca
                     pratiche={pratiche}
@@ -768,17 +852,25 @@ export default function Ricerche() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CARD ELEMENTO (polimorfica)
+// CARD ELEMENTO (invariato)
 // ═══════════════════════════════════════════════════════════════
 function CardElemento({
     elemento: el, chiave, etichetteElemento, etichetteDisponibili, aperto, onToggleApri, onAggiornata,
     modalitaSelezione, isSelezionata, canSelezionare, onToggleSelezione,
-    cerca, basePathEtichette, basePathBancaDati, navigate,
+    cerca, paroleChiaveLex = [], attivoLex = false, basePathEtichette, basePathBancaDati, navigate,
 }) {
     const [mostraTagPicker, setMostraTagPicker] = useState(false)
     const [eliminando, setEliminando] = useState(false)
 
-    // Determina icona, colore, etichetta tipo, link esterno
+    // Helper: usa evidenziazione Lex (salvia, multipla) se attivo, altrimenti
+    // ricerca tradizionale (oro, singola)
+    const evidenzia = (testo) => {
+        if (attivoLex && paroleChiaveLex?.length > 0) {
+            return evidenziaParoleMultiple(testo, paroleChiaveLex, 'bg-salvia/30')
+        }
+        return evidenziaParola(testo, cerca)
+    }
+
     const meta = (() => {
         if (el.kind === 'ricerca_ai') return { Icon: Sparkles, color: 'text-salvia', label: 'Ricerca AI' }
         if (el.kind === 'chat_lex') return { Icon: MessageSquare, color: 'text-salvia', label: 'Chat con Lex' }
@@ -790,7 +882,6 @@ function CardElemento({
     })()
     const { Icon, color, label } = meta
 
-    // Titolo + sottotitolo per ogni tipo
     const titolo = (() => {
         if (TIPI_RICERCA.includes(el.kind)) return el.titolo ?? label
         if (el.kind === 'norma') return `${el.codice?.toUpperCase() ?? ''} · Art. ${el.articolo}`
@@ -822,7 +913,6 @@ function CardElemento({
         return ''
     })()
 
-    // Link al dettaglio (per norme/sentenze/prassi → banca dati)
     const linkDettaglio = (() => {
         if (el.kind === 'norma') return `${basePathBancaDati}/norma/${el.id}`
         if (el.kind === 'sentenza') {
@@ -841,7 +931,6 @@ function CardElemento({
             await supabase.from('ricerche').delete().eq('id', el.id)
             if (onAggiornata) await onAggiornata()
         } else {
-            // Per norme/sentenze/prassi: rimuovi solo i tag (l'elemento originale resta)
             if (!confirm(`Rimuovere tutti i tag da questo elemento?\nL'elemento originale (${label.toLowerCase()}) non verrà cancellato.`)) return
             setEliminando(true)
             await supabase.from('elementi_etichette')
@@ -883,8 +972,6 @@ function CardElemento({
     return (
         <div className={cardClasses}>
             <div className="p-4 flex flex-col gap-3 flex-1 min-w-0 relative">
-
-                {/* Checkbox modalità selezione */}
                 {modalitaSelezione && (
                     <button
                         onClick={onToggleSelezione}
@@ -898,18 +985,17 @@ function CardElemento({
                     </button>
                 )}
 
-                {/* Titolo + meta + azioni */}
                 <div className="flex items-start gap-2.5">
                     <Icon size={14} className={`${color} shrink-0 mt-0.5`} />
                     <div className="flex-1 min-w-0">
                         <p
                             className="font-body text-sm font-medium text-nebbia leading-snug line-clamp-2 mb-1"
-                            dangerouslySetInnerHTML={{ __html: evidenziaParola(titolo, cerca) }}
+                            dangerouslySetInnerHTML={{ __html: evidenzia(titolo) }}
                         />
                         {sottotitolo && (
                             <p
                                 className="font-body text-xs text-nebbia/70 line-clamp-1 mb-1"
-                                dangerouslySetInnerHTML={{ __html: evidenziaParola(sottotitolo, cerca) }}
+                                dangerouslySetInnerHTML={{ __html: evidenzia(sottotitolo) }}
                             />
                         )}
                         <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-wider">
@@ -946,7 +1032,6 @@ function CardElemento({
                     )}
                 </div>
 
-                {/* Pratica + autore (solo per ricerche) */}
                 {TIPI_RICERCA.includes(el.kind) && (
                     <div className="flex items-center gap-3 flex-wrap text-xs">
                         {el.pratica
@@ -965,15 +1050,13 @@ function CardElemento({
                     </div>
                 )}
 
-                {/* Anteprima */}
                 {!aperto && anteprima && (
                     <p
                         className="font-body text-xs text-nebbia/55 line-clamp-3 leading-relaxed flex-1"
-                        dangerouslySetInnerHTML={{ __html: evidenziaParola(anteprima, cerca) }}
+                        dangerouslySetInnerHTML={{ __html: evidenzia(anteprima) }}
                     />
                 )}
 
-                {/* Etichette assegnate (sola lettura — la navigazione si fa dai pill in alto) */}
                 <div className="flex items-center gap-2 flex-wrap mt-auto">
                     {etichetteElemento.map(e => (
                         <span
@@ -1045,36 +1128,275 @@ function CardElemento({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PANNELLO CONFRONTO
+// AZIONI GUIDATE — CONFRONTO
+// ═══════════════════════════════════════════════════════════════
+
+const AZIONI_CONFRONTO = [
+    {
+        id: 'sintesi_unificata',
+        emoji: '📊',
+        label: 'Sintesi unificata',
+        descr: 'Fonde gli elementi in un quadro unitario',
+    },
+    {
+        id: 'conflitti',
+        emoji: '⚖️',
+        label: 'Conflitti & tensioni',
+        descr: 'Evidenzia divergenze e contraddizioni',
+    },
+    {
+        id: 'comuni',
+        emoji: '🎯',
+        label: 'Punti in comune',
+        descr: 'Estrae il fil rouge condiviso',
+    },
+    {
+        id: 'parere',
+        emoji: '📝',
+        label: 'Parere completo',
+        descr: 'Documento strutturato pronto da copiare',
+    },
+]
+
+const FRASI_CONFRONTO = {
+    sintesi_unificata: [
+        'Sto leggendo gli elementi che mi hai dato',
+        'Identifico i punti di tangenza',
+        'Cerco il filo conduttore',
+        'Compongo il quadro unitario',
+        'Sto cucendo i tasselli',
+        'Verifico la coerenza interna',
+        'Rileggo per assicurarmi',
+        'Affino la sintesi finale',
+    ],
+    conflitti: [
+        'Sto leggendo gli elementi',
+        'Cerco le tensioni nascoste',
+        'Identifico le divergenze',
+        'Confronto le posizioni',
+        'Valuto quale prevale',
+        'Verifico le contraddizioni',
+        'Soppeso le argomentazioni',
+        'Compongo l\'analisi critica',
+    ],
+    comuni: [
+        'Sto leggendo gli elementi',
+        'Cerco il fil rouge',
+        'Estraggo i principi condivisi',
+        'Identifico le convergenze',
+        'Verifico gli orientamenti comuni',
+        'Compongo il costrutto unitario',
+        'Mostro come si rinforzano',
+        'Affino la lettura d\'insieme',
+    ],
+    parere: [
+        'Sto leggendo gli elementi',
+        'Inquadrolo le premesse',
+        'Ricostruisco il quadro',
+        'Articolo le considerazioni',
+        'Cerco le tensioni interpretative',
+        'Compongo le conclusioni',
+        'Strutturo il parere',
+        'Rifinisco il documento',
+    ],
+    libera: [
+        'Sto leggendo gli elementi',
+        'Analizzo la tua domanda',
+        'Cerco i punti rilevanti',
+        'Compongo la risposta',
+        'Verifico l\'aderenza agli elementi',
+        'Affino il ragionamento',
+    ],
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LEX ANIMAZIONE — Confronto (frasi personalizzate per azione)
+// ═══════════════════════════════════════════════════════════════
+function LexAnimazioneConfronto({ azione }) {
+    const frasiRotative = FRASI_CONFRONTO[azione] ?? FRASI_CONFRONTO.libera
+    const [indiceFrase, setIndiceFrase] = useState(0)
+
+    useEffect(() => {
+        setIndiceFrase(0)
+        const interval = setInterval(() => {
+            setIndiceFrase((i) => (i + 1) % frasiRotative.length)
+        }, 4000)
+        return () => clearInterval(interval)
+    }, [azione])
+
+    const testoVisibile = frasiRotative[indiceFrase]
+
+    return (
+        <div className="px-3 py-4 max-w-[600px] mx-auto">
+            <style>{`
+                .lex-stage-c { position: relative; width: 100%; aspect-ratio: 16 / 7; margin: 0 auto; }
+                .lex-stage-c svg { width: 100%; height: 100%; display: block; }
+
+                .lex-c-ray { animation: lexCRayCycle 27s ease-in-out infinite; }
+                @keyframes lexCRayCycle {
+                    0%   { transform: translateX(-30px); opacity: 0; }
+                    3%   { opacity: 0.8; }
+                    8%   { transform: translateX(85px); opacity: 0.9; }
+                    12%  { transform: translateX(85px); opacity: 1; }
+                    16%  { transform: translateX(85px); opacity: 0; }
+                    33%  { transform: translateX(85px); opacity: 0; }
+                    34%  { transform: translateX(-30px); opacity: 0; }
+                    37%  { opacity: 0.8; }
+                    42%  { transform: translateX(180px); opacity: 0.9; }
+                    46%  { transform: translateX(180px); opacity: 1; }
+                    50%  { transform: translateX(180px); opacity: 0; }
+                    66%  { transform: translateX(180px); opacity: 0; }
+                    67%  { transform: translateX(-30px); opacity: 0; }
+                    70%  { opacity: 0.8; }
+                    78%  { transform: translateX(290px); opacity: 0.9; }
+                    82%  { transform: translateX(290px); opacity: 1; }
+                    86%  { transform: translateX(290px); opacity: 0; }
+                    100% { transform: translateX(290px); opacity: 0; }
+                }
+
+                .lex-c-book-a { animation: lexCBookGlowA 27s ease-in-out infinite; }
+                @keyframes lexCBookGlowA {
+                    0%, 8% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                    12% { fill: rgba(127, 163, 154, 0.25); stroke: #7FA39A; stroke-width: 1.5; transform: translateY(0); }
+                    16% { fill: rgba(127, 163, 154, 0.15); stroke: rgba(127, 163, 154, 0.4); stroke-width: 1; transform: translateY(8px); }
+                    24% { fill: rgba(127, 163, 154, 0.05); stroke: rgba(127, 163, 154, 0.3); stroke-width: 1; transform: translateY(8px); }
+                    32%, 100% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                }
+                .lex-c-book-b { animation: lexCBookGlowB 27s ease-in-out infinite; }
+                @keyframes lexCBookGlowB {
+                    0%, 41% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                    46% { fill: rgba(127, 163, 154, 0.25); stroke: #7FA39A; stroke-width: 1.5; transform: translateY(0); }
+                    50% { fill: rgba(127, 163, 154, 0.15); stroke: rgba(127, 163, 154, 0.4); stroke-width: 1; transform: translateY(8px); }
+                    58% { fill: rgba(127, 163, 154, 0.05); stroke: rgba(127, 163, 154, 0.3); stroke-width: 1; transform: translateY(8px); }
+                    66%, 100% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                }
+                .lex-c-book-c { animation: lexCBookGlowC 27s ease-in-out infinite; }
+                @keyframes lexCBookGlowC {
+                    0%, 75% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                    82% { fill: rgba(127, 163, 154, 0.25); stroke: #7FA39A; stroke-width: 1.5; transform: translateY(0); }
+                    86% { fill: rgba(127, 163, 154, 0.15); stroke: rgba(127, 163, 154, 0.4); stroke-width: 1; transform: translateY(8px); }
+                    94% { fill: rgba(127, 163, 154, 0.05); stroke: rgba(127, 163, 154, 0.3); stroke-width: 1; transform: translateY(8px); }
+                    100% { fill: #243447; stroke: rgba(127, 163, 154, 0.2); stroke-width: 1; transform: translateY(0); }
+                }
+
+                .lex-c-fade-text { animation: lexCFadeIn 0.6s ease-out; }
+                @keyframes lexCFadeIn {
+                    0%   { opacity: 0; transform: translateY(4px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+
+                .lex-c-dots-container { display: inline-flex; gap: 3px; margin-left: 6px; align-items: center; }
+                .lex-c-dot {
+                    display: inline-block; width: 3px; height: 3px;
+                    border-radius: 50%; background: #7FA39A; opacity: 0.4;
+                    animation: lexCDotPulse 1.4s ease-in-out infinite;
+                }
+                .lex-c-dot:nth-child(1) { animation-delay: 0s; }
+                .lex-c-dot:nth-child(2) { animation-delay: 0.2s; }
+                .lex-c-dot:nth-child(3) { animation-delay: 0.4s; }
+                @keyframes lexCDotPulse {
+                    0%, 100% { opacity: 0.3; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.3); }
+                }
+            `}</style>
+
+            <div className="lex-stage-c">
+                <svg viewBox="62 27 416 185" xmlns="http://www.w3.org/2000/svg" role="img">
+                    <title>Lex sta ragionando</title>
+                    <line x1="60" y1="172" x2="480" y2="172" stroke="rgba(127, 163, 154, 0.4)" strokeWidth="0.8" />
+
+                    <rect x="80" y="100" width="22" height="72" rx="1" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="105" y="92" width="20" height="80" rx="1" fill="#1d2c3a" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="128" y="105" width="24" height="67" rx="1" fill="#2a3b4f" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect className="lex-c-book-a" x="155" y="96" width="22" height="76" rx="1" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect x="180" y="108" width="20" height="64" rx="1" fill="#1d2c3a" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="203" y="98" width="22" height="74" rx="1" fill="#2a3b4f" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="228" y="103" width="24" height="69" rx="1" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect className="lex-c-book-b" x="255" y="90" width="26" height="82" rx="1.5" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect x="284" y="97" width="22" height="75" rx="1" fill="#1d2c3a" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="309" y="104" width="24" height="68" rx="1" fill="#2a3b4f" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="336" y="93" width="22" height="79" rx="1" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect className="lex-c-book-c" x="361" y="106" width="20" height="66" rx="1" fill="#1d2c3a" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <rect x="384" y="100" width="22" height="72" rx="1" fill="#2a3b4f" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+                    <rect x="409" y="95" width="24" height="77" rx="1" fill="#243447" stroke="rgba(127, 163, 154, 0.2)" strokeWidth="1" />
+
+                    <g className="lex-c-ray">
+                        <ellipse cx="80" cy="135" rx="22" ry="55" fill="#7FA39A" opacity="0.18" />
+                        <ellipse cx="80" cy="135" rx="14" ry="45" fill="#7FA39A" opacity="0.25" />
+                        <ellipse cx="80" cy="135" rx="6" ry="35" fill="#7FA39A" opacity="0.4" />
+                        <line x1="80" y1="80" x2="80" y2="180" stroke="#7FA39A" strokeWidth="0.5" opacity="0.6" />
+                    </g>
+                </svg>
+            </div>
+
+            <div className="text-center mt-3 min-h-[24px]">
+                {testoVisibile && (
+                    <span
+                        key={indiceFrase}
+                        className="lex-c-fade-text font-body text-sm text-nebbia/70 tracking-wide inline-flex items-center"
+                    >
+                        {testoVisibile}
+                        <span className="lex-c-dots-container">
+                            <span className="lex-c-dot" />
+                            <span className="lex-c-dot" />
+                            <span className="lex-c-dot" />
+                        </span>
+                    </span>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PANNELLO CONFRONTO (CON CHAT LEX + AZIONI GUIDATE + STREAMING)
 // ═══════════════════════════════════════════════════════════════
 function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, onChiudi, onSintesiSalvata }) {
     const [tabMobile, setTabMobile] = useState(0)
 
-    // Chat Lex
-    const [conversazione, setConversazione] = useState([])  // [{role: 'user'|'assistant', content}]
+    const [conversazione, setConversazione] = useState([])
     const [input, setInput] = useState('')
     const [cercando, setCercando] = useState(false)
+    const [azioneCorrente, setAzioneCorrente] = useState('libera')
+    const [streamingTesto, setStreamingTesto] = useState('')
     const [erroreLex, setErroreLex] = useState('')
     const [mostraModaleSalva, setMostraModaleSalva] = useState(false)
     const [contenutoSalva, setContenutoSalva] = useState('')
+    const abortControllerRef = useRef(null)
 
     const numCol = elementi.length
 
-    async function inviaMessaggio() {
-        if (!input.trim() || cercando) return
-        const domanda = input.trim()
-        setInput('')
+    async function eseguiAzioneOLibera({ azione, domandaTesto }) {
+        if (cercando) return
         setErroreLex('')
+        setStreamingTesto('')
+        setAzioneCorrente(azione)
 
-        const nuovaConv = [...conversazione, { role: 'user', content: domanda }]
+        // Costruisci messaggio "user" da mostrare in chat
+        let etichettaInput = ''
+        if (azione === 'libera') {
+            etichettaInput = domandaTesto
+        } else {
+            const meta = AZIONI_CONFRONTO.find(a => a.id === azione)
+            etichettaInput = `${meta?.emoji ?? ''} ${meta?.label ?? azione}${domandaTesto ? `\n\nFocus: ${domandaTesto}` : ''}`
+        }
+
+        const nuovaConv = [...conversazione, { role: 'user', content: etichettaInput }]
         setConversazione(nuovaConv)
+        setInput('')
         setCercando(true)
+
+        const controller = new AbortController()
+        abortControllerRef.current = controller
 
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            // ⚠️ ENDPOINT DA SOSTITUIRE: chat di confronto contestualizzata
-            // Body: { domanda, messaggi: [...], elementi: [{kind, titolo, contenuto}] }
-            // Risposta: { risposta: "markdown" }
             const res = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lex-confronta`,
                 {
@@ -1084,7 +1406,8 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        domanda,
+                        azione,
+                        domanda: domandaTesto,
                         messaggi: conversazione,
                         elementi: elementi.map(el => ({
                             kind: el.kind,
@@ -1092,6 +1415,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                             contenuto: contenutoElemento(el),
                         })),
                     }),
+                    signal: controller.signal,
                 }
             )
 
@@ -1100,20 +1424,63 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                 throw new Error(err.error ?? `Errore ${res.status}`)
             }
 
-            const json = await res.json()
-            setConversazione([...nuovaConv, { role: 'assistant', content: json.risposta ?? '' }])
+            // Streaming SSE
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let testoAccumulato = ''
+
+            while (true) {
+                const { value, done } = await reader.read()
+                if (done) break
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n')
+                buffer = lines.pop() ?? ''
+
+                for (const line of lines) {
+                    if (!line.trim() || !line.startsWith('data: ')) continue
+                    try {
+                        const payload = JSON.parse(line.slice(6).trim())
+                        if (payload.text) {
+                            testoAccumulato += payload.text
+                            setStreamingTesto(testoAccumulato)
+                        }
+                    } catch {
+                        // ignora
+                    }
+                }
+            }
+
+            // Finalizza conversazione
+            setConversazione([...nuovaConv, { role: 'assistant', content: testoAccumulato, azione }])
+            setStreamingTesto('')
         } catch (e) {
-            setErroreLex(e.message)
-            setConversazione(conversazione)  // rollback
+            if (e.name !== 'AbortError') {
+                setErroreLex(e.message)
+                setConversazione(conversazione)
+            }
         } finally {
             setCercando(false)
+            abortControllerRef.current = null
         }
     }
 
+    function inviaLibera() {
+        if (!input.trim()) return
+        eseguiAzioneOLibera({ azione: 'libera', domandaTesto: input.trim() })
+    }
+
+    function eseguiAzione(azioneId) {
+        eseguiAzioneOLibera({ azione: azioneId, domandaTesto: input.trim() })
+    }
+
     function nuovaSessione() {
+        if (abortControllerRef.current) abortControllerRef.current.abort()
         setConversazione([])
+        setStreamingTesto('')
         setErroreLex('')
         setInput('')
+        setAzioneCorrente('libera')
     }
 
     function salvaMessaggio(content) {
@@ -1122,46 +1489,47 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
     }
 
     return (
-        <div className="bg-slate border border-salvia/20 flex flex-col">
+        <div className="space-y-5">
 
-            {/* Switcher mobile */}
-            <div className="md:hidden flex border-b border-white/5">
-                {elementi.map((el, i) => (
-                    <button
-                        key={chiaveElemento(el)}
-                        onClick={() => setTabMobile(i)}
-                        className={`flex-1 px-3 py-2.5 font-body text-xs border-b-2 transition-colors truncate ${tabMobile === i ? 'border-salvia text-salvia' : 'border-transparent text-nebbia/40'
-                            }`}
-                    >
-                        {i + 1}
-                    </button>
-                ))}
+            {/* ─── Colonne affiancate ─── */}
+            <div className="bg-slate border border-salvia/20">
+                <div className="md:hidden flex border-b border-white/5">
+                    {elementi.map((el, i) => (
+                        <button
+                            key={chiaveElemento(el)}
+                            onClick={() => setTabMobile(i)}
+                            className={`flex-1 px-3 py-2.5 font-body text-xs border-b-2 transition-colors truncate ${tabMobile === i ? 'border-salvia text-salvia' : 'border-transparent text-nebbia/40'}`}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+
+                <div className={`grid grid-cols-1 md:grid-cols-${numCol} divide-y md:divide-y-0 md:divide-x divide-white/5`}>
+                    {elementi.map((el, i) => (
+                        <div
+                            key={chiaveElemento(el)}
+                            className={`${tabMobile === i ? 'block' : 'hidden md:block'} max-h-[60vh] overflow-y-auto`}
+                        >
+                            <ColonnaConfronto elemento={el} basePathBancaDati={basePathBancaDati} />
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            <div className={`grid grid-cols-1 md:grid-cols-${numCol} divide-y md:divide-y-0 md:divide-x divide-white/5`}>
-                {elementi.map((el, i) => (
-                    <div
-                        key={chiaveElemento(el)}
-                        className={`${tabMobile === i ? 'block' : 'hidden md:block'} max-h-[60vh] overflow-y-auto`}
-                    >
-                        <ColonnaConfronto elemento={el} basePathBancaDati={basePathBancaDati} />
-                    </div>
-                ))}
-            </div>
-
-            {/* ─── Chat Lex separata (card autonoma con respiro) ─── */}
-            <div className="bg-slate border border-salvia/20 mt-5">
+            {/* ─── Chat Lex con azioni guidate ─── */}
+            <div className="bg-slate border border-salvia/20">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
                     <div className="flex items-center gap-2">
                         <Sparkles size={14} className="text-salvia" />
                         <p className="font-body text-sm font-medium text-nebbia">Lex — Chat sul confronto</p>
                         {conversazione.length > 0 && (
                             <span className="font-body text-xs text-salvia/60 border border-salvia/20 px-2 py-0.5">
-                                {Math.floor(conversazione.length / 2)} scambi
+                                {Math.floor(conversazione.length / 2) + (cercando || streamingTesto ? 1 : 0)} scambi
                             </span>
                         )}
                     </div>
-                    {conversazione.length > 0 && (
+                    {(conversazione.length > 0 || cercando) && (
                         <button
                             onClick={nuovaSessione}
                             className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors"
@@ -1171,8 +1539,9 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                     )}
                 </div>
 
-                {conversazione.length > 0 && (
-                    <div className="px-5 py-4 space-y-5 max-h-[50vh] overflow-y-auto">
+                {/* Storia conversazione */}
+                {(conversazione.length > 0 || cercando || streamingTesto) && (
+                    <div className="px-5 py-4 space-y-5 max-h-[55vh] overflow-y-auto">
                         {conversazione.map((m, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex items-center justify-between gap-2">
@@ -1190,7 +1559,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                                 </div>
 
                                 {m.role === 'user' ? (
-                                    <p className="font-body text-sm text-nebbia/60 leading-relaxed">{m.content}</p>
+                                    <p className="font-body text-sm text-nebbia/60 leading-relaxed whitespace-pre-line">{m.content}</p>
                                 ) : (
                                     <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2">
                                         <ReactMarkdown
@@ -1211,75 +1580,117 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                             </div>
                         ))}
 
-                        {cercando && (
-                            <div className="flex items-center gap-2 text-salvia/70">
-                                <Loader2 size={13} className="animate-spin" />
-                                <span className="font-body text-sm">Lex sta ragionando...</span>
+                        {/* Streaming in corso */}
+                        {streamingTesto && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-body text-xs font-medium text-salvia/70">Lex</span>
+                                </div>
+                                <div className="font-body text-sm text-nebbia/80 leading-relaxed">
+                                    <ReactMarkdown
+                                        components={{
+                                            h2: ({ children }) => <h2 className="font-display text-base font-semibold text-nebbia mt-4 mb-2">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="font-body text-sm font-semibold text-nebbia/80 mt-3 mb-1">{children}</h3>,
+                                            strong: ({ children }) => <strong className="font-semibold text-nebbia">{children}</strong>,
+                                            ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                                            li: ({ children }) => <li>{children}</li>,
+                                            p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                                        }}
+                                    >
+                                        {streamingTesto}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
+                        )}
+
+                        {/* Animazione mentre attende il primo chunk */}
+                        {cercando && !streamingTesto && (
+                            <LexAnimazioneConfronto azione={azioneCorrente} />
                         )}
                     </div>
                 )}
 
-                {/* Input area */}
-                <div className="px-5 py-4 space-y-3">
-                    {conversazione.length === 0 && (
-                        <p className="font-body text-xs text-nebbia/30">
-                            Chiedi a Lex di sintetizzare, evidenziare differenze, individuare contraddizioni o produrre conclusioni operative sui {numCol} elementi confrontati.
-                        </p>
-                    )}
+                {/* Pannello azioni guidate */}
+                {!cercando && (
+                    <div className="px-5 py-4 space-y-3">
+                        {conversazione.length === 0 && (
+                            <p className="font-body text-xs text-nebbia/30">
+                                Scegli un'azione guidata o scrivi una domanda libera. Lex ragionerà sui {numCol} elementi confrontati.
+                            </p>
+                        )}
 
-                    <textarea
-                        rows={2}
-                        placeholder={conversazione.length > 0
-                            ? 'Approfondisci o fai una nuova domanda sul confronto...'
-                            : 'Es. "Sintetizza i punti in comune e le differenze tra questi elementi"'
-                        }
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) inviaMessaggio() }}
-                        disabled={cercando}
-                        className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
-                    />
+                        <div className="grid grid-cols-2 gap-2">
+                            {AZIONI_CONFRONTO.map(a => (
+                                <button
+                                    key={a.id}
+                                    onClick={() => eseguiAzione(a.id)}
+                                    disabled={cercando}
+                                    className="group flex items-start gap-2 p-3 bg-petrolio border border-white/5 hover:border-salvia/30 transition-colors text-left disabled:opacity-40"
+                                >
+                                    <span className="text-base shrink-0 mt-0.5">{a.emoji}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-body text-xs font-medium text-nebbia group-hover:text-salvia transition-colors leading-snug">
+                                            {a.label}
+                                        </p>
+                                        <p className="font-body text-[10px] text-nebbia/40 mt-0.5 leading-snug">
+                                            {a.descr}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
 
-                    {erroreLex && (
-                        <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
-                            <AlertCircle size={11} />{erroreLex}
-                        </p>
-                    )}
+                        <textarea
+                            rows={2}
+                            placeholder={conversazione.length > 0
+                                ? 'Approfondisci o fai una nuova domanda...'
+                                : 'Oppure scrivi una domanda libera...'}
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) inviaLibera() }}
+                            disabled={cercando}
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
+                        />
 
-                    <button
-                        onClick={inviaMessaggio}
-                        disabled={cercando || !input.trim()}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
-                    >
-                        {cercando
-                            ? <><Loader2 size={14} className="animate-spin" /> Lex sta lavorando...</>
-                            : <><Sparkles size={13} /> {conversazione.length > 0 ? 'Continua conversazione' : 'Chiedi a Lex'}</>
-                        }
-                    </button>
-                </div>
+                        {erroreLex && (
+                            <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
+                                <AlertCircle size={11} /> {erroreLex}
+                            </p>
+                        )}
+
+                        <button
+                            onClick={inviaLibera}
+                            disabled={cercando || !input.trim()}
+                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
+                        >
+                            <Sparkles size={13} /> Invia domanda libera
+                        </button>
+                    </div>
+                )}
+
+                {/* Stato cercando senza storia precedente: non mostra nulla qui (animazione è dentro la storia) */}
             </div>
 
-            {
-                mostraModaleSalva && (
-                    <ModaleSalvaSintesi
-                        sintesi={contenutoSalva}
-                        elementiConfrontati={elementi}
-                        pratiche={pratiche}
-                        etichette={etichette}
-                        onClose={() => setMostraModaleSalva(false)}
-                        onSalvata={() => {
-                            setMostraModaleSalva(false)
-                            onSintesiSalvata()
-                        }}
-                    />
-                )
-            }
-        </div >
+            {mostraModaleSalva && (
+                <ModaleSalvaSintesi
+                    sintesi={contenutoSalva}
+                    elementiConfrontati={elementi}
+                    pratiche={pratiche}
+                    etichette={etichette}
+                    onClose={() => setMostraModaleSalva(false)}
+                    onSalvata={() => {
+                        setMostraModaleSalva(false)
+                        onSintesiSalvata()
+                    }}
+                />
+            )}
+        </div>
     )
 }
 
-// ─── helper per estrarre titolo/contenuto in formato unificato ───
+// ═══════════════════════════════════════════════════════════════
+// HELPER COMUNI
+// ═══════════════════════════════════════════════════════════════
 function titoloElemento(el) {
     if (TIPI_RICERCA.includes(el.kind)) return el.titolo ?? '(senza titolo)'
     if (el.kind === 'norma') return `${el.codice?.toUpperCase() ?? ''} Art. ${el.articolo}${el.rubrica ? ` — ${el.rubrica}` : ''}`
@@ -1302,7 +1713,6 @@ function contenutoElemento(el) {
     return ''
 }
 
-// ─── Colonna del confronto (polimorfica) ───
 function ColonnaConfronto({ elemento: el, basePathBancaDati }) {
     const meta = (() => {
         if (el.kind === 'ricerca_ai') return { Icon: Sparkles, color: 'text-salvia', label: 'Ricerca AI' }
@@ -1386,7 +1796,7 @@ function ColonnaConfronto({ elemento: el, basePathBancaDati }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MODALE SALVA SINTESI
+// MODALE SALVA SINTESI (invariata)
 // ═══════════════════════════════════════════════════════════════
 function ModaleSalvaSintesi({ sintesi, elementiConfrontati, pratiche, etichette, onClose, onSalvata }) {
     const titoloAuto = `Confronto: ${elementiConfrontati.map(el => titoloElemento(el)).join(' · ').slice(0, 100)}`
@@ -1552,7 +1962,7 @@ function ModaleSalvaSintesi({ sintesi, elementiConfrontati, pratiche, etichette,
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MODALE NUOVA RICERCA
+// MODALE NUOVA RICERCA (invariata)
 // ═══════════════════════════════════════════════════════════════
 function ModaleNuovaRicerca({ pratiche, etichette, onClose, onSalvata }) {
     const [titolo, setTitolo] = useState('')
@@ -1726,7 +2136,7 @@ function ModaleNuovaRicerca({ pratiche, etichette, onClose, onSalvata }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MODALE NUOVA ETICHETTA
+// MODALE NUOVA ETICHETTA (invariata)
 // ═══════════════════════════════════════════════════════════════
 function ModaleNuovaEtichetta({ onClose, onSalvata }) {
     const [nome, setNome] = useState('')
@@ -1822,7 +2232,7 @@ function ModaleNuovaEtichetta({ onClose, onSalvata }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MODALE GESTIONE ETICHETTE
+// MODALE GESTIONE ETICHETTE (invariata)
 // ═══════════════════════════════════════════════════════════════
 function ModaleGestioneEtichette({ etichette, basePathEtichette, onClose, onAggiornate }) {
     const [modificando, setModificando] = useState(null)
