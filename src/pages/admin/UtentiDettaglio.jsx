@@ -5,8 +5,8 @@ import { useParams, Link } from 'react-router-dom'
 import { BackButton, Badge, StatCard } from '@/components/shared'
 import {
   ShieldOff, Lock, Clock, FileText,
-  MessageSquare, CreditCard, FolderOpen, User,
-  CheckCircle, XCircle, AlertCircle, ArrowRight, Download
+  FolderOpen, User,
+  CheckCircle, XCircle, AlertCircle, ArrowRight
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -27,20 +27,6 @@ const STATI_PRATICA = {
   chiusa: { label: 'Chiusa', variant: 'gray' },
 }
 
-const STATI_FATTURA = {
-  in_attesa: { label: 'In attesa', variant: 'warning' },
-  pagata: { label: 'Pagata', variant: 'salvia' },
-  scaduta: { label: 'Scaduta', variant: 'red' },
-  annullata: { label: 'Annullata', variant: 'gray' },
-}
-
-function formatSize(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
 // ─────────────────────────────────────────────────────────────
 // SEZIONE AVVOCATO
 // ─────────────────────────────────────────────────────────────
@@ -48,7 +34,6 @@ function SezioneAvvocato({ utente }) {
   const [tab, setTab] = useState('panoramica')
   const [clienti, setClienti] = useState([])
   const [pratiche, setPratiche] = useState([])
-  const [note, setNote] = useState([])
   const [collaboratori, setCollaboratori] = useState([])
 
   // Dati piano direttamente dall'utente (profiles)
@@ -60,15 +45,13 @@ function SezioneAvvocato({ utente }) {
 
   useEffect(() => {
     async function carica() {
-      const [{ data: cl }, { data: pr }, { data: nt }, { data: collabs }] = await Promise.all([
+      const [{ data: cl }, { data: pr }, { data: collabs }] = await Promise.all([
         supabase.from('profiles').select('id, nome, cognome').eq('avvocato_id', utente.id).eq('role', 'cliente'),
         supabase.from('pratiche').select('id, titolo, tipo, stato, created_at').eq('avvocato_id', utente.id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('note_interne').select('id, testo, created_at, autore:autore_id(nome, cognome), cliente:cliente_id(nome, cognome)').eq('autore_id', utente.id).order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, nome, cognome').eq('titolare_id', utente.id),
       ])
       setClienti(cl ?? [])
       setPratiche(pr ?? [])
-      setNote(nt ?? [])
       setCollaboratori(collabs ?? [])
     }
     carica()
@@ -78,7 +61,6 @@ function SezioneAvvocato({ utente }) {
     { id: 'panoramica', label: 'Panoramica', icon: User },
     { id: 'clienti', label: 'Clienti', icon: FolderOpen },
     { id: 'pratiche', label: 'Pratiche', icon: FileText },
-    { id: 'note', label: 'Note interne', icon: Lock },
   ]
 
   return (
@@ -178,31 +160,10 @@ function SezioneAvvocato({ utente }) {
           </table>
         </div>
       )}
-
-      {tab === 'note' && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 p-3 bg-amber-900/10 border border-amber-500/20">
-            <Lock size={13} className="text-amber-400 shrink-0" />
-            <p className="font-body text-xs text-amber-400">Note interne scritte dall'avvocato sui propri clienti. Sola lettura.</p>
-          </div>
-          {note.length === 0
-            ? <p className="font-body text-sm text-nebbia/30 text-center py-8">Nessuna nota</p>
-            : note.map(n => (
-              <div key={n.id} className="bg-slate border border-white/5 p-4">
-                {n.cliente && <p className="font-body text-xs text-oro/60 mb-1">Cliente: {n.cliente.nome} {n.cliente.cognome}</p>}
-                <p className="font-body text-sm text-nebbia/70 leading-relaxed">{n.testo}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Clock size={10} className="text-nebbia/25" />
-                  <span className="font-body text-xs text-nebbia/30">{new Date(n.created_at).toLocaleString('it-IT')}</span>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      )}
     </div>
   )
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // SEZIONE CLIENTE
@@ -210,66 +171,31 @@ function SezioneAvvocato({ utente }) {
 function SezioneCliente({ utente }) {
   const [tab, setTab] = useState('panoramica')
   const [pratiche, setPratiche] = useState([])
-  const [documenti, setDocumenti] = useState([])
-  const [fatture, setFatture] = useState([])
-  const [tickets, setTickets] = useState([])
-  const [ticketAperto, setTicketAperto] = useState(null)
-  const [messaggiChat, setMessaggiChat] = useState([])
-  const [note, setNote] = useState([])
   const [loading, setLoading] = useState(true)
-  const bottomRef = useRef(null)
 
   useEffect(() => { carica() }, [utente.id])
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messaggiChat])
 
   async function carica() {
     setLoading(true)
-    const [{ data: pr }, { data: docs }, { data: fatt }, { data: tks }, { data: nt }] = await Promise.all([
-      supabase.from('pratiche').select('id, titolo, tipo, stato, created_at, prossima_udienza').eq('cliente_id', utente.id).order('created_at', { ascending: false }),
-      supabase.from('documenti').select('*').eq('cliente_id', utente.id).order('created_at', { ascending: false }),
-      supabase.from('fatture').select('*').eq('cliente_id', utente.id).order('created_at', { ascending: false }),
-      supabase.from('ticket_assistenza')
-        .select('id, oggetto, stato, created_at, mittente:mittente_id(nome, cognome)')
-        .or(`mittente_id.eq.${utente.id},destinatario_id.eq.${utente.id}`)
-        .not('destinatario_id', 'is', null)
-        .order('created_at', { ascending: false }),
-      supabase.from('note_interne').select('id, testo, created_at, autore:autore_id(nome, cognome)').eq('cliente_id', utente.id).order('created_at', { ascending: false }),
-    ])
-    setPratiche(pr ?? []); setDocumenti(docs ?? []); setFatture(fatt ?? [])
-    setTickets(tks ?? []); setNote(nt ?? [])
+    const { data: pr } = await supabase
+      .from('pratiche')
+      .select('id, titolo, tipo, stato, created_at, prossima_udienza')
+      .eq('cliente_id', utente.id)
+      .order('created_at', { ascending: false })
+    setPratiche(pr ?? [])
     setLoading(false)
   }
-
-  async function apriChat(t) {
-    setTicketAperto(t)
-    const { data } = await supabase.from('messaggi_ticket')
-      .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
-      .eq('ticket_id', t.id).order('created_at', { ascending: true })
-    setMessaggiChat(data ?? [])
-  }
-
-  async function scaricaDoc(doc) {
-    const { data } = await supabase.storage.from('documenti').createSignedUrl(doc.storage_path, 60)
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-  }
-
-  const totalePagato = fatture.filter(f => f.stato === 'pagata').reduce((a, f) => a + parseFloat(f.importo ?? 0), 0)
-  const totaleAperto = fatture.filter(f => ['in_attesa', 'scaduta'].includes(f.stato)).reduce((a, f) => a + parseFloat(f.importo ?? 0), 0)
 
   const TABS = [
     { id: 'panoramica', label: 'Panoramica', icon: User },
     { id: 'pratiche', label: 'Pratiche', icon: FolderOpen },
-    { id: 'documenti', label: 'Documenti', icon: FileText },
-    { id: 'comunicazioni', label: 'Comunicazioni', icon: MessageSquare },
-    { id: 'note_interne', label: 'Note interne', icon: Lock },
-    { id: 'pagamenti', label: 'Pagamenti', icon: CreditCard },
   ]
 
   return (
     <div className="space-y-4">
       <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
         {TABS.map(({ id: tid, label, icon: Icon }) => (
-          <button key={tid} onClick={() => { setTab(tid); setTicketAperto(null) }}
+          <button key={tid} onClick={() => setTab(tid)}
             className={`flex items-center gap-2 px-4 py-3 font-body text-sm whitespace-nowrap border-b-2 transition-colors ${tab === tid ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'}`}>
             <Icon size={13} strokeWidth={1.5} /> {label}
           </button>
@@ -296,10 +222,12 @@ function SezioneCliente({ utente }) {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard label="Pratiche" value={pratiche.length} colorClass="text-oro" />
-                <StatCard label="Documenti" value={documenti.length} colorClass="text-salvia" />
-                <StatCard label="Fatture" value={fatture.length} colorClass="text-nebbia/60" />
+              <StatCard label="Pratiche aperte" value={pratiche.length} colorClass="text-oro" />
+              <div className="flex items-center gap-2 p-3 bg-amber-900/10 border border-amber-500/20">
+                <Lock size={13} className="text-amber-400 shrink-0" />
+                <p className="font-body text-xs text-amber-400">
+                  Documenti, comunicazioni, note interne e pagamenti del cliente non sono accessibili dall'admin per tutela del segreto professionale.
+                </p>
               </div>
             </div>
           )}

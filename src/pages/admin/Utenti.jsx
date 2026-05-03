@@ -309,6 +309,7 @@ export default function AdminUtenti() {
     ))
   }
 
+  const nTotale = utenti.length
   const nAvvocati = utenti.filter(u => u.role === 'avvocato').length
   const nClienti = utenti.filter(u => u.role === 'cliente').length
   const nUser = utenti.filter(u => u.role === 'user').length
@@ -323,10 +324,11 @@ export default function AdminUtenti() {
     <div className="space-y-5">
       <PageHeader label="Admin" title="Utenti" />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Totale" value={nTotale} colorClass="text-nebbia" />
         <StatCard label="Avvocati" value={nAvvocati} colorClass="text-oro" />
         <StatCard label="Clienti" value={nClienti} colorClass="text-salvia" />
-        <StatCard label="Registrati" value={nUser} colorClass="text-nebbia/40" />
+        <StatCard label="User" value={nUser} colorClass="text-nebbia/40" />
         <StatCard label="Da verificare" value={nVerifiche} colorClass={nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
       </div>
 

@@ -50,7 +50,7 @@ export default function UserLayout({ children }) {
     { path: '/area/ricerche', label: 'Ricerche', icon: Search },
     ...(verifyItem ? [verifyItem] : []),
     { path: '/area/acquista', label: 'Acquista', icon: CreditCard },
-    { path: '/area/assistenza', label: 'Assistenza', icon: Headphones },
+    { path: '/area/assistenza', label: 'Domande?', icon: Headphones },
     { path: '/area/profilo', label: 'Profilo', icon: User },
   ]
 

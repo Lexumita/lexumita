@@ -38,13 +38,14 @@ import { AdminAssistenza, AdminAssistenzaDettaglio } from './pages/admin/Assiste
 import AdminNormativa from './pages/admin/Normativa'
 import AdminNormativaDettaglio from './pages/admin/NormativaDettaglio'
 import LexLogs from './pages/admin/LexLogs'
+import MailLog from '@/pages/admin/MailLog'
 
 // ── Avvocato ──
 import AvvocatoDashboard from './pages/avvocato/Dashboard'
 import { AvvocatoClienti, AvvocatoClientiNuovo, AvvocatoClientiDettaglio } from './pages/avvocato/Clienti'
 import { AvvocatoPratiche, AvvocatoPraticheNuova } from './pages/avvocato/Pratiche'
 import PraticaDettaglio from './pages/avvocato/PraticaDettaglio'
-import { AvvocatoSentenze, AvvocatoSentenzeNuova, AvvocatoSentenzeDettaglio, AvvocatoSentenzeModifica } from './pages/avvocato/Sentenze'
+import { AvvocatoSentenze, AvvocatoSentenzeNuova, AvvocatoSentenzeDettaglio, } from './pages/avvocato/Sentenze'
 import AvvocatoStudio from './pages/avvocato/Studio'
 import { AvvocatoAssistenza, AvvocatoAssistenzaNuovo, AvvocatoAssistenzaDettaglio } from './pages/avvocato/Assistenza'
 import AvvocatoProfilo from './pages/avvocato/Profilo'
@@ -150,6 +151,7 @@ export default function App() {
             <Route path="/admin/assistenza/:id" element={<Adm><AdminAssistenzaDettaglio /></Adm>} />
             <Route path="/admin/normativa" element={<Adm><AdminNormativa /></Adm>} />
             <Route path="/admin/normativa/:tipo/:slug" element={<Adm><AdminNormativaDettaglio /></Adm>} />
+            <Route path="/admin/mail-log" element={<Adm><MailLog /></Adm>} />
             {/* Retrocompat: vecchia rotta /admin/normativa/:codice → /admin/normativa/it/:codice */}
             <Route path="/admin/normativa/:codice" element={<Adm><AdminNormativaDettaglio /></Adm>} />
             <Route path="/admin/lex-logs" element={<Adm><LexLogs /></Adm>} />
@@ -168,7 +170,6 @@ export default function App() {
             <Route path="/sentenze" element={<Avv><AvvocatoSentenze /></Avv>} />
             <Route path="/sentenze/nuova" element={<Avv><AvvocatoSentenzeNuova /></Avv>} />
             <Route path="/sentenze/:id" element={<Avv><AvvocatoSentenzeDettaglio /></Avv>} />
-            <Route path="/sentenze/:id/modifica" element={<Avv><AvvocatoSentenzeModifica /></Avv>} />
             <Route path="/pagamenti" element={<Avv><AvvocatoPagamenti /></Avv>} />
             <Route path="/assistenza" element={<Avv><AvvocatoAssistenza /></Avv>} />
             <Route path="/assistenza/nuovo" element={<Avv><AvvocatoAssistenzaNuovo /></Avv>} />
@@ -235,7 +236,6 @@ export default function App() {
                 REDIRECT (retro-compatibilità)
                 ═══════════════════════════════════════════════════════ */}
             <Route path="/area-personale" element={<Navigate to="/area" replace />} />
-            <Route path="/registrati-lex" element={<Navigate to="/registrati" replace />} />
             <Route path="/abbonamenti" element={<Navigate to="/area/acquista" replace />} />
             <Route path="/abbonamenti/checkout" element={<Navigate to="/area/acquista" replace />} />
             <Route path="/normativa" element={<Navigate to="/banca-dati" replace />} />

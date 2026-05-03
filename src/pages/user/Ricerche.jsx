@@ -586,59 +586,49 @@ export default function Ricerche() {
                             Cerca tra le tue ricerche, norme, sentenze e prassi. Usa la ricerca tradizionale per parole chiave letterali, o Lex per query in linguaggio naturale.
                         </p>
 
-                        <div className="relative">
-                            <textarea
-                                rows={2}
-                                placeholder="Es. responsabilità medica, oppure: tutto quello che ho ragionato sulla chirurgia estetica..."
-                                value={cerca}
-                                onChange={e => {
-                                    const nuovoValore = e.target.value
-                                    setCerca(nuovoValore)
-                                    // Se l'utente svuota la barra, azzera anche il filtro applicato (regola: testo vuoto = nessun filtro)
-                                    if (nuovoValore.trim() === '') {
-                                        setCercaApplicata('')
-                                        if (risultatiLexChiavi !== null) {
-                                            setRisultatiLexChiavi(null)
-                                            setParoleChiaveLex([])
+                        <div className="flex items-stretch gap-2">
+                            <div className="relative flex-1">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    placeholder="Cerca tra le tue ricerche, norme, sentenze, prassi..."
+                                    value={cerca}
+                                    onChange={e => {
+                                        const v = e.target.value
+                                        setCerca(v)
+                                        if (v.trim() === '') {
+                                            setCercaApplicata('')
+                                            if (risultatiLexChiavi !== null) azzeraRicercaLex()
+                                        } else if (risultatiLexChiavi !== null) {
+                                            azzeraRicercaLex()
                                         }
-                                    } else if (risultatiLexChiavi !== null) {
-                                        // Se Lex era attivo e l'utente sta riscrivendo, azzera Lex (mutuo esclusione)
-                                        setRisultatiLexChiavi(null)
-                                        setParoleChiaveLex([])
-                                    }
-                                }}
-                                onKeyDown={e => {
-                                    // Cmd/Ctrl+Enter → Cerca con Lex
-                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                        cercaConLexDallaBarra()
-                                    }
-                                    // Enter semplice → Cerca tradizionale
-                                    else if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault()
-                                        if (cerca.trim()) applicaCercaTradizionale()
-                                    }
-                                }}
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25"
-                            />
-                            {cerca && (
-                                <button
-                                    onClick={() => { setCerca(''); setCercaApplicata(''); azzeraRicercaLex() }}
-                                    className="absolute top-2 right-2 text-nebbia/30 hover:text-nebbia p-1"
-                                    title="Svuota"
-                                >
-                                    <X size={13} />
-                                </button>
-                            )}
-                        </div>
+                                    }}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                            cercaConLexDallaBarra()
+                                        } else if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            if (cerca.trim()) applicaCercaTradizionale()
+                                        }
+                                    }}
+                                    className="w-full h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+                                {cerca && (
+                                    <button
+                                        onClick={() => { setCerca(''); setCercaApplicata(''); azzeraRicercaLex() }}
+                                        className="absolute top-1/2 -translate-y-1/2 right-2 text-nebbia/30 hover:text-nebbia p-1"
+                                        title="Svuota"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                )}
+                            </div>
 
-                        <div className="flex items-center gap-2 flex-wrap">
                             <button
                                 onClick={applicaCercaTradizionale}
                                 disabled={!cerca.trim() || cerca === cercaApplicata}
-                                className="flex items-center justify-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed h-[38px]"
-                                title={cerca === cercaApplicata && cerca.trim()
-                                    ? 'Filtro già applicato'
-                                    : 'Filtra letteralmente sui contenuti'}
+                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                title="Cerca per parole chiave letterali (Invio)"
                             >
                                 <Search size={13} /> Cerca
                             </button>
@@ -646,19 +636,21 @@ export default function Ricerche() {
                             <button
                                 onClick={cercaConLexDallaBarra}
                                 disabled={cercandoLex || !cerca.trim() || rateLimitInfo.rimasti <= 0 || elementi.length > 100}
-                                className="flex items-center justify-center gap-2 px-4 py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed h-[38px]"
+                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                 title={rateLimitInfo.rimasti <= 0
-                                    ? 'Hai raggiunto le 30 ricerche giornaliere. Reset a mezzanotte.'
+                                    ? 'Limite giornaliero raggiunto'
                                     : elementi.length > 100
-                                        ? 'Hai più di 100 elementi: filtra prima per tipo o pratica'
-                                        : 'Ricerca semantica con Lex'}
+                                        ? 'Troppi elementi: filtra prima per tipo o pratica (max 100)'
+                                        : 'Ricerca semantica (Cmd/Ctrl+Invio)'}
                             >
                                 {cercandoLex
-                                    ? <><Loader2 size={13} className="animate-spin" /> Lex sta cercando...</>
+                                    ? <><Loader2 size={13} className="animate-spin" /> <span className="hidden md:inline">Lex sta cercando...</span></>
                                     : <>
-                                        <Sparkles size={13} /> Cerca con Lex
-                                        <span className="text-[11px] text-salvia/60 font-normal">
-                                            (gratuito · {rateLimitInfo.rimasti}/{rateLimitInfo.limite} oggi)
+                                        <Sparkles size={13} />
+                                        <span className="hidden md:inline">Cerca con Lex</span>
+                                        <span className="md:hidden">Lex</span>
+                                        <span className="hidden lg:inline text-[10px] text-salvia/60 font-normal ml-1">
+                                            ({rateLimitInfo.rimasti}/{rateLimitInfo.limite})
                                         </span>
                                     </>
                                 }

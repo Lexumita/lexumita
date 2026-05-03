@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ArrowRight } from 'lucide-react'
 import logo from '@/assets/logo.png'
+import { useAuth } from '@/context/AuthContext'
 
 const navLinks = [
   { path: '/', label: 'Home' },
@@ -10,10 +11,19 @@ const navLinks = [
   { path: '/contatti', label: 'Contatti' },
 ]
 
+// Mappa ruolo → URL della home interna
+const HOME_PER_RUOLO = {
+  admin: '/admin/dashboard',
+  avvocato: '/dashboard',
+  cliente: '/portale',
+  user: '/area',
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
+  const { profile } = useAuth()
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40)
@@ -22,6 +32,9 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => { setMenuOpen(false) }, [location])
+
+  const homeUtente = profile?.role ? HOME_PER_RUOLO[profile.role] ?? '/' : null
+  const labelUtente = profile?.nome || 'La mia area'
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-petrolio/95 backdrop-blur-sm border-b border-white/5 py-3' : 'bg-transparent py-5'
@@ -47,14 +60,25 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* CTA */}
+        {/* CTA Desktop */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login" className="font-body text-xs text-nebbia/40 hover:text-nebbia transition-colors">
-            Accedi
-          </Link>
-          <Link to="/registrati" className="px-5 py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-all">
-            Inizia ora →
-          </Link>
+          {profile ? (
+            <Link
+              to={homeUtente}
+              className="flex items-center gap-2 px-5 py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-all"
+            >
+              {labelUtente} <ArrowRight size={13} />
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="font-body text-xs text-nebbia/40 hover:text-nebbia transition-colors">
+                Accedi
+              </Link>
+              <Link to="/registrati" className="px-5 py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-all">
+                Inizia ora →
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -76,10 +100,21 @@ export default function Navbar() {
               {label}
             </NavLink>
           ))}
-          <div className="flex gap-3 mt-3">
-            <Link to="/login" className="flex-1 text-center py-2.5 border border-white/10 text-nebbia/50 font-body text-xs hover:border-white/25 transition-colors">Accedi</Link>
-            <Link to="/registrati" className="flex-1 text-center py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-colors">Inizia ora</Link>
-          </div>
+
+          {/* CTA Mobile */}
+          {profile ? (
+            <Link
+              to={homeUtente}
+              className="mt-3 flex items-center justify-center gap-2 py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-colors"
+            >
+              {labelUtente} <ArrowRight size={13} />
+            </Link>
+          ) : (
+            <div className="flex gap-3 mt-3">
+              <Link to="/login" className="flex-1 text-center py-2.5 border border-white/10 text-nebbia/50 font-body text-xs hover:border-white/25 transition-colors">Accedi</Link>
+              <Link to="/registrati" className="flex-1 text-center py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-colors">Inizia ora</Link>
+            </div>
+          )}
         </div>
       </div>
     </header>

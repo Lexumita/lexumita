@@ -196,19 +196,17 @@ export function AvvocatoAssistenza() {
 
 // ─────────────────────────────────────────────────────────────
 // NUOVO TICKET → Lexum
+// (solo titolo: la chat con l'admin si apre subito dopo)
 // ─────────────────────────────────────────────────────────────
 export function AvvocatoAssistenzaNuovo() {
     const navigate = useNavigate()
-    const [form, setForm] = useState({ oggetto: '', descrizione: '' })
+    const [titolo, setTitolo] = useState('')
     const [salvando, setSalvando] = useState(false)
     const [errore, setErrore] = useState('')
-    const [inviato, setInviato] = useState(false)
-    const f = k => ({ value: form[k], onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) })
 
-    async function handleInvia() {
+    async function handleCrea() {
         setErrore('')
-        if (!form.oggetto.trim()) return setErrore("L'oggetto è obbligatorio")
-        if (!form.descrizione.trim()) return setErrore('La descrizione è obbligatoria')
+        if (!titolo.trim()) return setErrore('Il titolo è obbligatorio')
         setSalvando(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
@@ -217,8 +215,7 @@ export function AvvocatoAssistenzaNuovo() {
             const { data: ticket, error } = await supabase.from('ticket_assistenza').insert({
                 mittente_id: user.id,
                 destinatario_id: admin?.id ?? null,
-                oggetto: form.oggetto.trim(),
-                descrizione: form.descrizione.trim(),
+                oggetto: titolo.trim(),
                 mittente_ruolo: 'avvocato',
                 stato: 'aperto',
                 ultimo_mittente: 'avvocato',
@@ -226,53 +223,53 @@ export function AvvocatoAssistenzaNuovo() {
 
             if (error) throw new Error(error.message)
 
-            await supabase.from('messaggi_ticket').insert({
-                ticket_id: ticket.id,
-                autore_id: user.id,
-                autore_tipo: 'avvocato',
-                testo: form.descrizione.trim(),
-            })
-
-            setInviato(true)
-        } catch (err) { setErrore(err.message) }
-        finally { setSalvando(false) }
+            // Apri subito la chat con l'admin per il primo messaggio
+            navigate(`/assistenza/${ticket.id}`)
+        } catch (err) {
+            setErrore(err.message)
+            setSalvando(false)
+        }
     }
-
-    if (inviato) return (
-        <div className="space-y-5 max-w-2xl">
-            <BackButton to="/assistenza" label="Assistenza" />
-            <div className="bg-slate border border-salvia/20 p-8 text-center space-y-4">
-                <div className="w-12 h-12 bg-salvia/15 border border-salvia/30 flex items-center justify-center mx-auto">
-                    <Send size={20} className="text-salvia" />
-                </div>
-                <h2 className="font-display text-2xl font-semibold text-nebbia">Ticket inviato</h2>
-                <p className="font-body text-sm text-nebbia/60 leading-relaxed max-w-md mx-auto">
-                    Abbiamo ricevuto la tua richiesta e ti risponderemo nel più breve tempo possibile.
-                </p>
-                <div className="bg-petrolio/60 border border-white/5 p-4 text-left">
-                    <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Oggetto</p>
-                    <p className="font-body text-sm text-nebbia">{form.oggetto}</p>
-                </div>
-                <button onClick={() => navigate('/assistenza')} className="btn-primary text-sm mx-auto">
-                    Torna all'assistenza
-                </button>
-            </div>
-        </div>
-    )
 
     return (
         <div className="space-y-5 max-w-2xl">
             <BackButton to="/assistenza" label="Assistenza" />
             <PageHeader label="Supporto Lexum" title="Nuovo ticket" />
             <div className="bg-slate border border-white/5 p-6 space-y-5">
-                <InputField label="Oggetto *" placeholder="Descrivi brevemente il problema..." {...f('oggetto')} />
-                <TextareaField label="Descrizione *" rows={5}
-                    placeholder="Descrivi il problema nel dettaglio. Più informazioni fornisci, prima possiamo aiutarti." {...f('descrizione')} />
-                {errore && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errore}</div>}
+                <div>
+                    <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Titolo *</label>
+                    <input
+                        value={titolo}
+                        onChange={e => setTitolo(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && titolo.trim() && !salvando) handleCrea() }}
+                        placeholder="Es. Problema con fatturazione, Richiesta funzionalità..."
+                        autoFocus
+                        className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                    />
+                    <p className="font-body text-xs text-nebbia/25 mt-2">
+                        Dopo aver creato il ticket potrai scrivere il messaggio nella chat con il supporto.
+                    </p>
+                </div>
+
+                {errore && (
+                    <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                        <AlertCircle size={14} /> {errore}
+                    </div>
+                )}
+
                 <div className="flex gap-3">
-                    <button onClick={() => navigate('/assistenza')} className="btn-secondary text-sm flex-1">Annulla</button>
-                    <button onClick={handleInvia} disabled={salvando} className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
-                        {salvando ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : <><Send size={14} /> Invia ticket</>}
+                    <button onClick={() => navigate('/assistenza')} className="btn-secondary text-sm flex-1">
+                        Annulla
+                    </button>
+                    <button
+                        onClick={handleCrea}
+                        disabled={salvando || !titolo.trim()}
+                        className="btn-primary text-sm flex-1 justify-center disabled:opacity-40"
+                    >
+                        {salvando
+                            ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                            : 'Apri ticket'
+                        }
                     </button>
                 </div>
             </div>

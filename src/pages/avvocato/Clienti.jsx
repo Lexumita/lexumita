@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField, EmptyState } from '@/components/shared'
 import {
-  Plus, Search, Upload, Send, Lock, FileText, MessageSquare,
+  Plus, Search, Send, Lock, FileText, MessageSquare,
   CreditCard, StickyNote, User, FolderOpen, ArrowRight, Sparkles,
   ChevronUp, ChevronDown, ArrowUpDown, Edit2, Check, X,
-  Calendar, Clock, AlertCircle, CheckCircle, Download, Trash2, Building2
+  Calendar, Clock, AlertCircle, CheckCircle, Trash2, Building2,
+  Upload, ExternalLink, Eye
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -24,6 +25,14 @@ const STATI_FATTURA = {
   pagata: { label: 'Pagata', variant: 'salvia' },
   scaduta: { label: 'Scaduta', variant: 'red' },
   annullata: { label: 'Annullata', variant: 'gray' },
+}
+
+const STATUS_OCR = {
+  pending: { label: 'In coda', variant: 'gray' },
+  processing: { label: 'In elaborazione', variant: 'warning' },
+  completed: { label: 'Indicizzato', variant: 'salvia' },
+  failed: { label: 'Errore', variant: 'red' },
+  skipped: { label: 'Manuale', variant: 'gray' },
 }
 
 const TABS = [
@@ -97,158 +106,128 @@ function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB DOCUMENTI
+// TAB DOCUMENTI — legge da archivio_documenti, upload via /archivio
 // ─────────────────────────────────────────────────────────────
 function TabDocumenti({ clienteId }) {
   const [documenti, setDocumenti] = useState([])
   const [pratiche, setPratiche] = useState([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [file, setFile] = useState(null)
-  const [praticaId, setPraticaId] = useState('')
-  const [visibileCliente, setVisibileCliente] = useState(true)
-  const [errore, setErrore] = useState('')
-  const fileInputRef = useRef(null)
 
   useEffect(() => { caricaTutto() }, [clienteId])
 
   async function caricaTutto() {
     setLoading(true)
     const [{ data: docs }, { data: prat }] = await Promise.all([
-      supabase.from('documenti').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
-      supabase.from('pratiche').select('id, titolo').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
+      supabase
+        .from('archivio_documenti')
+        .select('id, titolo, tipo, dimensione, ocr_status, created_at, pratica_id, categoria_id, sottocategoria_id, metadati')
+        .eq('cliente_id', clienteId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('pratiche')
+        .select('id, titolo')
+        .eq('cliente_id', clienteId)
+        .order('created_at', { ascending: false }),
     ])
     setDocumenti(docs ?? [])
     setPratiche(prat ?? [])
     setLoading(false)
   }
 
-  async function handleUpload() {
-    if (!file) return setErrore('Seleziona un file')
-    setErrore('')
-    setUploading(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const storagePath = `${clienteId}/${Date.now()}_${file.name}`
-      const { error: upErr } = await supabase.storage.from('documenti').upload(storagePath, file, { contentType: file.type })
-      if (upErr) throw new Error(upErr.message)
-      const { error: dbErr } = await supabase.from('documenti').insert({
-        nome: file.name, storage_path: storagePath, tipo_mime: file.type,
-        dimensione: file.size, cliente_id: clienteId, pratica_id: praticaId || null,
-        caricato_da: user.id, visibile_cliente: visibileCliente,
-      })
-      if (dbErr) throw new Error(dbErr.message)
-      setFile(null); setPraticaId(''); setVisibileCliente(true); setShowForm(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      await caricaTutto()
-    } catch (err) {
-      setErrore(err.message)
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function scarica(doc) {
-    const { data } = await supabase.storage.from('documenti').createSignedUrl(doc.storage_path, 60)
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-  }
-
-  async function elimina(doc) {
-    if (!confirm(`Eliminare "${doc.nome}"?`)) return
-    await supabase.storage.from('documenti').remove([doc.storage_path])
-    await supabase.from('documenti').delete().eq('id', doc.id)
-    setDocumenti(prev => prev.filter(d => d.id !== doc.id))
+  async function apriAnteprima(doc) {
+    // Recupera storage_path al volo (non lo carichiamo nella query principale per snellire)
+    const { data } = await supabase
+      .from('archivio_documenti')
+      .select('storage_path')
+      .eq('id', doc.id)
+      .single()
+    if (!data?.storage_path) return
+    const { data: signed } = await supabase.storage
+      .from('archivio')
+      .createSignedUrl(data.storage_path, 3600)
+    if (signed?.signedUrl) window.open(signed.signedUrl, '_blank')
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <p className="font-body text-sm text-nebbia/40">{documenti.length} {documenti.length === 1 ? 'documento' : 'documenti'}</p>
-        <a
-          href={`/archivio?cliente_id=${clienteId}`}
+        <p className="font-body text-sm text-nebbia/40">
+          {documenti.length} {documenti.length === 1 ? 'documento' : 'documenti'}
+          {documenti.length > 0 && (
+            <span className="ml-2 text-nebbia/25">
+              · {documenti.filter(d => d.ocr_status === 'completed').length} indicizzati
+            </span>
+          )}
+        </p>
+        <Link
+          to={`/archivio?cliente_id=${clienteId}`}
           className="btn-primary text-sm flex items-center gap-2"
         >
           <Upload size={14} /> Carica in archivio
-        </a>
+        </Link>
       </div>
 
-      {showForm && (
-        <div className="bg-slate border border-oro/20 p-5 space-y-4">
-          <p className="section-label">Carica nuovo documento</p>
-          <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">File *</label>
-            <input ref={fileInputRef} type="file" onChange={e => setFile(e.target.files[0] ?? null)}
-              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 file:mr-4 file:py-1 file:px-3 file:border-0 file:bg-oro/20 file:text-oro file:font-body file:text-xs file:cursor-pointer" />
-            {file && <p className="font-body text-xs text-nebbia/40 mt-1">{file.name} · {formatSize(file.size)}</p>}
-          </div>
-          {pratiche.length > 0 && (
-            <div>
-              <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Collega a pratica <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span></label>
-              <select value={praticaId} onChange={e => setPraticaId(e.target.value)}
-                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
-                <option value="">Nessuna pratica</option>
-                {pratiche.map(p => <option key={p.id} value={p.id}>{p.titolo}</option>)}
-              </select>
-            </div>
-          )}
-          <div className="flex items-center gap-3 mt-1">
-            <button type="button" onClick={() => setVisibileCliente(v => !v)}
-              className={`w-10 h-5 rounded-full transition-colors relative shrink-0 overflow-hidden ${visibileCliente ? 'bg-salvia' : 'bg-white/10'}`}>
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${visibileCliente ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </button>
-            <span className="font-body text-sm text-nebbia/60">Visibile al cliente</span>
-          </div>
-          {errore && (
-            <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
-              <AlertCircle size={14} /> {errore}
-            </div>
-          )}
-          <button onClick={handleUpload} disabled={uploading || !file} className="btn-primary text-sm flex items-center gap-2">
-            {uploading ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : <><Upload size={14} /> Carica</>}
-          </button>
-        </div>
-      )}
-
       {loading ? (
-        <div className="flex items-center justify-center py-12"><span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" /></div>
+        <div className="flex items-center justify-center py-12">
+          <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
+        </div>
       ) : documenti.length === 0 ? (
-        <EmptyState icon={FileText} title="Nessun documento" desc="Carica il primo documento per questo cliente" />
+        <EmptyState
+          icon={FileText}
+          title="Nessun documento"
+          desc="Carica i documenti nell'archivio per collegarli a questo cliente"
+        />
       ) : (
         <div className="bg-slate border border-white/5 overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Nome file', 'Pratica', 'Dimensione', 'Visibile', 'Caricato il', ''].map(h => (
+                {['Documento', 'Pratica', 'Dimensione', 'Stato', 'Caricato il', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {documenti.map(doc => (
-                <tr key={doc.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <FileText size={14} className="text-oro/60 shrink-0" />
-                      <span className="font-body text-sm text-nebbia truncate max-w-xs">{doc.nome}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-body text-xs text-nebbia/40">{pratiche.find(p => p.id === doc.pratica_id)?.titolo ?? '—'}</td>
-                  <td className="px-4 py-3 font-body text-xs text-nebbia/40">{formatSize(doc.dimensione)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`font-body text-xs px-2 py-0.5 border ${doc.visibile_cliente ? 'border-salvia/25 text-salvia bg-salvia/5' : 'border-white/10 text-nebbia/30'}`}>
-                      {doc.visibile_cliente ? 'Sì' : 'No'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(doc.created_at).toLocaleDateString('it-IT')}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => scarica(doc)} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"><Download size={13} /></button>
-                      <button onClick={() => elimina(doc)} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-red-400 hover:bg-red-400/10 transition-colors"><Trash2 size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {documenti.map(doc => {
+                const sc = STATUS_OCR[doc.ocr_status] ?? STATUS_OCR.pending
+                const pratica = pratiche.find(p => p.id === doc.pratica_id)
+                return (
+                  <tr key={doc.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText size={14} className="text-oro/60 shrink-0" />
+                        <span className="font-body text-sm text-nebbia truncate max-w-xs">{doc.titolo}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-body text-xs text-nebbia/40 truncate max-w-[160px]">
+                      {pratica?.titolo ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 font-body text-xs text-nebbia/40">{formatSize(doc.dimensione)}</td>
+                    <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
+                    <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
+                      {new Date(doc.created_at).toLocaleDateString('it-IT')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => apriAnteprima(doc)}
+                          className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
+                          title="Apri anteprima"
+                        >
+                          <Eye size={13} />
+                        </button>
+                        <Link
+                          to={`/archivio?cliente_id=${clienteId}`}
+                          className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
+                          title="Apri in archivio"
+                        >
+                          <ExternalLink size={13} />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

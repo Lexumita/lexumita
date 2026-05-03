@@ -62,7 +62,7 @@ export default function Registrati() {
           <h2 className="font-display text-3xl font-light text-nebbia mb-3">Controlla la tua email</h2>
           <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed">
             Abbiamo inviato un link di conferma a <span className="text-oro">{form.email}</span>.<br />
-            Clicca il link per attivare il tuo account e iniziare a usare Lex AI con 5 ricerche gratuite.
+            Clicca il link per attivare il tuo account e iniziare a usare Lex AI con 3 ricerche gratuite.
           </p>
           <p className="font-body text-xs text-nebbia/30">
             Non hai ricevuto nulla? Controlla la cartella spam.
@@ -121,7 +121,7 @@ export default function Registrati() {
         <p className="section-label mb-6">Registrazione</p>
         <h1 className="font-display text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
         <p className="font-body text-sm text-nebbia/40 mb-8 leading-relaxed">
-          Inizia subito con 5 ricerche Lex AI gratuite. Se sei un avvocato, dopo la registrazione potrai verificare la tua identità e accedere a tutte le funzionalità di Lexum.
+          Inizia subito con 3 ricerche Lex AI gratuite. Se sei un avvocato, dopo la registrazione potrai verificare la tua identità e accedere a tutte le funzionalità di Lexum.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -260,8 +260,6 @@ export default function PraticaDettaglio() {
 
     const [documenti, setDocumenti] = useState([])
     const [loadingDocs, setLoadingDocs] = useState(false)
-    const [caricandoDoc, setCaricandoDoc] = useState(false)
-    const [erroreDoc, setErroreDoc] = useState(null)
 
     async function caricaRicerche() {
         setLoadingRicerche(true)
@@ -334,57 +332,70 @@ export default function PraticaDettaglio() {
 
     async function caricaDocumenti() {
         setLoadingDocs(true)
-        const { data } = await supabase
-            .from('documenti_pratiche')
-            .select('id, nome_file, storage_path, dimensione, tipo_file, created_at, autore:autore_id(nome, cognome)')
-            .eq('pratica_id', id)
-            .order('created_at', { ascending: false })
-        setDocumenti(data ?? [])
+        const [docPratichePromise, docArchivioPromise] = await Promise.all([
+            supabase
+                .from('documenti_pratiche')
+                .select('id, nome_file, storage_path, dimensione, tipo_file, created_at, autore:autore_id(nome, cognome)')
+                .eq('pratica_id', id)
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('archivio_documenti')
+                .select('id, titolo, storage_path, dimensione, tipo_file, tipo, ocr_status, created_at, metadati, autore:autore_id(nome, cognome)')
+                .eq('pratica_id', id)
+                .order('created_at', { ascending: false }),
+        ])
+
+        const dpRows = (docPratichePromise.data ?? []).map(d => ({
+            ...d,
+            fonte: 'pratica',
+            bucket: 'documenti',
+        }))
+
+        const daRows = (docArchivioPromise.data ?? []).map(d => ({
+            id: d.id,
+            nome_file: d.titolo,
+            storage_path: d.storage_path,
+            dimensione: d.dimensione,
+            tipo_file: d.tipo_file,
+            created_at: d.created_at,
+            autore: d.autore,
+            fonte: 'archivio',
+            bucket: 'archivio',
+            ocr_status: d.ocr_status,
+            riepilogo: d.metadati?.suggeriti?.riepilogo ?? null,
+        }))
+
+        const tutti = [...dpRows, ...daRows].sort((a, b) =>
+            new Date(b.created_at) - new Date(a.created_at)
+        )
+        setDocumenti(tutti)
         setLoadingDocs(false)
     }
 
-    async function uploadDocumento(file) {
-        if (!file) return
-        setCaricandoDoc(true)
-        setErroreDoc(null)
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            const ext = file.name.split('.').pop()
-            const path = `${id}/${Date.now()}.${ext}`
-
-            const { error: upErr } = await supabase.storage
-                .from('documenti')
-                .upload(path, file)
-            if (upErr) throw new Error(upErr.message)
-
-            await supabase.from('documenti_pratiche').insert({
-                pratica_id: id,
-                autore_id: user.id,
-                nome_file: file.name,
-                storage_path: path,
-                dimensione: file.size,
-                tipo_file: file.type,
-            })
-            await caricaDocumenti()
-        } catch (e) {
-            setErroreDoc(e.message)
-        } finally {
-            setCaricandoDoc(false)
-        }
-    }
-
     async function scaricaDocumento(doc) {
+        const bucket = doc.bucket ?? 'documenti'
         const { data } = await supabase.storage
-            .from('documenti')
+            .from(bucket)
             .createSignedUrl(doc.storage_path, 3600)
         if (data?.signedUrl) window.open(data.signedUrl, '_blank')
     }
 
     async function eliminaDocumento(doc) {
+        if (doc.fonte === 'archivio') {
+            if (!confirm(`Rimuovere "${doc.nome_file}" dalla pratica?\n\nIl documento resterà nell'Archivio dello studio, perderà solo il collegamento a questa pratica.`)) return
+            await supabase
+                .from('archivio_documenti')
+                .update({ pratica_id: null })
+                .eq('id', doc.id)
+            setDocumenti(prev => prev.filter(d => !(d.id === doc.id && d.fonte === 'archivio')))
+            return
+        }
+
         if (!confirm(`Eliminare "${doc.nome_file}"?`)) return
-        await supabase.storage.from('documenti').remove([doc.storage_path])
+        const bucket = doc.bucket ?? 'documenti'
+        await supabase.storage.from(bucket).remove([doc.storage_path])
         await supabase.from('documenti_pratiche').delete().eq('id', doc.id)
-        setDocumenti(prev => prev.filter(d => d.id !== doc.id))
+        setDocumenti(prev => prev.filter(d => !(d.id === doc.id && d.fonte === 'pratica')))
     }
 
     async function salvaRicercaManuale() {
@@ -612,7 +623,7 @@ export default function PraticaDettaglio() {
                             <div className="flex items-center justify-between mb-3">
                                 <p className="section-label flex items-center gap-2">
                                     <Gavel size={12} className="text-oro/60" />
-                                    Udienze ({udienze.length})
+                                    Udienze ed esiti ({udienze.length})
                                 </p>
                                 <button
                                     onClick={() => setUdienzaModale({})}
@@ -709,50 +720,51 @@ export default function PraticaDettaglio() {
                     <div className="bg-slate border border-white/5 p-5">
                         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <p className="section-label">Documenti pratica ({documenti.length})</p>
-                            <div className="flex items-center gap-2">
-                                <label className={`flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs cursor-pointer hover:bg-oro/20 transition-colors ${caricandoDoc ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    {caricandoDoc
-                                        ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
-                                        : <Plus size={11} />
-                                    }
-                                    {caricandoDoc ? 'Caricamento...' : 'Carica documento'}
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        onChange={e => uploadDocumento(e.target.files?.[0])}
-                                        disabled={caricandoDoc}
-                                    />
-                                </label>
-                                <a
-                                    href={`/archivio?pratica_id=${id}`}
-                                    className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
-                                >
-                                    Vai all'archivio →
-                                </a>
-                            </div>
+                            <Link
+                                to={`/archivio?pratica_id=${id}`}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
+                            >
+                                <Plus size={11} /> Carica in archivio
+                            </Link>
                         </div>
-                        {erroreDoc && (
-                            <p className="font-body text-xs text-red-400 flex items-center gap-1.5 mb-3">
-                                <AlertCircle size={11} />{erroreDoc}
-                            </p>
-                        )}
+                        <p className="font-body text-xs text-nebbia/30 mb-3">
+                            I documenti vengono salvati nell'archivio dello studio, indicizzati per la ricerca con Lex e collegati a questa pratica.
+                        </p>
                         {loadingDocs ? (
                             <div className="flex justify-center py-6">
                                 <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
                             </div>
                         ) : documenti.length === 0 ? (
-                            <div className="flex items-center gap-2 py-[30px] px-1 text-nebbia/30">
-                                <FileText size={14} />
-                                <span className="font-body text-xs">Nessun documento — carica i file relativi alla pratica</span>
+                            <div className="flex flex-col items-center justify-center py-8 px-1 text-nebbia/30 text-center">
+                                <FileText size={20} className="mb-2 text-nebbia/20" />
+                                <span className="font-body text-xs mb-3">Nessun documento collegato a questa pratica</span>
+                                <Link
+                                    to={`/archivio?pratica_id=${id}`}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
+                                >
+                                    <Plus size={11} /> Carica primo documento
+                                </Link>
                             </div>
                         ) : (
                             <div className={`space-y-2 ${documenti.length > 5 ? 'max-h-80 overflow-y-auto -mr-1 pr-1' : ''}`}>
                                 {documenti.map(doc => (
-                                    <div key={doc.id} className="flex items-center justify-between gap-3 p-3 bg-petrolio border border-white/5">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <FileText size={14} className="text-nebbia/30 shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="font-body text-sm text-nebbia truncate">{doc.nome_file}</p>
+                                    <div key={`${doc.fonte}-${doc.id}`} className="flex items-start justify-between gap-3 p-3 bg-petrolio border border-white/5">
+                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                            <FileText size={14} className="text-nebbia/30 shrink-0 mt-0.5" />
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-body text-sm text-nebbia truncate">{doc.nome_file}</p>
+                                                    {doc.fonte === 'archivio' && (
+                                                        <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/25 text-salvia uppercase tracking-wider">
+                                                            Archivio
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {doc.riepilogo && (
+                                                    <p className="font-body text-xs text-nebbia/50 mt-1 line-clamp-2 leading-relaxed">
+                                                        {doc.riepilogo}
+                                                    </p>
+                                                )}
                                                 <p className="font-body text-xs text-nebbia/30 mt-0.5">
                                                     {doc.autore ? `${doc.autore.nome} ${doc.autore.cognome}` : '—'} · {new Date(doc.created_at).toLocaleDateString('it-IT')}
                                                     {doc.dimensione && ` · ${(doc.dimensione / 1024 / 1024).toFixed(1)} MB`}
@@ -760,10 +772,11 @@ export default function PraticaDettaglio() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <button onClick={() => scaricaDocumento(doc)} className="text-nebbia/30 hover:text-oro transition-colors">
+                                            <button onClick={() => scaricaDocumento(doc)} className="text-nebbia/30 hover:text-oro transition-colors" title="Scarica">
                                                 <Download size={13} />
                                             </button>
-                                            <button onClick={() => eliminaDocumento(doc)} className="text-nebbia/30 hover:text-red-400 transition-colors">
+                                            <button onClick={() => eliminaDocumento(doc)} className="text-nebbia/30 hover:text-red-400 transition-colors"
+                                                title={doc.fonte === 'archivio' ? 'Rimuovi dalla pratica' : 'Elimina'}>
                                                 <X size={13} />
                                             </button>
                                         </div>
@@ -778,7 +791,7 @@ export default function PraticaDettaglio() {
                 <div className="lg:col-span-2 bg-slate border border-white/5 flex flex-col h-[600px]">
 
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
-                        <p className="section-label">Ricerche ({ricerche.length})</p>
+                        <p className="section-label">Ricerche e descrizione causa ({ricerche.length})</p>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => navigate('/banca-dati')}

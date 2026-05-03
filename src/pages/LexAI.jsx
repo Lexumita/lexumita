@@ -140,7 +140,7 @@ function LexBoxPublic() {
                 <div className="w-12 h-12 flex items-center justify-center border border-oro/30 bg-oro/10 mx-auto">
                     <Sparkles size={18} className="text-oro" />
                 </div>
-                <p className="font-display text-xl font-light text-nebbia">5 ricerche gratuite ti aspettano</p>
+                <p className="font-display text-xl font-light text-nebbia">3 ricerche gratuite ti aspettano</p>
                 <p className="font-body text-sm text-nebbia/40 max-w-sm mx-auto leading-relaxed">
                     Registrati in 30 secondi e inizia subito. Nessuna carta di credito richiesta.
                 </p>
@@ -148,7 +148,7 @@ function LexBoxPublic() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <Link to="/registrati"
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.01]">
-                    <Sparkles size={13} /> Prova gratis — 5 ricerche
+                    <Sparkles size={13} /> Prova gratis — 3 ricerche
                 </Link>
                 <Link to="/login"
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors">
@@ -173,7 +173,7 @@ function LexBoxPublic() {
                 <span className="font-body text-xs text-salvia">Lex AI</span>
             </div>
             <div className="p-8 text-center space-y-4">
-                <p className="font-display text-xl font-light text-nebbia">Hai usato le 5 ricerche gratuite</p>
+                <p className="font-display text-xl font-light text-nebbia">Hai usato le 3 ricerche gratuite</p>
                 <p className="font-body text-sm text-nebbia/45 max-w-sm mx-auto">
                     Per continuare puoi acquistare altri crediti o passare a Lexum completo.
                 </p>
@@ -343,7 +343,7 @@ export default function LexAI() {
                                     <span className="font-body text-xs text-nebbia/25">Attivo</span>
                                 </div>
                             </div>
-                            <span className="font-body text-xs text-nebbia/25">5 ricerche gratuite</span>
+                            <span className="font-body text-xs text-nebbia/25">3 ricerche gratuite</span>
                         </div>
                         <div className="p-6">
                             <LexBoxPublic />
@@ -832,7 +832,7 @@ export default function LexAI() {
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                             <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-salvia text-petrolio font-body text-sm font-medium hover:bg-salvia/90 transition-all hover:scale-[1.02] shadow-xl shadow-salvia/20">
-                                Prova gratis — 5 ricerche <ArrowRight size={15} />
+                                Prova gratis — 3 ricerche <ArrowRight size={15} />
                             </Link>
                             <Link to="/per-avvocati" className="font-body text-sm text-nebbia/35 hover:text-nebbia/60 transition-colors">
                                 Avvocato! Prova Lexum per una settimana è Gratis →

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, StatCard } from '@/components/shared'
 import {
-  Plus, Search, Eye, Edit2, Upload, FileText,
+  Plus, Search, Eye, Upload, FileText,
   Coins, Send, AlertCircle, CheckCircle, ChevronUp,
   ChevronDown, ArrowUpDown, Download, Sparkles, X
 } from 'lucide-react'
@@ -28,7 +28,6 @@ function useCodiciLex() {
 
       setCategorie(data ?? [])
 
-      // Raggruppa per macro_label
       const gruppi = {}
       for (const c of data ?? []) {
         const key = c.macro_label || 'Altro'
@@ -319,14 +318,9 @@ function TabSentenze({ meId, studioId }) {
                       {new Date(s.created_at).toLocaleDateString('it-IT')}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Link to={`/sentenze/${s.id}`} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
-                          <Eye size={13} />
-                        </Link>
-                        <Link to={`/sentenze/${s.id}/modifica`} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
-                          <Edit2 size={13} />
-                        </Link>
-                      </div>
+                      <Link to={`/sentenze/${s.id}`} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
+                        <Eye size={13} />
+                      </Link>
                     </td>
                   </tr>
                 )
@@ -340,7 +334,7 @@ function TabSentenze({ meId, studioId }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB GUADAGNI (invariato — schema accessi_sentenze resta uguale)
+// TAB GUADAGNI
 // ─────────────────────────────────────────────────────────────
 function TabGuadagni({ meId, studioId }) {
   const [compensi, setCompensi] = useState([])
@@ -529,7 +523,7 @@ export function AvvocatoSentenze() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FORM SENTENZA — NUOVO SCHEMA ALLINEATO A giurisprudenza
+// FORM SENTENZA — schema giurisprudenza, PDF + estrazione obbligatori
 // ─────────────────────────────────────────────────────────────
 function FormSentenza({ sentenza, isEdit }) {
   const navigate = useNavigate()
@@ -537,18 +531,15 @@ function FormSentenza({ sentenza, isEdit }) {
   const { raggruppate, loading: loadingCategorie } = useCodiciLex()
 
   const [form, setForm] = useState({
-    // Identificazione
     tipo_provvedimento: sentenza?.tipo_provvedimento ?? '',
     organo: sentenza?.organo ?? '',
     sezione: sentenza?.sezione ?? '',
     numero: sentenza?.numero ?? '',
     anno: sentenza?.anno ?? '',
     data_deposito: sentenza?.data_deposito ?? '',
-    // Contenuto
     oggetto: sentenza?.oggetto ?? '',
     principio_diritto: sentenza?.principio_diritto ?? '',
     categoria_lex: (sentenza?.categorie_lex ?? [])[0] ?? '',
-    // Avanzati
     materia: (sentenza?.materia ?? []).join(', '),
     parole_chiave: (sentenza?.parole_chiave ?? []).join(', '),
     norme_richiamate: (sentenza?.norme_richiamate ?? []).join('\n'),
@@ -558,9 +549,9 @@ function FormSentenza({ sentenza, isEdit }) {
   })
   const [file, setFile] = useState(null)
   const [testoIntegrale, setTestoIntegrale] = useState(sentenza?.testo_integrale ?? '')
-  const [pagineOCR, setPagineOCR] = useState(null)
   const [estraendo, setEstraendo] = useState(false)
   const [erroreOCR, setErroreOCR] = useState('')
+  const [pagineOCR, setPagineOCR] = useState(null)
   const [suggerendo, setSuggerendo] = useState(false)
   const [suggerendoMassima, setSuggerendoMassima] = useState(false)
   const [metadatiSuggeriti, setMetadati] = useState(false)
@@ -587,15 +578,6 @@ function FormSentenza({ sentenza, isEdit }) {
     carica()
   }, [])
 
-  function pulisciTesto(testo) {
-    return testo
-      .replace(/(\w)-\n(\w)/g, '$1$2')
-      .replace(/([.!?])\s+([A-Z])/g, '$1\n\n$2')
-      .replace(/(\d+\.)\s+/g, '\n$1 ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  }
-
   async function handleFileChange(selectedFile) {
     setFile(selectedFile)
     setTestoIntegrale('')
@@ -609,8 +591,9 @@ function FormSentenza({ sentenza, isEdit }) {
       const formData = new FormData()
       formData.append('file', selectedFile)
 
+      // extract-pdf-text: estrae E pulisce (NFKC + cleanup Unicode + paragrafi)
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-pdf-text`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -620,7 +603,7 @@ function FormSentenza({ sentenza, isEdit }) {
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
 
-      setTestoIntegrale(pulisciTesto(json.testo))
+      setTestoIntegrale(json.testo)
       setPagineOCR(json.pagine)
 
       await suggerisciMetadati(json.testo)
@@ -646,7 +629,6 @@ function FormSentenza({ sentenza, isEdit }) {
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
 
-      // Applica solo i campi vuoti — non sovrascrive quello che l'utente ha già editato
       setForm(prev => ({
         ...prev,
         tipo_provvedimento: prev.tipo_provvedimento || json.tipo_provvedimento || '',
@@ -704,6 +686,9 @@ function FormSentenza({ sentenza, isEdit }) {
     if (!form.categoria_lex) return setErrore('La categoria è obbligatoria')
     if (!isEdit && !file) return setErrore('Il file PDF è obbligatorio')
     if (!isEdit && estraendo) return setErrore('Attendi il completamento dell\'estrazione testo')
+    if (!isEdit && erroreOCR) return setErrore('Estrazione PDF fallita: carica un altro PDF prima di salvare')
+    if (!isEdit && !testoIntegrale.trim()) return setErrore('Il testo della sentenza è obbligatorio per la ricerca semantica')
+    if (!isEdit && testoIntegrale.trim().length < 200) return setErrore('Il testo estratto è troppo breve (servono almeno 200 caratteri)')
 
     setSalvando(true)
     try {
@@ -721,7 +706,6 @@ function FormSentenza({ sentenza, isEdit }) {
       }
 
       const payload = {
-        // Identificazione
         fonte: 'avvocato_upload',
         tipo_provvedimento: form.tipo_provvedimento || null,
         organo: form.organo.trim(),
@@ -730,29 +714,19 @@ function FormSentenza({ sentenza, isEdit }) {
         anno: form.anno ? parseInt(form.anno) : null,
         data_deposito: form.data_deposito || null,
         data_pubblicazione: form.data_deposito || new Date().toISOString().slice(0, 10),
-
-        // Contenuto
         oggetto: form.oggetto.trim(),
         principio_diritto: form.principio_diritto.trim() || null,
         testo_integrale: testoIntegrale.trim() || null,
-
-        // Avanzati (split + trim + dedup)
         materia: form.materia ? form.materia.split(',').map(t => t.trim()).filter(Boolean) : [],
         parole_chiave: form.parole_chiave ? form.parole_chiave.split(',').map(t => t.trim()).filter(Boolean) : [],
         norme_richiamate: form.norme_richiamate ? form.norme_richiamate.split('\n').map(t => t.trim()).filter(Boolean) : [],
         presidente: form.presidente.trim() || null,
         relatore: form.relatore.trim() || null,
         estensore: form.estensore.trim() || null,
-
-        // Classificazione
         categorie_lex: form.categoria_lex ? [form.categoria_lex] : [],
-
-        // File
         pdf_storage_path: storagePath,
         pdf_size_bytes: sizeBytes,
         pdf_pages: pdfPages,
-
-        // Vigente & rilevanza default
         vigente: true,
         rilevanza: 3,
       }
@@ -771,7 +745,7 @@ function FormSentenza({ sentenza, isEdit }) {
         sentenzaId = nuova.id
       }
 
-      // Trigger generazione embedding (principio_diritto + oggetto) — fire & forget
+      // Embedding fire & forget
       if (sentenzaId && (form.principio_diritto.trim() || form.oggetto.trim())) {
         try {
           const { data: { session } } = await supabase.auth.getSession()
@@ -830,7 +804,6 @@ function FormSentenza({ sentenza, isEdit }) {
 
         {/* ── COLONNA SINISTRA: documento + testo estratto ── */}
         <div className="flex-[3] min-w-0 space-y-4">
-
           {!isEdit && (
             <>
               <div className="bg-slate border border-white/5 p-5">
@@ -885,9 +858,30 @@ function FormSentenza({ sentenza, isEdit }) {
                 )}
 
                 {erroreOCR && (
-                  <div className="flex items-start gap-3 p-4 bg-amber-900/10 border border-amber-500/20 mt-3">
-                    <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
-                    <p className="font-body text-sm text-amber-400">Testo non estraibile — la sentenza sarà pubblica ma non ricercabile per contenuto.</p>
+                  <div className="bg-red-900/15 border border-red-500/30 p-4 space-y-3 mt-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-sm font-medium text-red-400 mb-1">
+                          Estrazione testo fallita
+                        </p>
+                        <p className="font-body text-xs text-nebbia/60 leading-relaxed">
+                          {erroreOCR}
+                        </p>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed mt-2">
+                          Senza testo estraibile non è possibile pubblicare la sentenza:
+                          serve per la ricerca semantica e per generare i metadati.
+                          Carica una versione testuale del PDF.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleFileChange(null)}
+                      className="px-3 py-1.5 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors"
+                    >
+                      Carica un altro PDF
+                    </button>
                   </div>
                 )}
               </div>
@@ -918,7 +912,6 @@ function FormSentenza({ sentenza, isEdit }) {
           <div className="bg-slate border border-white/5 p-5 space-y-4">
             <p className="section-label">Metadati</p>
 
-            {/* Oggetto */}
             <div>
               <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Oggetto *</label>
               <input value={form.oggetto} onChange={e => setForm(p => ({ ...p, oggetto: e.target.value }))}
@@ -927,7 +920,6 @@ function FormSentenza({ sentenza, isEdit }) {
               <p className="font-body text-xs text-nebbia/25 mt-1">6-15 parole che riassumono la questione giuridica</p>
             </div>
 
-            {/* Tipo provvedimento */}
             <div>
               <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Tipo provvedimento</label>
               <select value={form.tipo_provvedimento}
@@ -938,7 +930,6 @@ function FormSentenza({ sentenza, isEdit }) {
               </select>
             </div>
 
-            {/* Organo + Sezione */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Organo *</label>
@@ -954,7 +945,6 @@ function FormSentenza({ sentenza, isEdit }) {
               </div>
             </div>
 
-            {/* Numero + Anno + Data */}
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Numero</label>
@@ -975,7 +965,6 @@ function FormSentenza({ sentenza, isEdit }) {
               </div>
             </div>
 
-            {/* Categoria Lex — dropdown raggruppato */}
             <div>
               <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Categoria *</label>
               <select value={form.categoria_lex}
@@ -993,7 +982,6 @@ function FormSentenza({ sentenza, isEdit }) {
               </select>
             </div>
 
-            {/* Principio di diritto */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Principio di diritto</label>
@@ -1018,7 +1006,6 @@ function FormSentenza({ sentenza, isEdit }) {
               <p className="font-body text-xs text-nebbia/25 mt-1">Principio astratto, senza dettagli del caso concreto</p>
             </div>
 
-            {/* Accordion Avanzate */}
             <div className="border-t border-white/5 pt-3">
               <button
                 onClick={() => setAvanzateAperte(!avanzateAperte)}
@@ -1080,9 +1067,32 @@ function FormSentenza({ sentenza, isEdit }) {
               </div>
             )}
 
+            {!isEdit && !estraendo && !erroreOCR && (!file || !testoIntegrale.trim() || testoIntegrale.trim().length < 200) && (
+              <p className="font-body text-xs text-amber-400/80 flex items-center gap-1.5">
+                <AlertCircle size={11} />
+                {!file
+                  ? 'Carica il PDF della sentenza per procedere'
+                  : !testoIntegrale.trim()
+                    ? 'Attendi l\'estrazione del testo'
+                    : 'Il testo estratto è troppo breve (servono almeno 200 caratteri)'
+                }
+              </p>
+            )}
+
             <div className="flex gap-3 pt-2">
               <button onClick={() => navigate('/sentenze')} className="btn-secondary text-sm flex-1">Annulla</button>
-              <button onClick={handleSalva} disabled={salvando} className="btn-primary text-sm flex-1 justify-center">
+              <button
+                onClick={handleSalva}
+                disabled={
+                  salvando
+                  || estraendo
+                  || (!isEdit && !file)
+                  || (!isEdit && !testoIntegrale.trim())
+                  || (!isEdit && testoIntegrale.trim().length < 200)
+                  || !!erroreOCR
+                }
+                className="btn-primary text-sm flex-1 justify-center"
+              >
                 {salvando
                   ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
                   : isEdit ? 'Salva modifiche' : 'Carica sentenza'
@@ -1091,6 +1101,7 @@ function FormSentenza({ sentenza, isEdit }) {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )
@@ -1147,9 +1158,6 @@ export function AvvocatoSentenzeDettaglio() {
         <div className="flex items-center gap-3 flex-wrap">
           <Badge label={sb.label} variant={sb.variant} />
           <AggiungiAPratica sentenza={s} />
-          <Link to={`/sentenze/${s.id}/modifica`} className="btn-secondary text-sm flex items-center gap-2">
-            <Edit2 size={13} /> Modifica
-          </Link>
         </div>
       </div>
 
@@ -1213,19 +1221,4 @@ export function AvvocatoSentenzeDettaglio() {
       </div>
     </div>
   )
-}
-
-// ─────────────────────────────────────────────────────────────
-// MODIFICA SENTENZA
-// ─────────────────────────────────────────────────────────────
-export function AvvocatoSentenzeModifica() {
-  const { id } = useParams()
-  const [s, setS] = useState(null)
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    supabase.from('sentenze').select('*').eq('id', id).single()
-      .then(({ data }) => { setS(data); setLoading(false) })
-  }, [id])
-  if (loading) return <div className="flex items-center justify-center py-40"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" /></div>
-  return <FormSentenza sentenza={s} isEdit={true} />
 }

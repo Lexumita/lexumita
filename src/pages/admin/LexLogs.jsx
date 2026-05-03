@@ -85,6 +85,55 @@ export default function LexLogs() {
     const [paginaCorrente, setPaginaCorrente] = useState(0)
     const RIGHE_PER_PAGINA = 50
 
+    // Aggrega tutti i log per request_id in un'unica "richiesta utente"
+    // - usa il top-level (parent_log_id IS NULL) come riga rappresentativa
+    // - somma costi/token/durata di tutta la catena
+    // - esito = worst-case della catena
+    const richiesteUtente = useMemo(() => {
+        const catenePerRequestId = new Map()
+        for (const log of logs) {
+            if (!log.request_id) continue
+            if (!catenePerRequestId.has(log.request_id)) {
+                catenePerRequestId.set(log.request_id, [])
+            }
+            catenePerRequestId.get(log.request_id).push(log)
+        }
+
+        const richieste = []
+        for (const [requestId, catena] of catenePerRequestId) {
+            // Riga rappresentativa: top-level se esiste, altrimenti la più vecchia
+            const topLevel = catena.find(c => !c.parent_log_id) ?? catena[0]
+
+            const costoTotale = catena.reduce((s, c) => s + parseFloat(c.costo_totale_usd ?? 0), 0)
+            const tokenInTotale = catena.reduce((s, c) => s + (c.token_input ?? 0), 0)
+            const tokenOutTotale = catena.reduce((s, c) => s + (c.token_output ?? 0), 0)
+            const durataTotale = catena.reduce((s, c) => s + (c.durata_ms ?? 0), 0)
+
+            // Esito worst-case: se anche una sola chiamata in catena ha errore → errore
+            const ESITI_ORDINE = ['error', 'timeout', 'rate_limit', 'no_credits', 'rejected', 'ok']
+            let esitoPeggiore = 'ok'
+            for (const c of catena) {
+                if (ESITI_ORDINE.indexOf(c.esito) < ESITI_ORDINE.indexOf(esitoPeggiore)) {
+                    esitoPeggiore = c.esito
+                }
+            }
+
+            richieste.push({
+                ...topLevel,
+                _aggregato: true,
+                _numChiamate: catena.length,
+                _costoCatena: costoTotale,
+                _tokenInCatena: tokenInTotale,
+                _tokenOutCatena: tokenOutTotale,
+                _durataCatena: durataTotale,
+                _esitoPeggiore: esitoPeggiore,
+            })
+        }
+
+        // Ordine per data discendente (come prima)
+        return richieste.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    }, [logs])
+
     useEffect(() => { caricaLogs() }, [periodoAttivo, endpointFiltro, esitoFiltro, userFiltro])
 
     async function caricaLogs() {
@@ -219,10 +268,10 @@ export default function LexLogs() {
 
     const logsPaginati = useMemo(() => {
         const start = paginaCorrente * RIGHE_PER_PAGINA
-        return logs.slice(start, start + RIGHE_PER_PAGINA)
-    }, [logs, paginaCorrente])
+        return richiesteUtente.slice(start, start + RIGHE_PER_PAGINA)
+    }, [richiesteUtente, paginaCorrente])
 
-    const totalePagine = Math.ceil(logs.length / RIGHE_PER_PAGINA)
+    const totalePagine = Math.ceil(richiesteUtente.length / RIGHE_PER_PAGINA)
 
     if (profile?.role !== 'admin') {
         return (
@@ -472,7 +521,7 @@ export default function LexLogs() {
                 {totalePagine > 1 && (
                     <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
                         <p className="font-body text-xs text-nebbia/40">
-                            {paginaCorrente * RIGHE_PER_PAGINA + 1}-{Math.min((paginaCorrente + 1) * RIGHE_PER_PAGINA, logs.length)} di {logs.length}
+                            {paginaCorrente * RIGHE_PER_PAGINA + 1}-{Math.min((paginaCorrente + 1) * RIGHE_PER_PAGINA, richiesteUtente.length)} di {richiesteUtente.length} richieste
                         </p>
                         <div className="flex items-center gap-2">
                             <button
@@ -551,10 +600,18 @@ function MiniBarChart({ data }) {
     )
 }
 
-// ─── RIGA LOG (con drill-down catena) ───────────────────────────
+// ─── RIGA LOG (aggrega catena per request_id) ────────────────────
 function RigaLog({ log, aperto, onTogliApri, logsCatena }) {
     const meta = ENDPOINT_LABELS[log.endpoint] ?? { label: log.endpoint, color: 'text-nebbia', icon: Activity }
-    const esitoMeta = ESITO_BADGES[log.esito] ?? { label: log.esito, class: 'border-white/10 text-nebbia' }
+
+    // Quando aggregato, usa esito peggiore della catena, costi/token/durata totali
+    const esitoEffettivo = log._aggregato ? log._esitoPeggiore : log.esito
+    const costoEffettivo = log._aggregato ? log._costoCatena : parseFloat(log.costo_totale_usd ?? 0)
+    const tokenInEffettivo = log._aggregato ? log._tokenInCatena : log.token_input
+    const tokenOutEffettivo = log._aggregato ? log._tokenOutCatena : log.token_output
+    const durataEffettiva = log._aggregato ? log._durataCatena : log.durata_ms
+
+    const esitoMeta = ESITO_BADGES[esitoEffettivo] ?? { label: esitoEffettivo, class: 'border-white/10 text-nebbia' }
     const Icon = meta.icon
 
     const utente = log.profiles
@@ -582,6 +639,11 @@ function RigaLog({ log, aperto, onTogliApri, logsCatena }) {
                                 · {log.azione}
                             </span>
                         )}
+                        {log._aggregato && log._numChiamate > 1 && (
+                            <span className="font-body text-[10px] text-nebbia/40 ml-1 px-1.5 py-0.5 bg-petrolio border border-white/10">
+                                {log._numChiamate} chiamate
+                            </span>
+                        )}
                     </div>
                 </td>
                 <td className="px-3 py-2 font-body text-xs text-nebbia/60 max-w-[160px] truncate">
@@ -591,13 +653,13 @@ function RigaLog({ log, aperto, onTogliApri, logsCatena }) {
                     {log.domanda ?? '—'}
                 </td>
                 <td className="px-3 py-2 font-body text-xs text-nebbia/40 text-right tabular-nums whitespace-nowrap">
-                    {formatNumero(log.token_input)} / {formatNumero(log.token_output)}
+                    {formatNumero(tokenInEffettivo)} / {formatNumero(tokenOutEffettivo)}
                 </td>
                 <td className="px-3 py-2 font-body text-xs text-oro text-right tabular-nums">
-                    {formatCosto(parseFloat(log.costo_totale_usd ?? 0))}
+                    {formatCosto(costoEffettivo)}
                 </td>
                 <td className="px-3 py-2 font-body text-xs text-nebbia/40 text-right tabular-nums">
-                    {formatDurata(log.durata_ms)}
+                    {formatDurata(durataEffettiva)}
                 </td>
                 <td className="px-3 py-2">
                     <span className={`inline-flex items-center px-2 py-0.5 border font-body text-[10px] ${esitoMeta.class}`}>
@@ -664,8 +726,8 @@ function DettaglioCatena({ log, catena }) {
                                 <span className="font-body text-[10px] text-nebbia/40">{c.modello}</span>
                                 {c.qualita_retrieval && (
                                     <span className={`font-body text-[10px] px-1.5 py-0.5 border ${c.qualita_retrieval === 'alta' ? 'text-green-400 border-green-500/30' :
-                                            c.qualita_retrieval === 'media' ? 'text-amber-400 border-amber-500/30' :
-                                                'text-red-400 border-red-500/30'
+                                        c.qualita_retrieval === 'media' ? 'text-amber-400 border-amber-500/30' :
+                                            'text-red-400 border-red-500/30'
                                         }`}>
                                         {c.qualita_retrieval}
                                     </span>

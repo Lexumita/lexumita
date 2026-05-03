@@ -10,12 +10,15 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
+import { FileText } from 'lucide-react'  // ← aggiungilo all'import generale lucide-react in alto
+
 const TIPI = [
     { id: 'tutti', label: 'Tutti', icon: Tag },
     { id: 'ricerca_ai', label: 'Ricerche', icon: Sparkles },
     { id: 'norma', label: 'Norme', icon: BookOpen },
     { id: 'sentenza', label: 'Sentenze', icon: Landmark },
     { id: 'prassi', label: 'Prassi', icon: ScrollText },
+    { id: 'archivio_documento', label: 'Archivio', icon: FileText },
 ]
 
 const TIPI_RICERCA = ['ricerca_ai', 'ricerca_manuale', 'chat_lex']
@@ -132,6 +135,13 @@ export default function EtichettaDettaglio() {
                     .eq('id', rel.elemento_id).maybeSingle()
                 return data ? { ...rel, dati: data, kindFiltro: 'prassi' } : null
             }
+            if (rel.tipo === 'archivio_documento') {
+                const { data } = await supabase
+                    .from('archivio_documenti')
+                    .select('id, titolo, tipo, dimensione, ocr_status, metadati, created_at')
+                    .eq('id', rel.elemento_id).maybeSingle()
+                return data ? { ...rel, dati: data, kindFiltro: 'archivio_documento' } : null
+            }
             return null
         } catch (e) {
             return null
@@ -171,6 +181,10 @@ export default function EtichettaDettaglio() {
         if (c.tipo === 'prassi') {
             return (`${c.dati.oggetto ?? ''} ${c.dati.sintesi ?? ''}`).toLowerCase().includes(q)
         }
+        if (c.tipo === 'archivio_documento') {
+            const sugg = c.dati.metadati?.suggeriti ?? {}
+            return (`${c.dati.titolo ?? ''} ${sugg.riepilogo ?? ''} ${(sugg.tags ?? []).join(' ')}`).toLowerCase().includes(q)
+        }
         return false
     })
 
@@ -180,6 +194,7 @@ export default function EtichettaDettaglio() {
         norma: contenuti.filter(c => c.kindFiltro === 'norma').length,
         sentenza: contenuti.filter(c => c.kindFiltro === 'sentenza').length,
         prassi: contenuti.filter(c => c.kindFiltro === 'prassi').length,
+        archivio_documento: contenuti.filter(c => c.kindFiltro === 'archivio_documento').length,
     }
 
     if (loading) return (
@@ -483,6 +498,53 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                         <ExternalLink size={11} className="text-nebbia/20 group-hover:text-salvia transition-colors" />
+                        <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            title="Rimuovi tag">
+                            {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        </button>
+                    </div>
+                </div>
+            </Link>
+        )
+    }
+
+    if (c.tipo === 'archivio_documento') {
+        const sugg = c.dati.metadati?.suggeriti ?? {}
+        const verAuto = c.dati.metadati?.verificato_auto === true
+        return (
+            <Link to={`/archivio?focus=${c.dati.id}`}
+                className="block bg-slate border border-white/5 hover:border-oro/20 transition-colors p-4 group">
+                <div className="flex items-start gap-3">
+                    <FileText size={14} className="text-oro/70 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors leading-snug truncate">
+                                {c.dati.titolo}
+                            </p>
+                            {sugg.tipo_documento && sugg.tipo_documento !== 'altro' && (
+                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/5 border border-salvia/20 text-salvia uppercase tracking-wider shrink-0">
+                                    {sugg.tipo_documento}
+                                </span>
+                            )}
+                            {verAuto && (
+                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+                                    Auto
+                                </span>
+                            )}
+                        </div>
+                        {sugg.riepilogo && (
+                            <p className="font-body text-xs text-nebbia/55 leading-relaxed line-clamp-2 mb-1">
+                                {sugg.riepilogo}
+                            </p>
+                        )}
+                        <p className="font-body text-[10px] text-nebbia/30">
+                            Documento d'archivio · {new Date(c.dati.created_at).toLocaleDateString('it-IT')}
+                            {c.dati.dimensione && ` · ${(c.dati.dimensione / 1024).toFixed(0)} KB`}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                        <ExternalLink size={11} className="text-nebbia/20 group-hover:text-oro transition-colors" />
                         <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
                             className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
                             title="Rimuovi tag">
@@ -1042,6 +1104,10 @@ function titoloElementoEt(c) {
         const parti = [c.dati.fonte, c.dati.numero && `n. ${c.dati.numero}`, c.dati.anno].filter(Boolean)
         return parti.join(' · ')
     }
+    if (c.tipo === 'archivio_documento') {
+        const sugg = c.dati.metadati?.suggeriti ?? {}
+        return c.dati.titolo + (sugg.tipo_documento && sugg.tipo_documento !== 'altro' ? ` (${sugg.tipo_documento})` : '')
+    }
     return ''
 }
 
@@ -1050,6 +1116,16 @@ function contenutoElementoEt(c) {
     if (c.tipo === 'norma') return c.dati.testo ?? ''
     if (c.tipo === 'sentenza') return [c.dati.oggetto, c.dati.principio_diritto].filter(Boolean).join('\n\n')
     if (c.tipo === 'prassi') return [c.dati.oggetto, c.dati.sintesi].filter(Boolean).join('\n\n')
+    if (c.tipo === 'archivio_documento') {
+        const sugg = c.dati.metadati?.suggeriti ?? {}
+        const parti = []
+        if (sugg.riepilogo) parti.push(`Riepilogo: ${sugg.riepilogo}`)
+        if (sugg.tags?.length > 0) parti.push(`Tag: ${sugg.tags.join(', ')}`)
+        if (sugg.soggetti?.length > 0) {
+            parti.push(`Soggetti: ${sugg.soggetti.map(s => s.nome + (s.ruolo ? ` (${s.ruolo})` : '')).join('; ')}`)
+        }
+        return parti.join('\n\n') || '(documento senza riepilogo)'
+    }
     return ''
 }
 
