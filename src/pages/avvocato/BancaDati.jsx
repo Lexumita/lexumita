@@ -1480,6 +1480,597 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TAB LEGGI E DECRETI (norme_archivio) — NUOVO
+// Naviga: tipo_atto → atto specifico → articoli
+// Tutto sempre con barra di ricerca globale visibile in alto.
+// ═══════════════════════════════════════════════════════════════
+function TabLeggiDecreti() {
+    const navigate = useNavigate()
+
+    // Vista: 'catalogo' | 'tipo' | 'atto'
+    const [vista, setVista] = useState('catalogo')
+    const [tipoAttoSelezionato, setTipoAtto] = useState(null)
+    const [attoSelezionato, setAtto] = useState(null)
+
+    // Catalogo tipi_atto
+    const [tipi, setTipi] = useState([])
+    const [loadingTipi, setLoadingTipi] = useState(true)
+
+    // Ricerca globale (sempre visibile)
+    const [inputGlobale, setInputGlobale] = useState('')
+    const [cercaGlobale, setCercaGlobale] = useState('')
+    const [risultatiGlobali, setRisultatiGlobali] = useState([])
+    const [totaleGlobale, setTotaleGlobale] = useState(0)
+    const [loadingGlobale, setLoadingGlobale] = useState(false)
+    const [articoloApertoGlobale, setArticoloApertoGlobale] = useState(null)
+
+    // Vista tipo_atto: lista atti
+    const [atti, setAtti] = useState([])
+    const [loadingAtti, setLoadingAtti] = useState(false)
+    const [paginaAtti, setPaginaAtti] = useState(0)
+    const [filtroAnno, setFiltroAnno] = useState('')
+    const [inputCercaAtti, setInputCercaAtti] = useState('')
+    const [cercaAtti, setCercaAtti] = useState('')
+    const PER_PAGINA_ATTI = 50
+
+    // Vista atto: lista articoli
+    const [articoli, setArticoli] = useState([])
+    const [loadingArticoli, setLoadingArticoli] = useState(false)
+    const [paginaArt, setPaginaArt] = useState(0)
+    const [inputCercaArt, setInputCercaArt] = useState('')
+    const [cercaArt, setCercaArt] = useState('')
+    const [articoloAperto, setArticoloAperto] = useState(null)
+    const PER_PAGINA_ART = 50
+
+    useEffect(() => {
+        caricaTipi()
+    }, [])
+
+    useEffect(() => {
+        if (vista === 'tipo' && tipoAttoSelezionato) caricaAtti()
+    }, [vista, tipoAttoSelezionato, cercaAtti, filtroAnno, paginaAtti])
+
+    useEffect(() => {
+        if (vista === 'atto' && attoSelezionato) caricaArticoli()
+    }, [vista, attoSelezionato, cercaArt, paginaArt])
+
+    async function caricaTipi() {
+        setLoadingTipi(true)
+        try {
+            const { data } = await supabase.rpc('get_stats_per_tipo_atto')
+            setTipi(data ?? [])
+        } finally {
+            setLoadingTipi(false)
+        }
+    }
+
+    async function avviaRicercaGlobale() {
+        if (!inputGlobale.trim()) return
+        setCercaGlobale(inputGlobale)
+        setLoadingGlobale(true)
+        setArticoloApertoGlobale(null)
+        try {
+            const filtroOr = `articolo.ilike.%${inputGlobale}%,rubrica.ilike.%${inputGlobale}%,testo.ilike.%${inputGlobale}%,titolo_doc.ilike.%${inputGlobale}%`
+            const { data } = await supabase
+                .from('norme_archivio')
+                .select('id, urn, tipo_atto, numero_atto, anno_atto, titolo_doc, articolo, rubrica, testo, tipo_elemento')
+                .eq('vigente', true)
+                .or(filtroOr)
+                .order('tipo_atto')
+                .order('anno_atto', { ascending: false })
+                .order('articolo')
+                .limit(50)
+            setRisultatiGlobali(data ?? [])
+        } finally {
+            setLoadingGlobale(false)
+        }
+    }
+
+    async function caricaAtti() {
+        setLoadingAtti(true)
+        try {
+            // Postgres senza DISTINCT via REST: prendiamo articoli e dedup lato client
+            let q = supabase
+                .from('norme_archivio')
+                .select('tipo_atto, numero_atto, anno_atto, titolo_doc, urn')
+                .eq('vigente', true)
+                .eq('tipo_atto', tipoAttoSelezionato)
+
+            if (filtroAnno) q = q.eq('anno_atto', parseInt(filtroAnno))
+            if (cercaAtti.trim()) q = q.ilike('titolo_doc', `%${cercaAtti}%`)
+
+            q = q.order('anno_atto', { ascending: false, nullsFirst: false })
+                .order('numero_atto', { ascending: false, nullsFirst: false })
+
+            // Range largo per dedup lato client
+            q = q.range(paginaAtti * PER_PAGINA_ATTI * 5, paginaAtti * PER_PAGINA_ATTI * 5 + PER_PAGINA_ATTI * 5 - 1)
+
+            const { data } = await q
+
+            const seen = new Set()
+            const dedup = []
+            for (const row of (data ?? [])) {
+                const key = `${row.tipo_atto}|${row.numero_atto ?? ''}|${row.anno_atto ?? ''}`
+                if (seen.has(key)) continue
+                seen.add(key)
+                dedup.push(row)
+                if (dedup.length >= PER_PAGINA_ATTI) break
+            }
+
+            setAtti(dedup)
+        } finally {
+            setLoadingAtti(false)
+        }
+    }
+
+    async function caricaArticoli() {
+        setLoadingArticoli(true)
+        try {
+            let q = supabase
+                .from('norme_archivio')
+                .select('id, urn, tipo_atto, numero_atto, anno_atto, articolo, rubrica, testo, tipo_elemento, titolo_doc')
+                .eq('vigente', true)
+                .eq('tipo_atto', attoSelezionato.tipo_atto)
+
+            if (attoSelezionato.numero_atto) q = q.eq('numero_atto', attoSelezionato.numero_atto)
+            if (attoSelezionato.anno_atto) q = q.eq('anno_atto', attoSelezionato.anno_atto)
+
+            if (cercaArt.trim()) {
+                q = q.or(`articolo.ilike.%${cercaArt}%,rubrica.ilike.%${cercaArt}%,testo.ilike.%${cercaArt}%`)
+            }
+
+            q = q.order('articolo').range(paginaArt * PER_PAGINA_ART, (paginaArt + 1) * PER_PAGINA_ART - 1)
+
+            const { data, count } = await q
+            setArticoli(data ?? [])
+            setTotaleArticoli(count ?? 0)
+        } finally {
+            setLoadingArticoli(false)
+        }
+    }
+
+    function apriTipo(tipo) {
+        setTipoAtto(tipo)
+        setVista('tipo')
+        setInputCercaAtti(''); setCercaAtti('')
+        setFiltroAnno('')
+        setPaginaAtti(0)
+    }
+
+    function apriAtto(atto) {
+        setAtto({
+            tipo_atto: atto.tipo_atto,
+            numero_atto: atto.numero_atto,
+            anno_atto: atto.anno_atto,
+            titolo_doc: atto.titolo_doc,
+        })
+        setVista('atto')
+        setInputCercaArt(''); setCercaArt('')
+        setPaginaArt(0)
+        setArticoloAperto(null)
+    }
+
+    function tornaAlCatalogo() {
+        setVista('catalogo')
+        setTipoAtto(null)
+        setAtto(null)
+    }
+
+    function tornaAlTipo() {
+        setVista('tipo')
+        setAtto(null)
+    }
+
+    function evidenziaTesto(testo, cerca) {
+        if (!cerca?.trim() || !testo) return ''
+        const idx = testo.toLowerCase().indexOf(cerca.toLowerCase())
+        if (idx === -1) return testo.slice(0, 150) + '...'
+        const start = Math.max(0, idx - 80)
+        const end = Math.min(testo.length, idx + cerca.length + 80)
+        return (start > 0 ? '...' : '') + testo.slice(start, end) + (end < testo.length ? '...' : '')
+    }
+
+    function evidenziaParola(testo, cerca) {
+        if (!cerca?.trim() || !testo) return testo
+        const regex = new RegExp(`(${cerca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+        return testo.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
+    }
+
+    function attoLabel(a) {
+        const num = a.numero_atto && a.anno_atto ? `${a.numero_atto}/${a.anno_atto}` : (a.numero_atto ?? a.anno_atto ?? '')
+        return `${a.tipo_atto}${num ? ` ${num}` : ''}`
+    }
+
+    function BadgeTipoElemento({ tipo }) {
+        if (!tipo || tipo === 'articolo') return null
+        return (
+            <span className="ml-2 font-body text-xs text-salvia/70 border border-salvia/20 px-1.5 py-0.5 uppercase tracking-wider">
+                {tipo}
+            </span>
+        )
+    }
+
+    const annoCorrente = new Date().getFullYear()
+    const anniOpzioni = Array.from({ length: 80 }, (_, i) => annoCorrente - i)
+
+    return (
+        <div className="space-y-5">
+
+            {/* Barra ricerca globale — sempre visibile */}
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                    <input
+                        placeholder="Cerca in tutte le leggi e decreti per articolo, rubrica, testo o titolo..."
+                        value={inputGlobale}
+                        onChange={e => setInputGlobale(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') avviaRicercaGlobale() }}
+                        className="w-full bg-slate border border-oro/50 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/60 placeholder:text-nebbia/25"
+                    />
+                </div>
+                <button onClick={avviaRicercaGlobale} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                    <Search size={13} /> Cerca
+                </button>
+            </div>
+
+            {loadingGlobale && (
+                <div className="flex items-center justify-center py-8">
+                    <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
+                </div>
+            )}
+
+            {!loadingGlobale && cercaGlobale && risultatiGlobali.length === 0 && (
+                <p className="font-body text-sm text-nebbia/30 text-center py-8">Nessun risultato per "{cercaGlobale}"</p>
+            )}
+
+            {!loadingGlobale && risultatiGlobali.length > 0 && (
+                <div className="bg-slate border border-white/5">
+                    <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+                        <p className="font-body text-xs text-nebbia/30">Risultati per "{cercaGlobale}" (max 50)</p>
+                        <button
+                            onClick={() => { setRisultatiGlobali([]); setCercaGlobale(''); setInputGlobale('') }}
+                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                            <X size={11} /> Pulisci
+                        </button>
+                    </div>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-white/5">
+                                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Documento</th>
+                                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Articolo</th>
+                                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Rubrica / Anteprima</th>
+                                <th className="px-4 py-3 w-8" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {risultatiGlobali.map(n => (
+                                <>
+                                    <tr key={n.id}
+                                        className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                        onClick={() => setArticoloApertoGlobale(articoloApertoGlobale?.id === n.id ? null : n)}
+                                    >
+                                        <td className="px-4 py-3">
+                                            <span className="font-body text-xs text-nebbia/60">{attoLabel(n)}</span>
+                                            {n.titolo_doc && <p className="font-body text-xs text-nebbia/30 mt-0.5 truncate max-w-xs">{n.titolo_doc}</p>}
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium whitespace-nowrap">
+                                            {n.articolo}
+                                            <BadgeTipoElemento tipo={n.tipo_elemento} />
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-sm text-nebbia/60 max-w-lg">
+                                            {n.rubrica && <p className="font-medium text-nebbia/80 mb-0.5" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaGlobale) }} />}
+                                            <p className="text-xs text-nebbia/40 line-clamp-2" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaGlobale), cercaGlobale) }} />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <ChevronRight size={13} className={`text-nebbia/20 transition-transform ${articoloApertoGlobale?.id === n.id ? 'rotate-90' : ''}`} />
+                                        </td>
+                                    </tr>
+                                    {articoloApertoGlobale?.id === n.id && (
+                                        <tr key={`${n.id}-testo`} className="border-b border-white/5 bg-petrolio/20">
+                                            <td colSpan={4} className="px-4 py-4">
+                                                <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaGlobale) }} />
+                                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                    <AggiungiAPratica
+                                                        ricerca={{
+                                                            tipo: 'ricerca_manuale',
+                                                            domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''} (${attoLabel(n)})`,
+                                                            testo: n.testo,
+                                                            codice: null
+                                                        }}
+                                                        variant="compact"
+                                                    />
+                                                    <AggiungiAEtichetta
+                                                        elemento={{ tipo: 'norma_archivio', id: n.id }}
+                                                        variant="compact"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                            navigate(`${prefix}/norma/${n.id}`)
+                                                        }}
+                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs ml-auto"
+                                                    >
+                                                        Apri pagina dedicata <ChevronRight size={11} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* CATALOGO: card per tipo_atto */}
+            {vista === 'catalogo' && (
+                <>
+                    {loadingTipi ? (
+                        <div className="flex items-center justify-center py-20">
+                            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                        </div>
+                    ) : tipi.length === 0 ? (
+                        <div className="bg-slate border border-white/5 p-12 text-center">
+                            <p className="font-body text-sm text-nebbia/40">Nessun atto disponibile</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {tipi.map(t => (
+                                <button key={t.tipo_atto} onClick={() => apriTipo(t.tipo_atto)}
+                                    className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{t.tipo_atto}</p>
+                                        </div>
+                                        <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* VISTA TIPO: lista atti */}
+            {vista === 'tipo' && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> Tutti i tipi di atto
+                        </button>
+                        <p className="font-display text-xl text-nebbia">{tipoAttoSelezionato}</p>
+                    </div>
+
+                    <div className="bg-slate border border-white/5 p-4 space-y-3">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                                <input
+                                    placeholder="Cerca in titolo del documento..."
+                                    value={inputCercaAtti}
+                                    onChange={e => setInputCercaAtti(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') { setPaginaAtti(0); setCercaAtti(inputCercaAtti) } }}
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+                            </div>
+                            <button onClick={() => { setPaginaAtti(0); setCercaAtti(inputCercaAtti) }}
+                                className="flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                                <Search size={13} /> Cerca
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-nebbia/30">
+                                <Filter size={12} />
+                                <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
+                            </div>
+                            <select value={filtroAnno} onChange={e => { setPaginaAtti(0); setFiltroAnno(e.target.value) }}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                <option value="">Tutti gli anni</option>
+                                {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                            {(filtroAnno || cercaAtti) && (
+                                <button onClick={() => {
+                                    setFiltroAnno(''); setCercaAtti(''); setInputCercaAtti('')
+                                    setPaginaAtti(0)
+                                }}
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    <X size={11} /> Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {loadingAtti ? (
+                        <div className="flex items-center justify-center py-16">
+                            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                        </div>
+                    ) : atti.length === 0 ? (
+                        <div className="bg-slate border border-white/5 p-12 text-center">
+                            <p className="font-body text-sm text-nebbia/40">Nessun atto trovato con questi filtri</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-slate border border-white/5">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-white/5">
+                                            <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Atto</th>
+                                            <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Titolo</th>
+                                            <th className="px-4 py-3 w-8" />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {atti.map((a, idx) => (
+                                            <tr key={`${a.tipo_atto}-${a.numero_atto}-${a.anno_atto}-${idx}`}
+                                                className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                                onClick={() => apriAtto(a)}>
+                                                <td className="px-4 py-3 font-body text-sm text-oro font-medium whitespace-nowrap">
+                                                    {a.numero_atto && a.anno_atto ? `${a.numero_atto}/${a.anno_atto}` : (a.numero_atto ?? a.anno_atto ?? '—')}
+                                                </td>
+                                                <td className="px-4 py-3 font-body text-sm text-nebbia/70 leading-snug">
+                                                    {a.titolo_doc ?? <span className="text-nebbia/30 italic">senza titolo</span>}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <ChevronRight size={13} className="text-nebbia/20" />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
+                                <p className="font-body text-xs text-nebbia/30">
+                                    Pagina {paginaAtti + 1} · {atti.length} atti
+                                </p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setPaginaAtti(p => Math.max(0, p - 1))} disabled={paginaAtti === 0}
+                                        className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                    <button onClick={() => setPaginaAtti(p => p + 1)} disabled={atti.length < PER_PAGINA_ATTI}
+                                        className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* VISTA ATTO: lista articoli */}
+            {vista === 'atto' && attoSelezionato && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                                <ChevronLeft size={13} /> Tutti i tipi
+                            </button>
+                            <span className="text-nebbia/20">/</span>
+                            <button onClick={tornaAlTipo} className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                                {attoSelezionato.tipo_atto}
+                            </button>
+                        </div>
+                        <p className="font-display text-xl text-nebbia">{attoLabel(attoSelezionato)}</p>
+                    </div>
+                    {attoSelezionato.titolo_doc && (
+                        <p className="font-body text-sm text-nebbia/50 leading-relaxed -mt-2">{attoSelezionato.titolo_doc}</p>
+                    )}
+
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                            <input
+                                placeholder="Cerca per articolo, rubrica o testo..."
+                                value={inputCercaArt}
+                                onChange={e => setInputCercaArt(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { setPaginaArt(0); setCercaArt(inputCercaArt) } }}
+                                className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                            />
+                        </div>
+                        <button onClick={() => { setPaginaArt(0); setCercaArt(inputCercaArt) }}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            <Search size={13} /> Cerca
+                        </button>
+                    </div>
+
+                    {cercaArt && <p className="font-body text-xs text-nebbia/30">Risultati per "{cercaArt}"</p>}
+
+                    <div className="bg-slate border border-white/5">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Articolo</th>
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Rubrica / Anteprima</th>
+                                    <th className="px-4 py-3 w-8" />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loadingArticoli ? (
+                                    <tr><td colSpan={3} className="px-4 py-20 text-center">
+                                        <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full inline-block" />
+                                    </td></tr>
+                                ) : articoli.length === 0 ? (
+                                    <tr><td colSpan={3} className="px-4 py-20 text-center">
+                                        <p className="font-body text-sm text-nebbia/30">Nessun articolo trovato</p>
+                                    </td></tr>
+                                ) : articoli.map(n => (
+                                    <>
+                                        <tr key={n.id}
+                                            className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                            onClick={() => setArticoloAperto(articoloAperto?.id === n.id ? null : n)}
+                                        >
+                                            <td className="px-4 py-3 font-body text-sm text-oro font-medium whitespace-nowrap">
+                                                {n.articolo}
+                                                <BadgeTipoElemento tipo={n.tipo_elemento} />
+                                            </td>
+                                            <td className="px-4 py-3 font-body text-sm text-nebbia/60 max-w-lg">
+                                                {n.rubrica && <p className="font-medium text-nebbia/80 mb-0.5" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaArt) }} />}
+                                                {cercaArt && <p className="text-xs text-nebbia/40 line-clamp-2" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaArt), cercaArt) }} />}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <ChevronRight size={13} className={`text-nebbia/20 transition-transform ${articoloAperto?.id === n.id ? 'rotate-90' : ''}`} />
+                                            </td>
+                                        </tr>
+                                        {articoloAperto?.id === n.id && (
+                                            <tr key={`${n.id}-testo`} className="border-b border-white/5 bg-petrolio/20">
+                                                <td colSpan={3} className="px-4 py-4">
+                                                    <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaArt) }} />
+                                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                        <AggiungiAPratica
+                                                            ricerca={{
+                                                                tipo: 'ricerca_manuale',
+                                                                domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''} (${attoLabel(n)})`,
+                                                                testo: n.testo,
+                                                                codice: null
+                                                            }}
+                                                            variant="compact"
+                                                        />
+                                                        <AggiungiAEtichetta
+                                                            elemento={{ tipo: 'norma_archivio', id: n.id }}
+                                                            variant="compact"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                                navigate(`${prefix}/norma/${n.id}`)
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs ml-auto"
+                                                        >
+                                                            Apri pagina dedicata <ChevronRight size={11} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
+                                ))}
+                            </tbody>
+                        </table>
+                        {(articoli.length >= PER_PAGINA_ART || paginaArt > 0) && (
+                            <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+                                <p className="font-body text-xs text-nebbia/30">
+                                    Pagina {paginaArt + 1} · {articoli.length} articoli
+                                </p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setPaginaArt(p => Math.max(0, p - 1))} disabled={paginaArt === 0}
+                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                    <button onClick={() => setPaginaArt(p => p + 1)} disabled={articoli.length < PER_PAGINA_ART}
+                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TAB SENTENZE — invariato (non aveva bottoni di salvataggio)
 // ═══════════════════════════════════════════════════════════════
 function TabSentenze() {
@@ -1565,13 +2156,6 @@ function TabSentenze() {
     async function caricaSentenzeCategoria() {
         setLoadingRisultati(true)
 
-        // Strategia paginazione:
-        // Per evitare merge complicati di due paginazioni separate (giurisprudenza + sentenze),
-        // quando "tutte" sono attive: prima leggiamo i count totali, poi facciamo
-        // una richiesta range proporzionale a ciascuna fonte.
-        // Più semplice: per filtroFonte='gratuite' o 'pagamento' è una singola fonte,
-        // per 'tutte' usiamo il count per dare a ciascuna metà del page size.
-
         const PER_PAGINA = PER_PAGINA_SENTENZE
         const offsetStart = paginaSentenze * PER_PAGINA
         const offsetEnd = offsetStart + PER_PAGINA - 1
@@ -1616,7 +2200,6 @@ function TabSentenze() {
 
             // Recupera entrambe le fonti con range completo (offsetStart..offsetEnd di ciascuna)
             // poi mergiamo, ordiniamo per data e prendiamo le prime PER_PAGINA.
-            // Questo è semplice e corretto per page size piccolo.
             const fetchers = []
             if (filtroFonte !== 'pagamento') {
                 let q = supabase
@@ -2221,6 +2804,44 @@ function TabPrassi() {
         </div>
     )
 }
+
+// ═══════════════════════════════════════════════════════════════
+// WRAPPER tab "Italiana" con 2 sotto-tab: Codici / Leggi e decreti
+// ═══════════════════════════════════════════════════════════════
+function TabItalianaConSottoTab({ crediti, setCrediti, messaggiConversazione, setMessaggiConversazione }) {
+    const [sottoTab, setSottoTab] = useState('codici')
+
+    return (
+        <div className="space-y-5">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <button onClick={() => setSottoTab('codici')}
+                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'codici' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <BookOpen size={12} /> Principali Codici
+                </button>
+                <button onClick={() => setSottoTab('leggi_decreti')}
+                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'leggi_decreti' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <FileText size={12} /> Leggi e decreti
+                </button>
+            </div>
+
+            {sottoTab === 'codici' && (
+                <TabNormativa
+                    datasetFonte="it"
+                    key="it"
+                    crediti={crediti}
+                    setCrediti={setCrediti}
+                    messaggiConversazione={messaggiConversazione}
+                    setMessaggiConversazione={setMessaggiConversazione}
+                />
+            )}
+
+            {sottoTab === 'leggi_decreti' && (
+                <TabLeggiDecreti />
+            )}
+        </div>
+    )
+}
+
 // ═══════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPALE — "Banca dati"
 // ═══════════════════════════════════════════════════════════════
@@ -2276,9 +2897,7 @@ export function BancaDati() {
                 </div>
 
                 {tabAttivo === 'italiana' && (
-                    <TabNormativa
-                        datasetFonte="it"
-                        key="it"
+                    <TabItalianaConSottoTab
                         crediti={crediti}
                         setCrediti={setCrediti}
                         messaggiConversazione={messaggiConversazione}
