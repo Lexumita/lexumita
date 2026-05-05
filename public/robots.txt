@@ -1,9 +1,40 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /dashboard
-Disallow: /portale
-Disallow: /verifica
-Disallow: /area-personale
+# robots.txt per Lexum
+# https://www.lexum.it
 
+User-agent: *
+
+# Pagine vetrina pubbliche (esplicitamente consentite)
+Allow: /$
+Allow: /per-avvocati
+Allow: /lex-ai
+Allow: /contatti
+Allow: /privacy
+Allow: /termini
+
+# Aree riservate (dietro autenticazione)
+Disallow: /dashboard
+Disallow: /clienti
+Disallow: /pratiche
+Disallow: /calendario
+Disallow: /sentenze
+Disallow: /pagamenti
+Disallow: /assistenza
+Disallow: /archivio
+Disallow: /profilo
+Disallow: /ricerche
+Disallow: /banca-dati
+Disallow: /studio
+Disallow: /portale
+Disallow: /area
+Disallow: /verifica
+Disallow: /admin
+
+# Auth
+Disallow: /login
+Disallow: /registrati
+Disallow: /recupera-password
+Disallow: /reset-password
+Disallow: /email-verificata
+
+# Sitemap
 Sitemap: https://www.lexum.it/sitemap.xml

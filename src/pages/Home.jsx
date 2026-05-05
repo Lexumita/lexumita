@@ -1,6 +1,7 @@
 // src/pages/ComeFunziona.jsx
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import {
   ArrowRight, Sparkles, FolderOpen, Users, FileText,
   BookOpen, Shield, Zap, ChevronDown, Check, Scale,
@@ -129,7 +130,34 @@ export default function ComeFunziona() {
 
   return (
     <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden">
+      <Helmet>
+        <title>Lexum — Gestionale e Banca Dati Legale per Avvocati</title>
+        <meta
+          name="description"
+          content="Piattaforma per studi legali: gestione clienti, pratiche, documenti, banca dati condivisa di sentenze e assistente AI Lex. Tutto in un unico spazio."
+        />
+        <link rel="canonical" href="https://www.lexum.it/" />
 
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.lexum.it/" />
+        <meta property="og:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
+        <meta
+          property="og:description"
+          content="Gestione studio, banca dati legale condivisa e assistente AI. Tutto in un unico ambiente."
+        />
+        <meta property="og:image" content="https://www.lexum.it/logo.png" />
+        <meta property="og:locale" content="it_IT" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
+        <meta
+          name="twitter:description"
+          content="Gestione studio, banca dati legale condivisa e assistente AI."
+        />
+        <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
+      </Helmet>
       {/* ══════════════════════════════════════════
           1. HERO
       ══════════════════════════════════════════ */}

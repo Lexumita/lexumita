@@ -1,0 +1,21 @@
+{
+  "name": "Lexum",
+  "short_name": "Lexum",
+  "description": "Piattaforma legale per avvocati: gestionale, banca dati legali e assistente AI Lex, archivio intelligente.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0B1F2A",
+  "background_color": "#0B1F2A",
+  "display": "standalone",
+  "start_url": "/"
+}

@@ -2,11 +2,39 @@
 import { Shield, Lock, Eye, Mail, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
 export default function Contatti() {
   return (
     <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
+      <Helmet>
+        <title>Lexum — Gestionale e Banca Dati Legale per Avvocati</title>
+        <meta
+          name="description"
+          content="Piattaforma per studi legali: gestione clienti, pratiche, documenti, banca dati condivisa di sentenze e assistente AI Lex. Tutto in un unico spazio."
+        />
+        <link rel="canonical" href="https://www.lexum.it/" />
 
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.lexum.it/" />
+        <meta property="og:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
+        <meta
+          property="og:description"
+          content="Gestione studio, banca dati legale condivisa e assistente AI. Tutto in un unico ambiente."
+        />
+        <meta property="og:image" content="https://www.lexum.it/logo.png" />
+        <meta property="og:locale" content="it_IT" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
+        <meta
+          name="twitter:description"
+          content="Gestione studio, banca dati legale condivisa e assistente AI."
+        />
+        <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
+      </Helmet>
       {/* Hero */}
       <section className="py-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">

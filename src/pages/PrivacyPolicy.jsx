@@ -1,5 +1,6 @@
 // src/pages/PrivacyPolicy.jsx
 import { Shield, Lock, Eye, Server, Mail, FileText } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
 function Section({ title, children }) {
     return (
@@ -25,7 +26,15 @@ export default function PrivacyPolicy() {
     return (
         <div className="min-h-screen bg-petrolio text-nebbia pt-20">
             <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
-
+                <Helmet>
+                    <title>Privacy Policy — Lexum</title>
+                    <meta
+                        name="description"
+                        content="Informativa privacy di Lexum: come trattiamo i dati personali di avvocati, clienti e utenti della piattaforma in conformità al GDPR."
+                    />
+                    <meta name="robots" content="noindex, follow" />
+                    <link rel="canonical" href="https://www.lexum.it/privacy" />
+                </Helmet>
                 {/* Header */}
                 <div className="space-y-4">
                     <p className="font-body text-xs text-salvia/60 tracking-[0.3em] uppercase">Informativa legale</p>

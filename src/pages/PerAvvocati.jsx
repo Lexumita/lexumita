@@ -5,6 +5,7 @@ import {
     ArrowRight, BookOpen, TrendingUp, Users, Sparkles,
     Shield, Check, ChevronDown, Brain, Star, Zap, Lock, FileText, FileSignature
 } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
 // ─── Scroll animation hook ───────────────────────────────────
 function useInView(threshold = 0.12) {
@@ -52,7 +53,34 @@ function Divider() {
 export default function PerAvvocati() {
     return (
         <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
+            <Helmet>
+                <title>Lexum per Avvocati — Valorizza il tuo archivio legale</title>
+                <meta
+                    name="description"
+                    content="Pubblica le tue sentenze anonimizzate sulla banca dati Lexum. Trasforma l'archivio dello studio in una risorsa attiva e genera nuove entrate dal lavoro già svolto."
+                />
+                <link rel="canonical" href="https://www.lexum.it/per-avvocati" />
 
+                {/* Open Graph */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://www.lexum.it/per-avvocati" />
+                <meta property="og:title" content="Lexum per Avvocati — Valorizza il tuo archivio legale" />
+                <meta
+                    property="og:description"
+                    content="Pubblica sentenze anonimizzate, contribuisci a una banca dati costruita dalla pratica reale e genera valore dal tuo archivio."
+                />
+                <meta property="og:image" content="https://www.lexum.it/logo.png" />
+                <meta property="og:locale" content="it_IT" />
+
+                {/* Twitter */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="Lexum per Avvocati — Valorizza il tuo archivio legale" />
+                <meta
+                    name="twitter:description"
+                    content="Pubblica sentenze anonimizzate e dai nuovo valore al lavoro del tuo studio."
+                />
+                <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
+            </Helmet>
             {/* ══════════════════════════════════════════
           1. HERO
       ══════════════════════════════════════════ */}

@@ -5,7 +5,7 @@ const ROLE_HOME = {
   admin: '/admin/dashboard',
   avvocato: '/dashboard',
   cliente: '/portale',
-  user: '/dashboard-user',
+  user: '/area',
 }
 
 const DEV_BYPASS = import.meta.env.DEV
