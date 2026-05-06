@@ -1,14 +1,14 @@
-// src/pages/ComeFunziona.jsx
+// src/pages/Home.jsx
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Helmet } from 'react-helmet-async'
 import {
   ArrowRight, Sparkles, FolderOpen, Users, FileText,
   BookOpen, Shield, Zap, ChevronDown, Check, Scale,
-  Search, Brain, Lock, FileSignature
+  Search, Brain, Lock, FileSignature, Library, Bookmark,
+  FolderSearch, Briefcase
 } from 'lucide-react'
 
-// ─── Scroll animation hook ───────────────────────────────────
+// Scroll animation hook
 function useInView(threshold = 0.12) {
   const ref = useRef(null)
   const [inView, setInView] = useState(false)
@@ -35,13 +35,13 @@ function FadeIn({ children, delay = 0, className = '', up = true }) {
   )
 }
 
-// ─── Sezione label ───────────────────────────────────────────
+// Sezione label
 function SectionLabel({ children, color = 'oro' }) {
   const c = color === 'salvia' ? 'text-salvia/70' : 'text-oro/60'
   return <p className={`font-body text-xs ${c} tracking-[0.3em] uppercase mb-3`}>{children}</p>
 }
 
-// ─── Divisore oro ────────────────────────────────────────────
+// Divisore oro
 function Divider() {
   return (
     <div className="flex items-center gap-4 my-12">
@@ -52,7 +52,7 @@ function Divider() {
   )
 }
 
-// ─── Feature row ─────────────────────────────────────────────
+// Feature row
 function FeatureRow({ icon: Icon, title, text, points, reverse = false, accent = 'oro', badge, children }) {
   const ic = accent === 'salvia' ? 'text-salvia bg-salvia/10 border-salvia/20' : 'text-oro bg-oro/10 border-oro/20'
   return (
@@ -84,7 +84,7 @@ function FeatureRow({ icon: Icon, title, text, points, reverse = false, accent =
   )
 }
 
-// ─── Visual placeholder elegante ─────────────────────────────
+// Visual placeholder elegante
 function VisualBlock({ label, children, accent = 'oro' }) {
   const border = accent === 'salvia' ? 'border-salvia/15' : 'border-oro/15'
   return (
@@ -104,64 +104,77 @@ function VisualBlock({ label, children, accent = 'oro' }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────
+// Mini card (per griglia 6 funzionalita sotto hero)
+function MiniCard({ icon: Icon, title, text, anchor }) {
+  return (
+    <a
+      href={anchor}
+      className="block group bg-slate/60 border border-white/8 p-5 hover:border-oro/25 hover:bg-slate transition-all"
+    >
+      <div className="w-9 h-9 flex items-center justify-center border border-oro/20 bg-oro/5 text-oro mb-4 group-hover:bg-oro/15 transition-colors">
+        <Icon size={15} />
+      </div>
+      <p className="font-body text-sm font-medium text-nebbia mb-1.5">{title}</p>
+      <p className="font-body text-xs text-nebbia/40 leading-relaxed">{text}</p>
+    </a>
+  )
+}
+
+// Hero card grande (banca dati)
+function HeroDatabaseCard() {
+  return (
+    <a
+      className="block group bg-slate/70 border border-oro/20 p-7 md:p-9 hover:border-oro/40 transition-all relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 bg-oro/[0.06] rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-7 items-center relative">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Library size={16} className="text-oro" />
+            <span className="font-body text-xs text-oro/60 tracking-[0.25em] uppercase">Banca dati</span>
+          </div>
+          <p className="font-display text-5xl md:text-6xl font-light text-oro-shimmer leading-none mb-3">
+            4.000.000<span className="text-oro/60 text-3xl md:text-4xl ml-1">+</span>
+          </p>
+          <p className="font-display text-xl font-light text-nebbia mb-3">
+            tra documenti giuridici, italiani ed europei.
+          </p>
+          <p className="font-body text-sm text-nebbia/50 leading-relaxed mb-3">
+            Lavoriamo in modo continuo per ampliare ed aggiornare la Banca Dati.
+          </p>
+          <p className="font-body text-sm text-oro/80 leading-relaxed">
+            Aperti a chiunque, gratis. Senza abbonamenti per area, senza limiti per materia.
+          </p>
+        </div>
+        <div className="space-y-2">
+          {[
+            { t: 'Giurisprudenza italiana' },
+            { t: 'Normativa italiana' },
+            { t: 'Diritto dell\'Unione Europea' },
+            { t: 'Prassi e corpus condiviso' },
+          ].map(({ t, s }) => (
+            <div key={t} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="w-1 h-1 rounded-full bg-oro/60 shrink-0" />
+                <span className="font-body text-xs text-nebbia/75 font-medium">{t}</span>
+              </div>
+              <p className="font-body text-[11px] text-nebbia/40 leading-snug pl-3">{s}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </a>
+  )
+}
+
 // PAGINA
-// ─────────────────────────────────────────────────────────────
-export default function ComeFunziona() {
-  const [scrolled, setScrolled] = useState(false)
-  const [lexTyped, setLexTyped] = useState('')
-  const lexText = 'Sto gestendo una controversia locativa. Il cliente contesta i conteggi della morosità.'
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', h)
-    return () => window.removeEventListener('scroll', h)
-  }, [])
-
-  // Animazione testo Lex
-  useEffect(() => {
-    let i = 0
-    const t = setInterval(() => {
-      if (i <= lexText.length) { setLexTyped(lexText.slice(0, i)); i++ }
-      else clearInterval(t)
-    }, 35)
-    return () => clearInterval(t)
-  }, [])
+export default function Home() {
 
   return (
     <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden">
-      <Helmet>
-        <title>Lexum — Gestionale e Banca Dati Legale per Avvocati</title>
-        <meta
-          name="description"
-          content="Piattaforma per studi legali: gestione clienti, pratiche, documenti, banca dati condivisa di sentenze e assistente AI Lex. Tutto in un unico spazio."
-        />
-        <link rel="canonical" href="https://www.lexum.it/" />
 
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.lexum.it/" />
-        <meta property="og:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
-        <meta
-          property="og:description"
-          content="Gestione studio, banca dati legale condivisa e assistente AI. Tutto in un unico ambiente."
-        />
-        <meta property="og:image" content="https://www.lexum.it/logo.png" />
-        <meta property="og:locale" content="it_IT" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Lexum — Gestionale e Banca Dati Legale per Avvocati" />
-        <meta
-          name="twitter:description"
-          content="Gestione studio, banca dati legale condivisa e assistente AI."
-        />
-        <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
-      </Helmet>
-      {/* ══════════════════════════════════════════
-          1. HERO
-      ══════════════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center justify-center pt-32 md:pt-28 overflow-hidden">
+      {/* 1. HERO */}
+      <section className="relative min-h-screen flex items-center justify-center pt-32 md:pt-28 pb-16 overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-oro/[0.04] rounded-full blur-3xl" />
@@ -172,82 +185,96 @@ export default function ComeFunziona() {
           }} />
         </div>
 
-        <div className="relative max-w-5xl mx-auto px-6 text-center" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
-            <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-            <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Legal Technology per professionisti italiani</span>
+        <div className="relative max-w-6xl mx-auto px-6 w-full" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
+              <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Per studi legali e avvocati italiani</span>
+            </div>
+
+            <h1 className="font-display text-5xl md:text-7xl font-light text-nebbia leading-[1.1] mb-6">
+              Cerca, ragiona, lavora.{' '}
+              <br className="hidden md:block" />
+              Su <span className="text-oro-shimmer">Quattro milioni</span> di norme.
+            </h1>
+
+            <p className="font-body text-base md:text-lg text-nebbia/50 leading-relaxed max-w-2xl mx-auto mb-10">
+              Su Lexum trovi quello che ti serve, salvi una ricerca, la confronti, la colleghi a una pratica, ci ragioni sopra con Lex AI. Più ordine, Più Velocità, Più valore.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+              <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
+                Fai la tua prima ricerca legale è Gratis <ArrowRight size={15} />
+              </Link>
+              <a href="#features" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
+                Scopri le funzionalità
+              </a>
+            </div>
+            <p className="font-body text-xs text-nebbia/25 mb-16">
+              Nessuna carta richiesta. La banca dati e sempre gratuita.
+            </p>
           </div>
 
-          <h1 className="font-display text-5xl md:text-7xl font-light text-nebbia leading-[1.1] mb-6">
-            Il modo più veloce per{' '}
-            <br className="hidden md:block" />
-            <span className="text-oro-shimmer">gestire, cercare</span>{' '}
-            e lavorare{' '}
-            <br className="hidden md:block" />
-            un caso legale.
-          </h1>
+          {/* Hero card grande + griglia 6 card */}
+          <FadeIn delay={0.15}>
+            <div className="space-y-4">
+              <HeroDatabaseCard />
 
-          <p className="font-body text-base md:text-lg text-nebbia/45 leading-relaxed max-w-2xl mx-auto mb-10">
-            Lexum unisce in un solo ambiente gestionale, documenti, area cliente, banca dati e assistenza AI.
-            Meno strumenti separati, meno tempo perso, più continuità nel lavoro dello studio.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
-              Provalo gratis per una settimana <ArrowRight size={15} />
-            </Link>
-            <a href="#features" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
-              Scopri le funzionalità
-            </a>
-          </div>
-          <p className="font-body text-xs text-nebbia/25">
-            Nessuna complessità inutile. Entri, organizzi e inizi a lavorare meglio da subito.
-          </p>
-
-          {/* Mini preview UI */}
-          <div className="mt-16 relative max-w-3xl mx-auto">
-            <div className="absolute -inset-4 bg-gradient-to-t from-petrolio via-transparent to-transparent z-10 pointer-events-none" />
-            <div className="bg-slate/80 border border-white/8 overflow-hidden shadow-2xl">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-petrolio/60">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                </div>
-                <span className="font-body text-xs text-nebbia/20 ml-2">lexum.it — Dashboard</span>
-              </div>
-              <div className="grid grid-cols-4 h-40">
-                {[
-                  { l: 'Pratiche', n: '12', c: 'text-oro' },
-                  { l: 'Clienti', n: '34', c: 'text-nebbia' },
-                  { l: 'Udienze', n: '3', c: 'text-salvia' },
-                  { l: 'Crediti Lex', n: '847', c: 'text-nebbia' },
-                ].map((item, i) => (
-                  <div key={i} className="border-r border-white/5 last:border-0 flex flex-col items-center justify-center gap-1">
-                    <p className={`font-display text-3xl font-light ${item.c}`}>{item.n}</p>
-                    <p className="font-body text-xs text-nebbia/30">{item.l}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <MiniCard
+                  icon={Search}
+                  title="Ricerca legale"
+                  text="Trova articoli, sentenze e prassi. Usa Lex AI per cercare con linguaggio naturale."
+                  anchor="#lexai"
+                />
+                <MiniCard
+                  icon={Bookmark}
+                  title="Salva le tue ricerche"
+                  text="Categorizzale per etichetta, confrontale tra loro. Lex AI le analizza e trova i correlati."
+                  anchor="#ricerche"
+                />
+                <MiniCard
+                  icon={FolderSearch}
+                  title="Archivio intelligente"
+                  text="Carica i tuoi documenti. Lex AI ti aiuta atrovare quello che ti serve quando ti serve."
+                  anchor="#archivio"
+                />
+                <MiniCard
+                  icon={Briefcase}
+                  title="Analisi del caso"
+                  text="Salva le tue ricerche dentro la pratica che stai seguendo. Lex verifica cosa manca, suggerisce strategie."
+                  anchor="#lexai"
+                />
+                <MiniCard
+                  icon={FileSignature}
+                  title="Generazione atti"
+                  text="Lex genera gli atti partendo dai tuoi dati anagrafici e i dati della pratica, risparmio di tempo garantito."
+                  anchor="#lexai"
+                />
+                <MiniCard
+                  icon={Users}
+                  title="Portale clienti"
+                  text="Il cliente accede a documenti, udienze, comunicazioni. Tu lavori, lui non chiama."
+                  anchor="#cliente"
+                />
               </div>
             </div>
-          </div>
+          </FadeIn>
         </div>
 
-        <a href="#problema" className="absolute bottom-8 left-1/2 -translate-x-1/2 text-nebbia/20 animate-bounce">
+        <a href="#problema" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-nebbia/20 animate-bounce hidden md:block">
           <ChevronDown size={20} />
         </a>
       </section>
 
-      {/* ══════════════════════════════════════════
-          2. PROBLEMA
-      ══════════════════════════════════════════ */}
+      {/* 2. PROBLEMA */}
       <section id="problema" className="py-24 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="max-w-2xl">
             <SectionLabel>Il problema</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-6">
-              Il problema non è solo il carico di lavoro.{' '}
-              <span className="text-nebbia/35">È la frammentazione.</span>
+              Il problema non e solo il carico di lavoro.{' '}
+              <span className="text-nebbia/35">E la frammentazione.</span>
             </h2>
           </FadeIn>
 
@@ -256,8 +283,7 @@ export default function ComeFunziona() {
               <div className="bg-slate border border-white/5 p-6 h-full">
                 <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-4">Oggi</p>
                 <p className="font-body text-sm text-nebbia/50 leading-relaxed mb-5">
-                  Molti avvocati lavorano tra gestionale, archivi, documenti, email, note, banche dati e strumenti AI separati.
-                  Ogni attività richiede passaggi in più, ricerche ripetute e tempo perso nel cambiare contesto.
+                  Molti avvocati lavorano tra gestionale, archivi, documenti, email, note, banche dati e strumenti AI separati. Ogni attivita richiede passaggi in piu, ricerche ripetute e tempo perso nel cambiare contesto.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {['Gestionale', 'Archivio', 'Email', 'Note', 'Banche dati', 'AI esterno'].map(t => (
@@ -271,15 +297,15 @@ export default function ComeFunziona() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-oro/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl pointer-events-none" />
                 <p className="font-body text-xs text-oro/60 uppercase tracking-widest mb-4">Con Lexum</p>
                 <p className="font-body text-sm text-nebbia/60 leading-relaxed mb-5">
-                  Lexum riunisce tutto in un solo flusso di lavoro. Un ambiente, tutto connesso, nessun cambio di contesto.
+                  Tutto resta connesso e collegato al caso. Le ricerche entrano nelle pratiche, i documenti si trovano dove servono, l'AI lavora su materiali tuoi e su fonti verificate.
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {['Gestionale', 'Documenti', 'Area cliente', 'Banca dati', 'Lex AI'].map(t => (
+                  {['Gestionale', 'Archivio', 'Area cliente', 'Banca dati', 'Lex AI'].map(t => (
                     <span key={t} className="font-body text-xs px-2 py-1 bg-salvia/10 border border-salvia/20 text-salvia">{t}</span>
                   ))}
                 </div>
                 <p className="font-body text-sm text-oro flex items-center gap-2">
-                  <Check size={14} /> Un solo ambiente. Tutto connesso.
+                  <Check size={14} /> Un ambiente coerente, non una somma di strumenti.
                 </p>
               </div>
             </FadeIn>
@@ -287,179 +313,250 @@ export default function ComeFunziona() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          3. PROMESSA
-      ══════════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-slate/30">
-        <div className="max-w-5xl mx-auto text-center">
-          <FadeIn>
-            <h2 className="font-display text-3xl md:text-5xl font-light text-nebbia">
-              Meno dispersione.{' '}
-              <span className="text-oro">Più velocità.</span>{' '}
-              Più controllo.
-            </h2>
-            <p className="font-body text-base text-nebbia/40 max-w-2xl mx-auto mt-5 leading-relaxed">
-              Lexum nasce per abbreviare i tempi del lavoro legale. Non aggiunge un altro strumento da imparare:
-              elimina passaggi, centralizza le informazioni e ti aiuta a trovare prima quello che serve.
-            </p>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          4. FUNZIONALITÀ
-      ══════════════════════════════════════════ */}
-      <section id="features" className="py-24 px-6">
+      {/* 3. FUNZIONALITA */}
+      <section id="features" className="py-24 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto space-y-24">
 
-          {/* 4.1 Gestionale */}
-          <FeatureRow
-            icon={FolderOpen}
-            title="Gestionale completo per studio, pratiche e clienti"
-            text="Gestisci pratiche, clienti, appuntamenti, udienze, scadenze e attività operative in un unico sistema. Ogni informazione resta collegata al caso, così il lavoro quotidiano è più ordinato, più leggibile e più rapido."
-            points={['Pratiche e anagrafiche clienti', 'Appuntamenti e udienze', 'Attività e scadenze', 'Panoramica operativa chiara']}
-          >
-            <VisualBlock label="Pratica — Omicidio stradale">
-              <div className="space-y-2">
-                {[
-                  { l: 'Cliente', v: 'Mario Rossi' },
-                  { l: 'Tipo', v: 'Penale' },
-                  { l: 'Pross. udienza', v: '25/04/2026', c: 'text-oro' },
-                  { l: 'Stato', v: 'Aperta', c: 'text-salvia' },
-                ].map(({ l, v, c }) => (
-                  <div key={l} className="flex justify-between py-1.5 border-b border-white/5">
-                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                    <span className={`font-body text-xs ${c || 'text-nebbia/70'}`}>{v}</span>
-                  </div>
-                ))}
-                <div className="pt-2">
-                  <p className="font-body text-xs text-nebbia/25 mb-2">Ricerche (3)</p>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 p-2 bg-petrolio/50">
-                      <Sparkles size={9} className="text-salvia" />
-                      <span className="font-body text-xs text-nebbia/50">Analisi Lex — Art. 589-bis c.p.</span>
+          <FadeIn className="text-center mb-4 max-w-2xl mx-auto">
+            <SectionLabel>Funzionalita</SectionLabel>
+            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia">
+              Quello che lo studio fa ogni giorno,{' '}
+              <span className="text-oro">in un unico flusso.</span>
+            </h2>
+          </FadeIn>
+
+          {/* 3.1 Gestionale */}
+          <div id="gestionale" className="scroll-mt-28">
+            <FeatureRow
+              icon={FolderOpen}
+              title="Gestionale per studio, pratiche e clienti"
+              text="Pratiche, clienti, appuntamenti, udienze, scadenze e attivita operative collegate al caso. Ogni informazione resta dove serve, vicino al lavoro che la richiede."
+              points={['Pratiche e anagrafiche clienti', 'Appuntamenti e udienze', 'Attivita e scadenze', 'Panoramica operativa per pratica']}
+              reverse
+            >
+              <VisualBlock label="Pratica - Omicidio stradale">
+                <div className="space-y-2">
+                  {[
+                    { l: 'Cliente', v: 'Mario Rossi' },
+                    { l: 'Tipo', v: 'Penale' },
+                    { l: 'Pross. udienza', v: '25/04/2026', c: 'text-oro' },
+                    { l: 'Stato', v: 'Aperta', c: 'text-salvia' },
+                  ].map(({ l, v, c }) => (
+                    <div key={l} className="flex justify-between py-1.5 border-b border-white/5">
+                      <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
+                      <span className={`font-body text-xs ${c || 'text-nebbia/70'}`}>{v}</span>
                     </div>
-                    <div className="flex items-center gap-2 p-2 bg-petrolio/50">
-                      <Search size={9} className="text-oro" />
-                      <span className="font-body text-xs text-nebbia/50">Revoca patente — note manuali</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </VisualBlock>
-          </FeatureRow>
-
-          <Divider />
-
-          {/* 4.2 Area cliente */}
-          <FeatureRow
-            icon={Users}
-            title="Un accesso dedicato anche per il cliente"
-            text="Il cliente accede alla propria area riservata e trova documenti, appuntamenti, udienze e materiali condivisi dallo studio. Può caricare file direttamente in piattaforma. Meno email disperse, meno file persi."
-            points={['Accesso riservato', 'Documenti condivisi', 'Caricamento diretto', 'Comunicazioni ordinate']}
-            reverse
-          >
-            <VisualBlock label="Area cliente — Paolino Rossi" accent="salvia">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-salvia/5 border border-salvia/10">
-                  <div className="flex items-center gap-2">
-                    <FileText size={13} className="text-salvia" />
-                    <span className="font-body text-xs text-nebbia/60">Perizia tecnica.pdf</span>
-                  </div>
-                  <span className="font-body text-xs text-nebbia/25">Condiviso</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-petrolio/50 border border-white/5">
-                  <div className="flex items-center gap-2">
-                    <FileText size={13} className="text-nebbia/30" />
-                    <span className="font-body text-xs text-nebbia/60">Contratto_firmato.pdf</span>
-                  </div>
-                  <span className="font-body text-xs text-salvia/60">Caricato da te</span>
-                </div>
-                <div className="p-3 bg-oro/5 border border-oro/15 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-oro animate-pulse" />
-                  <span className="font-body text-xs text-nebbia/50">Prossima udienza: 25/04/2026</span>
-                </div>
-              </div>
-            </VisualBlock>
-          </FeatureRow>
-
-          <Divider />
-
-          {/* 4.3 + 4.4 Documentale + Archivio */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FadeIn delay={0.1}>
-              <div className="bg-slate border border-white/5 p-6 h-full hover:border-oro/15 transition-colors">
-                <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro mb-4">
-                  <FileText size={17} />
-                </div>
-                <h3 className="font-display text-xl font-light text-nebbia mb-3">Gestione documentale</h3>
-                <p className="font-body text-sm text-nebbia/45 leading-relaxed mb-4">
-                  Organizza, consulta e recupera rapidamente tutto ciò che serve. Documenti e file restano ordinati e collegati alle pratiche.
-                </p>
-                <ul className="space-y-1.5">
-                  {['Documenti per pratica', 'Caricamento semplice', 'Archivio ordinato', 'Accesso rapido'].map(p => (
-                    <li key={p} className="flex items-center gap-2 font-body text-xs text-nebbia/35">
-                      <div className="w-1 h-1 rounded-full bg-oro shrink-0" />{p}
-                    </li>
                   ))}
-                </ul>
-              </div>
-            </FadeIn>
-            <FadeIn delay={0.2}>
-              <div className="bg-slate border border-white/5 p-6 h-full hover:border-oro/15 transition-colors">
-                <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro mb-4">
-                  <Zap size={17} />
+                  <div className="pt-2">
+                    <p className="font-body text-xs text-nebbia/25 mb-2">Ricerche (3)</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 p-2 bg-petrolio/50">
+                        <Sparkles size={9} className="text-salvia" />
+                        <span className="font-body text-xs text-nebbia/50">Analisi Lex - Art. 589-bis c.p.</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-petrolio/50">
+                        <Search size={9} className="text-oro" />
+                        <span className="font-body text-xs text-nebbia/50">Revoca patente - note manuali</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="font-display text-xl font-light text-nebbia mb-3">Archivio digitale intelligente</h3>
-                <p className="font-body text-sm text-nebbia/45 leading-relaxed mb-3">
-                  Con la carta devi aprire foglio per foglio. Con il digitale cerchi e trovi subito.
-                  Lexum rende la migrazione semplice, ordinata e sostenibile.
-                </p>
-                <p className="font-body text-xs text-nebbia/30 italic leading-relaxed">
-                  "Digitalizzare non deve essere un ostacolo. Deve essere un miglioramento concreto e facile da adottare."
-                </p>
-              </div>
-            </FadeIn>
+              </VisualBlock>
+            </FeatureRow>
           </div>
 
           <Divider />
 
-          {/* 4.5 Banca dati */}
-          <FeatureRow
-            icon={BookOpen}
-            title="Valorizza il tuo archivio interno"
-            text="Anonimizza le tue sentenze e rendile disponibili in piattaforma. Gli altri avvocati che ne hanno bisogno possono acquistarle, e una quota va a te. Il lavoro già svolto diventa una risorsa economica."
-            points={['Anonimizzazione sentenze', 'Pubblicazione in piattaforma', 'Monetizzazione archivio', 'Accesso a contenuti di altri avvocati']}
-          >
-            <VisualBlock label="Banca dati Lexum">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-body text-xs text-nebbia/30">1 risultato — Diritto Civile › Contratti</span>
-                </div>
-                <div className="border border-white/8 p-4">
-                  <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Diritto Civile › Contratti › Inadempimento</p>
-                  <p className="font-body text-sm font-medium text-nebbia mb-1">Revoca patente — Omicidio stradale — Cass. Ord. n. 8058/2026</p>
-                  <p className="font-body text-xs text-nebbia/40 mb-2">Nino Avvocato · Corte di Cassazione · 2026</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {['revoca patente', 'omicidio stradale', 'art. 589-bis'].map(t => (
-                        <span key={t} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{t}</span>
-                      ))}
-                    </div>
-                    <span className="font-body text-xs text-oro font-medium">1.99€</span>
+          {/* 3.3 Ricerche organizzate */}
+          <div id="ricerche" className="scroll-mt-28">
+            <FeatureRow
+              icon={Bookmark}
+              title="Le tue ricerche, etichettate e collegate"
+              text="Salvi ogni ricerca legale che fai, la categorizzi con le tue etichette, la colleghi a una pratica o la confronti con altre. Lex AI trova le correlate, suggerisce articoli che non avevi considerato, ragiona insieme a te."
+              points={['Etichette personali', 'Confronto tra ricerche', 'Collegamento a pratica', 'Correlate suggerite da Lex AI']}
+            >
+              <VisualBlock label="Ricerche - Locazione e morosita">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-petrolio border border-oro/15">
+                    <Search size={11} className="text-oro/60 shrink-0" />
+                    <span className="font-body text-xs text-nebbia/70 flex-1">eccezione inadempimento locatore</span>
+                    <span className="font-body text-[10px] text-nebbia/30 shrink-0">14 risultati</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { l: 'Locazione', c: 'oro' },
+                      { l: 'Morosita Rossi', c: 'salvia' },
+                      { l: 'Da approfondire', c: 'oro' },
+                    ].map(({ l, c }) => (
+                      <span key={l} className={`font-body text-[10px] px-2 py-0.5 border ${c === 'salvia' ? 'bg-salvia/10 border-salvia/25 text-salvia/80' : 'bg-oro/10 border-oro/25 text-oro/80'}`}>
+                        # {l}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    {[
+                      { t: 'Art. 1578 c.c. - vizi della cosa locata', sub: 'Salvata 2 giorni fa', highlight: true },
+                      { t: 'Cass. Civ. III 4439/2024 - inadempimento locatore', sub: 'Salvata 5 giorni fa' },
+                      { t: 'Art. 1453 c.c. - risoluzione per inadempimento', sub: 'Salvata 1 settimana fa' },
+                    ].map(({ t, sub, highlight }) => (
+                      <div key={t} className={`flex items-start gap-2 p-2.5 ${highlight ? 'bg-salvia/5 border border-salvia/15' : 'bg-petrolio/50 border border-white/5'}`}>
+                        <Bookmark size={10} className={`mt-0.5 shrink-0 ${highlight ? 'text-salvia' : 'text-nebbia/40'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body text-xs text-nebbia/70 truncate">{t}</p>
+                          <p className="font-body text-[10px] text-nebbia/30">{sub}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2.5 bg-salvia/5 border border-salvia/15 mt-2">
+                    <Sparkles size={11} className="text-salvia shrink-0" />
+                    <p className="font-body text-[11px] text-nebbia/55 leading-snug">
+                      Lex suggerisce: <span className="text-salvia">art. 1587 c.c.</span> sull'obbligo di custodia del conduttore - correlato.
+                    </p>
                   </div>
                 </div>
-              </div>
-            </VisualBlock>
-          </FeatureRow>
+              </VisualBlock>
+            </FeatureRow>
+          </div>
+
+          <Divider />
+
+          {/* 3.4 Documentale + Archivio */}
+          <div id="archivio" className="scroll-mt-28">
+            <FadeIn className="text-center max-w-2xl mx-auto -mb-4">
+              <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia mb-3">
+                I documenti dello studio,{' '}
+                <span className="text-oro">sempre a portata.</span>
+              </h3>
+              <p className="font-body text-sm text-nebbia/45 leading-relaxed">
+                Carichi, ritrovi, condividi. La gestione e la ricerca dell'archivio in un flusso unico, senza mai uscire dal contesto della pratica.
+              </p>
+            </FadeIn>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-10">
+              <FadeIn delay={0.1}>
+                <div className="bg-slate border border-white/5 p-4">
+                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">Caricamento in corso</p>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-salvia/20 bg-salvia/10 shrink-0">
+                        <Check size={12} className="text-salvia" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Curriculum_Bianchi_Mario.pdf</p>
+                        <p className="font-body text-[10px] text-nebbia/30">Caricato in: Pratica 2026/047 - Mario Rossi</p>
+                      </div>
+                      <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia/80 uppercase tracking-widest shrink-0">Completato</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-oro/20 bg-oro/5 shrink-0">
+                        <FileText size={12} className="text-oro" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Contratto_locazione.pdf</p>
+                        <div className="h-1 bg-petrolio mt-1 overflow-hidden">
+                          <div className="h-full bg-oro/60" style={{ width: '64%' }} />
+                        </div>
+                      </div>
+                      <span className="font-body text-[10px] text-nebbia/40 shrink-0">64%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-oro/20 bg-oro/5 shrink-0">
+                        <FileText size={12} className="text-oro" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Contratto.pdf</p>
+                        <div className="h-1 bg-petrolio mt-1 overflow-hidden">
+                          <div className="h-full bg-oro/60" style={{ width: '90%' }} />
+                        </div>
+                      </div>
+                      <span className="font-body text-[10px] text-nebbia/40 shrink-0">90%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-salvia/20 bg-salvia/10 shrink-0">
+                        <Check size={12} className="text-salvia" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Perizia_tecnica_Rossi.pdf</p>
+                        <p className="font-body text-[10px] text-nebbia/30">Caricato in: Pratica 2026/047 - Mario Rossi</p>
+                      </div>
+                      <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia/80 uppercase tracking-widest shrink-0">Completato</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-oro/20 bg-oro/5 shrink-0">
+                        <FileText size={12} className="text-oro" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Diffida_ACME_srl.docx</p>
+                        <div className="h-1 bg-petrolio mt-1 overflow-hidden">
+                          <div className="h-full bg-oro/60" style={{ width: '28%' }} />
+                        </div>
+                      </div>
+                      <span className="font-body text-[10px] text-nebbia/40 shrink-0">28%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center border border-salvia/20 bg-salvia/10 shrink-0">
+                        <Check size={12} className="text-salvia" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-nebbia/70 truncate">Statuto_societa_srl.pdf</p>
+                        <p className="font-body text-[10px] text-nebbia/30">Caricato in: Pratica 2026/047 - Mario Rossi</p>
+                      </div>
+                      <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia/80 uppercase tracking-widest shrink-0">Completato</span>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+              <FadeIn delay={0.2}>
+                <div className="bg-slate border border-white/5 p-4">
+                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">Ricerca nell'archivio</p>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-petrolio border border-oro/15 mb-3">
+                    <Search size={11} className="text-oro/60 shrink-0" />
+                    <span className="font-body text-xs text-nebbia/70 flex-1">Rossi 2024</span>
+                    <button className="font-body text-[10px] px-2 py-1 bg-oro/10 border border-oro/30 text-oro uppercase tracking-widest shrink-0">
+                      Cerca
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="bg-petrolio border border-salvia/15 p-3">
+                      <div className="flex items-start gap-2.5">
+                        <FileText size={12} className="text-salvia mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">Perizia_tecnica_Rossi.pdf</p>
+                          <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">"...la perizia evidenzia vizi strutturali al locale, con responsabilita imputabile al locatore ai sensi dell'art. 1578 c.c..."</p>
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">Pratica 2026/047</span>
+                            <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">Locazione</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-petrolio border border-white/8 p-3">
+                      <div className="flex items-start gap-2.5">
+                        <FileText size={12} className="text-nebbia/40 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">Email_Rossi_2024-11-08.pdf</p>
+                          <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">"...allego come da accordi la perizia tecnica relativa all'immobile di via Roma 12..."</p>
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">Pratica 2026/047</span>
+                            <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">Corrispondenza</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
 
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          5. LEX AI
-      ══════════════════════════════════════════ */}
-      <section id="lexai" className="py-24 px-6 bg-slate/20 border-t border-white/5 relative overflow-hidden">
+      {/* 4. LEX AI */}
+      <section id="lexai" className="py-24 px-6 bg-slate/20 border-t border-white/5 relative overflow-hidden scroll-mt-28">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-salvia/[0.04] rounded-full blur-3xl" />
         </div>
@@ -472,12 +569,11 @@ export default function ComeFunziona() {
               <span className="text-salvia">per il lavoro legale.</span>
             </h2>
             <p className="font-body text-base text-nebbia/40 max-w-xl mx-auto">
-              Non è una chat generica aperta in una finestra a parte.
-              È uno strumento pensato per il contesto del lavoro legale italiano.
+              Non e una chat generica aperta in una finestra a parte. E uno strumento pensato per il contesto del lavoro legale italiano.
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
             <FadeIn delay={0.1}>
               <div className="space-y-3">
                 {[
@@ -486,7 +582,7 @@ export default function ComeFunziona() {
                   { icon: Brain, t: 'Conversazione continua', d: 'Approfondisci, cambia angolazione, chiedi follow-up. La conversazione si sviluppa nel tempo.' },
                   { icon: Sparkles, t: 'Strategia su misura', d: 'Legge tutte le ricerche della pratica e genera una strategia processuale personalizzata.' },
                   { icon: BookOpen, t: 'Sentenze correlate', d: 'Suggerisce quali sentenze della banca dati vale la pena consultare, basandosi sul caso.' },
-                  { icon: FileSignature, t: 'Atti già compilati', d: 'Legge i dati della pratica e produce diffide, comparse, istanze e altri atti pronti per l\'esportazione.' },
+                  { icon: FileSignature, t: 'Atti gia compilati', d: 'Legge i dati della pratica e produce diffide, comparse, istanze e altri atti pronti per l\'esportazione.' },
                 ].map(({ icon: I, t, d }, i) => (
                   <FadeIn key={i} delay={0.1 + i * 0.08}>
                     <div className="flex gap-4 p-4 bg-slate border border-white/5 hover:border-salvia/20 transition-colors group">
@@ -502,329 +598,190 @@ export default function ComeFunziona() {
                 ))}
                 <FadeIn delay={0.6}>
                   <p className="font-body text-xs text-nebbia/25 italic px-2 mt-2">
-                    "L'obiettivo non è sostituire l'avvocato. È fargli risparmiare tempo vero."
+                    "L'obiettivo non e sostituire l'avvocato. E fargli risparmiare tempo vero."
                   </p>
                 </FadeIn>
               </div>
             </FadeIn>
 
-            {/* Chat demo */}
-            <FadeIn delay={0.3}>
-              <div className="bg-slate border border-salvia/15 overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-petrolio/60">
-                  <Sparkles size={13} className="text-salvia" />
-                  <span className="font-body text-xs text-salvia">Lex — AI Assistant</span>
-                  <span className="ml-auto flex items-center gap-1.5 font-body text-xs text-nebbia/25">
-                    <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />847 crediti
-                  </span>
-                </div>
-                <div className="p-5 space-y-4">
-                  {/* Messaggio utente */}
-                  <div>
-                    <p className="font-body text-xs text-oro/50 mb-1.5">Tu</p>
-                    <div className="bg-petrolio border border-white/8 px-4 py-3">
-                      <p className="font-body text-sm text-nebbia/65 leading-relaxed">{lexTyped}<span className="animate-pulse">|</span></p>
-                    </div>
-                  </div>
-                  {/* Risposta Lex */}
-                  <div>
-                    <p className="font-body text-xs text-salvia/50 mb-1.5">Lex</p>
-                    <div className="bg-salvia/5 border border-salvia/15 px-4 py-4 space-y-3">
-                      <div>
-                        <p className="font-body text-xs font-semibold text-nebbia mb-1">Norme applicabili</p>
-                        <p className="font-body text-xs text-nebbia/55 leading-relaxed">Art. 55 L. 392/78 — sanatoria della morosità. Il conduttore può evitare lo sfratto pagando entro il termine fissato dal giudice.</p>
-                      </div>
-                      <div>
-                        <p className="font-body text-xs font-semibold text-nebbia mb-1">Strategia raccomandata</p>
-                        <p className="font-body text-xs text-nebbia/55 leading-relaxed">Richiedere la concessione del termine per il pagamento. Contestare il conteggio degli interessi applicando il tasso legale, non quello contrattuale se non espressamente pattuito...</p>
-                      </div>
-                      <div className="border-t border-white/5 pt-3">
-                        <p className="font-body text-xs text-oro/60 flex items-center gap-1.5">
-                          <BookOpen size={10} /> 1 sentenza correlata in banca dati
+            <FadeIn delay={0.2} className="h-full">
+              <div className="flex flex-col gap-[2.125rem] h-full">
+                {/* Chat 1 — Locazione */}
+                <VisualBlock label="Lex AI - Locazione" accent="salvia">
+                  <div className="space-y-3">
+                    <div className="flex justify-end">
+                      <div className="max-w-[80%] bg-petrolio/60 border border-white/5 p-3">
+                        <p className="font-body text-xs text-nebbia/60 leading-relaxed">
+                          Sto gestendo una controversia locativa. Il cliente contesta i conteggi della morosita. Cosa posso eccepire?
                         </p>
                       </div>
                     </div>
-                  </div>
-                  {/* Input */}
-                  <div className="bg-petrolio border border-salvia/20 px-4 py-2.5 flex items-center justify-between">
-                    <span className="font-body text-xs text-nebbia/20">Approfondisci o fai una nuova domanda...</span>
-                    <Sparkles size={12} className="text-salvia/40" />
-                  </div>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          6. GENERAZIONE DOCUMENTI
-      ══════════════════════════════════════════ */}
-      <section className="py-24 px-6 border-t border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <FadeIn delay={0.1}>
-              <div className="space-y-4">
-                <span className="inline-block font-body text-xs px-3 py-1 bg-salvia/10 border border-salvia/20 text-salvia">
-                  Novità
-                </span>
-                <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro">
-                  <FileSignature size={18} />
-                </div>
-                <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia">
-                  Atti già compilati,{' '}
-                  <span className="text-oro">pronti al deposito.</span>
-                </h3>
-                <p className="font-body text-sm text-nebbia/50 leading-relaxed">
-                  Diffide, comparse, istanze, atti di precetto, appelli. Scegli il template
-                  dalla pratica e Lex AI lo compila leggendo i dati di cliente, controparte
-                  e fascicolo. L'atto arriva in pochi minuti, formattato e modificabile.
-                </p>
-                <ul className="space-y-2 pt-2">
-                  {[
-                    'Sei categorie: stragiudiziale, introduttivo, difensivo, istruttorio, esecutivo, impugnazione',
-                    'Compilazione automatica con dati pratica e parti',
-                    'Modifica testuale prima dell\'esportazione',
-                    'Output in formato .docx pronto da firmare',
-                  ].map((p, i) => (
-                    <li key={i} className="flex items-center gap-2 font-body text-xs text-nebbia/40">
-                      <div className="w-1 h-1 rounded-full bg-oro shrink-0" />{p}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </FadeIn>
-
-            <FadeIn delay={0.2}>
-              <div className="bg-slate border border-oro/15 overflow-hidden">
-                {/* Header documento */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-petrolio/60">
-                  <div className="flex items-center gap-2">
-                    <FileSignature size={13} className="text-oro" />
-                    <span className="font-body text-xs text-nebbia/60">Diffida_Rossi_vs_Acme.docx</span>
-                  </div>
-                  <span className="font-body text-[10px] px-2 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia uppercase tracking-widest">
-                    Generato
-                  </span>
-                </div>
-
-                {/* Corpo simulato */}
-                <div className="p-6 space-y-4 bg-nebbia/[0.02]">
-                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">
-                    Stragiudiziale · Diffida ad adempiere
-                  </p>
-
-                  <div className="text-center">
-                    <p className="font-display text-sm text-nebbia/80 mb-1">Spett.le ACME S.r.l.</p>
-                    <p className="font-body text-xs text-nebbia/40">
-                      Via Roma 12 — 20121 Milano (MI)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-justify">
-                    <p className="font-body text-xs text-nebbia/55 leading-relaxed">
-                      <span className="text-oro/80">Il sottoscritto Avv. Mario Bianchi</span>,
-                      con studio in Milano, in nome e per conto del proprio assistito{' '}
-                      <span className="text-oro/80">Sig. Mario Rossi</span>, premesso che…
-                    </p>
-                    <p className="font-body text-xs text-nebbia/45 leading-relaxed">
-                      …con la presente <span className="font-medium text-nebbia/70">DIFFIDA</span>{' '}
-                      la S.V. ad adempiere entro e non oltre 15 giorni…
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <div className="flex-1 h-px bg-white/5" />
-                    <span className="font-body text-[10px] text-nebbia/25 uppercase tracking-widest">
-                      4 sezioni · modificabili
-                    </span>
-                    <div className="flex-1 h-px bg-white/5" />
-                  </div>
-                </div>
-
-                {/* Footer azioni */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-white/5 bg-petrolio/40">
-                  <span className="flex items-center gap-1.5 font-body text-[10px] text-salvia/60">
-                    <Sparkles size={10} /> Compilato con Lex AI dai dati pratica
-                  </span>
-                  <span className="font-body text-[10px] text-oro/60">Esporta .docx →</span>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          7. COME FUNZIONA
-      ══════════════════════════════════════════ */}
-      <section id="howto" className="py-24 px-6 border-t border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <SectionLabel>Workflow</SectionLabel>
-            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia">Come lavora uno studio su Lexum</h2>
-          </FadeIn>
-
-          <div className="relative">
-            {/* Linea connettore */}
-            <div className="hidden lg:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-oro/20 to-transparent" />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {[
-                { n: '01', t: 'Gestisci', d: 'Pratica, cliente, attività, udienze e scadenze in un solo ambiente.' },
-                { n: '02', t: 'Organizza', d: 'Documenti caricati, ordinati e collegati ognuno al proprio caso.' },
-                { n: '03', t: 'Coinvolgi', d: 'Il cliente accede all\'area riservata e condivide materiali.' },
-                { n: '04', t: 'Cerca', d: 'Banca dati e archivio digitale per trovare ciò che serve.' },
-                { n: '05', t: 'Approfondisci', d: 'Utilizza Lex AI per analisi normativa e strategie su misura.' },
-              ].map((s, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
-                  <div className="bg-slate border border-white/5 p-5 hover:border-oro/20 transition-all group text-center relative">
-                    <div className="w-12 h-12 flex items-center justify-center border border-oro/20 text-oro font-body text-xs mx-auto mb-4 group-hover:bg-oro/10 transition-colors">
-                      {s.n}
-                    </div>
-                    <p className="font-body text-sm font-medium text-nebbia mb-2">{s.t}</p>
-                    <p className="font-body text-xs text-nebbia/35 leading-relaxed">{s.d}</p>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-
-          {/* Esempio concreto */}
-          <FadeIn delay={0.3} className="mt-12">
-            <div className="bg-slate border border-oro/15 p-6 md:p-8">
-              <p className="font-body text-xs text-oro/60 uppercase tracking-widest mb-4">Esempio concreto</p>
-              <p className="font-body text-sm text-nebbia/60 leading-relaxed mb-6">
-                Un avvocato apre una pratica, controlla i documenti caricati, verifica appuntamenti e udienze già fissate,
-                consulta il materiale condiviso dal cliente e attiva Lex AI per capire quali riferimenti approfondire.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-petrolio border border-white/5 p-4">
-                  <p className="font-body text-xs text-oro/50 mb-2">Avvocato</p>
-                  <p className="font-body text-sm text-nebbia/60 italic">"Sto gestendo una controversia locativa. Quali sentenze presenti in piattaforma potrebbero essermi più utili?"</p>
-                </div>
-                <div className="bg-salvia/5 border border-salvia/15 p-4">
-                  <p className="font-body text-xs text-salvia/60 mb-2">Lex AI</p>
-                  <p className="font-body text-sm text-nebbia/60 italic">"Ti consiglio di partire da queste decisioni, perché trattano questioni simili per contesto, eccezioni sollevate e impostazione del caso."</p>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          8. PERCHÉ LEXUM + FIDUCIA
-      ══════════════════════════════════════════ */}
-      <section className="py-24 px-6 bg-slate/20 border-t border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-
-            <FadeIn>
-              <SectionLabel>Perché sceglierci</SectionLabel>
-              <h2 className="font-display text-3xl font-light text-nebbia mb-6">
-                Lexum non aggiunge un altro strumento al lavoro legale.{' '}
-                <span className="text-oro">Riduce quelli che servono.</span>
-              </h2>
-              <p className="font-body text-sm text-nebbia/40 leading-relaxed mb-8">
-                Per avvocati, studi legali e realtà professionali che vogliono centralizzare il lavoro,
-                velocizzare la ricerca e gestire meglio il rapporto con il cliente.
-              </p>
-              <div className="space-y-2">
-                {[
-                  'Unifica strumenti che oggi sono separati',
-                  'Riduce il tempo perso nella gestione operativa',
-                  'Migliora il recupero delle informazioni',
-                  'Semplifica il rapporto con il cliente',
-                  'Valorizza l\'archivio dello studio',
-                  'Aiuta a cercare meglio grazie all\'AI',
-                  'Rende il lavoro più continuo, ordinato e veloce',
-                ].map((item, i) => (
-                  <FadeIn key={i} delay={i * 0.06}>
-                    <div className="flex items-center gap-3 py-2 border-b border-white/5">
-                      <Check size={13} className="text-salvia shrink-0" />
-                      <p className="font-body text-sm text-nebbia/55">{item}</p>
-                    </div>
-                  </FadeIn>
-                ))}
-              </div>
-            </FadeIn>
-
-            <FadeIn delay={0.2}>
-              <div className="space-y-5">
-                {/* Card fiducia */}
-                <div className="bg-slate border border-white/5 p-6">
-                  <div className="w-10 h-10 flex items-center justify-center border border-white/10 text-nebbia/40 mb-4">
-                    <Shield size={17} />
-                  </div>
-                  <h3 className="font-display text-xl font-light text-nebbia mb-3">Pensato per precisione e riservatezza</h3>
-                  <p className="font-body text-sm text-nebbia/45 leading-relaxed">
-                    Lexum è progettato per aiutare lo studio a lavorare in modo più strutturato, con accessi dedicati,
-                    informazioni ordinate e una gestione più chiara dei materiali condivisi.
-                  </p>
-                </div>
-
-                {/* Card target */}
-                <div className="bg-slate border border-oro/15 p-6">
-                  <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro mb-4">
-                    <Users size={17} />
-                  </div>
-                  <h3 className="font-display text-xl font-light text-nebbia mb-3">Per chi è pensato Lexum</h3>
-                  <div className="space-y-2">
-                    {['Avvocati singoli', 'Studi legali strutturati', 'Realtà professionali in crescita'].map(t => (
-                      <div key={t} className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-oro shrink-0" />
-                        <p className="font-body text-sm text-nebbia/55">{t}</p>
+                    <div className="flex">
+                      <div className="max-w-[90%] bg-salvia/5 border border-salvia/15 p-3 space-y-2">
+                        <p className="font-body text-xs text-salvia/80 font-medium flex items-center gap-1">
+                          <Sparkles size={10} /> Lex AI
+                        </p>
+                        <p className="font-body text-xs text-nebbia/55 leading-relaxed">
+                          Sulla base dell'art. 5 L. 392/1978 e della giurisprudenza recente, puoi sollevare eccezione di parziale inadempimento del locatore se sussistono vizi della cosa locata. Ti consiglio di verificare anche...
+                        </p>
+                        <div className="flex gap-1 pt-1">
+                          <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Cass. 12345/2024</span>
+                          <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Art. 5 L. 392/78</span>
+                        </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
+                </VisualBlock>
 
-                {/* Quote */}
-                <div className="border-l-2 border-oro/30 pl-4">
-                  <p className="font-body text-sm text-nebbia/35 italic leading-relaxed">
-                    "Il cuore della piattaforma è uno solo: fare risparmiare tempo, centralizzare il lavoro
-                    e rendere semplice anche ciò che oggi sembra scomodo."
-                  </p>
-                </div>
+                {/* Chat 2 — Lavoro */}
+                <VisualBlock label="Lex AI - Lavoro" accent="salvia">
+                  <div className="space-y-3">
+                    <div className="flex justify-end">
+                      <div className="max-w-[80%] bg-petrolio/60 border border-white/5 p-3">
+                        <p className="font-body text-xs text-nebbia/60 leading-relaxed">
+                          In base alle ricerhe già fatte ed all'esito dell'utlima udienza, quali altri articoli normativi ci servirebbero?
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex">
+                      <div className="max-w-[90%] bg-salvia/5 border border-salvia/15 p-3 space-y-2">
+                        <p className="font-body text-xs text-salvia/80 font-medium flex items-center gap-1">
+                          <Sparkles size={10} /> Lex AI
+                        </p>
+                        <p className="font-body text-xs text-nebbia/55 leading-relaxed">
+                          L'esito ha indebolito la tesi sulla morosita. Ti suggerisco di spostare il focus sulla risoluzione per inadempimento del locatore: art. 1453 c.c. per la risoluzione e art. 1578 c.c. sui vizi della cosa locata...
+                        </p>
+                        <div className="flex gap-1 pt-1">
+                          <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Art. 1453 c.c.</span>
+                          <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Art. 1578 c.c</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </VisualBlock>
               </div>
             </FadeIn>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          9. CTA FINALE
-      ══════════════════════════════════════════ */}
-      <section className="py-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-oro/25 to-transparent" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-oro/10 to-transparent" />
-          <div className="absolute inset-0 opacity-[0.015]" style={{
-            backgroundImage: 'radial-gradient(circle at 50% 50%, #C9A45C, transparent 65%)'
-          }} />
-        </div>
+      {/* 5. BANCA DATI CONDIVISA */}
+      <section id="bancadati" className="py-24 px-6 scroll-mt-28">
+        <div className="max-w-5xl mx-auto">
 
-        <div className="max-w-2xl mx-auto text-center relative">
-          <FadeIn>
-            <div className="w-12 h-12 flex items-center justify-center border border-oro/30 bg-oro/10 mx-auto mb-8">
-              <Sparkles size={20} className="text-oro" />
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-4">
-              Provalo{' '}<br />
-              <span className="text-oro">Gratis una settimana.</span>
+          <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
+            <SectionLabel>Banca dati condivisa</SectionLabel>
+            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
+              Il tuo archivio diventa{' '}
+              <span className="text-oro">una risorsa.</span>
             </h2>
-            <div className="w-12 h-px bg-gradient-to-r from-transparent via-oro/50 to-transparent mx-auto my-6" />
-            <p className="font-body text-sm text-nebbia/40 leading-relaxed mb-10 max-w-lg mx-auto">
-              Porta in un unico ambiente gestione, documenti, clienti, archivio, banca dati e assistenza AI.
-              Inizia a lavorare con più ordine, più velocità e meno attrito.
+            <p className="font-body text-base text-nebbia/40 leading-relaxed">
+              Le sentenze che hai gia lavorato, anonimizzate e condivise, fanno crescere il sapere collettivo della professione. E ti restituiscono valore economico.
+            </p>
+          </FadeIn>
+
+          <FeatureRow
+            icon={BookOpen}
+            title="Valorizza il tuo archivio interno"
+            text="Anonimizza le tue sentenze e rendile disponibili in piattaforma. Gli altri avvocati che ne hanno bisogno possono acquistarle, e una quota torna a te. Il lavoro gia svolto diventa una risorsa economica."
+            points={['Anonimizzazione sentenze', 'Pubblicazione in piattaforma', 'Monetizzazione archivio', 'Accesso a contenuti di altri avvocati']}
+          >
+            <VisualBlock label="Banca dati Lexum">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-body text-xs text-nebbia/30">1 risultato - Diritto Civile / Contratti</span>
+                </div>
+                <div className="border border-white/8 p-4">
+                  <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Diritto Civile / Contratti / Inadempimento</p>
+                  <p className="font-body text-sm font-medium text-nebbia mb-1">Revoca patente - Omicidio stradale - Cass. Ord. n. 8058/2026</p>
+                  <p className="font-body text-xs text-nebbia/40 mb-2">Nino Avvocato - Corte di Cassazione - 2026</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1">
+                      {['revoca patente', 'omicidio stradale', 'art. 589-bis'].map(t => (
+                        <span key={t} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{t}</span>
+                      ))}
+                    </div>
+                    <span className="font-body text-xs text-oro font-medium">EUR 5</span>
+                  </div>
+                </div>
+              </div>
+            </VisualBlock>
+          </FeatureRow>
+          <div className="pt-12"></div>
+          <Divider />
+
+        </div>
+        {/* 6. CLIENTE */}
+        <section id="cliente" className="pt-12 pb-4 px-6 scroll-mt-12">
+          <div className="max-w-5xl mx-auto">
+
+            <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
+              <SectionLabel color="salvia">Area cliente</SectionLabel>
+              <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
+                Anche il cliente{' '}
+                <span className="text-salvia">ha il suo spazio.</span>
+              </h2>
+              <p className="font-body text-base text-nebbia/40 leading-relaxed">
+                Documenti, appuntamenti, udienze e comunicazioni in un'area riservata. Lo studio lavora, il cliente resta informato.
+              </p>
+            </FadeIn>
+
+            <FeatureRow
+              icon={Users}
+              title="Un accesso dedicato anche per il cliente"
+              text="Il cliente accede alla propria area riservata e trova documenti, appuntamenti, udienze e materiali condivisi dallo studio. Puo caricare file direttamente in piattaforma. Meno email disperse, meno file persi."
+              points={['Accesso riservato', 'Documenti condivisi', 'Comunicazioni ordinate']}
+              reverse
+            >
+              <VisualBlock label="Area cliente - Paolino Rossi" accent="salvia">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-salvia/5 border border-salvia/10">
+                    <div className="flex items-center gap-2">
+                      <FileText size={13} className="text-salvia" />
+                      <span className="font-body text-xs text-nebbia/60">Perizia tecnica.pdf</span>
+                    </div>
+                    <span className="font-body text-xs text-nebbia/25">Condiviso</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-petrolio/50 border border-white/5">
+                    <div className="flex items-center gap-2">
+                      <FileText size={13} className="text-nebbia/30" />
+                      <span className="font-body text-xs text-nebbia/60">Contratto_firmato.pdf</span>
+                    </div>
+                    <span className="font-body text-xs text-salvia/60">Caricato da te</span>
+                  </div>
+                  <div className="p-3 bg-oro/5 border border-oro/15 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-oro animate-pulse" />
+                    <span className="font-body text-xs text-nebbia/50">Prossima udienza: 25/04/2026</span>
+                  </div>
+                </div>
+              </VisualBlock>
+            </FeatureRow>
+
+          </div>
+        </section>
+      </section>
+
+      {/* 6. CTA finale */}
+      <section className="py-24 px-6 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-oro/[0.05] rounded-full blur-3xl" />
+        </div>
+        <div className="max-w-3xl mx-auto text-center relative">
+          <FadeIn>
+            <SectionLabel>Inizia ora</SectionLabel>
+            <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-6">
+              La banca dati è gratuitamente consultabile.{' '}
+              <span className="text-oro">Fai la tua prima ricerca.</span>
+            </h2>
+            <p className="font-body text-base text-nebbia/45 leading-relaxed mb-10 max-w-xl mx-auto">
+              Registrati e inizia subito. Quattro milioni di norme consultabili. Lex AI con crediti di benvenuto. Gestionale e portale clienti pronti.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-xl shadow-oro/20">
-                Attiva Lexum Gratis per una settimana <ArrowRight size={15} />
+                Consulta la tua prima legge <ArrowRight size={15} />
               </Link>
               <Link to="/login" className="font-body text-sm text-nebbia/35 hover:text-nebbia/60 transition-colors">
-                Hai già un account? Accedi →
+                Hai gia un account? Accedi
               </Link>
             </div>
           </FadeIn>

@@ -27,7 +27,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { to: '/', label: 'Home' },
-                { to: '/per-avvocati', label: 'Per Avvocati' },
+                { to: '/per-avvocati', label: 'Per Studi Legali' },
                 { to: '/#lexai', label: 'Lex AI' },
                 { to: '/contatti', label: 'Contatti' },
               ].map(({ to, label }) => (
