@@ -2071,17 +2071,140 @@ function TabLeggiDecreti() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAB SENTENZE — invariato (non aveva bottoni di salvataggio)
+// TAB SENTENZE — sub-tab "Per categoria" + "Per fonte"
+// 
+// Sostituisci INTERAMENTE la funzione TabSentenze esistente in
+// src/pages/avvocato/BancaDati.jsx con questo blocco.
+// 
+// Le costanti FONTI_MACRO e TAR_LABELS vanno fuori dalla funzione,
+// vicino agli altri moduli costanti del file (es. CONFIG_IT/CONFIG_UE).
 // ═══════════════════════════════════════════════════════════════
+
+
+// ─── FUORI DALLA FUNZIONE — costanti modulo ────────────────────
+const FONTI_MACRO = [
+    {
+        key: 'cassazione',
+        label: 'Corte di Cassazione',
+        descrizione: 'Sezioni civili, penali, costituzionali e Massimario',
+        sotto: [
+            { v: 'cassazione_civile', l: 'Sezione Civile' },
+            { v: 'cassazione_penale', l: 'Sezione Penale' },
+            { v: 'cassazione_costituzionale', l: 'Sezione Costituzionale' },
+            { v: 'cassazione_relazioni', l: 'Massimario / Relazioni' },
+        ],
+    },
+    {
+        key: 'corte_costituzionale',
+        label: 'Corte Costituzionale',
+        descrizione: 'Sentenze e ordinanze costituzionali',
+        sotto: [
+            { v: 'corte_costituzionale', l: 'Corte Costituzionale' },
+        ],
+    },
+    {
+        key: 'consiglio_stato',
+        label: 'Consiglio di Stato',
+        descrizione: 'Sezioni giurisdizionali e consultive',
+        sotto: [
+            { v: 'consiglio_stato', l: 'Consiglio di Stato' },
+            { v: 'cds', l: 'CdS — pronunce' },
+            { v: 'cds_pareri', l: 'CdS — pareri' },
+        ],
+    },
+    {
+        key: 'cgars',
+        label: 'CGARS — Sicilia',
+        descrizione: 'Consiglio di Giustizia Amministrativa Regione Siciliana',
+        sotto: [
+            { v: 'cgars', l: 'CGARS — pronunce' },
+            { v: 'cgars_pareri', l: 'CGARS — pareri' },
+            { v: 'cgagiur', l: 'Sezione giurisdizionale' },
+            { v: 'cgacons', l: 'Sezione consultiva' },
+        ],
+    },
+    {
+        key: 'corte_conti',
+        label: 'Corte dei Conti',
+        descrizione: 'Sezioni giurisdizionali e consultive',
+        sotto: [
+            { v: 'corte_conti', l: 'Corte dei Conti' },
+            { v: 'consul', l: 'Sezione consultiva' },
+        ],
+    },
+    {
+        key: 'tar',
+        label: 'TAR — Tribunali Amministrativi Regionali',
+        descrizione: 'Tutti i TAR provinciali italiani',
+        richiedeSottoSelezione: true,
+        sotto: [
+            { v: 'tar_an', l: 'Ancona' },
+            { v: 'tar_ao', l: 'Aosta' },
+            { v: 'tar_aq', l: "L'Aquila" },
+            { v: 'tar_ba', l: 'Bari' },
+            { v: 'tar_bo', l: 'Bologna' },
+            { v: 'tar_bs', l: 'Brescia' },
+            { v: 'tar_bz', l: 'Bolzano' },
+            { v: 'tar_ca', l: 'Cagliari' },
+            { v: 'tar_cb', l: 'Campobasso' },
+            { v: 'tar_ct', l: 'Catania' },
+            { v: 'tar_cz', l: 'Catanzaro' },
+            { v: 'tar_fi', l: 'Firenze' },
+            { v: 'tar_ge', l: 'Genova' },
+            { v: 'tar_le', l: 'Lecce' },
+            { v: 'tar_lt', l: 'Latina' },
+            { v: 'tar_mi', l: 'Milano' },
+            { v: 'tar_na', l: 'Napoli' },
+            { v: 'tar_pa', l: 'Palermo' },
+            { v: 'tar_pe', l: 'Pescara' },
+            { v: 'tar_pg', l: 'Perugia' },
+            { v: 'tar_pr', l: 'Parma' },
+            { v: 'tar_pz', l: 'Potenza' },
+            { v: 'tar_rc', l: 'Reggio Calabria' },
+            { v: 'tar_rm', l: 'Roma' },
+            { v: 'tar_sa', l: 'Salerno' },
+            { v: 'tar_tn', l: 'Trento' },
+            { v: 'tar_to', l: 'Torino' },
+            { v: 'tar_ts', l: 'Trieste' },
+            { v: 'tar_ve', l: 'Venezia' },
+        ],
+    },
+]
+
+// Mappa rapida sotto_fonte -> label per rendering tabellare
+const SOTTO_FONTE_LABEL = (() => {
+    const m = {}
+    for (const macro of FONTI_MACRO) {
+        for (const s of macro.sotto) m[s.v] = s.l
+    }
+    return m
+})()
+
+
+// ─── FUNZIONE TabSentenze ───────────────────────────────────────
 function TabSentenze() {
     const navigate = useNavigate()
 
+    // Sub-tab principale
+    const [subTab, setSubTab] = useState('categoria')   // 'categoria' | 'fonte'
+
+    // ── PER CATEGORIA (esistente) ──
     const [categorieRaggruppate, setCategorieRaggruppate] = useState([])
     const [conteggiPerCategoria, setConteggiPerCategoria] = useState({})
+
+    // ── PER FONTE (nuovo) ──
+    // Mappa { macro_fonte: totale } e { sotto_fonte: totale }
+    const [conteggiMacroFonte, setConteggiMacroFonte] = useState({})
+    const [conteggiSottoFonte, setConteggiSottoFonte] = useState({})
+    const [macroFonteSelezionata, setMacroFonteSelezionata] = useState(null)
+    const [sottoFonteSelezionataObj, setSottoFonteSelezionataObj] = useState(null)
+    const [filtroSottoFonte, setFiltroSottoFonte] = useState('')
+
+    // ── COMUNI ──
     const [organiDisponibili, setOrganiDisponibili] = useState([])
     const [loading, setLoading] = useState(true)
 
-    const [vista, setVista] = useState('catalogo')
+    const [vista, setVista] = useState('catalogo')   // 'catalogo' | 'categoria' | 'catalogo_fonte' | 'fonte'
     const [categoriaSelezionata, setCategoriaSelezionata] = useState(null)
 
     const [ricerca, setRicerca] = useState('')
@@ -2100,10 +2223,14 @@ function TabSentenze() {
 
     const PER_PAGINA_SENTENZE = 50
 
+    // ═══════════════════════════════════════════════════════════
+    // CARICAMENTO INIZIALE — categorie + conteggi (entrambe le MV)
+    // ═══════════════════════════════════════════════════════════
     useEffect(() => {
         async function caricaDatiBase() {
             setLoading(true)
 
+            // 1. Categorie raggruppate per macro_label
             const { data: cat } = await supabase
                 .from('codici_lex')
                 .select('codice, label, macro_area, macro_label, ordine')
@@ -2117,23 +2244,31 @@ function TabSentenze() {
             }
             setCategorieRaggruppate(Object.entries(gruppi).map(([macro, items]) => ({ macro, items })))
 
-            const conteggi = {}
-            const [{ data: giurCats }, { data: sentCats }] = await Promise.all([
-                supabase.from('giurisprudenza').select('categorie_lex'),
-                supabase.from('sentenze').select('categorie_lex').eq('stato', 'pubblica'),
-            ])
-            for (const r of giurCats ?? []) {
-                for (const cat of r.categorie_lex ?? []) {
-                    conteggi[cat] = (conteggi[cat] ?? 0) + 1
-                }
+            // 2. Conteggi per categoria — MV precalcolata
+            const { data: conteggiCatData } = await supabase
+                .from('conteggi_categorie_sentenze')
+                .select('codice, totale')
+            const conteggiCat = {}
+            for (const r of conteggiCatData ?? []) {
+                conteggiCat[r.codice] = Number(r.totale)
             }
-            for (const r of sentCats ?? []) {
-                for (const cat of r.categorie_lex ?? []) {
-                    conteggi[cat] = (conteggi[cat] ?? 0) + 1
-                }
-            }
-            setConteggiPerCategoria(conteggi)
+            setConteggiPerCategoria(conteggiCat)
 
+            // 3. Conteggi per fonte — MV precalcolata
+            const { data: conteggiFontiData } = await supabase
+                .from('conteggi_fonti_sentenze')
+                .select('macro_fonte, sotto_fonte, totale')
+            const macroMap = {}
+            const sottoMap = {}
+            for (const r of conteggiFontiData ?? []) {
+                const t = Number(r.totale)
+                macroMap[r.macro_fonte] = (macroMap[r.macro_fonte] ?? 0) + t
+                sottoMap[r.sotto_fonte] = t
+            }
+            setConteggiMacroFonte(macroMap)
+            setConteggiSottoFonte(sottoMap)
+
+            // 4. Prezzo accesso singolo
             const { data: prod } = await supabase
                 .from('prodotti').select('prezzo').eq('tipo', 'accesso_singolo').eq('attivo', true).maybeSingle()
             if (prod) setPrezzoAccesso(prod.prezzo)
@@ -2143,11 +2278,21 @@ function TabSentenze() {
         caricaDatiBase()
     }, [])
 
+    // ═══════════════════════════════════════════════════════════
+    // RESET PAGINA al cambio filtri
+    // ═══════════════════════════════════════════════════════════
     useEffect(() => {
-        // Reset pagina quando cambiano filtri/categoria
         setPaginaSentenze(0)
-    }, [categoriaSelezionata?.codice, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte])
+    }, [
+        categoriaSelezionata?.codice,
+        macroFonteSelezionata?.key,
+        filtroSottoFonte,
+        ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte,
+    ])
 
+    // ═══════════════════════════════════════════════════════════
+    // CARICA SENTENZE — vista per categoria (esistente)
+    // ═══════════════════════════════════════════════════════════
     useEffect(() => {
         if (vista !== 'categoria' || !categoriaSelezionata) return
         caricaSentenzeCategoria()
@@ -2161,7 +2306,7 @@ function TabSentenze() {
         const offsetEnd = offsetStart + PER_PAGINA - 1
 
         try {
-            // Conta righe totali in entrambe le tabelle (con filtri applicati)
+            // ── COUNT ──
             const countFetchers = []
             if (filtroFonte !== 'pagamento') {
                 let qc = supabase
@@ -2192,14 +2337,13 @@ function TabSentenze() {
                 countFetchers.push(qc)
             } else countFetchers.push(null)
 
-            const [countGiur, countSent] = await Promise.all(countFetchers.map(f => f ?? Promise.resolve({ count: 0 })))
-            const totGiur = countGiur?.count ?? 0
-            const totSent = countSent?.count ?? 0
-            const totale = totGiur + totSent
+            const [countGiur, countSent] = await Promise.all(
+                countFetchers.map(f => f ?? Promise.resolve({ count: 0 }))
+            )
+            const totale = (countGiur?.count ?? 0) + (countSent?.count ?? 0)
             setTotaleSentenze(totale)
 
-            // Recupera entrambe le fonti con range completo (offsetStart..offsetEnd di ciascuna)
-            // poi mergiamo, ordiniamo per data e prendiamo le prime PER_PAGINA.
+            // ── DATA ──
             const fetchers = []
             if (filtroFonte !== 'pagamento') {
                 let q = supabase
@@ -2250,8 +2394,6 @@ function TabSentenze() {
                 const dB = b.data_pubblicazione ?? b.data_deposito ?? (b.anno ? `${b.anno}-01-01` : '')
                 return dB.localeCompare(dA)
             })
-
-            // Tronca a PER_PAGINA per garantire dimensione costante della pagina
             merged = merged.slice(0, PER_PAGINA)
 
             setRisultati(merged)
@@ -2267,6 +2409,69 @@ function TabSentenze() {
         }
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // CARICA SENTENZE — vista per fonte (NUOVA)
+    // ═══════════════════════════════════════════════════════════
+    useEffect(() => {
+        if (vista !== 'fonte' || !macroFonteSelezionata) return
+        caricaSentenzePerFonte()
+    }, [vista, macroFonteSelezionata, filtroSottoFonte, ricercaAttiva, filtroAnno, filtroTipo, paginaSentenze])
+
+    async function caricaSentenzePerFonte() {
+        setLoadingRisultati(true)
+
+        const PER_PAGINA = PER_PAGINA_SENTENZE
+        const offsetStart = paginaSentenze * PER_PAGINA
+        const offsetEnd = offsetStart + PER_PAGINA - 1
+
+        // Quali fonti raw filtrare?
+        const fontiInScope = filtroSottoFonte
+            ? [filtroSottoFonte]
+            : macroFonteSelezionata.sotto.map(s => s.v)
+
+        try {
+            // ── COUNT ──
+            let qc = supabase
+                .from('giurisprudenza')
+                .select('id', { count: 'exact', head: true })
+                .in('fonte', fontiInScope)
+                .eq('vigente', true)
+
+            if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
+            if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
+            if (ricercaAttiva.trim()) {
+                qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+            }
+
+            const { count } = await qc
+            setTotaleSentenze(count ?? 0)
+
+            // ── DATA ──
+            let q = supabase
+                .from('giurisprudenza')
+                .select('id, fonte, organo, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto')
+                .in('fonte', fontiInScope)
+                .eq('vigente', true)
+
+            if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
+            if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
+            if (ricercaAttiva.trim()) {
+                q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+            }
+
+            const { data } = await q
+                .order('data_pubblicazione', { ascending: false, nullsFirst: false })
+                .range(offsetStart, offsetEnd)
+
+            setRisultati((data ?? []).map(r => ({ ...r, sorgente: 'giurisprudenza' })))
+        } finally {
+            setLoadingRisultati(false)
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // NAVIGAZIONE
+    // ═══════════════════════════════════════════════════════════
     function apriCategoria(cat) {
         setCategoriaSelezionata(cat)
         setVista('categoria')
@@ -2274,9 +2479,55 @@ function TabSentenze() {
         setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
     }
 
+    function apriMacroFonte(macro) {
+        setMacroFonteSelezionata(macro)
+        setSottoFonteSelezionataObj(null)
+        setFiltroSottoFonte('')
+        setRicerca(''); setRicercaAttiva('')
+        setFiltroAnno(''); setFiltroTipo('')
+
+        if (macro.richiedeSottoSelezione) {
+            setVista('sotto_fonte_grid')
+        } else {
+            setVista('fonte')
+        }
+    }
+
+    function apriSottoFonte(sotto) {
+        setSottoFonteSelezionataObj(sotto)
+        setFiltroSottoFonte(sotto.v)
+        setVista('fonte')
+        setRicerca(''); setRicercaAttiva('')
+        setFiltroAnno(''); setFiltroTipo('')
+    }
+
     function tornaAlCatalogo() {
-        setVista('catalogo')
+        if (vista === 'categoria') {
+            setVista('catalogo')
+            setCategoriaSelezionata(null)
+        } else if (vista === 'fonte') {
+            if (macroFonteSelezionata?.richiedeSottoSelezione) {
+                setVista('sotto_fonte_grid')
+                setSottoFonteSelezionataObj(null)
+                setFiltroSottoFonte('')
+            } else {
+                setVista('catalogo_fonte')
+                setMacroFonteSelezionata(null)
+                setFiltroSottoFonte('')
+            }
+        } else if (vista === 'sotto_fonte_grid') {
+            setVista('catalogo_fonte')
+            setMacroFonteSelezionata(null)
+        }
+        setRisultati([])
+    }
+
+    function cambiaSubTab(t) {
+        setSubTab(t)
+        setVista(t === 'fonte' ? 'catalogo_fonte' : 'catalogo')
         setCategoriaSelezionata(null)
+        setMacroFonteSelezionata(null)
+        setFiltroSottoFonte('')
         setRisultati([])
     }
 
@@ -2284,7 +2535,7 @@ function TabSentenze() {
 
     function titoloSentenza(s) {
         const parti = [s.organo ?? s.organo_macro, s.sezione, s.numero && `n. ${s.numero}`, s.anno].filter(Boolean)
-        return parti.join(' · ') || 'Sentenza'
+        return parti.join(' \u00b7 ') || 'Sentenza'
     }
 
     function labelTipoProvvedimento(t) {
@@ -2309,206 +2560,398 @@ function TabSentenze() {
         { v: 'relazione', l: 'Relazione' },
     ]
 
-    if (vista === 'catalogo') {
-        if (loading) return (
-            <div className="flex items-center justify-center py-20">
-                <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
-            </div>
-        )
-
-        return (
-            <div className="space-y-6">
-                {categorieRaggruppate.map(gruppo => {
-                    const categorieConRisultati = gruppo.items.filter(c => (conteggiPerCategoria[c.codice] ?? 0) > 0)
-                    if (categorieConRisultati.length === 0) return null
-
-                    return (
-                        <div key={gruppo.macro} className="space-y-3">
-                            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                                <Scale size={13} className="text-oro/60" />
-                                <h3 className="font-display text-base font-medium text-nebbia">{gruppo.macro}</h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {categorieConRisultati.map(c => (
-                                    <button key={c.codice} onClick={() => apriCategoria(c)}
-                                        className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{c.label}</p>
-                                            </div>
-                                            <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-        )
-    }
+    // ═══════════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════════
+    if (loading) return (
+        <div className="flex items-center justify-center py-20">
+            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+        </div>
+    )
 
     const annoCorrente = new Date().getFullYear()
     const anniOpzioni = Array.from({ length: 20 }, (_, i) => annoCorrente - i)
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-                <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
-                    <ChevronLeft size={13} /> Tutte le categorie
-                </button>
-                <p className="font-display text-xl text-nebbia">{categoriaSelezionata.label}</p>
-            </div>
 
-            <div className="bg-slate border border-white/5 p-4 space-y-3">
-                <div className="flex gap-2">
-                    <div className="relative flex-1">
-                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-                        <input
-                            placeholder="Cerca in oggetto e principio di diritto..."
-                            value={ricerca}
-                            onChange={e => setRicerca(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') avviaRicerca() }}
-                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
-                        />
-                    </div>
-                    <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
-                        <Search size={13} /> Cerca
+            {/* ── SUB-TAB SWITCHER ────────────────────────────────────── */}
+            {(vista === 'catalogo' || vista === 'catalogo_fonte') && (
+                <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                    <button onClick={() => cambiaSubTab('categoria')}
+                        className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'categoria' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                        <Scale size={12} /> Per categoria
+                    </button>
+                    <button onClick={() => cambiaSubTab('fonte')}
+                        className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'fonte' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                        <Landmark size={12} /> Per fonte
                     </button>
                 </div>
+            )}
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1.5 text-nebbia/30">
-                        <Filter size={12} />
-                        <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
-                    </div>
+            {/* ── CATALOGO PER CATEGORIA ──────────────────────────────── */}
+            {vista === 'catalogo' && (
+                <div className="space-y-6">
+                    {categorieRaggruppate.map(gruppo => {
+                        const categorieConRisultati = gruppo.items.filter(c => (conteggiPerCategoria[c.codice] ?? 0) > 0)
+                        if (categorieConRisultati.length === 0) return null
 
-                    <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
-                        className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
-                        <option value="">Tutti gli anni</option>
-                        {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-
-                    <select value={filtroOrgano} onChange={e => setFiltroOrgano(e.target.value)}
-                        className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
-                        <option value="">Tutte le corti</option>
-                        {organiDisponibili.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-
-                    <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-                        className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
-                        {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
-                    </select>
-
-                    <div className="flex gap-1 bg-petrolio border border-white/10 p-0.5">
-                        {[
-                            { v: 'tutte', l: 'Tutte' },
-                            { v: 'gratuite', l: 'Gratuite' },
-                            { v: 'pagamento', l: 'A pagamento' },
-                        ].map(f => (
-                            <button key={f.v} onClick={() => setFiltroFonte(f.v)}
-                                className={`px-3 py-1 font-body text-xs transition-colors ${filtroFonte === f.v ? 'bg-oro/10 text-oro' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                {f.l}
-                            </button>
-                        ))}
-                    </div>
-
-                    {(filtroAnno || filtroOrgano || filtroTipo || filtroFonte !== 'tutte' || ricercaAttiva) && (
-                        <button onClick={() => {
-                            setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
-                            setRicerca(''); setRicercaAttiva('')
-                        }}
-                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
-                            <X size={11} /> Reset
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {loadingRisultati ? (
-                <div className="flex items-center justify-center py-16">
-                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
-                </div>
-            ) : risultati.length === 0 ? (
-                <div className="bg-slate border border-white/5 p-12 text-center">
-                    <p className="font-body text-sm text-nebbia/40">Nessuna sentenza trovata con questi filtri</p>
-                </div>
-            ) : (
-                <>
-                    <div className="space-y-3">
-                        {risultati.map(s => {
-                            const isGratuita = s.sorgente === 'giurisprudenza'
-                            const dataVisibile = s.data_pubblicazione ?? s.data_deposito
-                            const titolo = titoloSentenza(s)
-                            const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
-                            const targetPath = isGratuita
-                                ? `${prefix}/lexum/${s.id}`
-                                : `${prefix}/avvocato/${s.id}`
-
-                            return (
-                                <button
-                                    key={`${s.sorgente}-${s.id}`}
-                                    onClick={() => navigate(targetPath)}
-                                    className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="font-body text-xs text-nebbia/60">{titolo}</span>
-                                                {s.tipo_provvedimento && (
-                                                    <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
-                                                        {labelTipoProvvedimento(s.tipo_provvedimento)}
-                                                    </span>
-                                                )}
-                                                {dataVisibile && (
-                                                    <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
-                                                        <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
-                                                    </span>
-                                                )}
+                        return (
+                            <div key={gruppo.macro} className="space-y-3">
+                                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                                    <Scale size={13} className="text-oro/60" />
+                                    <h3 className="font-display text-base font-medium text-nebbia">{gruppo.macro}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {categorieConRisultati.map(c => (
+                                        <button key={c.codice} onClick={() => apriCategoria(c)}
+                                            className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">{c.label}</p>
+                                                </div>
+                                                <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
                                             </div>
-                                            <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '—'}</h3>
-                                            {s.principio_diritto && (
-                                                <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
-                                            )}
-                                            {!isGratuita && s.autore && (
-                                                <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
-                                            )}
-                                        </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
 
-                                        <div className="shrink-0 flex flex-col items-end gap-2">
-                                            {isGratuita ? (
-                                                <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
-                                                    Gratuita
-                                                </span>
-                                            ) : (
-                                                <>
-                                                    <span className="font-display text-lg font-semibold text-oro">EUR {prezzoAccesso}</span>
-                                                    <span className="font-body text-xs text-oro/60">accesso singolo</span>
-                                                </>
-                                            )}
-                                        </div>
+            {/* ── CATALOGO PER FONTE ──────────────────────────────────── */}
+            {vista === 'catalogo_fonte' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {FONTI_MACRO.map(macro => {
+                        const totale = conteggiMacroFonte[macro.key] ?? 0
+                        if (totale === 0) return null
+                        return (
+                            <button key={macro.key} onClick={() => apriMacroFonte(macro)}
+                                className="bg-slate border border-white/5 p-5 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Landmark size={14} className="text-oro/60 shrink-0" />
+                                        <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors">
+                                            {macro.label}
+                                        </p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0 mt-1" />
+                                </div>
+                                <p className="font-body text-xs text-nebbia/40 leading-relaxed">{macro.descrizione}</p>
+                            </button>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* ── VISTA CATEGORIA (filtri + risultati) ────────────────── */}
+            {vista === 'categoria' && categoriaSelezionata && (
+                <>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> Tutte le categorie
+                        </button>
+                        <p className="font-display text-xl text-nebbia">{categoriaSelezionata.label}</p>
+                    </div>
+
+                    <div className="bg-slate border border-white/5 p-4 space-y-3">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                                <input
+                                    placeholder="Cerca in oggetto e principio di diritto..."
+                                    value={ricerca}
+                                    onChange={e => setRicerca(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') avviaRicerca() }}
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+                            </div>
+                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                                <Search size={13} /> Cerca
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-nebbia/30">
+                                <Filter size={12} />
+                                <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
+                            </div>
+
+                            <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                <option value="">Tutti gli anni</option>
+                                {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+
+                            <select value={filtroOrgano} onChange={e => setFiltroOrgano(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                <option value="">Tutte le corti</option>
+                                {organiDisponibili.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+
+                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+                            </select>
+
+                            <div className="flex gap-1 bg-petrolio border border-white/10 p-0.5">
+                                {[
+                                    { v: 'tutte', l: 'Tutte' },
+                                    { v: 'gratuite', l: 'Gratuite' },
+                                    { v: 'pagamento', l: 'A pagamento' },
+                                ].map(f => (
+                                    <button key={f.v} onClick={() => setFiltroFonte(f.v)}
+                                        className={`px-3 py-1 font-body text-xs transition-colors ${filtroFonte === f.v ? 'bg-oro/10 text-oro' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                                        {f.l}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {(filtroAnno || filtroOrgano || filtroTipo || filtroFonte !== 'tutte' || ricercaAttiva) && (
+                                <button onClick={() => {
+                                    setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
+                                    setRicerca(''); setRicercaAttiva('')
+                                }}
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    <X size={11} /> Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <BloccoRisultati
+                        loadingRisultati={loadingRisultati}
+                        risultati={risultati}
+                        totale={totaleSentenze}
+                        paginaSentenze={paginaSentenze}
+                        setPaginaSentenze={setPaginaSentenze}
+                        prezzoAccesso={prezzoAccesso}
+                        navigate={navigate}
+                        titoloSentenza={titoloSentenza}
+                        labelTipoProvvedimento={labelTipoProvvedimento}
+                        perPagina={PER_PAGINA_SENTENZE}
+                    />
+                </>
+            )}
+
+            {/* ── GRIGLIA SOTTO-FONTI (es. TAR per regione) ───────────── */}
+            {vista === 'sotto_fonte_grid' && macroFonteSelezionata && (
+                <>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> Tutte le fonti
+                        </button>
+                        <p className="font-display text-xl text-nebbia">{macroFonteSelezionata.label}</p>
+                    </div>
+                    <p className="font-body text-sm text-nebbia/40 leading-relaxed">
+                        Seleziona un tribunale per consultarne le sentenze.
+                    </p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {macroFonteSelezionata.sotto
+                            .filter(s => (conteggiSottoFonte[s.v] ?? 0) > 0)
+                            .sort((a, b) => a.l.localeCompare(b.l, 'it'))
+                            .map(s => (
+                                <button key={s.v} onClick={() => apriSottoFonte(s)}
+                                    className="bg-slate border border-white/5 p-4 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors truncate">
+                                            {s.l}
+                                        </p>
+                                        <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0" />
                                     </div>
                                 </button>
-                            )
-                        })}
+                            ))}
+                    </div>
+                </>
+            )}
+
+            {/* ── VISTA FONTE (filtri + risultati) ────────────────────── */}
+            {vista === 'fonte' && macroFonteSelezionata && (
+                <>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> {macroFonteSelezionata.richiedeSottoSelezione ? 'Tutti i tribunali' : 'Tutte le fonti'}
+                        </button>
+                        <p className="font-display text-xl text-nebbia">
+                            {sottoFonteSelezionataObj
+                                ? `${macroFonteSelezionata.label.split(' \u2014 ')[0]} \u2014 ${sottoFonteSelezionataObj.l}`
+                                : macroFonteSelezionata.label}
+                        </p>
                     </div>
 
-                    {totaleSentenze > PER_PAGINA_SENTENZE && (
-                        <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
-                            <p className="font-body text-xs text-nebbia/30">
-                                {paginaSentenze * PER_PAGINA_SENTENZE + 1}–{Math.min((paginaSentenze + 1) * PER_PAGINA_SENTENZE, totaleSentenze)} di {totaleSentenze.toLocaleString('it-IT')}
-                            </p>
-                            <div className="flex gap-2">
-                                <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
-                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
-                                <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * PER_PAGINA_SENTENZE >= totaleSentenze}
-                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                    <div className="bg-slate border border-white/5 p-4 space-y-3">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                                <input
+                                    placeholder="Cerca in oggetto e principio di diritto..."
+                                    value={ricerca}
+                                    onChange={e => setRicerca(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') avviaRicerca() }}
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
                             </div>
+                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                                <Search size={13} /> Cerca
+                            </button>
                         </div>
-                    )}
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-nebbia/30">
+                                <Filter size={12} />
+                                <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
+                            </div>
+
+                            {macroFonteSelezionata.sotto.length > 1 && !macroFonteSelezionata.richiedeSottoSelezione && (
+                                <select value={filtroSottoFonte} onChange={e => setFiltroSottoFonte(e.target.value)}
+                                    className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40 max-w-xs">
+                                    <option value="">Tutte le sezioni / sedi</option>
+                                    {macroFonteSelezionata.sotto
+                                        .map(s => ({ ...s, n: conteggiSottoFonte[s.v] ?? 0 }))
+                                        .filter(s => s.n > 0)
+                                        .sort((a, b) => a.l.localeCompare(b.l))
+                                        .map(s => (
+                                            <option key={s.v} value={s.v}>
+                                                {s.l} ({s.n.toLocaleString('it-IT')})
+                                            </option>
+                                        ))}
+                                </select>
+                            )}
+
+                            <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                <option value="">Tutti gli anni</option>
+                                {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+
+                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+                            </select>
+
+                            {(filtroSottoFonte || filtroAnno || filtroTipo || ricercaAttiva) && (
+                                <button onClick={() => {
+                                    setFiltroSottoFonte(''); setFiltroAnno(''); setFiltroTipo('')
+                                    setRicerca(''); setRicercaAttiva('')
+                                }}
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    <X size={11} /> Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <BloccoRisultati
+                        loadingRisultati={loadingRisultati}
+                        risultati={risultati}
+                        totale={totaleSentenze}
+                        paginaSentenze={paginaSentenze}
+                        setPaginaSentenze={setPaginaSentenze}
+                        prezzoAccesso={prezzoAccesso}
+                        navigate={navigate}
+                        titoloSentenza={titoloSentenza}
+                        labelTipoProvvedimento={labelTipoProvvedimento}
+                        perPagina={PER_PAGINA_SENTENZE}
+                    />
                 </>
             )}
         </div>
+    )
+}
+
+
+// ─── Componente helper riutilizzato dalle due viste ─────────────
+// (mettilo subito prima o dopo TabSentenze nel file)
+function BloccoRisultati({
+    loadingRisultati, risultati, totale, paginaSentenze, setPaginaSentenze,
+    prezzoAccesso, navigate, titoloSentenza, labelTipoProvvedimento, perPagina
+}) {
+    if (loadingRisultati) return (
+        <div className="flex items-center justify-center py-16">
+            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+        </div>
+    )
+    if (risultati.length === 0) return (
+        <div className="bg-slate border border-white/5 p-12 text-center">
+            <p className="font-body text-sm text-nebbia/40">Nessuna sentenza trovata con questi filtri</p>
+        </div>
+    )
+
+    return (
+        <>
+            <div className="space-y-3">
+                {risultati.map(s => {
+                    const isGratuita = s.sorgente === 'giurisprudenza'
+                    const dataVisibile = s.data_pubblicazione ?? s.data_deposito
+                    const titolo = titoloSentenza(s)
+                    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                    const targetPath = isGratuita ? `${prefix}/lexum/${s.id}` : `${prefix}/avvocato/${s.id}`
+
+                    return (
+                        <button
+                            key={`${s.sorgente}-${s.id}`}
+                            onClick={() => navigate(targetPath)}
+                            className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <span className="font-body text-xs text-nebbia/60">{titolo}</span>
+                                        {s.tipo_provvedimento && (
+                                            <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                                                {labelTipoProvvedimento(s.tipo_provvedimento)}
+                                            </span>
+                                        )}
+                                        {dataVisibile && (
+                                            <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
+                                                <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '\u2014'}</h3>
+                                    {s.principio_diritto && (
+                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
+                                    )}
+                                    {!isGratuita && s.autore && (
+                                        <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
+                                    )}
+                                </div>
+
+                                <div className="shrink-0 flex flex-col items-end gap-2">
+                                    {isGratuita ? (
+                                        <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
+                                            Gratuita
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <span className="font-display text-lg font-semibold text-oro">EUR {prezzoAccesso}</span>
+                                            <span className="font-body text-xs text-oro/60">accesso singolo</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </button>
+                    )
+                })}
+            </div>
+
+            {totale > perPagina && (
+                <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
+                    <p className="font-body text-xs text-nebbia/30">
+                        {paginaSentenze * perPagina + 1}-{Math.min((paginaSentenze + 1) * perPagina, totale)} di {totale.toLocaleString('it-IT')}
+                    </p>
+                    <div className="flex gap-2">
+                        <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
+                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">{'\u2190'} Prev</button>
+                        <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * perPagina >= totale}
+                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next {'\u2192'}</button>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }
 
@@ -2550,11 +2993,11 @@ function TabPrassi() {
             setEnti(entiData ?? [])
 
             const { data: prassiCounts } = await supabase
-                .from('prassi')
-                .select('fonte')
+                .from('conteggi_fonti_prassi')
+                .select('fonte, totale')
             const conteggi = {}
             for (const r of prassiCounts ?? []) {
-                conteggi[r.fonte] = (conteggi[r.fonte] ?? 0) + 1
+                conteggi[r.fonte] = Number(r.totale)
             }
             setConteggiPerEnte(conteggi)
 
