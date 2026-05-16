@@ -360,7 +360,7 @@ export default function AvvocatoDashboard() {
     const { data: fattPeriodo } = await supabase
       .from('fatture')
       .select('totale_lordo, stato, data_pagamento')
-      .eq('autore_id', profile.id)
+      .eq('avvocato_id', profile.id)
       .gte('data_emissione', inizioISO.split('T')[0])
       .lte('data_emissione', fineISO.split('T')[0])
 
@@ -430,10 +430,10 @@ export default function AvvocatoDashboard() {
     const { data: tutteFatture } = await supabase
       .from('fatture')
       .select(`
-                id, numero, anno, data_scadenza, data_pagamento, totale_lordo, stato,
+                id, numero, anno_numerazione, data_scadenza, data_pagamento, totale_lordo, stato,
                 cliente:cliente_id(nome, cognome, ragione_sociale, tipo_soggetto)
             `)
-      .eq('autore_id', profile.id)
+      .eq('avvocato_id', profile.id)
       .order('data_scadenza', { ascending: true })
 
     let scadute = []
@@ -658,7 +658,7 @@ export default function AvvocatoDashboard() {
                     <EventoItem
                       key={f.id}
                       icon={FileText}
-                      titolo={`Fattura ${f.anno}/${f.numero}`}
+                      titolo={`Fattura ${f.anno_numerazione}/${f.numero}`}
                       sottotitolo={`${nomeCliente(f.cliente)} - EUR ${fmtEUR(f.totale_lordo)}`}
                       badge={badgeUrgenza(gg)}
                       link="/pagamenti"

@@ -447,6 +447,13 @@ export default function ContropartiBox({ praticaId }) {
     }
 
     useEffect(() => { carica() }, [praticaId])
+    // Chiudi modal con ESC
+    useEffect(() => {
+        if (!mostraForm) return
+        const onKey = e => { if (e.key === 'Escape') annulla() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [mostraForm])
 
     async function elimina(c) {
         const nome = c.tipo_soggetto === 'persona_fisica'
@@ -493,15 +500,23 @@ export default function ContropartiBox({ praticaId }) {
                 )}
             </div>
 
-            {/* Form (nuovo o modifica) */}
+            {/* Form (nuovo o modifica) — in modal popup */}
             {mostraForm && (
-                <div className="mb-3">
-                    <FormControparte
-                        controparte={inModifica}
-                        praticaId={praticaId}
-                        onSalvato={onSalvato}
-                        onAnnulla={annulla}
-                    />
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-petrolio/80 backdrop-blur-sm overflow-y-auto"
+                    onClick={annulla}
+                >
+                    <div
+                        className="w-full max-w-2xl my-8"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <FormControparte
+                            controparte={inModifica}
+                            praticaId={praticaId}
+                            onSalvato={onSalvato}
+                            onAnnulla={annulla}
+                        />
+                    </div>
                 </div>
             )}
 

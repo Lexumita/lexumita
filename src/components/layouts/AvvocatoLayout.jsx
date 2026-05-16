@@ -41,6 +41,7 @@ export default function AvvocatoLayout({ children }) {
   const navigate = useNavigate()
   const [crediti, setCrediti] = useState(0)
   const [storage, setStorage] = useState({ occupato_gb: 0, gb_totali: 0 })
+  const [clienti, setClienti] = useState({ conteggio: 0, limite_totale: 0 })
 
   // Carica somma totale crediti validi
   useEffect(() => {
@@ -80,6 +81,26 @@ export default function AvvocatoLayout({ children }) {
     caricaStorage()
   }, [profile?.id, profile?.titolare_id])
 
+  // Carica conteggio clienti vs limite (RPC server-side)
+  useEffect(() => {
+    if (!profile?.id) return
+    async function caricaClienti() {
+      const proprietarioId = profile.titolare_id ?? profile.id
+      const { data, error } = await supabase
+        .rpc('conteggio_clienti_studio', { p_proprietario_id: proprietarioId })
+      if (error) {
+        console.error('Errore RPC conteggio_clienti_studio:', error)
+        return
+      }
+      const row = Array.isArray(data) ? data[0] : data
+      setClienti({
+        conteggio: row?.conteggio ?? 0,
+        limite_totale: row?.limite_totale ?? 0,
+      })
+    }
+    caricaClienti()
+  }, [profile?.id, profile?.titolare_id])
+
   // Calcoli scadenza
   const giorni = giorniAllaScadenza(profile?.abbonamento_scadenza)
   const mostraScadenza = giorni !== null && giorni <= 7
@@ -91,6 +112,13 @@ export default function AvvocatoLayout({ children }) {
   const storagePct = haStorage ? (storage.occupato_gb / storage.gb_totali) : 0
   const storageQuasiPieno = storagePct >= 0.9
   const storagePieno = storagePct >= 1
+
+  // Calcoli clienti (sempre mostrato se ha un limite valido)
+  const haLimiteClienti = clienti.limite_totale > 0
+  const clientiPct = haLimiteClienti ? (clienti.conteggio / clienti.limite_totale) : 0
+  const clientiQuasiPieno = clientiPct >= 0.7 && clientiPct < 0.9
+  const clientiCritico = clientiPct >= 0.9 && clientiPct < 1
+  const clientiPieno = clientiPct >= 1
 
   async function handleSignOut() {
     await signOut()
@@ -203,6 +231,33 @@ export default function AvvocatoLayout({ children }) {
               </Link>
             )}
 
+            {/* Contatore clienti (sempre visibile se ha un piano con limite) */}
+            {haLimiteClienti && (
+              <Link to="/studio?tab=acquista"
+                title={`${clienti.conteggio} clienti registrati su ${clienti.limite_totale} disponibili`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors group ${clientiPieno
+                  ? 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 hover:border-red-500/50'
+                  : clientiCritico
+                    ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30'
+                    : clientiQuasiPieno
+                      ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50'
+                      : 'bg-petrolio border border-white/10 hover:border-salvia/30'
+                  }`}>
+                <Users size={13} className={
+                  clientiPieno || clientiCritico ? 'text-red-400' : clientiQuasiPieno ? 'text-amber-400' : 'text-nebbia/50 group-hover:text-salvia'
+                } />
+                <span className={`font-body text-sm ${clientiPieno || clientiCritico ? 'text-red-400' : clientiQuasiPieno ? 'text-amber-400' : 'text-nebbia/80'
+                  }`}>
+                  {clienti.conteggio}/{clienti.limite_totale}
+                </span>
+                <span className={`font-body text-[10px] ${clientiPieno || clientiCritico ? 'text-red-400/70' : clientiQuasiPieno ? 'text-amber-400/70' : 'text-nebbia/40'
+                  }`}>
+                  {Math.round(clientiPct * 100)}%
+                </span>
+                <Plus size={10} className="text-nebbia/30 group-hover:text-salvia transition-colors" />
+              </Link>
+            )}
+
             {/* Crediti (sempre visibile) */}
             <Link to="/studio?tab=acquista"
               title="Acquista crediti AI"
@@ -258,6 +313,28 @@ export default function AvvocatoLayout({ children }) {
                 <span className={`font-body text-xs ${storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-nebbia/80'
                   }`}>
                   {Math.round(storagePct * 100)}%
+                </span>
+              </Link>
+            )}
+
+            {/* Clienti mobile (compatto) */}
+            {haLimiteClienti && (
+              <Link to="/studio?tab=acquista"
+                title={`${clienti.conteggio}/${clienti.limite_totale} clienti`}
+                className={`flex items-center gap-1 px-2 py-1 ${clientiPieno
+                  ? 'bg-red-500/10 border border-red-500/30'
+                  : clientiCritico
+                    ? 'bg-red-500/5 border border-red-500/20'
+                    : clientiQuasiPieno
+                      ? 'bg-amber-500/10 border border-amber-500/30'
+                      : 'bg-petrolio border border-white/10'
+                  }`}>
+                <Users size={11} className={
+                  clientiPieno || clientiCritico ? 'text-red-400' : clientiQuasiPieno ? 'text-amber-400' : 'text-nebbia/50'
+                } />
+                <span className={`font-body text-xs ${clientiPieno || clientiCritico ? 'text-red-400' : clientiQuasiPieno ? 'text-amber-400' : 'text-nebbia/80'
+                  }`}>
+                  {clienti.conteggio}/{clienti.limite_totale}
                 </span>
               </Link>
             )}

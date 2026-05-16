@@ -89,6 +89,7 @@ function BannerAlert({ tone = 'warning', icon: Icon, titolo, descrizione, ctaLab
 export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scadenzaAttuale = null, postiAttuali = 0, isUser = false, pianoScaduto = false }) {
     const [piani, setPiani] = useState([])
     const [addons, setAddons] = useState([])
+    const [clientiAddons, setClientiAddons] = useState([])
     const [pacchettiCrediti, setPacchettiCrediti] = useState([])
     const [pacchettiStorage, setPacchettiStorage] = useState([])
     const [loading, setLoading] = useState(true)
@@ -112,14 +113,15 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
 
             const { data } = await supabase
                 .from('prodotti')
-                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, include_monetizzazione, crediti_ai_mensili, spazio_gb')
+                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, include_monetizzazione, crediti_ai_mensili, spazio_gb, limite_clienti')
                 .eq('attivo', true)
-                .in('tipo', ['abbonamento', 'seat_addon', 'gratuito', 'crediti_ai', 'spazio_archiviazione'])
+                .in('tipo', ['abbonamento', 'seat_addon', 'clienti_addon', 'gratuito', 'crediti_ai', 'spazio_archiviazione'])
                 .order('prezzo')
 
             const tutti = data ?? []
             setPiani(tutti.filter(p => p.tipo === 'abbonamento' && p.id !== pianoAttualeId))
             setAddons(pianoAttualeId ? tutti.filter(p => p.tipo === 'seat_addon') : [])
+            setClientiAddons(pianoAttualeId ? tutti.filter(p => p.tipo === 'clienti_addon') : [])
             setPacchettiCrediti(tutti.filter(p => p.tipo === 'crediti_ai'))
             setPacchettiStorage(tutti.filter(p => p.tipo === 'spazio_archiviazione'))
 
@@ -335,6 +337,30 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                 </div>
             )}
 
+            {/* ── Clienti addons ── */}
+            {clientiAddons.length > 0 && (
+                <div className="space-y-3">
+                    <p className="section-label">Aggiungi capacità clienti</p>
+                    <p className="font-body text-xs text-nebbia/40">
+                        Alza il limite di clienti registrabili nel tuo studio. La scadenza segue il piano attuale{scadenzaAttuale ? ` (${new Date(scadenzaAttuale).toLocaleDateString('it-IT')})` : ''} — pagamento pro-rata sui mesi residui.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {clientiAddons.map(c => (
+                            <div key={c.id} className="bg-slate border border-white/5 hover:border-salvia/30 p-4 space-y-3 transition-colors">
+                                <p className="font-body text-sm font-medium text-nebbia">{c.nome}</p>
+                                <p className="font-body text-xs text-nebbia/40">+{c.limite_clienti} clienti</p>
+                                <p className="font-display text-2xl font-light text-oro">€ {c.prezzo}</p>
+                                <p className="font-body text-[10px] text-nebbia/30 italic">Listino · pro-rata applicato al checkout</p>
+                                <button onClick={() => acquista(c.id, false)} disabled={acquistando === c.id}
+                                    className="btn-secondary text-sm w-full justify-center disabled:opacity-40">
+                                    {acquistando === c.id ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : 'Acquista'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* ── Pacchetti crediti AI (solo per avvocato) ── */}
             {!isUser && pacchettiCrediti.length > 0 && (
                 <div className="space-y-3">
@@ -489,15 +515,24 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
                         {storico.map(s => (
                             <tr key={s.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                 <td className="px-4 py-3 font-body text-sm text-nebbia">{s.prodotto_nome ?? '—'}</td>
-                                <td className="px-4 py-3 font-body text-sm font-medium text-oro">€ {parseFloat(s.importo).toFixed(2)}</td>
+                                <td className="px-4 py-3 font-body text-sm font-medium text-oro">
+                                    {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
+                                </td>
                                 <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                                     {new Date(s.created_at).toLocaleDateString('it-IT')}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <Badge
-                                        label={s.stato === 'completato' ? 'Pagato' : s.stato === 'rimborsato' ? 'Rimborsato' : 'Fallito'}
-                                        variant={s.stato === 'completato' ? 'salvia' : s.stato === 'rimborsato' ? 'warning' : 'red'}
-                                    />
+                                    {(() => {
+                                        // Badge "Gratis" se importo=0 (es. trial gratuito attivato)
+                                        const importo = parseFloat(s.importo ?? 0)
+                                        if (importo === 0 && s.stato === 'completato') {
+                                            return <Badge label="Gratis" variant="salvia" />
+                                        }
+                                        return <Badge
+                                            label={s.stato === 'completato' ? 'Pagato' : s.stato === 'rimborsato' ? 'Rimborsato' : 'Fallito'}
+                                            variant={s.stato === 'completato' ? 'salvia' : s.stato === 'rimborsato' ? 'warning' : 'red'}
+                                        />
+                                    })()}
                                 </td>
                             </tr>
                         ))}
@@ -535,6 +570,7 @@ export default function AvvocatoStudio() {
     const [creditiPianoTotale, setCreditiPianoTotale] = useState(0)
     const [storage, setStorage] = useState({ gb_piano: 0, gb_topup: 0, gb_totali: 0, occupato_gb: 0 })
     const [topupInScadenza, setTopupInScadenza] = useState([])
+    const [clienti, setClienti] = useState({ conteggio: 0, limite_piano: 0, limite_extra: 0, limite_totale: 0 })
 
     const carica = useCallback(async () => {
         if (!meId) return
@@ -608,6 +644,16 @@ export default function AvvocatoStudio() {
                 .order('periodo_fine', { ascending: true })
 
             setTopupInScadenza(topupScad ?? [])
+
+            // ── Conteggio clienti vs limite (RPC server-side) ──
+            const { data: clientiData } = await supabase.rpc('conteggio_clienti_studio', { p_proprietario_id: proprietarioId })
+            const clientiRow = Array.isArray(clientiData) ? clientiData[0] : clientiData
+            setClienti({
+                conteggio: clientiRow?.conteggio ?? 0,
+                limite_piano: clientiRow?.limite_piano ?? 0,
+                limite_extra: clientiRow?.limite_extra ?? 0,
+                limite_totale: clientiRow?.limite_totale ?? 0,
+            })
         }
 
         setLoading(false)
@@ -700,6 +746,13 @@ export default function AvvocatoStudio() {
     const storageQuasiPieno = !isUser && hasPiano && storage.gb_totali > 0
         && storagePct >= SOGLIA_STORAGE_PIENO && storagePct < 1
     const storagePieno = !isUser && hasPiano && storage.gb_totali > 0 && storagePct >= 1
+
+    // Clienti: soglie identiche ad AvvocatoLayout (70-89% ambra, 90-99% rosso chiaro, 100% rosso)
+    const clientiPct = clienti.limite_totale > 0 ? clienti.conteggio / clienti.limite_totale : 0
+    const haLimiteClienti = !isUser && hasPiano && clienti.limite_totale > 0
+    const clientiQuasiPieno = haLimiteClienti && clientiPct >= 0.7 && clientiPct < 0.9
+    const clientiCritico = haLimiteClienti && clientiPct >= 0.9 && clientiPct < 1
+    const clientiPieno = haLimiteClienti && clientiPct >= 1
 
     // Tab in base al ruolo
     const tabs = isUser
@@ -861,10 +914,19 @@ export default function AvvocatoStudio() {
 
                 {/* Stats — solo avvocato con piano */}
                 {!isUser && hasPiano && (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-5">
                         <StatCard label="Accessi" value={`${postiUsati}/${postiAcquistati}`} colorClass={postiLiberi === 0 ? 'text-amber-400' : 'text-nebbia/60'} />
                         <StatCard label="Crediti AI" value={crediti.totale} colorClass={creditiAZero ? 'text-red-400' : creditiBassi ? 'text-amber-400' : 'text-salvia'} />
                         <StatCard label="Storage" value={`${storage.occupato_gb.toFixed(1)} / ${storage.gb_totali} GB`} colorClass={storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-salvia'} />
+                        {haLimiteClienti ? (
+                            <StatCard
+                                label="Clienti"
+                                value={`${clienti.conteggio}/${clienti.limite_totale}`}
+                                colorClass={clientiPieno || clientiCritico ? 'text-red-400' : clientiQuasiPieno ? 'text-amber-400' : 'text-salvia'}
+                            />
+                        ) : (
+                            <StatCard label="Clienti" value={String(clienti.conteggio)} colorClass="text-nebbia/60" />
+                        )}
                         <StatCard
                             label="Scadenza"
                             value={profilo?.abbonamento_scadenza ? new Date(profilo.abbonamento_scadenza).toLocaleDateString('it-IT') : '—'}
@@ -934,6 +996,9 @@ export default function AvvocatoStudio() {
                                     ['Piano', profilo?.abbonamento_tipo ?? '—'],
                                     ['Scadenza', profilo?.abbonamento_scadenza ? new Date(profilo.abbonamento_scadenza).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
                                     ['Accessi', `${postiUsati} / ${postiAcquistati}`],
+                                    ['Clienti registrati', clienti.limite_totale > 0
+                                        ? `${clienti.conteggio} su ${clienti.limite_totale} (${clienti.limite_piano} piano · ${clienti.limite_extra} extra)`
+                                        : `${clienti.conteggio} (nessun limite definito)`],
                                     ['Crediti AI disponibili', `${crediti.totale} (${crediti.piano} piano · ${crediti.benvenuto} benvenuto · ${crediti.topup} extra)`],
                                     ['Spazio archivio', `${storage.occupato_gb.toFixed(2)} GB su ${storage.gb_totali} GB (${storage.gb_piano} GB piano · ${storage.gb_topup} GB extra)`],
                                     ['GB inclusi nel piano', `${storage.gb_piano} GB`],

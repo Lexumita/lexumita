@@ -186,7 +186,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
 // ─────────────────────────────────────────────────────────────
 // MODAL CONFERMA ELIMINAZIONE
 // ─────────────────────────────────────────────────────────────
-function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
+export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
     const [conferma, setConferma] = useState('')
     const [inviando, setInviando] = useState(false)
     const [errore, setErrore] = useState('')

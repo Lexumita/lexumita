@@ -7,9 +7,10 @@ import {
     Plus, Search, FileText, AlertCircle, Check, X, Sparkles,
     ChevronUp, ChevronDown, ArrowUpDown, Filter, Loader2,
     CalendarDays, Calendar, ArrowRight, Building2, User,
-    TrendingUp, AlertTriangle, Clock, Wallet
+    TrendingUp, AlertTriangle, Clock, Wallet, Trash2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { ModalEliminaFattura } from './FatturazioneDettaglio'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -322,6 +323,9 @@ function TabFatture({ fatture, clienti, onReload }) {
     const [sortField, setSortField] = useState('data_emissione')
     const [sortDir, setSortDir] = useState('desc')
 
+    // Stato modale eliminazione (riusa ModalEliminaFattura dal Dettaglio)
+    const [eliminando, setEliminando] = useState(null) // fattura object | null
+
     // Anni disponibili
     const anniDisp = [...new Set(fatture.map(f => new Date(f.data_emissione).getFullYear()))].sort((a, b) => b - a)
 
@@ -583,7 +587,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                             <SortTh label="Emessa il" field="data_emissione" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                             <SortTh label="Scadenza" field="data_scadenza" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                             <SortTh label="Stato" field="stato" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                            <th className="px-4 py-3 w-10" />
+                            <th className="px-4 py-3 w-20" />
                         </tr>
                     </thead>
                     <tbody>
@@ -614,14 +618,32 @@ function TabFatture({ fatture, clienti, onReload }) {
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{f.pratica?.titolo ?? '—'}</td>
                                     <td className="px-4 py-3 font-body text-sm font-semibold text-oro whitespace-nowrap">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</td>
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">{f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}</td>
-                                    <td className={`px-4 py-3 font-body text-xs whitespace-nowrap ${sc_scaduta ? 'text-red-400' : 'text-nebbia/50'}`}>
-                                        {f.data_scadenza ? new Date(f.data_scadenza).toLocaleDateString('it-IT') : '—'}
+                                    <td className={`px-4 py-3 font-body text-xs whitespace-nowrap ${f.stato === 'pagata' ? 'text-salvia' : sc_scaduta ? 'text-red-400' : 'text-nebbia/50'
+                                        }`}>
+                                        {f.stato === 'pagata' && f.data_pagamento
+                                            ? `Pagata ${new Date(f.data_pagamento).toLocaleDateString('it-IT')}`
+                                            : f.stato === 'pagata'
+                                                ? 'Pagata'
+                                                : f.data_scadenza
+                                                    ? new Date(f.data_scadenza).toLocaleDateString('it-IT')
+                                                    : '—'}
                                     </td>
                                     <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
                                     <td className="px-4 py-3 text-right">
-                                        <Link to={`/fatturazione/${f.id}`} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
-                                            <ArrowRight size={13} />
-                                        </Link>
+                                        <div className="flex items-center justify-end gap-1">
+                                            {f.stato !== 'pagata' && (
+                                                <button
+                                                    onClick={(e) => { e.preventDefault(); setEliminando(f); }}
+                                                    title="Elimina fattura"
+                                                    className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            )}
+                                            <Link to={`/fatturazione/${f.id}`} className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
+                                                <ArrowRight size={13} />
+                                            </Link>
+                                        </div>
                                     </td>
                                 </tr>
                             )
@@ -629,6 +651,18 @@ function TabFatture({ fatture, clienti, onReload }) {
                     </tbody>
                 </table>
             </div>
+
+            {/* Modal eliminazione centralizzato (usa edge function elimina-fattura) */}
+            {eliminando && (
+                <ModalEliminaFattura
+                    fattura={eliminando}
+                    onClose={() => setEliminando(null)}
+                    onEliminata={() => {
+                        setEliminando(null)
+                        onReload()
+                    }}
+                />
+            )}
         </div>
     )
 }

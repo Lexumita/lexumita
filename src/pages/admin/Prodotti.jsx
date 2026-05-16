@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase'
 const TIPO_CONFIG = {
   abbonamento: { label: 'Abbonamento', variant: 'oro' },
   seat_addon: { label: 'Seat add-on', variant: 'gray' },
+  clienti_addon: { label: 'Clienti add-on', variant: 'gray' },
   accesso_singolo: { label: 'Accesso doc.', variant: 'gray' },
   crediti_ai: { label: 'Crediti AI', variant: 'salvia' },
   spazio_archiviazione: { label: 'Storage', variant: 'salvia' },
@@ -71,7 +72,7 @@ export function AdminProdotti() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Prodotto', 'Tipo', 'Posti', 'Crediti AI', 'Storage', 'Banca dati', 'Monetizzazione', 'Prezzo', 'Durata', '% Revenue', 'Stato', ''].map(h => (
+                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Banca dati', 'Monetizzazione', 'Prezzo', 'Durata', '% Revenue', 'Stato', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -79,7 +80,7 @@ export function AdminProdotti() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={13} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun prodotto trovato
                   </td>
                 </tr>
@@ -92,9 +93,12 @@ export function AdminProdotti() {
                     <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{p.nome}</td>
                     <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage)
+                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage || p.tipo === 'clienti_addon')
                         ? <Dash />
                         : p.posti === null ? 'illim.' : p.posti}
+                    </td>
+                    <td className="px-4 py-3 font-body text-sm text-nebbia/60">
+                      {p.limite_clienti > 0 ? p.limite_clienti : <Dash />}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.crediti_ai_mensili > 0 ? p.crediti_ai_mensili : <Dash />}
@@ -151,6 +155,7 @@ export function AdminProdottiForm() {
     posti: '1', durata_mesi: '12',
     include_banca_dati: false, include_monetizzazione: false,
     revenue_pct: '', crediti_ai_mensili: '0', spazio_gb: '0',
+    limite_clienti: '0',
     attivo: true,
   })
   const [loading, setLoading] = useState(isEdit)
@@ -165,6 +170,7 @@ export function AdminProdottiForm() {
 
   const isAbb = form.tipo === 'abbonamento'
   const isAddon = form.tipo === 'seat_addon'
+  const isClientiAddon = form.tipo === 'clienti_addon'
   const isAccesso = form.tipo === 'accesso_singolo'
   const isCreditiAI = form.tipo === 'crediti_ai'
   const isStorage = form.tipo === 'spazio_archiviazione'
@@ -193,6 +199,7 @@ export function AdminProdottiForm() {
         revenue_pct: data.revenue_pct ?? '',
         crediti_ai_mensili: data.crediti_ai_mensili ?? '0',
         spazio_gb: data.spazio_gb ?? '0',
+        limite_clienti: data.limite_clienti ?? '0',
         attivo: data.attivo,
       })
       setLoading(false)
@@ -206,9 +213,13 @@ export function AdminProdottiForm() {
     if (!form.nome.trim()) return setErrore('Il nome è obbligatorio')
     if (!isGratuito && (!form.prezzo || isNaN(parseFloat(form.prezzo)))) return setErrore('Il prezzo è obbligatorio')
     if ((isAbb || isGratuito) && (!form.posti || parseInt(form.posti) < 1)) return setErrore('I posti devono essere almeno 1')
-    if (haDurata && (!form.durata_mesi || parseInt(form.durata_mesi) < 1)) return setErrore('La durata è obbligatoria')
+    if (haDurata) {
+      const durataNum = parseFloat(form.durata_mesi)
+      if (!form.durata_mesi || isNaN(durataNum) || durataNum <= 0) return setErrore('La durata è obbligatoria')
+    }
     if (isAccesso && (!form.revenue_pct || isNaN(parseInt(form.revenue_pct)))) return setErrore('La % revenue è obbligatoria')
     if (isStorage && (!form.spazio_gb || parseInt(form.spazio_gb) < 1)) return setErrore('Indica i GB del pacchetto')
+    if (isClientiAddon && (!form.limite_clienti || parseInt(form.limite_clienti) < 1)) return setErrore('Indica quanti clienti aggiuntivi sblocca questo pacchetto')
 
     setSalvando(true)
     try {
@@ -217,12 +228,13 @@ export function AdminProdottiForm() {
         tipo: form.tipo,
         prezzo: isGratuito ? 0 : parseFloat(form.prezzo),
         posti: (isAbb || isAddon || isGratuito) ? parseInt(form.posti) : null,
-        durata_mesi: haDurata ? parseInt(form.durata_mesi) || null : null,
+        durata_mesi: haDurata ? parseFloat(form.durata_mesi) || null : null,
         include_banca_dati: (isAbb || isGratuito) ? form.include_banca_dati : false,
         include_monetizzazione: (isAbb || isGratuito) ? form.include_monetizzazione : false,
         revenue_pct: isAccesso ? parseInt(form.revenue_pct) : null,
         crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
         spazio_gb: (isAbb || isStorage || isGratuito) ? parseInt(form.spazio_gb) || 0 : 0,
+        limite_clienti: (isAbb || isClientiAddon || isGratuito) ? parseInt(form.limite_clienti) || 0 : null,
         attivo: form.attivo,
       }
 
@@ -246,6 +258,7 @@ export function AdminProdottiForm() {
   const TIPI = [
     { v: 'abbonamento', l: 'Abbonamento', desc: 'Piano per avvocato o studio — posti determina il tipo' },
     { v: 'seat_addon', l: 'Seat add-on', desc: 'Aggiunge posti a uno studio esistente' },
+    { v: 'clienti_addon', l: 'Clienti add-on', desc: 'Alza il limite di clienti registrabili dello studio' },
     { v: 'accesso_singolo', l: 'Accesso singolo', desc: 'Acquisto di una singola sentenza dalla banca dati' },
     { v: 'crediti_ai', l: 'Crediti AI', desc: 'Pacchetto crediti AI acquistabili separatamente — non scadono mai' },
     { v: 'spazio_archiviazione', l: 'Storage', desc: 'Pacchetto GB extra per archivio documenti — pagamento una tantum con scadenza' },
@@ -359,9 +372,12 @@ export function AdminProdottiForm() {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-body text-xs text-nebbia/30">Oppure inserisci:</span>
-              <input type="number" min="1" {...f('durata_mesi')} placeholder="es. 24"
+              <input type="number" min="0" step="0.01" {...f('durata_mesi')} placeholder={isGratuito ? "es. 0.24" : "es. 24"}
                 className="bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-1.5 outline-none focus:border-oro/50 w-24 placeholder:text-nebbia/25" />
               <span className="font-body text-xs text-nebbia/30">mesi</span>
+              {isGratuito && (
+                <span className="font-body text-[10px] text-nebbia/30">(0.24 ≈ 7 giorni)</span>
+              )}
             </div>
           </div>
         )}
@@ -454,6 +470,42 @@ export function AdminProdottiForm() {
           </div>
         )}
 
+        {/* Limite clienti — per abbonamento, clienti_addon e gratuito */}
+        {(isAbb || isClientiAddon || isGratuito) && (
+          <div>
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              {isAbb ? 'Limite clienti registrabili *' : isGratuito ? 'Limite clienti nella prova *' : 'Clienti aggiuntivi del pacchetto *'}
+            </label>
+            <input type="number" min="0" {...f('limite_clienti')} placeholder="30"
+              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+
+            <div className="mt-2 p-3 border bg-petrolio/40 border-white/5 flex items-start gap-2">
+              <Info size={13} className="text-salvia/60 shrink-0 mt-0.5" />
+              <div className="font-body text-xs text-nebbia/50 leading-relaxed">
+                {isAbb && (
+                  <>
+                    Numero di clienti che l'avvocato (o lo studio) potrà registrare con questo piano.
+                    Il limite è <span className="text-oro">condiviso a livello studio</span> (titolare + collaboratori).
+                    Al raggiungimento del limite, l'avvocato deve acquistare un <span className="text-oro">Clienti add-on</span> per continuare.
+                  </>
+                )}
+                {isClientiAddon && (
+                  <>
+                    Clienti aggiuntivi che l'avvocato sblocca acquistando questo pacchetto.
+                    Si <span className="text-salvia">somma</span> al limite del piano attivo.
+                    Allineato alla scadenza del piano (Modello A).
+                  </>
+                )}
+                {isGratuito && (
+                  <>
+                    Clienti registrabili durante la prova gratuita. Tieni il numero basso (es. 3-5) per non far accumulare dati senza che l'avvocato si abboni.
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Storage / Spazio archiviazione — per abbonamento, spazio_archiviazione e gratuito */}
         {(isAbb || isStorage || isGratuito) && (
           <div>
@@ -494,7 +546,16 @@ export function AdminProdottiForm() {
         {isAddon && (
           <div className="bg-petrolio/50 border border-white/5 p-4">
             <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-              Il seat add-on aggiunge posti a uno studio esistente. La validità segue la scadenza del piano base.
+              Il seat add-on aggiunge posti a uno studio esistente. La validità segue la scadenza del piano base (pro-rata sui mesi rimanenti).
+            </p>
+          </div>
+        )}
+
+        {/* Clienti addon info */}
+        {isClientiAddon && (
+          <div className="bg-petrolio/50 border border-white/5 p-4">
+            <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+              Il clienti add-on alza il limite di clienti registrabili dello studio. La validità segue la scadenza del piano base (pro-rata sui mesi rimanenti). Alla scadenza del piano, il limite extra si azzera insieme al piano.
             </p>
           </div>
         )}

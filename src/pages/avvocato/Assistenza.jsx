@@ -3,8 +3,240 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/components/shared'
-import { Plus, Send, Search, AlertCircle } from 'lucide-react'
+import { Plus, Send, Search, AlertCircle, X, User, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+
+// ─────────────────────────────────────────────────────────────
+// MODAL: NUOVO TICKET A CLIENTE
+// (titolo + selezione cliente — niente messaggio iniziale,
+//  l'avvocato lo scrive subito dopo nella chat)
+// ─────────────────────────────────────────────────────────────
+function ModalNuovoTicketCliente({ onClose, onCreato }) {
+    const [titolo, setTitolo] = useState('')
+    const [cerca, setCerca] = useState('')
+    const [clienti, setClienti] = useState([])
+    const [clienteSel, setClienteSel] = useState(null)
+    const [loadingClienti, setLoadingClienti] = useState(true)
+    const [dropdownOpen, setDropdownOpen] = useState(false)
+    const [creando, setCreando] = useState(false)
+    const [errore, setErrore] = useState('')
+
+    // ESC chiude
+    useEffect(() => {
+        const onKey = e => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [onClose])
+
+    // Carica clienti dell'avvocato
+    useEffect(() => {
+        async function caricaClienti() {
+            setLoadingClienti(true)
+            const { data: { user } } = await supabase.auth.getUser()
+
+            // Recupera anche i clienti dei collaboratori (se sei titolare di studio)
+            const { data: profilo } = await supabase
+                .from('profiles').select('posti_acquistati').eq('id', user.id).single()
+
+            let avvIds = [user.id]
+            if ((profilo?.posti_acquistati ?? 1) > 1) {
+                const { data: collabs } = await supabase
+                    .from('profiles').select('id').eq('titolare_id', user.id)
+                avvIds = [user.id, ...(collabs ?? []).map(c => c.id)]
+            }
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('id, nome, cognome, ragione_sociale, tipo_soggetto, email')
+                .eq('role', 'cliente')
+                .in('avvocato_id', avvIds)
+                .order('cognome', { ascending: true, nullsFirst: false })
+
+            setClienti(data ?? [])
+            setLoadingClienti(false)
+        }
+        caricaClienti()
+    }, [])
+
+    function nomeCliente(c) {
+        if (!c) return ''
+        if (c.tipo_soggetto === 'persona_giuridica') return c.ragione_sociale ?? '—'
+        return `${c.nome ?? ''} ${c.cognome ?? ''}`.trim() || '—'
+    }
+
+    const clientiFiltrati = clienti.filter(c => {
+        if (!cerca.trim()) return true
+        const q = cerca.toLowerCase()
+        return nomeCliente(c).toLowerCase().includes(q) || (c.email ?? '').toLowerCase().includes(q)
+    })
+
+    async function handleCrea() {
+        setErrore('')
+        if (!clienteSel) return setErrore('Seleziona un cliente')
+        if (!titolo.trim()) return setErrore('Il titolo è obbligatorio')
+
+        setCreando(true)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { data: ticket, error } = await supabase
+                .from('ticket_assistenza')
+                .insert({
+                    mittente_id: user.id,
+                    destinatario_id: clienteSel.id,
+                    oggetto: titolo.trim(),
+                    mittente_ruolo: 'avvocato',
+                    stato: 'aperto',
+                    ultimo_mittente: 'avvocato',
+                })
+                .select()
+                .single()
+            if (error) throw new Error(error.message)
+            onCreato(ticket.id)
+        } catch (err) {
+            setErrore(err.message)
+            setCreando(false)
+        }
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-petrolio/80 backdrop-blur-sm overflow-y-auto"
+            onClick={onClose}
+        >
+            <div
+                className="bg-slate border border-white/10 w-full max-w-lg my-8 shadow-2xl"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                        <Plus size={14} className="text-oro" />
+                        <p className="font-body text-sm font-medium text-nebbia">Nuovo ticket a cliente</p>
+                    </div>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="p-5 space-y-4">
+                    {/* Cliente — dropdown con cerca */}
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+                            Cliente *
+                        </label>
+
+                        {clienteSel ? (
+                            <div className="flex items-center justify-between bg-petrolio border border-oro/30 px-4 py-2.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    {clienteSel.tipo_soggetto === 'persona_giuridica'
+                                        ? <Building2 size={13} className="text-oro shrink-0" />
+                                        : <User size={13} className="text-oro shrink-0" />
+                                    }
+                                    <div className="min-w-0">
+                                        <p className="font-body text-sm text-nebbia truncate">{nomeCliente(clienteSel)}</p>
+                                        <p className="font-body text-xs text-nebbia/40 truncate">{clienteSel.email}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setClienteSel(null); setCerca(''); setDropdownOpen(true) }}
+                                    className="text-nebbia/30 hover:text-red-400 transition-colors shrink-0 ml-2"
+                                    title="Rimuovi"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
+                                <input
+                                    value={cerca}
+                                    onChange={e => { setCerca(e.target.value); setDropdownOpen(true) }}
+                                    onFocus={() => setDropdownOpen(true)}
+                                    placeholder="Cerca cliente per nome o email..."
+                                    autoFocus
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+
+                                {dropdownOpen && (
+                                    <div className="absolute z-10 left-0 right-0 mt-1 bg-slate border border-white/10 max-h-60 overflow-y-auto shadow-xl">
+                                        {loadingClienti ? (
+                                            <div className="flex justify-center py-6">
+                                                <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
+                                            </div>
+                                        ) : clientiFiltrati.length === 0 ? (
+                                            <p className="font-body text-xs text-nebbia/40 text-center py-6 px-4">
+                                                {cerca ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
+                                            </p>
+                                        ) : (
+                                            clientiFiltrati.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    onClick={() => { setClienteSel(c); setDropdownOpen(false); setCerca('') }}
+                                                    className="w-full text-left px-4 py-2.5 border-b border-white/5 last:border-0 hover:bg-oro/10 transition-colors flex items-center gap-2"
+                                                >
+                                                    {c.tipo_soggetto === 'persona_giuridica'
+                                                        ? <Building2 size={12} className="text-nebbia/40 shrink-0" />
+                                                        : <User size={12} className="text-nebbia/40 shrink-0" />
+                                                    }
+                                                    <div className="min-w-0">
+                                                        <p className="font-body text-sm text-nebbia truncate">{nomeCliente(c)}</p>
+                                                        <p className="font-body text-xs text-nebbia/40 truncate">{c.email}</p>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Titolo */}
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+                            Titolo / oggetto *
+                        </label>
+                        <input
+                            value={titolo}
+                            onChange={e => setTitolo(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && titolo.trim() && clienteSel && !creando) handleCrea() }}
+                            placeholder="Es. Documenti mancanti, Aggiornamento pratica..."
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                        />
+                        <p className="font-body text-xs text-nebbia/25 mt-2">
+                            Dopo aver creato il ticket potrai scrivere il primo messaggio nella chat.
+                        </p>
+                    </div>
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={13} /> {errore}
+                        </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                        <button
+                            onClick={onClose}
+                            disabled={creando}
+                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40"
+                        >
+                            Annulla
+                        </button>
+                        <button
+                            onClick={handleCrea}
+                            disabled={creando || !clienteSel || !titolo.trim()}
+                            className="btn-primary text-sm flex-1 justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            {creando
+                                ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                                : <><Check size={14} /> Apri ticket</>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 // ─────────────────────────────────────────────────────────────
 // LISTA TICKET
@@ -18,6 +250,8 @@ export function AvvocatoAssistenza() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [statoF, setStatoF] = useState('')
+    const [mostraModalCliente, setMostraModalCliente] = useState(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         async function init() {
@@ -42,25 +276,49 @@ export function AvvocatoAssistenza() {
         if (!meId || ids.length === 0) return
         setLoading(true)
 
-        // Ticket clienti → dove sono destinatario (io o uno dei miei collaboratori)
-        const qClienti = supabase
+        // Carica TUTTI i ticket che coinvolgono uno degli avvocati dello studio
+        // (sia come mittente che come destinatario)
+        const idsCsv = ids.join(',')
+        const { data: tuttiTicket } = await supabase
             .from('ticket_assistenza')
-            .select('id, oggetto, stato, created_at, updated_at, mittente_ruolo, mittente:mittente_id(nome, cognome), messaggi:messaggi_ticket(id, autore_tipo, created_at)')
-            .in('destinatario_id', ids)
-            .eq('mittente_ruolo', 'cliente')
+            .select(`
+                id, oggetto, stato, created_at, updated_at, mittente_ruolo,
+                mittente_id, destinatario_id,
+                mittente:mittente_id(id, nome, cognome, role),
+                destinatario:destinatario_id(id, nome, cognome, role),
+                messaggi:messaggi_ticket(id, autore_tipo, created_at)
+            `)
+            .or(`mittente_id.in.(${idsCsv}),destinatario_id.in.(${idsCsv})`)
             .order('updated_at', { ascending: false })
 
-        // Ticket Lexum → dove sono mittente verso admin
-        const qLexum = supabase
-            .from('ticket_assistenza')
-            .select('id, oggetto, stato, created_at, updated_at, messaggi:messaggi_ticket(id, autore_tipo, created_at)')
-            .eq('mittente_id', meId)
-            .eq('mittente_ruolo', 'avvocato')
-            .order('updated_at', { ascending: false })
+        // Split: clienti vs Lexum
+        // - Lexum = quando avvocato (uno dei nostri) parla con admin
+        // - Clienti = tutto il resto che coinvolge un cliente
+        const cl = []
+        const lx = []
+        for (const t of (tuttiTicket ?? [])) {
+            const mittRole = t.mittente?.role
+            const destRole = t.destinatario?.role
+            const idsSet = new Set(ids)
 
-        const [{ data: cl }, { data: lx }] = await Promise.all([qClienti, qLexum])
-        setTicketClienti(cl ?? [])
-        setTicketLexum(lx ?? [])
+            // Lexum: avvocato dello studio parla con admin
+            if (idsSet.has(t.mittente_id) && destRole === 'admin') {
+                // Mostro solo i miei ticket Lexum, non quelli dei collaboratori
+                if (t.mittente_id === meId) lx.push(t)
+                continue
+            }
+
+            // Clienti: l'altra parte è un cliente
+            if (mittRole === 'cliente' || destRole === 'cliente') {
+                // Per i collaboratori: mostra il nome del cliente come "mittente" visualizzato
+                // Riassegno t.mittente al cliente se l'ho aperto io
+                const clientePartecipante = mittRole === 'cliente' ? t.mittente : t.destinatario
+                cl.push({ ...t, mittente: clientePartecipante })
+            }
+        }
+
+        setTicketClienti(cl)
+        setTicketLexum(lx)
         setLoading(false)
     }, [meId, ids])
 
@@ -90,9 +348,15 @@ export function AvvocatoAssistenza() {
             <PageHeader label="Supporto" title="Assistenza"
                 action={isLexum
                     ? <Link to="/assistenza/nuovo" className="btn-primary text-sm flex items-center gap-2">
-                        <Plus size={15} /> Nuovo ticket
+                        <Plus size={15} /> Nuovo ticket a Lexum
                     </Link>
-                    : null}
+                    : <button
+                        onClick={() => setMostraModalCliente(true)}
+                        className="btn-primary text-sm flex items-center gap-2"
+                    >
+                        <Plus size={15} /> Nuovo ticket a cliente
+                    </button>
+                }
             />
 
             <div className="flex gap-0 border-b border-white/8">
@@ -189,6 +453,16 @@ export function AvvocatoAssistenza() {
                         </table>
                     )}
                 </div>
+            )}
+
+            {mostraModalCliente && (
+                <ModalNuovoTicketCliente
+                    onClose={() => setMostraModalCliente(false)}
+                    onCreato={(ticketId) => {
+                        setMostraModalCliente(false)
+                        navigate(`/assistenza/${ticketId}`)
+                    }}
+                />
             )}
         </div>
     )
@@ -298,7 +572,7 @@ export function AvvocatoAssistenzaDettaglio() {
             setMeId(user.id)
             const [{ data: tk }, { data: msgs }] = await Promise.all([
                 supabase.from('ticket_assistenza')
-                    .select('*, mittente:mittente_id(nome, cognome), destinatario:destinatario_id(nome, cognome)')
+                    .select('*, mittente:mittente_id(nome, cognome, role), destinatario:destinatario_id(nome, cognome, role)')
                     .eq('id', id).single(),
                 supabase.from('messaggi_ticket')
                     .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
@@ -306,7 +580,8 @@ export function AvvocatoAssistenzaDettaglio() {
             ])
             setTicket(tk)
             setMessaggi(msgs ?? [])
-            setIsLexum(tk?.mittente_ruolo === 'avvocato' || tk?.mittente_ruolo === 'user')
+            // È un ticket "Supporto Lexum" solo se una delle due parti è admin
+            setIsLexum(tk?.mittente?.role === 'admin' || tk?.destinatario?.role === 'admin')
             setLoading(false)
         }
         init()
@@ -344,16 +619,29 @@ export function AvvocatoAssistenzaDettaglio() {
     const mittente = ticket.mittente ? `${ticket.mittente.nome} ${ticket.mittente.cognome}` : 'Sconosciuto'
 
     return (
-        <div className="space-y-5 max-w-3xl">
+        <div className="space-y-5">
             <BackButton to="/assistenza" label="Assistenza" />
 
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <p className="section-label mb-2">{isLexum ? 'Supporto Lexum' : 'Messaggio cliente'} · #{ticket.id.slice(0, 8)}</p>
+                    <p className="section-label mb-2">{isLexum ? 'Supporto Lexum' : 'Ticket cliente'} · #{ticket.id.slice(0, 8)}</p>
                     <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
                     <p className="font-body text-xs text-nebbia/30 mt-1">{mittente} · {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
                 </div>
-                <Badge label={ticket.stato === 'aperto' ? 'Aperto' : 'Chiuso'} variant={ticket.stato === 'aperto' ? 'salvia' : 'gray'} />
+                <div className="flex items-center gap-3 shrink-0">
+                    <Badge label={ticket.stato === 'aperto' ? 'Aperto' : 'Chiuso'} variant={ticket.stato === 'aperto' ? 'salvia' : 'gray'} />
+                    {ticket.stato === 'aperto' ? (
+                        <button onClick={chiudiTicket}
+                            className="flex items-center gap-1.5 font-body text-xs text-nebbia/60 hover:text-salvia border border-white/15 hover:border-salvia/30 px-3 py-1.5 transition-colors">
+                            <Check size={12} /> Chiudi ticket
+                        </button>
+                    ) : (
+                        <button onClick={riapriTicket}
+                            className="flex items-center gap-1.5 font-body text-xs text-oro hover:text-oro/80 border border-oro/30 hover:border-oro/50 px-3 py-1.5 transition-colors">
+                            Riapri
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="bg-slate border border-white/5 p-5 space-y-4 min-h-48 max-h-[500px] overflow-y-auto">
@@ -389,15 +677,11 @@ export function AvvocatoAssistenzaDettaglio() {
                             {inviando ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : <Send size={15} />}
                         </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <p className="font-body text-[10px] text-nebbia/20">Invio con Enter · A capo con Shift+Enter</p>
-                        <button onClick={chiudiTicket} className="font-body text-xs text-nebbia/30 hover:text-salvia transition-colors">Chiudi ticket</button>
-                    </div>
+                    <p className="font-body text-[10px] text-nebbia/20">Invio con Enter · A capo con Shift+Enter</p>
                 </div>
             ) : (
-                <div className="bg-petrolio/40 border border-white/5 p-4 flex items-center justify-between">
-                    <p className="font-body text-sm text-nebbia/30">Ticket chiuso</p>
-                    <button onClick={riapriTicket} className="font-body text-xs text-oro hover:text-oro/70">Riapri</button>
+                <div className="bg-petrolio/40 border border-white/5 p-4">
+                    <p className="font-body text-sm text-nebbia/30 text-center">Ticket chiuso. Usa il pulsante in alto per riaprirlo.</p>
                 </div>
             )}
         </div>

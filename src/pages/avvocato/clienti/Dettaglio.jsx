@@ -1,3 +1,377 @@
+// src/pages/avvocato/clienti/Dettaglio.jsx
+
+import { useState, useEffect, useRef } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { BackButton, Badge, InputField, EmptyState } from '@/components/shared'
+import {
+    Plus, Search, Send, Lock, FileText, MessageSquare,
+    CreditCard, StickyNote, User, FolderOpen, ArrowRight, Sparkles,
+    Edit2, Check, X, Calendar, Clock, AlertCircle, Trash2, Building2,
+    ExternalLink, Eye, Upload, KeyRound, Mail, Eye as EyeIcon, EyeOff,
+    Copy, RefreshCw, CheckCircle, ShieldOff
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+
+// ─────────────────────────────────────────────────────────────
+// COSTANTI
+// ─────────────────────────────────────────────────────────────
+const STATI_PRATICA = {
+    aperta: { label: 'Aperta', variant: 'salvia' },
+    chiusa: { label: 'Chiusa', variant: 'gray' },
+}
+
+const STATI_FATTURA = {
+    in_attesa: { label: 'In attesa', variant: 'warning' },
+    pagata: { label: 'Pagata', variant: 'salvia' },
+    scaduta: { label: 'Scaduta', variant: 'red' },
+    annullata: { label: 'Annullata', variant: 'gray' },
+}
+
+const STATUS_OCR = {
+    pending: { label: 'In coda', variant: 'gray' },
+    processing: { label: 'In elaborazione', variant: 'warning' },
+    completed: { label: 'Indicizzato', variant: 'salvia' },
+    failed: { label: 'Errore', variant: 'red' },
+    skipped: { label: 'Manuale', variant: 'gray' },
+}
+
+const TABS = [
+    { id: 'panoramica', label: 'Panoramica', icon: User },
+    { id: 'pratiche', label: 'Pratiche', icon: FolderOpen },
+    { id: 'documenti', label: 'Documenti', icon: FileText },
+    { id: 'comunicazioni', label: 'Comunicazioni', icon: MessageSquare },
+    { id: 'note_interne', label: 'Note interne', icon: Lock },
+    { id: 'pagamenti', label: 'Pagamenti', icon: CreditCard },
+]
+
+// ─────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────
+function formatSize(bytes) {
+    if (!bytes) return '—'
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function nomeCliente(c) {
+    if (!c) return ''
+    if (c.tipo_soggetto === 'persona_giuridica') return c.ragione_sociale ?? c.nome ?? '—'
+    return `${c.nome ?? ''} ${c.cognome ?? ''}`.trim() || '—'
+}
+
+// ─────────────────────────────────────────────────────────────
+// SWITCHER PF / PG
+// ─────────────────────────────────────────────────────────────
+function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
+    return (
+        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-fit">
+            <button
+                type="button"
+                onClick={() => !disabled && onChange('persona_fisica')}
+                disabled={disabled}
+                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_fisica'
+                    ? 'bg-oro/10 text-oro border border-oro/30'
+                    : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                <User size={13} /> Persona fisica
+            </button>
+            <button
+                type="button"
+                onClick={() => !disabled && onChange('persona_giuridica')}
+                disabled={disabled}
+                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_giuridica'
+                    ? 'bg-oro/10 text-oro border border-oro/30'
+                    : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                <Building2 size={13} /> Persona giuridica
+            </button>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODAL CAMBIO PASSWORD CLIENTE (riusa pattern admin)
+// ─────────────────────────────────────────────────────────────
+function ModalCambiaPasswordCliente({ cliente, onClose, onSuccess }) {
+    const [modo, setModo] = useState('genera') // 'genera' | 'manuale'
+    const [pwdManuale, setPwdManuale] = useState('')
+    const [showPwd, setShowPwd] = useState(false)
+    const [inviando, setInviando] = useState(false)
+    const [errore, setErrore] = useState('')
+    const [risultato, setRisultato] = useState(null)
+    const [copiato, setCopiato] = useState(false)
+
+    async function handleConferma() {
+        setErrore(''); setInviando(true)
+        try {
+            const body = { action: 'set-password', cliente_id: cliente.id }
+            if (modo === 'manuale') {
+                if (!pwdManuale || pwdManuale.length < 8) {
+                    throw new Error('Password minimo 8 caratteri')
+                }
+                body.new_password = pwdManuale
+            }
+            const { data, error } = await supabase.functions.invoke('avvocato-cliente-actions', { body })
+            if (error) throw new Error(error.message)
+            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            setRisultato(data)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setInviando(false)
+        }
+    }
+
+    function handleCopia() {
+        if (!risultato?.password) return
+        navigator.clipboard.writeText(risultato.password)
+        setCopiato(true)
+        setTimeout(() => setCopiato(false), 2000)
+    }
+
+    function handleChiudi() {
+        if (risultato) {
+            onSuccess(`Password aggiornata per ${nomeCliente(cliente)}`)
+        }
+        onClose()
+    }
+
+    if (risultato) {
+        return (
+            <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-slate border border-salvia/30 w-full max-w-md p-6 space-y-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-salvia/10 border border-salvia/30 flex items-center justify-center">
+                            <CheckCircle size={18} className="text-salvia" />
+                        </div>
+                        <h2 className="font-display text-lg text-nebbia">Password aggiornata</h2>
+                    </div>
+
+                    {risultato.generata && (
+                        <>
+                            <div className="bg-amber-900/10 border border-amber-500/30 p-3">
+                                <p className="font-body text-xs text-amber-400 leading-relaxed">
+                                    <span className="font-medium">Importante:</span> questa password viene mostrata una sola volta.
+                                    Comunicala in modo sicuro al cliente (telefono, di persona) — non via email o chat non cifrata.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
+                                    Password temporanea
+                                </label>
+                                <div className="flex items-center gap-2 bg-petrolio border border-white/10 p-3">
+                                    <code className="flex-1 font-mono text-base text-nebbia tracking-wider">{risultato.password}</code>
+                                    <button onClick={handleCopia} className="text-oro hover:text-oro/70 shrink-0">
+                                        {copiato ? <Check size={15} /> : <Copy size={15} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {!risultato.generata && (
+                        <p className="font-body text-sm text-nebbia/60">
+                            La password e stata aggiornata. Comunicala al cliente.
+                        </p>
+                    )}
+
+                    <button onClick={handleChiudi} className="btn-primary text-sm w-full justify-center">
+                        Ho preso nota, chiudi
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate border border-white/10 w-full max-w-md">
+                <div className="flex items-center justify-between p-5 border-b border-white/8">
+                    <div className="flex items-center gap-2">
+                        <KeyRound size={16} className="text-oro" />
+                        <h2 className="font-display text-lg text-nebbia">Cambia password cliente</h2>
+                    </div>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    <p className="font-body text-sm text-nebbia/60 leading-relaxed">
+                        Stai cambiando la password di <span className="text-nebbia font-medium">{nomeCliente(cliente)}</span>.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={() => setModo('genera')}
+                            className={`flex flex-col items-start gap-1 p-3 border text-left transition-colors ${modo === 'genera'
+                                ? 'border-oro bg-oro/10'
+                                : 'border-white/10 hover:border-white/20'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <RefreshCw size={12} className={modo === 'genera' ? 'text-oro' : 'text-nebbia/40'} />
+                                <span className="font-body text-sm font-medium text-nebbia">Genera casuale</span>
+                            </div>
+                            <p className="font-body text-xs text-nebbia/40">12 caratteri sicuri</p>
+                        </button>
+                        <button
+                            onClick={() => setModo('manuale')}
+                            className={`flex flex-col items-start gap-1 p-3 border text-left transition-colors ${modo === 'manuale'
+                                ? 'border-oro bg-oro/10'
+                                : 'border-white/10 hover:border-white/20'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <KeyRound size={12} className={modo === 'manuale' ? 'text-oro' : 'text-nebbia/40'} />
+                                <span className="font-body text-sm font-medium text-nebbia">Manuale</span>
+                            </div>
+                            <p className="font-body text-xs text-nebbia/40">Scegli tu</p>
+                        </button>
+                    </div>
+
+                    {modo === 'manuale' && (
+                        <div>
+                            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
+                                Nuova password (min 8 caratteri)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showPwd ? 'text' : 'password'}
+                                    value={pwdManuale}
+                                    onChange={e => setPwdManuale(e.target.value)}
+                                    placeholder="........"
+                                    autoFocus
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 pr-10 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+                                <button type="button" onClick={() => setShowPwd(v => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-oro">
+                                    {showPwd ? <EyeOff size={15} /> : <EyeIcon size={15} />}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={14} /> {errore}
+                        </div>
+                    )}
+
+                    <div className="flex gap-2">
+                        <button onClick={onClose} disabled={inviando}
+                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+                            Annulla
+                        </button>
+                        <button onClick={handleConferma} disabled={inviando || (modo === 'manuale' && pwdManuale.length < 8)}
+                            className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
+                            {inviando
+                                ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                                : 'Conferma cambio password'
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEZIONE STRUMENTI ASSISTENZA (reset email + cambia password)
+// ─────────────────────────────────────────────────────────────
+function SezioneStrumentiAssistenza({ cliente }) {
+    const [errore, setErrore] = useState('')
+    const [successo, setSuccesso] = useState('')
+    const [busyReset, setBusyReset] = useState(false)
+    const [modalPwd, setModalPwd] = useState(false)
+
+    async function handleSendResetEmail() {
+        if (!confirm(`Inviare email di reset password a ${cliente.email}?`)) return
+        setErrore(''); setSuccesso(''); setBusyReset(true)
+        try {
+            const { data, error } = await supabase.functions.invoke('avvocato-cliente-actions', {
+                body: { action: 'send-reset-email', cliente_id: cliente.id }
+            })
+            if (error) throw new Error(error.message)
+            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            setSuccesso(data.messaggio)
+            setTimeout(() => setSuccesso(''), 5000)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setBusyReset(false)
+        }
+    }
+
+    return (
+        <>
+            <div className="bg-slate border border-amber-500/20 p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                    <ShieldOff size={14} className="text-amber-400" />
+                    <p className="section-label !m-0">Assistenza accesso cliente</p>
+                </div>
+
+                {errore && (
+                    <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                        <AlertCircle size={14} /> {errore}
+                    </div>
+                )}
+                {successo && (
+                    <div className="flex items-center gap-2 text-salvia text-xs font-body p-3 bg-salvia/5 border border-salvia/20">
+                        <CheckCircle size={14} /> {successo}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                        onClick={handleSendResetEmail}
+                        disabled={busyReset}
+                        className="flex flex-col items-start gap-2 p-4 bg-petrolio border border-white/10 hover:border-oro/40 transition-colors text-left disabled:opacity-40"
+                    >
+                        <div className="flex items-center gap-2">
+                            {busyReset
+                                ? <span className="animate-spin w-3.5 h-3.5 border-2 border-oro border-t-transparent rounded-full" />
+                                : <Mail size={14} className="text-oro" />
+                            }
+                            <span className="font-body text-sm font-medium text-nebbia">Invia email reset password</span>
+                        </div>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            Il cliente ricevera un link per impostare una nuova password da solo.
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => setModalPwd(true)}
+                        disabled={busyReset}
+                        className="flex flex-col items-start gap-2 p-4 bg-petrolio border border-white/10 hover:border-oro/40 transition-colors text-left disabled:opacity-40"
+                    >
+                        <div className="flex items-center gap-2">
+                            <KeyRound size={14} className="text-oro" />
+                            <span className="font-body text-sm font-medium text-nebbia">Cambia password</span>
+                        </div>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            Imposta tu una password temporanea dovrai comunicarla al cliente.
+                        </p>
+                    </button>
+                </div>
+            </div>
+
+            {modalPwd && (
+                <ModalCambiaPasswordCliente
+                    cliente={cliente}
+                    onClose={() => setModalPwd(false)}
+                    onSuccess={(msg) => {
+                        setSuccesso(msg)
+                        setTimeout(() => setSuccesso(''), 10000)
+                    }}
+                />
+            )}
+        </>
+    )
+}
 // ─────────────────────────────────────────────────────────────
 // TAB DOCUMENTI
 // ─────────────────────────────────────────────────────────────
@@ -181,7 +555,7 @@ function TabNoteInterne({ clienteId }) {
         <div className="space-y-4">
             <div className="flex items-center gap-2 p-4 bg-amber-900/10 border border-amber-500/20">
                 <Lock size={14} className="text-amber-400 shrink-0" />
-                <p className="font-body text-xs text-amber-400">Queste note sono visibili solo a te e agli amministratori.</p>
+                <p className="font-body text-xs text-amber-400">Queste note sono visibili solo a te e a chi ha visibilità del cliente.</p>
             </div>
             <div className="bg-slate border border-white/5 p-5">
                 <p className="section-label mb-3">Aggiungi nota</p>
@@ -671,6 +1045,132 @@ function ProssimiAppuntamenti({ clienteId }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// MODAL RESET PASSWORD
+// ─────────────────────────────────────────────────────────────
+function ModalResetPassword({ cliente, onClose }) {
+    const [password, setPassword] = useState('')
+    const [mostraPassword, setMostraPassword] = useState(false)
+    const [inviando, setInviando] = useState(false)
+    const [errore, setErrore] = useState('')
+    const [completato, setCompletato] = useState(false)
+
+    async function eseguiReset() {
+        setErrore('')
+        if (!password) return setErrore('Inserisci una password')
+        if (password.length < 8) return setErrore('Almeno 8 caratteri')
+
+        setInviando(true)
+        try {
+            const { data, error } = await supabase.functions.invoke('cliente-reset-password', {
+                body: { cliente_id: cliente.id, nuova_password: password }
+            })
+            if (error) throw new Error(error.message)
+            if (!data?.ok) throw new Error(data?.error ?? 'Errore reset')
+            setCompletato(true)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setInviando(false)
+        }
+    }
+
+    if (completato) {
+        return (
+            <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-slate border border-salvia/30 w-full max-w-md p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-salvia/10 border border-salvia/30 flex items-center justify-center">
+                            <CheckCircle size={18} className="text-salvia" />
+                        </div>
+                        <h2 className="font-display text-lg text-nebbia">Password aggiornata</h2>
+                    </div>
+                    <p className="font-body text-sm text-nebbia/60 leading-relaxed">
+                        La nuova password e attiva. Comunicala al cliente con il canale che preferisci (telefono, whatsapp, di persona).
+                    </p>
+                    <button onClick={onClose} className="btn-primary text-sm w-full justify-center">
+                        Chiudi
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate border border-oro/30 w-full max-w-md">
+                <div className="flex items-center justify-between p-5 border-b border-white/8">
+                    <div className="flex items-center gap-2">
+                        <Lock size={16} className="text-oro" />
+                        <h2 className="font-display text-lg text-nebbia">Reset password cliente</h2>
+                    </div>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <p className="font-body text-sm text-nebbia/60 leading-relaxed">
+                        Imposta una nuova password per accedere al portale. Comunicala al cliente con il canale che preferisci. Lexum non invia email automatiche.
+                    </p>
+
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+                            Nuova password
+                        </label>
+                        <div className="relative">
+                            <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
+                            <input
+                                type={mostraPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="Almeno 8 caratteri"
+                                autoFocus
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-10 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setMostraPassword(v => !v)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-nebbia p-1"
+                            >
+                                {mostraPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={14} /> {errore}
+                        </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={inviando}
+                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40"
+                        >
+                            Annulla
+                        </button>
+                        <button
+                            type="button"
+                            onClick={eseguiReset}
+                            disabled={inviando || !password}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-oro/10 border border-oro/40 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            {inviando
+                                ? <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
+                                : <><Lock size={14} /> Imposta password</>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
 // DETTAGLIO CLIENTE — pagina principale
 // ─────────────────────────────────────────────────────────────
 export default function AvvocatoClientiDettaglio() {
@@ -688,6 +1188,7 @@ export default function AvvocatoClientiDettaglio() {
     const [erroreCliente, setErroreCliente] = useState('')
     const [avvocatoId, setAvvocatoId] = useState('')
     const [meId, setMeId] = useState(null)
+    const [mostraModalReset, setMostraModalReset] = useState(false)
 
     useEffect(() => {
         async function carica() {
@@ -791,16 +1292,24 @@ export default function AvvocatoClientiDettaglio() {
                     <h1 className="font-display text-4xl font-light text-nebbia">{nomeCliente(cliente)}</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-1">{cliente.email} · {cliente.telefono ?? '—'}</p>
                 </div>
-                {isStudio && (
-                    <div className="flex items-center gap-2">
-                        <span className="font-body text-xs text-nebbia/30">Assegnato a</span>
-                        <select value={avvocatoId} onChange={e => setAvvocatoId(e.target.value)}
-                            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-1.5 outline-none focus:border-oro/50">
-                            <option value={meId}>Tu</option>
-                            {collaboratori.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
-                        </select>
-                    </div>
-                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                    {isStudio && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-body text-xs text-nebbia/30">Assegnato a</span>
+                            <select value={avvocatoId} onChange={e => setAvvocatoId(e.target.value)}
+                                className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-1.5 outline-none focus:border-oro/50">
+                                <option value={meId}>Tu</option>
+                                {collaboratori.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
+                            </select>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setMostraModalReset(true)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
+                    >
+                        <Lock size={12} /> Reset password
+                    </button>
+                </div>
             </div>
 
             {/* Strumenti di assistenza accesso cliente — sempre visibili */}
@@ -1030,6 +1539,13 @@ export default function AvvocatoClientiDettaglio() {
             {tab === 'comunicazioni' && <TabComunicazioni clienteId={id} />}
             {tab === 'note_interne' && <TabNoteInterne clienteId={id} />}
             {tab === 'pagamenti' && <TabPagamenti clienteId={id} avvocatoId={avvocatoId} />}
+
+            {mostraModalReset && cliente && (
+                <ModalResetPassword
+                    cliente={cliente}
+                    onClose={() => setMostraModalReset(false)}
+                />
+            )}
         </div>
     )
 }
