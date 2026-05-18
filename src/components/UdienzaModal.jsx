@@ -212,6 +212,16 @@ export default function UdienzaModal({
                 const fineCalc = new Date(dataOra.getTime() + (parseInt(form.durata_minuti) || 120) * 60000)
                 const titoloApp = `Udienza — ${tipoFinale}${praticaTitolo ? ` (${praticaTitolo})` : ''}`
 
+                // Mappa i campi udienza → appuntamento
+                // (appuntamenti ha note_interne, non "luogo"/"note")
+                const sede = [form.tribunale, form.sezione, form.aula].filter(Boolean).join(' - ')
+                const noteInterneApp = [
+                    sede ? `Sede: ${sede}` : null,
+                    form.giudice ? `Giudice: ${form.giudice}` : null,
+                    form.oggetto ? `Oggetto: ${form.oggetto}` : null,
+                    form.note_preparazione ? `Note: ${form.note_preparazione}` : null,
+                ].filter(Boolean).join('\n')
+
                 const appPayload = {
                     avvocato_id: user.id,
                     pratica_id: praticaId,
@@ -221,18 +231,28 @@ export default function UdienzaModal({
                     stato: 'programmato',
                     data_ora_inizio: dataOra.toISOString(),
                     data_ora_fine: fineCalc.toISOString(),
-                    luogo: [form.tribunale, form.sezione, form.aula].filter(Boolean).join(' - ') || null,
-                    note: form.oggetto || null,
+                    note_interne: noteInterneApp || null,
                 }
 
                 if (appuntamentoId) {
-                    await supabase.from('appuntamenti').update(appPayload).eq('id', appuntamentoId)
+                    const { error: errUpd } = await supabase
+                        .from('appuntamenti')
+                        .update(appPayload)
+                        .eq('id', appuntamentoId)
+                    if (errUpd) {
+                        console.error('Errore sync appuntamento (update):', errUpd.message)
+                        throw new Error(`Udienza salvata ma sync calendario fallita: ${errUpd.message}`)
+                    }
                 } else {
-                    const { data: newApp } = await supabase
+                    const { data: newApp, error: errIns } = await supabase
                         .from('appuntamenti')
                         .insert(appPayload)
                         .select('id')
                         .single()
+                    if (errIns) {
+                        console.error('Errore sync appuntamento (insert):', errIns.message)
+                        throw new Error(`Udienza salvata ma sync calendario fallita: ${errIns.message}`)
+                    }
                     if (newApp) {
                         appuntamentoId = newApp.id
                         await supabase.from('udienze').update({ appuntamento_id: newApp.id }).eq('id', udienzaId)
@@ -311,8 +331,8 @@ export default function UdienzaModal({
                                     type="button"
                                     onClick={() => aggiorna('stato', s.value)}
                                     className={`px-3 py-1.5 font-body text-xs border transition-colors ${form.stato === s.value
-                                            ? STATO_COLORS[s.color]
-                                            : 'border-white/10 text-nebbia/40 hover:border-white/20 hover:text-nebbia/60'
+                                        ? STATO_COLORS[s.color]
+                                        : 'border-white/10 text-nebbia/40 hover:border-white/20 hover:text-nebbia/60'
                                         }`}
                                 >
                                     {s.label}

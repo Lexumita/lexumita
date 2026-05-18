@@ -504,13 +504,26 @@ export default function AvvocatoCalendar() {
                             Questa scadenza è stata generata automaticamente. Per modificarla o segnarla come compiuta, vai sulla scheda pratica.
                           </p>
                         )}
-                        {e.stato === 'programmato' && !isScad && (
+                        {e.stato === 'programmato' && !isScad && e.tipo !== 'udienza' && (
                           <div className="flex gap-2">
                             <button onClick={() => cambiaStato(e.id, 'concluso')} className="flex-1 font-body text-xs py-1.5 border border-salvia/30 text-salvia hover:bg-salvia/10 transition-colors flex items-center justify-center gap-1">
                               <Check size={11} /> Concluso
                             </button>
                             <button onClick={() => cambiaStato(e.id, 'annullato')} className="font-body text-xs py-1.5 px-3 border border-red-500/30 text-red-400 hover:bg-red-900/10 transition-colors">Annulla</button>
                           </div>
+                        )}
+                        {isUd && e.pratica && (
+                          <Link
+                            to={`/pratiche/${e.pratica.id}`}
+                            className="block w-full text-center font-body text-xs py-2 border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            ⚖ Gestisci nella pratica →
+                          </Link>
+                        )}
+                        {isUd && !e.pratica && (
+                          <p className="font-body text-[10px] text-nebbia/30 italic text-center">
+                            Le udienze si gestiscono dalla scheda della pratica collegata.
+                          </p>
                         )}
                       </div>
                     )}

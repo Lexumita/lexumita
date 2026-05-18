@@ -46,14 +46,14 @@ export default function NuovoTerminePratica({ praticaId, onClose, onSaved }) {
     const [salvando, setSalvando] = useState(false)
     const [errore, setErrore] = useState(null)
 
-    // ─── Chiudi con ESC ─────────────────────────────────────
+    // Chiudi con ESC
     useEffect(() => {
         const onKey = e => { if (e.key === 'Escape' && !salvando) onClose() }
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
     }, [onClose, salvando])
 
-    // ─── Carica tipi termini ────────────────────────────────
+    // Carica tipi termini
     useEffect(() => {
         supabase
             .from('tipi_termini')
@@ -70,7 +70,7 @@ export default function NuovoTerminePratica({ praticaId, onClose, onSaved }) {
             })
     }, [])
 
-    // ─── Calcola anteprima ──────────────────────────────────
+    // Calcola anteprima
     useEffect(() => {
         if (!tipoSelected || !dataEvento) {
             setAnteprima(null)
@@ -114,7 +114,7 @@ export default function NuovoTerminePratica({ praticaId, onClose, onSaved }) {
         return acc
     }, {})
 
-    // ─── Salva ──────────────────────────────────────────────
+    // Salva
     async function salva() {
         if (!tipoSelected || !dataEvento || !anteprima) return
         setSalvando(true)
@@ -226,8 +226,8 @@ export default function NuovoTerminePratica({ praticaId, onClose, onSaved }) {
                                     : `Il termine viene calcolato in avanti (${tipoCorrente.giorni} giorni dopo)`
                                 }
                                 {tipoCorrente.sospensione_feriale
-                                    ? ' · con sospensione feriale 1-31 agosto'
-                                    : ' · senza sospensione feriale'
+                                    ? ' - con sospensione feriale 1-31 agosto'
+                                    : ' - senza sospensione feriale'
                                 }
                             </p>
                         </div>
@@ -308,7 +308,7 @@ export default function NuovoTerminePratica({ praticaId, onClose, onSaved }) {
                         <div className="flex items-start gap-2 text-nebbia/40">
                             <Info size={11} className="mt-0.5 shrink-0" />
                             <p className="font-body text-xs">
-                                Salvando, il termine verrà aggiunto anche al calendario come scadenza
+                                Salvando, il termine verra' aggiunto anche al calendario come scadenza
                             </p>
                         </div>
                     )}

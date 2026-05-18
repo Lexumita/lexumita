@@ -345,9 +345,10 @@ export default function AvvocatoDashboard() {
   async function caricaPeriodo() {
     const inizioISO = range.inizio.toISOString()
     const fineISO = range.fine.toISOString()
+    const inizioDate = inizioISO.split('T')[0]
+    const fineDate = fineISO.split('T')[0]
 
-    // Pratiche chiuse nel periodo (assumo colonna data_chiusura o updated_at quando stato='chiusa')
-    // Se hai una colonna specifica come `chiusa_at`, sostituiscila qui
+    // Pratiche chiuse nel periodo
     const { count: countChiuse } = await supabase
       .from('pratiche')
       .select('*', { count: 'exact', head: true })
@@ -356,24 +357,34 @@ export default function AvvocatoDashboard() {
       .gte('updated_at', inizioISO)
       .lte('updated_at', fineISO)
 
-    // Fatturato nel periodo (per data_emissione)
+    // ─── Fatture emesse nel periodo (per: fatturato totale e incassato del periodo) ───
     const { data: fattPeriodo } = await supabase
       .from('fatture')
-      .select('totale_lordo, stato, data_pagamento')
+      .select('totale_lordo, stato')
       .eq('avvocato_id', profile.id)
-      .gte('data_emissione', inizioISO.split('T')[0])
-      .lte('data_emissione', fineISO.split('T')[0])
+      .gte('data_emissione', inizioDate)
+      .lte('data_emissione', fineDate)
 
     let fatturatoTot = 0
     let incassato = 0
-    let daIncassare = 0
-
     for (const f of fattPeriodo ?? []) {
       const imp = Number(f.totale_lordo) || 0
-      if (f.stato !== 'bozza') fatturatoTot += imp
+      if (f.stato !== 'bozza' && f.stato !== 'annullata') fatturatoTot += imp
       if (f.stato === 'pagata') incassato += imp
-      else if (f.stato !== 'bozza') daIncassare += imp
     }
+
+    // ─── Da incassare: TUTTO il debito attivo, indipendente dal periodo ───
+    // Tutte le fatture in attesa (anche scadute) escluso bozza/pagata/annullata
+    const { data: fattAttive } = await supabase
+      .from('fatture')
+      .select('totale_lordo, stato, data_scadenza')
+      .eq('avvocato_id', profile.id)
+      .in('stato', ['in_attesa', 'scaduta'])
+
+    const daIncassare = (fattAttive ?? []).reduce(
+      (sum, f) => sum + (Number(f.totale_lordo) || 0),
+      0
+    )
 
     setPeriodo({
       pratiche_chiuse: countChiuse ?? 0,
@@ -645,7 +656,7 @@ export default function AvvocatoDashboard() {
               <div className="bg-petrolio/40 border border-white/5 px-3 py-2.5">
                 <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da incassare</p>
                 <p className="font-body text-base text-nebbia/85">EUR {fmtEUR(periodo.da_incassare)}</p>
-                <p className="font-body text-[10px] text-nebbia/30 mt-0.5 truncate">{range.label}</p>
+                <p className="font-body text-[10px] text-nebbia/30 mt-0.5 truncate">Totale debito attivo</p>
               </div>
             </div>
 
