@@ -50,13 +50,18 @@ export function useNotifiche({ limit = 10 } = {}) {
     // ─── Subscribe realtime ──────────────────────────────────
     useEffect(() => {
         let channel = null
+        let mounted = true
 
         async function subscribe() {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
+            if (!user || !mounted) return
+
+            // Nome canale univoco per evitare collisioni con canali "zombie"
+            // (StrictMode double-mount in dev, HMR, navigazione rapida)
+            const channelName = `notifiche-${user.id}-${Date.now()}`
 
             channel = supabase
-                .channel(`notifiche-${user.id}`)
+                .channel(channelName)
                 .on(
                     'postgres_changes',
                     {
@@ -66,8 +71,8 @@ export function useNotifiche({ limit = 10 } = {}) {
                         filter: `user_id=eq.${user.id}`,
                     },
                     (payload) => {
+                        if (!mounted) return
                         setNotifiche(prev => {
-                            // Evita duplicati (es. se gia' inserito da fetch)
                             if (prev.some(n => n.id === payload.new.id)) return prev
                             return [payload.new, ...prev].slice(0, limit)
                         })
@@ -82,6 +87,7 @@ export function useNotifiche({ limit = 10 } = {}) {
                         filter: `user_id=eq.${user.id}`,
                     },
                     (payload) => {
+                        if (!mounted) return
                         setNotifiche(prev =>
                             prev.map(n => (n.id === payload.new.id ? payload.new : n))
                         )
@@ -96,16 +102,29 @@ export function useNotifiche({ limit = 10 } = {}) {
                         filter: `user_id=eq.${user.id}`,
                     },
                     (payload) => {
+                        if (!mounted) return
                         setNotifiche(prev => prev.filter(n => n.id !== payload.old.id))
                     }
                 )
-                .subscribe()
+
+            // Se nel frattempo siamo stati smontati, non chiamare subscribe
+            if (!mounted) {
+                supabase.removeChannel(channel)
+                channel = null
+                return
+            }
+
+            channel.subscribe()
         }
 
         subscribe()
 
         return () => {
-            if (channel) supabase.removeChannel(channel)
+            mounted = false
+            if (channel) {
+                supabase.removeChannel(channel)
+                channel = null
+            }
         }
     }, [limit])
 

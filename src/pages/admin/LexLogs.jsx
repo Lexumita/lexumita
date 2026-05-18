@@ -16,6 +16,7 @@ const ENDPOINT_LABELS = {
     subagent_norme_ue: { label: 'Subagent UE', color: 'text-salvia', icon: Cpu },
     subagent_prassi: { label: 'Subagent Prassi', color: 'text-salvia', icon: Cpu },
     subagent_giurisprudenza: { label: 'Subagent Giurisprudenza', color: 'text-salvia', icon: Cpu },
+    subagent_bdgt_mef: { label: 'Subagent Tributario (MEF)', color: 'text-salvia', icon: Cpu },
     synthesizer: { label: 'Synthesizer', color: 'text-oro', icon: Sparkles },
     confronta: { label: 'Chat Confronta', color: 'text-oro', icon: Sparkles },
     etichetta: { label: 'Chat Etichetta', color: 'text-oro', icon: Sparkles },

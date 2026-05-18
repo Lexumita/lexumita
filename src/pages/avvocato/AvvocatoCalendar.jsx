@@ -209,10 +209,12 @@ export default function AvvocatoCalendar() {
     if (!form.data) return setErrore('La data è obbligatoria')
     setSalvando(true)
     try {
+      const inizioIso = new Date(`${form.data}T${form.ora_inizio}:00`).toISOString()
+      const fineIso = new Date(`${form.data}T${form.ora_fine}:00`).toISOString()
       const { error } = await supabase.from('appuntamenti').insert({
         titolo: form.titolo.trim(), tipo: form.tipo,
-        data_ora_inizio: `${form.data}T${form.ora_inizio}:00`,
-        data_ora_fine: `${form.data}T${form.ora_fine}:00`,
+        data_ora_inizio: inizioIso,
+        data_ora_fine: fineIso,
         note_cliente: form.note_cliente.trim() || null,
         note_interne: form.note_interne.trim() || null,
         link_videocall: form.link_videocall.trim() || null,

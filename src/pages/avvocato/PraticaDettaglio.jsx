@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Badge } from '@/components/shared'
 import {
     Plus, Search, FileText, Calendar, Sparkles, X, Save, AlertCircle,
-    Download, Gavel, ChevronRight, Clock, MapPin, ArrowLeft, StickyNote
+    Download, Gavel, ChevronRight, Clock, MapPin, ArrowLeft, StickyNote, Trash2, Check
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ReactMarkdown from 'react-markdown'
@@ -13,6 +13,7 @@ import ContropartiBox from '@/components/ContropartiBox'
 import ChatPratica from '@/components/ChatPratica'
 import GeneraDocumentoMenu from '@/components/GeneraDocumentoMenu'
 import BoxUdienzeETermini from '@/components/avvocato/BoxUdienzeETermini'
+import ModalEliminaPratica from '@/components/avvocato/ModalEliminaPratica'
 
 const STATI = {
     aperta: { label: 'Aperta', variant: 'salvia' },
@@ -46,7 +47,7 @@ function BackToPratiche() {
 // ─────────────────────────────────────────────────────────────
 // NOTE MODAL
 // ─────────────────────────────────────────────────────────────
-function NoteInterneModal({ note, setNote, onSalva, salvando, ultimaModifica, onClose }) {
+function NoteInterneModal({ note, setNote, onSalva, salvando, salvate, ultimaModifica, onClose }) {
     useEffect(() => {
         const onKey = e => { if (e.key === 'Escape') onClose() }
         window.addEventListener('keydown', onKey)
@@ -88,6 +89,13 @@ function NoteInterneModal({ note, setNote, onSalva, salvando, ultimaModifica, on
                     <p className="font-body text-xs text-nebbia/30 mt-2">
                         Queste note sono visibili solo a te e ai collaboratori della pratica. Non vengono lette da Lex AI né dal generatore di documenti.
                     </p>
+
+                    {salvate && (
+                        <div className="mt-3 p-2.5 bg-salvia/10 border border-salvia/30 flex items-center gap-2 animate-fade-in">
+                            <Check size={13} className="text-salvia shrink-0" />
+                            <p className="font-body text-xs text-salvia">Note salvate</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/5 shrink-0">
@@ -229,9 +237,11 @@ export default function PraticaDettaglio() {
     const [note, setNote] = useState('')
     const [salvandoNote, setSalvando] = useState(false)
     const [mostraNoteModal, setMostraNoteModal] = useState(false)
+    const [noteSalvate, setNoteSalvate] = useState(false)
 
     const [mostraEsito, setMostraEsito] = useState(false)
     const [esito, setEsito] = useState('')
+    const [mostraEliminaModal, setMostraEliminaModal] = useState(false)
 
     const [noteEsito, setNoteEsito] = useState('')
     const [salvandoNoteEsito, setSalvandoNoteEsito] = useState(false)
@@ -301,6 +311,8 @@ export default function PraticaDettaglio() {
             .eq('id', id).single()
         if (p) setPratica(prev => ({ ...prev, ...p }))
         setSalvando(false)
+        setNoteSalvate(true)
+        setTimeout(() => setNoteSalvate(false), 2500)
     }
 
     async function caricaDocumenti() {
@@ -819,7 +831,26 @@ export default function PraticaDettaglio() {
                     <ChatPratica praticaId={id} />
                 </div>
                 <div className="lg:col-span-2">
-                    <GeneraDocumentoMenu praticaId={id} />
+                    <GeneraDocumentoMenu praticaId={id} onDocumentoSalvato={caricaDocumenti} />
+                </div>
+            </div>
+
+            {/* ═══════════ ZONA PERICOLOSA ═══════════ */}
+            <div className="pt-8 mt-8 border-t border-red-500/20">
+                <div className="flex items-start justify-between flex-wrap gap-3 bg-red-900/5 border border-red-500/20 p-5">
+                    <div>
+                        <p className="font-body text-sm font-medium text-red-400 mb-1">Elimina pratica</p>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed max-w-xl">
+                            Rimuove definitivamente la pratica e i suoi dati (udienze, termini, controparti,
+                            ricerche, documenti). Le fatture collegate vanno scollegate prima.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setMostraEliminaModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/10 transition-colors shrink-0"
+                    >
+                        <Trash2 size={13} /> Elimina pratica
+                    </button>
                 </div>
             </div>
 
@@ -830,8 +861,18 @@ export default function PraticaDettaglio() {
                     setNote={setNote}
                     onSalva={salvaNote}
                     salvando={salvandoNote}
+                    salvate={noteSalvate}
                     ultimaModifica={ultimaModifica}
                     onClose={() => setMostraNoteModal(false)}
+                />
+            )}
+
+            {/* Modale Elimina pratica */}
+            {mostraEliminaModal && (
+                <ModalEliminaPratica
+                    pratica={pratica}
+                    onClose={() => setMostraEliminaModal(false)}
+                    onEliminata={() => navigate('/pratiche')}
                 />
             )}
         </div>

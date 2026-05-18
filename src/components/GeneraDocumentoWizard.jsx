@@ -3,9 +3,12 @@
 // Wizard modale per generare un documento legale.
 // 4 step: prerequisiti -> controparti -> campi input -> generazione/anteprima
 //
-// Chiamata streaming a /functions/v1/genera-documento
-// Esporta in Markdown e HTML stampabile
-// Salva nella pratica come documento
+// Flusso aggiornato:
+// 1. genera-documento: streaming Markdown via SSE, consuma 1 credito
+// 2. Utente vede anteprima, può modificare in tab "Modifica"
+// 3. Click "Salva PDF" -> salva-documento-pdf: converte MD -> PDF, salva in pratica
+//
+// Niente più salvataggio .md, niente esport .md/.html
 
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
@@ -14,13 +17,13 @@ import ReactMarkdown from 'react-markdown'
 import {
     X, ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Loader2,
     User, Building2, Wand2, Download, Save, FileText, Edit2, Eye,
-    Info, Scale
+    Info
 } from 'lucide-react'
 
-const ENDPOINT = '/functions/v1/genera-documento'
+const ENDPOINT_GENERA = '/functions/v1/genera-documento'
 
 // ─────────────────────────────────────────────────────────────
-// HELPER: nome completo soggetto (cliente o controparte)
+// HELPER
 // ─────────────────────────────────────────────────────────────
 function nomeSoggetto(s) {
     if (!s) return '—'
@@ -28,9 +31,6 @@ function nomeSoggetto(s) {
     return `${s.nome ?? ''} ${s.cognome ?? ''}`.trim() || '—'
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPER: parser SSE (uguale a ChatPratica)
-// ─────────────────────────────────────────────────────────────
 async function leggiStreamSSE(response, onEvent) {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
@@ -56,63 +56,7 @@ async function leggiStreamSSE(response, onEvent) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// HELPER: download blob come file
-// ─────────────────────────────────────────────────────────────
-function scaricaFile(contenuto, nomeFile, mimeType) {
-    const blob = new Blob([contenuto], { type: mimeType })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = nomeFile
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-}
-
-// ─────────────────────────────────────────────────────────────
-// HELPER: Markdown -> HTML stampabile
-// ─────────────────────────────────────────────────────────────
-function markdownToHtmlStampabile(markdown, titoloDoc) {
-    // Conversione minimale Markdown -> HTML (per i casi più comuni)
-    // Per casi complessi l'avvocato apre il .md in editor dedicato
-    let html = markdown
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/^---$/gm, '<hr/>')
-        .replace(/\n\n/g, '</p><p>')
-    html = `<p>${html}</p>`
-
-    return `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8">
-<title>${titoloDoc}</title>
-<style>
-  @page { size: A4; margin: 2.5cm 2cm; }
-  body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; }
-  h1 { font-size: 16pt; margin: 1.5em 0 0.8em; }
-  h2 { font-size: 14pt; margin: 1.2em 0 0.6em; text-transform: uppercase; }
-  h3 { font-size: 12pt; margin: 1em 0 0.4em; font-weight: bold; }
-  p { margin: 0.6em 0; text-align: justify; }
-  strong { font-weight: bold; }
-  em { font-style: italic; }
-  hr { border: none; border-top: 1px solid #ccc; margin: 1.5em 0; }
-  @media print { body { font-size: 11pt; } }
-</style>
-</head>
-<body>
-${html}
-</body>
-</html>`
-}
-
-// ─────────────────────────────────────────────────────────────
-// COMPONENTE CAMPO INPUT DINAMICO
-// Renderizza un singolo campo da campi_input del template
+// CAMPO INPUT DINAMICO
 // ─────────────────────────────────────────────────────────────
 function CampoInput({ campo, value, onChange, errore }) {
     const baseClasses = "w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
@@ -197,13 +141,11 @@ function CampoInput({ campo, value, onChange, errore }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENTE PRINCIPALE — WIZARD
+// COMPONENTE PRINCIPALE
 // ─────────────────────────────────────────────────────────────
-export default function GeneraDocumentoWizard({ template, praticaId, onClose }) {
-    // Step corrente: 'prerequisiti' | 'controparti' | 'campi' | 'genera'
+export default function GeneraDocumentoWizard({ template, praticaId, onClose, onDocumentoSalvato }) {
     const [step, setStep] = useState('prerequisiti')
 
-    // Dati caricati al mount
     const [loadingDati, setLoadingDati] = useState(true)
     const [erroreDati, setErroreDati] = useState('')
     const [pratica, setPratica] = useState(null)
@@ -211,29 +153,27 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
     const [controparti, setControparti] = useState([])
     const [avvocato, setAvvocato] = useState(null)
 
-    // Selezione controparti
     const [contropartiSelezionate, setContropartiSelezionate] = useState([])
 
-    // Compilazione campi input
     const [campiValori, setCampiValori] = useState({})
     const [erroriCampi, setErroriCampi] = useState({})
 
-    // Generazione
+    // Generazione AI
     const [generando, setGenerando] = useState(false)
     const [erroreGen, setErroreGen] = useState('')
     const [documentoMd, setDocumentoMd] = useState('')
     const [sezioniCompletate, setSezioniCompletate] = useState([])
     const [slotCorrente, setSlotCorrente] = useState(null)
-    const [risultato, setRisultato] = useState(null)  // { documento_id, nome_file, ... }
-    const [vistaAnteprima, setVistaAnteprima] = useState('preview')  // 'preview' | 'edit'
-    const [docModificato, setDocModificato] = useState(false)
+    const [vistaAnteprima, setVistaAnteprima] = useState('preview')
+    const [generazioneCompleta, setGenerazioneCompleta] = useState(false)
 
-    // Controllo se il wizard è in stato che richiede conferma per chiudere
-    const haGenerato = !!risultato || generando || documentoMd.length > 0
+    // Salvataggio PDF
+    const [salvandoPdf, setSalvandoPdf] = useState(false)
+    const [errorePdf, setErrorePdf] = useState('')
+    const [pdfSalvato, setPdfSalvato] = useState(null) // { documento_id, url, nome_file }
+    const [nomeFile, setNomeFile] = useState('')
 
-    // ─────────────────────────────────────────────────────────
-    // CARICA dati al mount
-    // ─────────────────────────────────────────────────────────
+    // Carica dati al mount
     useEffect(() => {
         async function caricaTutto() {
             setLoadingDati(true)
@@ -242,7 +182,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                 const { data: { user } } = await supabase.auth.getUser()
                 if (!user) throw new Error('Utente non autenticato')
 
-                // Pratica + cliente
                 const { data: pr, error: prErr } = await supabase
                     .from('pratiche')
                     .select('id, titolo, tipo, avvocato_id, cliente:cliente_id(*)')
@@ -252,7 +191,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                 setPratica(pr)
                 setCliente(pr.cliente)
 
-                // Controparti della pratica
                 const { data: cp } = await supabase
                     .from('controparti')
                     .select('*')
@@ -260,7 +198,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     .order('ordine', { ascending: true })
                 setControparti(cp ?? [])
 
-                // Profilo avvocato (titolare pratica)
                 const { data: avv } = await supabase
                     .from('profiles')
                     .select('nome, cognome, foro, numero_albo, pec')
@@ -268,17 +205,38 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     .single()
                 setAvvocato(avv)
 
-                // Pre-selezione controparti per template selezione=tutte
                 if (template.selezione_controparti === 'tutte') {
                     setContropartiSelezionate((cp ?? []).map(c => c.id))
                 }
 
-                // Pre-popola campi_input con i default
                 const defaults = {}
                     ; (template.campi_input ?? []).forEach(c => {
                         if (c.default !== undefined) defaults[c.id] = c.default
                     })
                 setCampiValori(defaults)
+
+                // Auto-skip step "Verifica" se tutti i prerequisiti hard sono ok
+                // (foro/numero albo/PEC avvocato + cliente + controparti presenti).
+                // L'avvocato controlla comunque il documento finale prima di firmarlo.
+                const problemi = []
+                if (!avv?.foro || !avv?.numero_albo || !avv?.pec) problemi.push(1)
+                if (!pr.cliente) problemi.push(1)
+                else {
+                    const isPF = pr.cliente.tipo_soggetto !== 'persona_giuridica'
+                    if (isPF && (!pr.cliente.nome || !pr.cliente.cognome)) problemi.push(1)
+                    if (!isPF && !pr.cliente.ragione_sociale) problemi.push(1)
+                }
+                if ((cp ?? []).length === 0) problemi.push(1)
+
+                if (problemi.length === 0) {
+                    // Auto-skip: vai direttamente a controparti (o campi/genera se template lo richiede)
+                    if (template.selezione_controparti === 'tutte') {
+                        if ((template.campi_input ?? []).length === 0) setStep('genera')
+                        else setStep('campi')
+                    } else {
+                        setStep('controparti')
+                    }
+                }
 
             } catch (err) {
                 setErroreDati(err.message)
@@ -289,13 +247,8 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
         caricaTutto()
     }, [praticaId, template.id])
 
-    // ─────────────────────────────────────────────────────────
-    // VERIFICA prerequisiti hard
-    // ─────────────────────────────────────────────────────────
     function verificaPrerequisitiHard() {
         const problemi = []
-
-        // Avvocato
         if (!avvocato?.foro) problemi.push({
             tipo: 'avvocato', label: 'Foro mancante nel profilo avvocato',
             azione: { label: 'Vai al profilo', to: '/profilo' }
@@ -308,8 +261,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
             tipo: 'avvocato', label: 'PEC mancante nel profilo avvocato',
             azione: { label: 'Vai al profilo', to: '/profilo' }
         })
-
-        // Cliente
         if (!cliente) problemi.push({
             tipo: 'cliente', label: 'Cliente non associato alla pratica',
             azione: null
@@ -328,22 +279,16 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                 })
             }
         }
-
-        // Controparti
         if (controparti.length === 0) problemi.push({
             tipo: 'controparti', label: 'Nessuna controparte aggiunta alla pratica',
-            azione: null  // si aggiungono nella stessa pagina
+            azione: null
         })
-
         return problemi
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VERIFICA controparti selezionate (per step 2)
-    // ─────────────────────────────────────────────────────────
     function verificaContropartiSelezione() {
         const sel = template.selezione_controparti ?? 'una'
-        if (sel === 'tutte') return null  // sempre ok
+        if (sel === 'tutte') return null
         if (sel === 'una' && contropartiSelezionate.length !== 1) {
             return 'Seleziona esattamente 1 controparte'
         }
@@ -353,9 +298,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
         return null
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VERIFICA campi input (per step 3)
-    // ─────────────────────────────────────────────────────────
     function verificaCampi() {
         const errori = {}
             ; (template.campi_input ?? []).forEach(c => {
@@ -379,32 +321,20 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
         return Object.keys(errori).length === 0
     }
 
-    // ─────────────────────────────────────────────────────────
-    // NAVIGAZIONE STEP
-    // ─────────────────────────────────────────────────────────
     const problemiPrereq = !loadingDati ? verificaPrerequisitiHard() : []
     const prereqOk = problemiPrereq.length === 0
 
     function avanti() {
         if (step === 'prerequisiti') {
             if (!prereqOk) return
-            // Se template selezione=tutte, salta step controparti
             if (template.selezione_controparti === 'tutte') {
-                if ((template.campi_input ?? []).length === 0) {
-                    setStep('genera')
-                } else {
-                    setStep('campi')
-                }
-            } else {
-                setStep('controparti')
-            }
+                if ((template.campi_input ?? []).length === 0) setStep('genera')
+                else setStep('campi')
+            } else setStep('controparti')
         } else if (step === 'controparti') {
             if (verificaContropartiSelezione()) return
-            if ((template.campi_input ?? []).length === 0) {
-                setStep('genera')
-            } else {
-                setStep('campi')
-            }
+            if ((template.campi_input ?? []).length === 0) setStep('genera')
+            else setStep('campi')
         } else if (step === 'campi') {
             if (!verificaCampi()) return
             setStep('genera')
@@ -422,22 +352,22 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // GENERAZIONE — chiamata streaming SSE
-    // ─────────────────────────────────────────────────────────
+    // Generazione AI
     async function generaDocumento() {
         setGenerando(true)
         setErroreGen('')
         setDocumentoMd('')
         setSezioniCompletate([])
         setSlotCorrente(null)
-        setRisultato(null)
+        setGenerazioneCompleta(false)
+        setPdfSalvato(null)
+        setErrorePdf('')
 
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) throw new Error('Sessione scaduta. Ricarica la pagina.')
 
-            const url = `${import.meta.env.VITE_SUPABASE_URL}${ENDPOINT}`
+            const url = `${import.meta.env.VITE_SUPABASE_URL}${ENDPOINT_GENERA}`
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -458,7 +388,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                 throw new Error(`HTTP ${response.status}: ${t.slice(0, 200)}`)
             }
 
-            // Accumulatore per slot in corso (visualizzazione live "preview" dei chunk)
             const slotsTesto = {}
 
             await leggiStreamSSE(response, (event) => {
@@ -469,7 +398,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                 if (event.chunk && event.slot_id) {
                     setSlotCorrente(event.slot_id)
                     slotsTesto[event.slot_id] = (slotsTesto[event.slot_id] ?? '') + event.chunk
-                    // Mostra anteprima parziale: concatena tutti gli slot finora generati
                     const anteprimaParziale = Object.entries(slotsTesto)
                         .map(([id, txt]) => `### ${id}\n\n${txt}`)
                         .join('\n\n---\n\n')
@@ -479,15 +407,14 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     setSezioniCompletate(prev => [...prev, event.sezione_completata])
                 }
                 if (event.done) {
-                    setRisultato({
-                        documento_id: event.documento_id,
-                        documento_path: event.documento_path,
-                        nome_file: event.nome_file,
-                    })
-                    if (event.documento_markdown) {
-                        setDocumentoMd(event.documento_markdown)
-                    }
+                    if (event.documento_markdown) setDocumentoMd(event.documento_markdown)
+                    setGenerazioneCompleta(true)
                     setSlotCorrente(null)
+                    // Preimposta nome file modificabile: "Nome template - DD/MM/YYYY"
+                    if (!nomeFile) {
+                        const oggiStr = new Date().toLocaleDateString('it-IT')
+                        setNomeFile(`${template.nome} - ${oggiStr}`)
+                    }
                 }
             })
         } catch (err) {
@@ -496,36 +423,58 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
             setGenerando(false)
         }
     }
+    // Salvataggio PDF
+    async function salvaPdf() {
+        if (!nomeFile.trim()) {
+            setErrorePdf('Inserisci un nome per il file')
+            return
+        }
 
-    // ─────────────────────────────────────────────────────────
-    // EXPORT
-    // ─────────────────────────────────────────────────────────
-    function esportaMarkdown() {
-        const nome = risultato?.nome_file?.replace(/\.md$/, '') ?? `${template.codice}_${Date.now()}`
-        scaricaFile(documentoMd, `${nome}.md`, 'text/markdown')
+        setSalvandoPdf(true)
+        setErrorePdf('')
+
+        try {
+            const { data, error } = await supabase.functions.invoke('salva-documento-pdf', {
+                body: {
+                    pratica_id: praticaId,
+                    template_codice: template.codice,
+                    template_nome: template.nome,
+                    markdown_finale: documentoMd,
+                    nome_file_personalizzato: nomeFile.trim(),
+                }
+            })
+
+            if (error) throw new Error(error.message)
+            if (!data?.ok) throw new Error(data?.error ?? 'Errore salvataggio PDF')
+
+            setPdfSalvato({
+                documento_id: data.documento_id,
+                url: data.url,
+                nome_file: data.nome_file,
+            })
+            // Notifica il parent che è stato salvato un nuovo documento,
+            // così può ricaricare la lista
+            if (onDocumentoSalvato) onDocumentoSalvato()
+        } catch (err) {
+            setErrorePdf(err.message)
+        } finally {
+            setSalvandoPdf(false)
+        }
     }
 
-    function esportaHtmlStampabile() {
-        const nome = risultato?.nome_file?.replace(/\.md$/, '') ?? `${template.codice}_${Date.now()}`
-        const html = markdownToHtmlStampabile(documentoMd, template.nome)
-        scaricaFile(html, `${nome}.html`, 'text/html')
+    function scaricaPdf() {
+        if (pdfSalvato?.url) window.open(pdfSalvato.url, '_blank')
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CHIUSURA con conferma se ci sono dati non salvati
-    // ─────────────────────────────────────────────────────────
     function richiediChiusura() {
-        if (haGenerato && !risultato) {
-            if (!confirm('La generazione è in corso o non completata. Chiudere comunque?')) return
-        } else if (docModificato) {
-            if (!confirm('Hai modifiche non salvate al documento. Chiudere comunque?')) return
+        if (generando) {
+            if (!confirm('La generazione è in corso. Chiudere comunque?')) return
+        } else if (generazioneCompleta && !pdfSalvato) {
+            if (!confirm('Il documento è stato generato ma non salvato. Chiudere comunque?\n\nIl credito è già stato consumato.')) return
         }
         onClose()
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RENDER
-    // ─────────────────────────────────────────────────────────
     if (loadingDati) {
         return (
             <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -558,7 +507,7 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-slate border border-oro/20 w-full max-w-4xl flex flex-col max-h-[90vh]">
 
-                {/* HEADER WIZARD */}
+                {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
                         <Wand2 size={18} className="text-oro shrink-0" />
@@ -572,10 +521,10 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     </button>
                 </div>
 
-                {/* STEP INDICATOR */}
+                {/* Step indicator */}
                 <div className="flex items-center justify-center gap-2 px-6 py-3 border-b border-white/5 bg-petrolio/30 shrink-0">
                     {[
-                        { id: 'prerequisiti', label: 'Verifica' },
+                        ...(step === 'prerequisiti' ? [{ id: 'prerequisiti', label: 'Verifica' }] : []),
                         ...(template.selezione_controparti !== 'tutte' ? [{ id: 'controparti', label: 'Controparti' }] : []),
                         ...((template.campi_input ?? []).length > 0 ? [{ id: 'campi', label: 'Dati atto' }] : []),
                         { id: 'genera', label: 'Genera' },
@@ -598,10 +547,10 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     })}
                 </div>
 
-                {/* CONTENUTO STEP */}
+                {/* Contenuto step */}
                 <div className="flex-1 overflow-y-auto p-6">
 
-                    {/* ───── STEP 1: PREREQUISITI ───── */}
+                    {/* STEP 1: PREREQUISITI */}
                     {step === 'prerequisiti' && (
                         <div className="space-y-5">
                             <div>
@@ -611,7 +560,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                 </p>
                             </div>
 
-                            {/* Stato verifica hard */}
                             <div className={`p-4 border ${prereqOk ? 'bg-salvia/5 border-salvia/30' : 'bg-amber-500/5 border-amber-500/30'}`}>
                                 {prereqOk ? (
                                     <div className="flex items-center gap-2">
@@ -640,7 +588,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                 )}
                             </div>
 
-                            {/* Checklist informativa: prerequisiti dichiarati nel template */}
                             {(template.prerequisiti ?? []).length > 0 && (
                                 <div className="p-4 border border-white/8 bg-petrolio/30">
                                     <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-3">Checklist consigliata per questo atto</p>
@@ -660,7 +607,7 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                         </div>
                     )}
 
-                    {/* ───── STEP 2: CONTROPARTI ───── */}
+                    {/* STEP 2: CONTROPARTI */}
                     {step === 'controparti' && (
                         <div className="space-y-5">
                             <div>
@@ -741,7 +688,7 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                         </div>
                     )}
 
-                    {/* ───── STEP 3: CAMPI INPUT ───── */}
+                    {/* STEP 3: CAMPI INPUT */}
                     {step === 'campi' && (
                         <div className="space-y-5">
                             <div>
@@ -758,7 +705,6 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                         value={campiValori[campo.id]}
                                         onChange={v => {
                                             setCampiValori(prev => ({ ...prev, [campo.id]: v }))
-                                            // Rimuovi errore quando si modifica
                                             if (erroriCampi[campo.id]) {
                                                 setErroriCampi(prev => {
                                                     const copia = { ...prev }
@@ -774,12 +720,12 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                         </div>
                     )}
 
-                    {/* ───── STEP 4: GENERA / ANTEPRIMA ───── */}
+                    {/* STEP 4: GENERA / ANTEPRIMA / SALVA */}
                     {step === 'genera' && (
                         <div className="space-y-5">
 
-                            {/* Stato iniziale: bottone genera */}
-                            {!generando && !risultato && documentoMd === '' && !erroreGen && (
+                            {/* Stato iniziale: nessuna generazione */}
+                            {!generando && documentoMd === '' && !erroreGen && (
                                 <div className="text-center py-8">
                                     <Wand2 size={32} className="text-oro/40 mx-auto mb-3" />
                                     <p className="font-body text-base font-medium text-nebbia mb-2">Pronto a generare</p>
@@ -834,7 +780,7 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                 </div>
                             )}
 
-                            {/* Anteprima documento */}
+                            {/* Anteprima */}
                             {documentoMd && (
                                 <>
                                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -849,38 +795,74 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                             </button>
                                             <button
                                                 onClick={() => setVistaAnteprima('edit')}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 font-body text-xs border transition-colors ${vistaAnteprima === 'edit'
+                                                disabled={!generazioneCompleta || !!pdfSalvato}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 font-body text-xs border transition-colors disabled:opacity-30 ${vistaAnteprima === 'edit'
                                                     ? 'bg-oro/10 border-oro/30 text-oro'
                                                     : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}
+                                                title={pdfSalvato ? 'Documento salvato, non più modificabile' : ''}
                                             >
                                                 <Edit2 size={11} /> Modifica
                                             </button>
                                         </div>
-                                        {risultato && (
+
+                                        {/* Azioni: Salva PDF / Scarica PDF */}
+                                        {generazioneCompleta && (
                                             <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={esportaMarkdown}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10"
-                                                    title="Scarica come Markdown (modificabile in editor di testo)"
-                                                >
-                                                    <Download size={11} /> .md
-                                                </button>
-                                                <button
-                                                    onClick={esportaHtmlStampabile}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10"
-                                                    title="Scarica HTML stampabile (apri e Stampa->Salva come PDF)"
-                                                >
-                                                    <Download size={11} /> .html
-                                                </button>
+                                                {!pdfSalvato ? (
+                                                    <button
+                                                        onClick={salvaPdf}
+                                                        disabled={salvandoPdf}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors disabled:opacity-40"
+                                                    >
+                                                        {salvandoPdf
+                                                            ? <><Loader2 size={13} className="animate-spin" /> Salvataggio...</>
+                                                            : <><Save size={13} /> Salva PDF nella pratica</>
+                                                        }
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={scaricaPdf}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10"
+                                                    >
+                                                        <Download size={11} /> Scarica PDF
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
 
-                                    {risultato && (
+                                    {errorePdf && (
+                                        <div className="p-3 bg-red-900/10 border border-red-500/30 flex items-start gap-2">
+                                            <AlertCircle size={13} className="text-red-400 shrink-0 mt-0.5" />
+                                            <p className="font-body text-xs text-red-400">{errorePdf}</p>
+                                        </div>
+                                    )}
+
+                                    {pdfSalvato && (
                                         <div className="p-3 bg-salvia/5 border border-salvia/30 flex items-center gap-2">
                                             <CheckCircle size={14} className="text-salvia shrink-0" />
                                             <p className="font-body text-xs text-salvia">
-                                                Documento generato e salvato nei <strong>Documenti pratica</strong>: <span className="font-mono">{risultato.nome_file}</span>
+                                                PDF salvato nei <strong>Documenti pratica</strong>: <span className="font-mono">{pdfSalvato.nome_file}</span>
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Campo nome file (solo prima del salvataggio) */}
+                                    {generazioneCompleta && !pdfSalvato && (
+                                        <div>
+                                            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+                                                Nome file
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={nomeFile}
+                                                onChange={e => setNomeFile(e.target.value)}
+                                                disabled={salvandoPdf}
+                                                placeholder={`${template.nome} - ${new Date().toLocaleDateString('it-IT')}`}
+                                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25 disabled:opacity-40"
+                                            />
+                                            <p className="font-body text-xs text-nebbia/30 mt-1.5">
+                                                Estensione <span className="font-mono">.pdf</span> aggiunta automaticamente
                                             </p>
                                         </div>
                                     )}
@@ -907,17 +889,17 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                                         ) : (
                                             <textarea
                                                 value={documentoMd}
-                                                onChange={e => { setDocumentoMd(e.target.value); setDocModificato(true) }}
-                                                className="w-full bg-petrolio text-nebbia font-mono text-xs p-4 outline-none resize-none border-0"
+                                                onChange={e => setDocumentoMd(e.target.value)}
+                                                disabled={!!pdfSalvato || salvandoPdf}
+                                                className="w-full bg-petrolio text-nebbia font-mono text-xs p-4 outline-none resize-none border-0 disabled:opacity-50"
                                                 style={{ minHeight: '50vh' }}
                                             />
                                         )}
                                     </div>
 
-                                    {docModificato && risultato && (
-                                        <p className="font-body text-xs text-amber-400 italic">
-                                            Le modifiche sono solo locali. Il file salvato nella pratica resta la versione originale.
-                                            Scarica il .md o .html per conservare le modifiche.
+                                    {!pdfSalvato && generazioneCompleta && (
+                                        <p className="font-body text-xs text-nebbia/40 italic">
+                                            Modifica il testo nella tab "Modifica" se necessario, poi salva il PDF nella pratica.
                                         </p>
                                     )}
                                 </>
@@ -926,11 +908,11 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                     )}
                 </div>
 
-                {/* FOOTER NAV */}
+                {/* Footer */}
                 <div className="flex items-center justify-between px-6 py-4 border-t border-white/8 shrink-0">
                     <button
                         onClick={indietro}
-                        disabled={step === 'prerequisiti' || generando}
+                        disabled={step === 'prerequisiti' || generando || salvandoPdf}
                         className="flex items-center gap-1.5 px-4 py-2 font-body text-sm text-nebbia/50 border border-white/10 hover:text-nebbia hover:border-white/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         <ChevronLeft size={13} /> Indietro
@@ -947,7 +929,7 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                         >
                             Avanti <ChevronRight size={13} />
                         </button>
-                    ) : risultato ? (
+                    ) : pdfSalvato ? (
                         <button
                             onClick={onClose}
                             className="flex items-center gap-1.5 px-4 py-2 font-body text-sm bg-salvia/10 border border-salvia/30 text-salvia hover:bg-salvia/20 transition-colors"
@@ -956,7 +938,9 @@ export default function GeneraDocumentoWizard({ template, praticaId, onClose }) 
                         </button>
                     ) : (
                         <span className="font-body text-xs text-nebbia/30 italic">
-                            {generando ? 'Generazione in corso...' : 'Premi "Genera documento" per iniziare'}
+                            {generando ? 'Generazione in corso...' :
+                                generazioneCompleta ? 'Modifica e salva il PDF nella pratica' :
+                                    'Premi "Genera documento" per iniziare'}
                         </span>
                     )}
                 </div>

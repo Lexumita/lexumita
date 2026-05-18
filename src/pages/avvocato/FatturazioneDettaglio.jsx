@@ -274,6 +274,230 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// MODAL SCOLLEGA PRATICA
+// ─────────────────────────────────────────────────────────────
+function ModalScollegaPratica({ fattura, onClose, onSuccess }) {
+    const [inviando, setInviando] = useState(false)
+    const [errore, setErrore] = useState('')
+
+    async function scollega() {
+        setErrore(''); setInviando(true)
+        try {
+            const { error } = await supabase
+                .from('fatture')
+                .update({ pratica_id: null })
+                .eq('id', fattura.id)
+            if (error) throw new Error(error.message)
+            onSuccess()
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setInviando(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate border border-white/10 w-full max-w-md">
+                <div className="flex items-center justify-between p-5 border-b border-white/8">
+                    <h2 className="font-display text-lg text-nebbia">Scollega pratica</h2>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    <p className="font-body text-sm text-nebbia/70 leading-relaxed">
+                        Vuoi scollegare la fattura <span className="text-oro">{fattura.numero}</span> dalla
+                        pratica <span className="text-oro">"{fattura.pratica?.titolo}"</span>?
+                    </p>
+                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                        La fattura resterà invariata nel registro, ma non sarà più collegata a questa pratica.
+                        Potrai ricollegarla in qualsiasi momento.
+                    </p>
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={14} /> {errore}
+                        </div>
+                    )}
+
+                    <div className="flex gap-2">
+                        <button onClick={onClose} disabled={inviando}
+                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+                            Annulla
+                        </button>
+                        <button onClick={scollega} disabled={inviando}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500/15 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/25 transition-colors disabled:opacity-40">
+                            {inviando
+                                ? <span className="animate-spin w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full" />
+                                : 'Scollega'
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODAL COLLEGA PRATICA
+// ─────────────────────────────────────────────────────────────
+function ModalCollegaPratica({ fattura, onClose, onSuccess }) {
+    const [pratiche, setPratiche] = useState([])
+    const [caricando, setCaricando] = useState(true)
+    const [filtro, setFiltro] = useState('')
+    const [selezionata, setSelezionata] = useState(null)
+    const [inviando, setInviando] = useState(false)
+    const [errore, setErrore] = useState('')
+
+    useEffect(() => {
+        async function carica() {
+            // Pratiche dello stesso cliente, ordinate per recenti
+            let query = supabase
+                .from('pratiche')
+                .select('id, titolo, tipo, stato, cliente_id, cliente:cliente_id(nome, cognome, ragione_sociale, tipo_soggetto)')
+                .eq('avvocato_id', fattura.avvocato_id)
+                .order('updated_at', { ascending: false })
+
+            // Priorità: stesso cliente della fattura
+            if (fattura.cliente_id) {
+                query = query.eq('cliente_id', fattura.cliente_id)
+            }
+
+            const { data, error } = await query.limit(50)
+
+            if (error) {
+                setErrore(error.message)
+            } else if ((!data || data.length === 0) && fattura.cliente_id) {
+                // Fallback: tutte le pratiche se nessuna per quel cliente
+                const { data: tutte } = await supabase
+                    .from('pratiche')
+                    .select('id, titolo, tipo, stato, cliente_id, cliente:cliente_id(nome, cognome, ragione_sociale, tipo_soggetto)')
+                    .eq('avvocato_id', fattura.avvocato_id)
+                    .order('updated_at', { ascending: false })
+                    .limit(50)
+                setPratiche(tutte ?? [])
+            } else {
+                setPratiche(data ?? [])
+            }
+            setCaricando(false)
+        }
+        carica()
+    }, [fattura.cliente_id, fattura.avvocato_id])
+
+    async function collega() {
+        if (!selezionata) return
+        setErrore(''); setInviando(true)
+        try {
+            const { error } = await supabase
+                .from('fatture')
+                .update({ pratica_id: selezionata.id })
+                .eq('id', fattura.id)
+            if (error) throw new Error(error.message)
+            onSuccess()
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setInviando(false)
+        }
+    }
+
+    const pratFiltrate = pratiche.filter(p => {
+        if (!filtro.trim()) return true
+        const q = filtro.trim().toLowerCase()
+        return p.titolo?.toLowerCase().includes(q) || p.tipo?.toLowerCase().includes(q)
+    })
+
+    return (
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
+                    <h2 className="font-display text-lg text-nebbia">Collega a una pratica</h2>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-5 space-y-4 overflow-y-auto flex-1">
+                    <p className="font-body text-xs text-nebbia/40">
+                        Seleziona la pratica a cui collegare la fattura <span className="text-oro">{fattura.numero}</span>
+                    </p>
+
+                    <input
+                        autoFocus
+                        placeholder="Cerca pratica..."
+                        value={filtro}
+                        onChange={e => setFiltro(e.target.value)}
+                        className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                    />
+
+                    {caricando ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 size={20} className="animate-spin text-oro" />
+                        </div>
+                    ) : pratFiltrate.length === 0 ? (
+                        <p className="font-body text-sm text-nebbia/30 text-center py-6">
+                            {pratiche.length === 0 ? 'Nessuna pratica disponibile' : 'Nessuna pratica corrisponde alla ricerca'}
+                        </p>
+                    ) : (
+                        <div className="space-y-1.5">
+                            {pratFiltrate.map(p => {
+                                const isSelected = selezionata?.id === p.id
+                                return (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => setSelezionata(p)}
+                                        className={`w-full text-left p-3 border transition-colors ${isSelected
+                                            ? 'border-oro/50 bg-oro/5'
+                                            : 'border-white/5 bg-petrolio/40 hover:border-white/15'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <p className={`font-body text-sm truncate ${isSelected ? 'text-oro' : 'text-nebbia'}`}>
+                                                    {p.titolo}
+                                                </p>
+                                                <p className="font-body text-xs text-nebbia/40 mt-0.5">
+                                                    {p.tipo ?? '—'}
+                                                    {p.stato === 'chiusa' && ' · Chiusa'}
+                                                </p>
+                                            </div>
+                                            {isSelected && <Check size={14} className="text-oro shrink-0" />}
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={14} /> {errore}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-2 p-5 border-t border-white/8 shrink-0">
+                    <button onClick={onClose} disabled={inviando}
+                        className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+                        Annulla
+                    </button>
+                    <button onClick={collega} disabled={!selezionata || inviando}
+                        className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
+                        {inviando
+                            ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                            : <><Check size={14} /> Collega</>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
 // PAGINA DETTAGLIO
 // ─────────────────────────────────────────────────────────────
 export default function AvvocatoFatturazioneDettaglio() {
@@ -290,6 +514,8 @@ export default function AvvocatoFatturazioneDettaglio() {
     const [scaricandoPdf, setScaricandoPdf] = useState(false)
     const [modalPagamento, setModalPagamento] = useState(false)
     const [modalElimina, setModalElimina] = useState(false)
+    const [modalScollega, setModalScollega] = useState(false)
+    const [modalCollega, setModalCollega] = useState(false)
 
     async function carica() {
         setLoading(true); setErrore('')
@@ -511,14 +737,35 @@ export default function AvvocatoFatturazioneDettaglio() {
                                 </div>
                             </div>
                         </div>
-                        {fattura.pratica && (
-                            <div className="pt-3 border-t border-white/5">
-                                <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Pratica collegata</p>
-                                <Link to={`/pratiche/${fattura.pratica.id}`} className="font-body text-sm text-oro/80 hover:text-oro transition-colors">
-                                    {fattura.pratica.titolo}
-                                </Link>
-                            </div>
-                        )}
+                        <div className="pt-3 border-t border-white/5">
+                            <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-2">Pratica collegata</p>
+                            {fattura.pratica ? (
+                                <div className="flex items-center justify-between gap-3">
+                                    <Link
+                                        to={`/pratiche/${fattura.pratica.id}`}
+                                        className="font-body text-sm text-oro/80 hover:text-oro transition-colors truncate"
+                                    >
+                                        {fattura.pratica.titolo}
+                                    </Link>
+                                    <button
+                                        onClick={() => setModalScollega(true)}
+                                        className="font-body text-xs text-nebbia/40 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-2.5 py-1 transition-colors shrink-0"
+                                    >
+                                        Scollega
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="font-body text-sm text-nebbia/40 italic">Nessuna pratica collegata</p>
+                                    <button
+                                        onClick={() => setModalCollega(true)}
+                                        className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-2.5 py-1 hover:bg-oro/10 transition-colors shrink-0"
+                                    >
+                                        <Plus size={11} /> Collega
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Righe */}
@@ -709,6 +956,22 @@ export default function AvvocatoFatturazioneDettaglio() {
                     fattura={fattura}
                     onClose={() => setModalElimina(false)}
                     onEliminata={() => navigate('/fatturazione')}
+                />
+            )}
+
+            {modalScollega && (
+                <ModalScollegaPratica
+                    fattura={fattura}
+                    onClose={() => setModalScollega(false)}
+                    onSuccess={() => { setModalScollega(false); carica() }}
+                />
+            )}
+
+            {modalCollega && (
+                <ModalCollegaPratica
+                    fattura={fattura}
+                    onClose={() => setModalCollega(false)}
+                    onSuccess={() => { setModalCollega(false); carica() }}
                 />
             )}
         </div>

@@ -160,3 +160,22 @@
   opacity: 0;
   animation-fill-mode: forwards;
 }
+
+/* Pulse one-shot per sezione in focus (Lex AI link diretti) */
+@keyframes pulse-once {
+  0% {
+    box-shadow: 0 0 0 0 rgba(201, 164, 92, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 30px 8px rgba(201, 164, 92, 0.25);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 164, 92, 0);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 2s ease-in-out 1;
+}

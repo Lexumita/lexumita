@@ -446,8 +446,8 @@ export default function AdminCalendario() {
         if (!form.titolo.trim()) return setErrore('Il titolo è obbligatorio')
         if (!form.data) return setErrore('La data è obbligatoria')
 
-        const inizio = `${form.data}T${form.ora_inizio}:00`
-        const fine = `${form.data}T${form.ora_fine}:00`
+        const inizio = new Date(`${form.data}T${form.ora_inizio}:00`).toISOString()
+        const fine = new Date(`${form.data}T${form.ora_fine}:00`).toISOString()
         if (new Date(fine) <= new Date(inizio)) {
             return setErrore("L'ora di fine deve essere dopo l'inizio")
         }
@@ -749,8 +749,8 @@ export default function AdminCalendario() {
             {/* FEEDBACK BANNER */}
             {feedback && (
                 <div className={`p-4 border flex items-center gap-3 ${feedback.tipo === 'success'
-                        ? 'bg-salvia/10 border-salvia/30 text-salvia'
-                        : 'bg-red-900/10 border-red-500/30 text-red-400'
+                    ? 'bg-salvia/10 border-salvia/30 text-salvia'
+                    : 'bg-red-900/10 border-red-500/30 text-red-400'
                     }`}>
                     {feedback.tipo === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
                     <p className="font-body text-sm flex-1">{feedback.messaggio}</p>

@@ -2081,7 +2081,6 @@ function TabLeggiDecreti() {
 // ═══════════════════════════════════════════════════════════════
 
 
-// ─── FUORI DALLA FUNZIONE — costanti modulo ────────────────────
 const FONTI_MACRO = [
     {
         key: 'cassazione',
@@ -2130,6 +2129,19 @@ const FONTI_MACRO = [
         sotto: [
             { v: 'corte_conti', l: 'Corte dei Conti' },
             { v: 'consul', l: 'Sezione consultiva' },
+        ],
+    },
+    {
+        key: 'giuri_tributaria_def',
+        label: 'Giurisprudenza Tributaria (MEF)',
+        descrizione: 'Cassazione tributaria, CGT, ex CTP/CTR storiche, CGUE — Banca Dati MEF',
+        sotto: [
+            { v: 'cassazione', l: 'Cassazione tributaria' },
+            { v: 'cgt_secondo_grado', l: 'CGT — Secondo grado' },
+            { v: 'cgt_primo_grado', l: 'CGT — Primo grado' },
+            { v: 'altra_giuri', l: 'CTP/CTR storiche e altri organi' },
+            { v: 'cgue', l: 'Corte di Giustizia UE' },
+            { v: 'corte_appello', l: 'Corte d\'Appello' },
         ],
     },
     {
@@ -2254,16 +2266,20 @@ function TabSentenze() {
             }
             setConteggiPerCategoria(conteggiCat)
 
-            // 3. Conteggi per fonte — MV precalcolata
             const { data: conteggiFontiData } = await supabase
                 .from('conteggi_fonti_sentenze')
-                .select('macro_fonte, sotto_fonte, totale')
-            const macroMap = {}
+                .select('sotto_fonte, totale')
             const sottoMap = {}
             for (const r of conteggiFontiData ?? []) {
-                const t = Number(r.totale)
-                macroMap[r.macro_fonte] = (macroMap[r.macro_fonte] ?? 0) + t
-                sottoMap[r.sotto_fonte] = t
+                sottoMap[r.sotto_fonte] = Number(r.totale)
+            }
+            const macroMap = {}
+            for (const macro of FONTI_MACRO) {
+                let totale = 0
+                for (const s of macro.sotto) {
+                    totale += sottoMap[s.v] ?? 0
+                }
+                macroMap[macro.key] = totale
             }
             setConteggiMacroFonte(macroMap)
             setConteggiSottoFonte(sottoMap)
@@ -2431,20 +2447,34 @@ function TabSentenze() {
 
         try {
             // ── COUNT ──
-            let qc = supabase
-                .from('giurisprudenza')
-                .select('id', { count: 'exact', head: true })
-                .in('fonte', fontiInScope)
-                .eq('vigente', true)
+            // Se non ci sono filtri attivi (anno/tipo/ricerca), usiamo la MV
+            // gia' aggregata: count diretto su giurisprudenza con IN(6 fonti)
+            // impiega ~13s e va in timeout PostgREST.
+            // Con filtri attivi, fallback al count diretto (operera' su subset piu' piccolo).
+            const haFiltri = !!filtroAnno || !!filtroTipo || !!ricercaAttiva.trim()
 
-            if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
-            if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
-            if (ricercaAttiva.trim()) {
-                qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+            if (!haFiltri) {
+                const totaleDaMV = fontiInScope.reduce(
+                    (acc, f) => acc + (conteggiSottoFonte[f] ?? 0),
+                    0
+                )
+                setTotaleSentenze(totaleDaMV)
+            } else {
+                let qc = supabase
+                    .from('giurisprudenza')
+                    .select('id', { count: 'exact', head: true })
+                    .in('fonte', fontiInScope)
+                    .eq('vigente', true)
+
+                if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
+                if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
+                if (ricercaAttiva.trim()) {
+                    qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+                }
+
+                const { count } = await qc
+                setTotaleSentenze(count ?? 0)
             }
-
-            const { count } = await qc
-            setTotaleSentenze(count ?? 0)
 
             // ── DATA ──
             let q = supabase
@@ -2955,6 +2985,371 @@ function BloccoRisultati({
     )
 }
 
+// ═══════════════════════════════════════════════════════════
+// TAB TRIBUTARIO — sentenze CGT (Banca Dati MEF)
+// Catalogo: Primo grado / Secondo grado
+// Licenza: CC BY-NC 3.0 IT (attribuzione obbligatoria)
+// ═══════════════════════════════════════════════════════════
+function TabTributario() {
+    const navigate = useNavigate()
+
+    const [vista, setVista] = useState('catalogo')
+    const [gradoSelezionato, setGradoSelezionato] = useState(null)
+
+    const [loadingCatalogo, setLoadingCatalogo] = useState(false)
+
+    const [ricerca, setRicerca] = useState('')
+    const [ricercaAttiva, setRicercaAttiva] = useState('')
+    const [filtroAnno, setFiltroAnno] = useState('')
+    const [filtroAutorita, setFiltroAutorita] = useState('')
+    const [filtroEsito, setFiltroEsito] = useState('')
+
+    const [risultati, setRisultati] = useState([])
+    const [totaleSentenze, setTotaleSentenze] = useState(0)
+    const [paginaSentenze, setPaginaSentenze] = useState(0)
+    const [loadingRisultati, setLoadingRisultati] = useState(false)
+    const [autoritaDisponibili, setAutoritaDisponibili] = useState([])
+
+    // Conteggi dalla MV (rinfrescati ogni notte dal cron alle 03:00 UTC)
+    const [conteggiPerGrado, setConteggiPerGrado] = useState({})
+    const [conteggiBreakdown, setConteggiBreakdown] = useState([])
+
+    const PER_PAGINA = 50
+
+    // Carica conteggi dalla MV al primo render
+    useEffect(() => {
+        async function caricaConteggi() {
+            const { data } = await supabase
+                .from('conteggi_bdgt_mef')
+                .select('grado_commissione, anno, autorita_emittente, totale')
+
+            if (!data) return
+
+            setConteggiBreakdown(data)
+
+            const perGrado = {}
+            for (const r of data) {
+                if (!r.grado_commissione) continue
+                perGrado[r.grado_commissione] = (perGrado[r.grado_commissione] ?? 0) + Number(r.totale)
+            }
+            setConteggiPerGrado(perGrado)
+        }
+        caricaConteggi()
+    }, [])
+
+    useEffect(() => {
+        setPaginaSentenze(0)
+    }, [gradoSelezionato, ricercaAttiva, filtroAnno, filtroAutorita, filtroEsito])
+
+    useEffect(() => {
+        if (vista !== 'grado' || !gradoSelezionato) return
+        caricaSentenze()
+    }, [vista, gradoSelezionato, ricercaAttiva, filtroAnno, filtroAutorita, filtroEsito, paginaSentenze])
+
+    async function caricaSentenze() {
+        setLoadingRisultati(true)
+
+        const offsetStart = paginaSentenze * PER_PAGINA
+        const offsetEnd = offsetStart + PER_PAGINA - 1
+
+        try {
+            // ── COUNT ──
+            // Con filtri "leggeri" (grado + anno + autorita) il count si calcola
+            // dalla MV. Con filtro esito o ricerca testuale fallback al count
+            // diretto (subset gia' filtrato per grado, scansiona poco).
+            const usaMV = !filtroEsito && !ricercaAttiva.trim()
+
+            if (usaMV) {
+                const totaleDaMV = conteggiBreakdown.reduce((acc, r) => {
+                    if (r.grado_commissione !== gradoSelezionato) return acc
+                    if (filtroAnno && r.anno !== parseInt(filtroAnno)) return acc
+                    if (filtroAutorita && r.autorita_emittente !== filtroAutorita) return acc
+                    return acc + Number(r.totale)
+                }, 0)
+                setTotaleSentenze(totaleDaMV)
+            }
+
+            // ── DATA ──
+            const baseSelect = 'id, organo, autorita_emittente, grado_commissione, numero, anno, data_emissione, data_deposito, oggetto, principio_diritto, esito, tipo_provvedimento'
+
+            let q = supabase
+                .from('giurisprudenza_bdgt_mef')
+                .select(baseSelect, usaMV ? undefined : { count: 'exact' })
+                .eq('grado_commissione', gradoSelezionato)
+
+            if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
+            if (filtroAutorita) q = q.eq('autorita_emittente', filtroAutorita)
+            if (filtroEsito) q = q.eq('esito', filtroEsito)
+            if (ricercaAttiva.trim()) {
+                q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+            }
+
+            q = q.order('data_deposito', { ascending: false, nullsFirst: false })
+                .range(offsetStart, offsetEnd)
+
+            const { data, count } = await q
+            setRisultati(data ?? [])
+            if (!usaMV) setTotaleSentenze(count ?? 0)
+
+            const autSet = new Set()
+            for (const r of data ?? []) {
+                if (r.autorita_emittente) autSet.add(r.autorita_emittente)
+            }
+            setAutoritaDisponibili([...autSet].sort())
+        } finally {
+            setLoadingRisultati(false)
+        }
+    }
+
+    function apriGrado(grado) {
+        setGradoSelezionato(grado)
+        setVista('grado')
+        setRicerca(''); setRicercaAttiva('')
+        setFiltroAnno(''); setFiltroAutorita(''); setFiltroEsito('')
+    }
+
+    function tornaAlCatalogo() {
+        setVista('catalogo')
+        setGradoSelezionato(null)
+        setRisultati([])
+    }
+
+    function avviaRicerca() { setRicercaAttiva(ricerca) }
+
+    function titoloSentenza(s) {
+        const parti = [s.organo, s.numero && `n. ${s.numero}`, s.anno].filter(Boolean)
+        return parti.join(' · ') || 'Sentenza CGT'
+    }
+
+    function labelTipoProvvedimento(t) {
+        const map = {
+            sentenza: 'Sentenza',
+            ordinanza: 'Ordinanza',
+            ordinanza_interlocutoria: 'Ord. interlocutoria',
+            decreto_presidenziale: 'Decreto',
+        }
+        return map[t] ?? t
+    }
+
+    const ESITI_FILTRO = [
+        { v: '', l: 'Tutti gli esiti' },
+        { v: 'favorevole al contribuente', l: 'Favorevole al contribuente' },
+        { v: "favorevole all'ufficio", l: "Favorevole all'ufficio" },
+        { v: 'parzialmente accolto', l: 'Parzialmente accolto' },
+        { v: 'cessata materia del contendere', l: 'Cessata materia' },
+        { v: 'estinto', l: 'Estinto' },
+        { v: 'inammissibile', l: 'Inammissibile' },
+        { v: 'rinvio', l: 'Rinvio' },
+        { v: 'spese compensate', l: 'Spese compensate' },
+    ]
+
+    const annoCorrente = new Date().getFullYear()
+    const anniOpzioni = Array.from({ length: 10 }, (_, i) => annoCorrente - i)
+
+    return (
+        <div className="space-y-5">
+
+            <div className="bg-petrolio/60 border border-salvia/15 px-4 py-3 flex items-start gap-3">
+                <Scale size={14} className="text-salvia shrink-0 mt-0.5" />
+                <div className="flex-1">
+                    <p className="font-body text-xs text-nebbia/70 leading-relaxed">
+                        Sentenze delle <strong className="text-nebbia">Corti di Giustizia Tributaria</strong> (CGT 1° e 2° grado).
+                    </p>
+                    <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                        Fonte: MEF — Banca Dati Giurisprudenza Tributaria · Licenza CC BY-NC 3.0 IT
+                    </p>
+                </div>
+            </div>
+
+            {vista === 'catalogo' && (
+                <>
+                    {loadingCatalogo ? (
+                        <div className="flex items-center justify-center py-20">
+                            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onClick={() => apriGrado('primo_grado')}
+                                className="bg-slate border border-white/5 p-6 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Scale size={16} className="text-oro/60 shrink-0" />
+                                        <p className="font-display text-lg text-nebbia group-hover:text-oro transition-colors">
+                                            Primo grado
+                                        </p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0 mt-1.5" />
+                                </div>
+                                <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-2">
+                                    Commissioni Tributarie Provinciali e CGT di Primo Grado
+                                </p>
+                            </button>
+
+                            <button onClick={() => apriGrado('secondo_grado')}
+                                className="bg-slate border border-white/5 p-6 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Scale size={16} className="text-oro/60 shrink-0" />
+                                        <p className="font-display text-lg text-nebbia group-hover:text-oro transition-colors">
+                                            Secondo grado
+                                        </p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-nebbia/20 group-hover:text-oro/60 transition-colors shrink-0 mt-1.5" />
+                                </div>
+                                <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-2">
+                                    Commissioni Tributarie Regionali e CGT di Secondo Grado (appello)
+                                </p>
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {vista === 'grado' && (
+                <>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> Primo / Secondo grado
+                        </button>
+                        <p className="font-display text-xl text-nebbia">
+                            {gradoSelezionato === 'primo_grado' ? 'Primo grado' : 'Secondo grado'}
+                        </p>
+                    </div>
+
+                    <div className="bg-slate border border-white/5 p-4 space-y-3">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                                <input
+                                    placeholder="Cerca in oggetto e principio di diritto..."
+                                    value={ricerca}
+                                    onChange={e => setRicerca(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') avviaRicerca() }}
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                />
+                            </div>
+                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                                <Search size={13} /> Cerca
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-nebbia/30">
+                                <Filter size={12} />
+                                <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
+                            </div>
+
+                            <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                <option value="">Tutti gli anni</option>
+                                {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+
+                            {autoritaDisponibili.length > 0 && (
+                                <select value={filtroAutorita} onChange={e => setFiltroAutorita(e.target.value)}
+                                    className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                    <option value="">Tutte le sedi</option>
+                                    {autoritaDisponibili.map(a => <option key={a} value={a}>{a}</option>)}
+                                </select>
+                            )}
+
+                            <select value={filtroEsito} onChange={e => setFiltroEsito(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40 max-w-xs">
+                                {ESITI_FILTRO.map(e => <option key={e.v} value={e.v}>{e.l}</option>)}
+                            </select>
+
+                            {(filtroAnno || filtroAutorita || filtroEsito || ricercaAttiva) && (
+                                <button onClick={() => {
+                                    setFiltroAnno(''); setFiltroAutorita(''); setFiltroEsito('')
+                                    setRicerca(''); setRicercaAttiva('')
+                                }}
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    <X size={11} /> Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {loadingRisultati ? (
+                        <div className="flex items-center justify-center py-16">
+                            <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                        </div>
+                    ) : risultati.length === 0 ? (
+                        <div className="bg-slate border border-white/5 p-12 text-center">
+                            <p className="font-body text-sm text-nebbia/40">Nessuna sentenza trovata con questi filtri</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-3">
+                                {risultati.map(s => {
+                                    const dataVisibile = s.data_deposito ?? s.data_emissione
+                                    const titolo = titoloSentenza(s)
+                                    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                    const targetPath = `${prefix}/tributario/${s.id}`
+
+                                    return (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => navigate(targetPath)}
+                                            className="w-full text-left bg-slate border border-white/5 hover:border-salvia/20 p-5 transition-all"
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                        <span className="font-body text-xs text-nebbia/60">{titolo}</span>
+                                                        {s.tipo_provvedimento && (
+                                                            <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                                                                {labelTipoProvvedimento(s.tipo_provvedimento)}
+                                                            </span>
+                                                        )}
+                                                        {dataVisibile && (
+                                                            <span className="font-body text-[10px] text-nebbia/30 flex items-center gap-1">
+                                                                <Calendar size={9} /> {new Date(dataVisibile).toLocaleDateString('it-IT')}
+                                                            </span>
+                                                        )}
+                                                        {s.esito && (
+                                                            <span className="font-body text-[10px] text-salvia border border-salvia/30 px-1.5 py-0.5 bg-salvia/5">
+                                                                {s.esito}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '—'}</h3>
+                                                    {s.principio_diritto && (
+                                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
+                                                    )}
+                                                </div>
+                                                <div className="shrink-0">
+                                                    <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
+                                                        Gratuita
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+
+                            {totaleSentenze > PER_PAGINA && (
+                                <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
+                                    <p className="font-body text-xs text-nebbia/30">
+                                        {paginaSentenze * PER_PAGINA + 1}-{Math.min((paginaSentenze + 1) * PER_PAGINA, totaleSentenze)} di {totaleSentenze.toLocaleString('it-IT')}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
+                                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                        <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * PER_PAGINA >= totaleSentenze}
+                                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </>
+            )}
+        </div>
+    )
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TAB PRASSI — invariato (non aveva bottoni di salvataggio)
 // ═══════════════════════════════════════════════════════════════
@@ -3328,9 +3723,13 @@ export function BancaDati() {
                             className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <Globe size={12} /> UE
                         </button>
-                        <button onClick={() => setTabAttivo('sentenze')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'sentenze' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                            <Landmark size={12} /> Sentenze
+                        <button onClick={() => setTabAttivo('giurisprudenza')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <Landmark size={12} /> Giurisprudenza
+                        </button>
+                        <button onClick={() => setTabAttivo('tributario')}
+                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'tributario' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            <Scale size={12} /> Tributario
                         </button>
                         <button onClick={() => setTabAttivo('prassi')}
                             className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'prassi' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
@@ -3357,7 +3756,8 @@ export function BancaDati() {
                         setMessaggiConversazione={setMessaggiConversazione}
                     />
                 )}
-                {tabAttivo === 'sentenze' && <TabSentenze />}
+                {tabAttivo === 'giurisprudenza' && <TabSentenze />}
+                {tabAttivo === 'tributario' && <TabTributario />}
                 {tabAttivo === 'prassi' && <TabPrassi />}
             </div>
         </div>

@@ -6,11 +6,16 @@ import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/comp
 import { Plus, Send, Search, AlertCircle, X, User, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-// ─────────────────────────────────────────────────────────────
-// MODAL: NUOVO TICKET A CLIENTE
-// (titolo + selezione cliente — niente messaggio iniziale,
-//  l'avvocato lo scrive subito dopo nella chat)
-// ─────────────────────────────────────────────────────────────
+const ALIAS_ADMIN_NOME = 'Lexum'
+const ALIAS_ADMIN_INIZIALE = 'L'
+
+function displayNome(profilo, ruoloFallback = null) {
+    const ruolo = profilo?.role ?? ruoloFallback
+    if (ruolo === 'admin') return ALIAS_ADMIN_NOME
+    if (!profilo) return '—'
+    return `${profilo.nome ?? ''} ${profilo.cognome ?? ''}`.trim() || '—'
+}
+
 function ModalNuovoTicketCliente({ onClose, onCreato }) {
     const [titolo, setTitolo] = useState('')
     const [cerca, setCerca] = useState('')
@@ -21,7 +26,6 @@ function ModalNuovoTicketCliente({ onClose, onCreato }) {
     const [creando, setCreando] = useState(false)
     const [errore, setErrore] = useState('')
 
-    // ESC chiude
     useEffect(() => {
         const onKey = e => { if (e.key === 'Escape') onClose() }
         window.addEventListener('keydown', onKey)
@@ -292,7 +296,8 @@ export function AvvocatoAssistenza() {
             .order('updated_at', { ascending: false })
 
         // Split: clienti vs Lexum
-        // - Lexum = quando avvocato (uno dei nostri) parla con admin
+        // - Lexum = quando uno dei nostri avvocati interagisce con un admin
+        //   (sia come mittente verso admin, sia come destinatario di un admin)
         // - Clienti = tutto il resto che coinvolge un cliente
         const cl = []
         const lx = []
@@ -301,10 +306,17 @@ export function AvvocatoAssistenza() {
             const destRole = t.destinatario?.role
             const idsSet = new Set(ids)
 
-            // Lexum: avvocato dello studio parla con admin
+            // Lexum (uscente): avvocato dello studio scrive all'admin
             if (idsSet.has(t.mittente_id) && destRole === 'admin') {
                 // Mostro solo i miei ticket Lexum, non quelli dei collaboratori
                 if (t.mittente_id === meId) lx.push(t)
+                continue
+            }
+
+            // Lexum (entrante): admin scrive all'avvocato dello studio
+            if (mittRole === 'admin' && idsSet.has(t.destinatario_id)) {
+                // Mostro solo i ticket dove sono il destinatario io, non i collaboratori
+                if (t.destinatario_id === meId) lx.push(t)
                 continue
             }
 
@@ -616,7 +628,10 @@ export function AvvocatoAssistenzaDettaglio() {
     if (loading) return <div className="flex justify-center py-40"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" /></div>
     if (!ticket) return <div className="space-y-5"><BackButton to="/assistenza" label="Assistenza" /><p className="font-body text-sm text-nebbia/40">Ticket non trovato.</p></div>
 
-    const mittente = ticket.mittente ? `${ticket.mittente.nome} ${ticket.mittente.cognome}` : 'Sconosciuto'
+    // Mostra "Lexum" se il mittente è un admin (alias unificato del supporto)
+    const mittente = ticket.mittente
+        ? displayNome(ticket.mittente, ticket.mittente_ruolo)
+        : 'Sconosciuto'
 
     return (
         <div className="space-y-5">
@@ -650,7 +665,9 @@ export function AvvocatoAssistenzaDettaglio() {
                     <p className="font-body text-sm text-nebbia/30 italic">Nessun messaggio</p>
                 ) : messaggi.map(m => {
                     const isMio = m.autore_tipo === 'avvocato'
-                    const nomeAutore = m.autore ? `${m.autore.nome} ${m.autore.cognome}` : m.autore_tipo
+                    const nomeAutore = m.autore_tipo === 'admin'
+                        ? ALIAS_ADMIN_NOME
+                        : (m.autore ? `${m.autore.nome} ${m.autore.cognome}` : m.autore_tipo)
                     return (
                         <div key={m.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[75%] p-3 space-y-1 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio/60 border border-white/8'}`}>

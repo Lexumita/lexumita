@@ -55,7 +55,7 @@ const CATEGORIE = [
 // ─────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPALE
 // ─────────────────────────────────────────────────────────────
-export default function GeneraDocumentoMenu({ praticaId }) {
+export default function GeneraDocumentoMenu({ praticaId, onDocumentoSalvato }) {
     const [templates, setTemplates] = useState([])
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState('')
@@ -198,6 +198,7 @@ export default function GeneraDocumentoMenu({ praticaId }) {
                     template={templateSelezionato}
                     praticaId={praticaId}
                     onClose={chiudiWizard}
+                    onDocumentoSalvato={onDocumentoSalvato}
                 />
             )}
         </>

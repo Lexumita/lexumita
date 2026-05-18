@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, StatCard } from '@/components/shared'
 import {
-  Send, Lock, Search, ChevronUp, ChevronDown,
-  ArrowUpDown, ArrowRight, AlertCircle, MessageSquare
+  Send, Search, ChevronUp, ChevronDown,
+  ArrowUpDown, ArrowRight, AlertCircle, MessageSquare,
+  Plus, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -56,10 +57,181 @@ const RUOLO_BADGE = {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB 1 — SUPPORTO LEXUM
-// ticket verso admin (destinatario_id = null) — naviga a /admin/assistenza/:id
+// MODAL — NUOVO TICKET ADMIN → UTENTE
+// L'admin sceglie un destinatario e l'oggetto.
+// Il primo messaggio verra' scritto nella pagina di dettaglio del ticket.
 // ─────────────────────────────────────────────────────────────
-function TabSupporto() {
+function ModalNuovoTicket({ open, onClose, onCreato, adminId }) {
+  const [destinatari, setDestinatari] = useState([])
+  const [destinatarioId, setDestinatarioId] = useState('')
+  const [filtroRuolo, setFiltroRuolo] = useState('') // '', 'avvocato', 'user'
+  const [searchDest, setSearchDest] = useState('')
+  const [oggetto, setOggetto] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [errore, setErrore] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    setDestinatarioId('')
+    setOggetto('')
+    setErrore('')
+    setSearchDest('')
+    setFiltroRuolo('')
+
+    async function caricaDestinatari() {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, nome, cognome, email, role')
+        .in('role', ['avvocato', 'user'])
+        .order('cognome', { ascending: true })
+      setDestinatari(data ?? [])
+    }
+    caricaDestinatari()
+  }, [open])
+
+  if (!open) return null
+
+  const destinatariFiltrati = destinatari.filter(d => {
+    if (filtroRuolo && d.role !== filtroRuolo) return false
+    if (searchDest) {
+      const hay = `${d.nome ?? ''} ${d.cognome ?? ''} ${d.email ?? ''}`.toLowerCase()
+      if (!hay.includes(searchDest.toLowerCase())) return false
+    }
+    return true
+  })
+
+  async function creaTicket() {
+    setErrore('')
+    if (!destinatarioId) { setErrore('Seleziona un destinatario'); return }
+    if (!oggetto.trim()) { setErrore('Inserisci un oggetto'); return }
+
+    setSalvando(true)
+    try {
+      const { data: ticket, error: ticketErr } = await supabase
+        .from('ticket_assistenza')
+        .insert({
+          mittente_id: adminId,
+          mittente_ruolo: 'admin',
+          destinatario_id: destinatarioId,
+          oggetto: oggetto.trim(),
+          stato: 'aperto',
+          ultimo_mittente: 'admin',
+        })
+        .select('id')
+        .single()
+
+      if (ticketErr) throw new Error(ticketErr.message)
+
+      onCreato(ticket.id)
+    } catch (err) {
+      setErrore(err.message)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-petrolio/80 backdrop-blur-sm"
+      onClick={onClose}>
+      <div className="bg-slate border border-white/10 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <p className="font-body text-sm font-medium text-nebbia">Nuovo ticket</p>
+          <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Destinatario */}
+          <div className="space-y-2">
+            <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Destinatario</p>
+
+            <div className="flex gap-2">
+              <select value={filtroRuolo} onChange={e => setFiltroRuolo(e.target.value)}
+                className="bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
+                <option value="">Tutti</option>
+                <option value="avvocato">Avvocati</option>
+                <option value="user">User</option>
+              </select>
+              <div className="relative flex-1">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                <input value={searchDest} onChange={e => setSearchDest(e.target.value)}
+                  placeholder="Cerca per nome o email..."
+                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+              </div>
+            </div>
+
+            <div className="bg-petrolio border border-white/5 max-h-48 overflow-y-auto">
+              {destinatariFiltrati.length === 0 ? (
+                <p className="px-3 py-3 font-body text-xs text-nebbia/30 text-center">Nessun risultato</p>
+              ) : destinatariFiltrati.map(d => {
+                const rb = RUOLO_BADGE[d.role] ?? RUOLO_BADGE.user
+                return (
+                  <button key={d.id} onClick={() => setDestinatarioId(d.id)}
+                    className={`w-full text-left px-3 py-2 border-b border-white/5 last:border-0 transition-colors ${destinatarioId === d.id ? 'bg-oro/10' : 'hover:bg-slate'
+                      }`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-body text-sm text-nebbia truncate">
+                          {`${d.nome ?? ''} ${d.cognome ?? ''}`.trim() || '(senza nome)'}
+                        </p>
+                        <p className="font-body text-xs text-nebbia/40 truncate">{d.email}</p>
+                      </div>
+                      <Badge label={rb.label} variant={rb.variant} />
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Oggetto */}
+          <div className="space-y-2">
+            <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Oggetto</p>
+            <input value={oggetto} onChange={e => setOggetto(e.target.value)}
+              placeholder="Es. Verifica account, comunicazione importante..."
+              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+            <p className="font-body text-[10px] text-nebbia/30 italic">
+              Dopo la creazione potrai scrivere i messaggi nella pagina di dettaglio del ticket.
+            </p>
+          </div>
+
+          {errore && (
+            <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+              <AlertCircle size={13} /> {errore}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-white/5">
+          <button onClick={onClose}
+            className="px-4 py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors">
+            Annulla
+          </button>
+          <button onClick={creaTicket} disabled={salvando}
+            className="btn-primary text-sm px-4 py-2 disabled:opacity-40">
+            {salvando ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin w-3 h-3 border-2 border-petrolio border-t-transparent rounded-full" />
+                Creazione...
+              </span>
+            ) : (
+              'Crea ticket'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// TAB SUPPORTO — UNICA VISTA
+// Include sia i ticket aperti DA utenti verso l'admin (destinatario_id NULL)
+// sia i ticket aperti DALL'admin verso utenti (mittente_ruolo='admin').
+// ─────────────────────────────────────────────────────────────
+function ListaTicketSupporto({ adminId, onNuovoTicket }) {
   const navigate = useNavigate()
   const { sortField, sortDir, handleSort, sortFn } = useSort('created_at', 'desc')
   const [tickets, setTickets] = useState([])
@@ -70,40 +242,56 @@ function TabSupporto() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  useEffect(() => {
-    async function carica() {
-      setLoading(true)
-      const { data } = await supabase
-        .from('ticket_assistenza')
-        .select(`
-          id, oggetto, stato, created_at, mittente_ruolo,
-          mittente:mittente_id(id, nome, cognome),
-          messaggi:messaggi_ticket(id, autore_tipo, created_at)
-        `)
-        .is('destinatario_id', null)
-        .order('created_at', { ascending: false })
-      setTickets(data ?? [])
-      setLoading(false)
-    }
-    carica()
-  }, [])
+  async function carica() {
+    setLoading(true)
+    // Ticket "Supporto Lexum":
+    // - aperti da utenti verso admin: destinatario_id IS NULL
+    // - aperti da admin verso utenti: mittente_ruolo = 'admin'
+    const { data } = await supabase
+      .from('ticket_assistenza')
+      .select(`
+        id, oggetto, stato, created_at, mittente_ruolo, destinatario_id,
+        mittente:mittente_id(id, nome, cognome),
+        destinatario:destinatario_id(id, nome, cognome, role),
+        messaggi:messaggi_ticket(id, autore_tipo, created_at)
+      `)
+      .or('destinatario_id.is.null,mittente_ruolo.eq.admin')
+      .order('created_at', { ascending: false })
+    setTickets(data ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { carica() }, [])
 
   const nAperti = tickets.filter(t => t.stato === 'aperto').length
+  // "Da rispondere" = ticket aperti dove l'ultimo messaggio NON è dell'admin.
+  // Vale sia per ticket entranti (utente scrive, admin deve rispondere)
+  // sia per ticket uscenti (admin ha scritto, utente ha risposto, admin deve replicare).
   const nDaRisp = tickets.filter(t => {
     if (t.stato !== 'aperto') return false
     const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    if (msgs.length === 0) return false
     return msgs[0]?.autore_tipo !== 'admin'
   }).length
 
   const rows = tickets
     .filter(t => {
       if (statoF && t.stato !== statoF) return false
-      if (ruoloF && t.mittente_ruolo !== ruoloF) return false
+      // Filtro per "ruolo controparte":
+      // - ticket entrante (destinatario_id null) -> ruolo del mittente
+      // - ticket uscente (mittente_ruolo admin) -> ruolo del destinatario
+      if (ruoloF) {
+        const ruoloControparte = t.destinatario_id === null
+          ? t.mittente_ruolo
+          : t.destinatario?.role
+        if (ruoloControparte !== ruoloF) return false
+      }
       if (dateFrom && t.created_at < dateFrom) return false
       if (dateTo && t.created_at > dateTo + 'T23:59:59') return false
       if (search) {
         const mitt = `${t.mittente?.nome ?? ''} ${t.mittente?.cognome ?? ''}`
-        if (!`${t.oggetto} ${mitt}`.toLowerCase().includes(search.toLowerCase())) return false
+        const dest = `${t.destinatario?.nome ?? ''} ${t.destinatario?.cognome ?? ''}`
+        if (!`${t.oggetto} ${mitt} ${dest}`.toLowerCase().includes(search.toLowerCase())) return false
       }
       return true
     })
@@ -122,7 +310,7 @@ function TabSupporto() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-44">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-          <input placeholder="Cerca titolo, mittente..." value={search} onChange={e => setSearch(e.target.value)}
+          <input placeholder="Cerca titolo, mittente, destinatario..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
         </div>
         <select value={statoF} onChange={e => setStatoF(e.target.value)}
@@ -165,26 +353,32 @@ function TabSupporto() {
             <thead>
               <tr className="border-b border-white/5">
                 <th className="px-4 py-3 w-6" />
-                <SortTh label="Titolo" field="oggetto"    {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Mittente" field="created_at" {...{ sortField, sortDir, onSort: handleSort }} />
+                <SortTh label="Titolo" field="oggetto" {...{ sortField, sortDir, onSort: handleSort }} />
+                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Direzione</th>
+                <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Controparte</th>
                 <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Ruolo</th>
                 <SortTh label="Data" field="created_at" {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Stato" field="stato"      {...{ sortField, sortDir, onSort: handleSort }} />
+                <SortTh label="Stato" field="stato" {...{ sortField, sortDir, onSort: handleSort }} />
                 <th className="px-4 py-3 w-10" />
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={8} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun ticket trovato
                   </td>
                 </tr>
               ) : rows.map(t => {
                 const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 const daRisp = t.stato === 'aperto' && msgs.length > 0 && msgs[0]?.autore_tipo !== 'admin'
-                const rb = RUOLO_BADGE[t.mittente_ruolo] ?? RUOLO_BADGE.user
-                const mitt = `${t.mittente?.nome ?? ''} ${t.mittente?.cognome ?? ''}`.trim() || '—'
+
+                // Direzione e controparte
+                const isUscente = t.mittente_ruolo === 'admin'
+                const controparteProfile = isUscente ? t.destinatario : t.mittente
+                const controparteNome = `${controparteProfile?.nome ?? ''} ${controparteProfile?.cognome ?? ''}`.trim() || '—'
+                const ruoloControparte = isUscente ? controparteProfile?.role : t.mittente_ruolo
+                const rb = RUOLO_BADGE[ruoloControparte] ?? RUOLO_BADGE.user
 
                 return (
                   <tr key={t.id}
@@ -194,7 +388,13 @@ function TabSupporto() {
                       {daRisp && <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />}
                     </td>
                     <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{t.oggetto}</td>
-                    <td className="px-4 py-3 font-body text-sm text-nebbia/60">{mitt}</td>
+                    <td className="px-4 py-3">
+                      <span className={`font-body text-[10px] px-1.5 py-0.5 uppercase tracking-wider ${isUscente ? 'bg-oro/10 border border-oro/30 text-oro' : 'bg-salvia/10 border border-salvia/30 text-salvia'
+                        }`}>
+                        {isUscente ? 'Uscente' : 'Entrante'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-body text-sm text-nebbia/60">{controparteNome}</td>
                     <td className="px-4 py-3"><Badge label={rb.label} variant={rb.variant} /></td>
                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                       {new Date(t.created_at).toLocaleDateString('it-IT')}
@@ -219,271 +419,53 @@ function TabSupporto() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB 2 — AVVOCATO ↔ CLIENTE
-// sola lettura — clic sulla riga apre la chat inline
-// ─────────────────────────────────────────────────────────────
-function TabComunicazioni() {
-  const { sortField, sortDir, handleSort, sortFn } = useSort('created_at', 'desc')
-  const [tickets, setTickets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [ticketAperto, setTicketAperto] = useState(null)
-  const [messaggi, setMessaggi] = useState([])
-  const [loadingChat, setLoadingChat] = useState(false)
-  const [search, setSearch] = useState('')
-  const [statoF, setStatoF] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const bottomRef = useRef(null)
-
-  useEffect(() => {
-    async function carica() {
-      setLoading(true)
-      const { data } = await supabase
-        .from('ticket_assistenza')
-        .select(`
-          id, oggetto, stato, created_at, mittente_ruolo,
-          mittente:mittente_id(nome, cognome),
-          destinatario:destinatario_id(nome, cognome)
-        `)
-        .not('destinatario_id', 'is', null)
-        .order('created_at', { ascending: false })
-      setTickets(data ?? [])
-      setLoading(false)
-    }
-    carica()
-  }, [])
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messaggi])
-
-  async function apriChat(t) {
-    setTicketAperto(t)
-    setLoadingChat(true)
-    const { data } = await supabase
-      .from('messaggi_ticket')
-      .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
-      .eq('ticket_id', t.id)
-      .order('created_at', { ascending: true })
-    setMessaggi(data ?? [])
-    setLoadingChat(false)
-  }
-
-  const rows = tickets
-    .filter(t => {
-      if (statoF && t.stato !== statoF) return false
-      if (dateFrom && t.created_at < dateFrom) return false
-      if (dateTo && t.created_at > dateTo + 'T23:59:59') return false
-      if (search) {
-        const mitt = `${t.mittente?.nome ?? ''} ${t.mittente?.cognome ?? ''}`
-        const dest = `${t.destinatario?.nome ?? ''} ${t.destinatario?.cognome ?? ''}`
-        if (!`${t.oggetto} ${mitt} ${dest}`.toLowerCase().includes(search.toLowerCase())) return false
-      }
-      return true
-    })
-    .sort(sortFn)
-
-  const hasFilters = search || statoF || dateFrom || dateTo
-
-  // Vista chat inline
-  if (ticketAperto) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-petrolio/40 border border-white/5 px-4 py-3">
-          <p className="font-body text-xs text-nebbia/40">Sola lettura — l'admin non partecipa a questa conversazione.</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button onClick={() => { setTicketAperto(null); setMessaggi([]) }}
-            className="text-nebbia/40 hover:text-nebbia transition-colors">
-            <ArrowRight size={16} className="rotate-180" />
-          </button>
-          <div className="min-w-0">
-            <p className="font-body text-sm font-medium text-nebbia">{ticketAperto.oggetto}</p>
-            <p className="font-body text-xs text-nebbia/40">
-              {`${ticketAperto.mittente?.nome ?? ''} ${ticketAperto.mittente?.cognome ?? ''}`.trim()}
-              {' → '}
-              {`${ticketAperto.destinatario?.nome ?? ''} ${ticketAperto.destinatario?.cognome ?? ''}`.trim()}
-            </p>
-          </div>
-          <Badge
-            label={ticketAperto.stato === 'aperto' ? 'Aperto' : 'Chiuso'}
-            variant={ticketAperto.stato === 'aperto' ? 'salvia' : 'gray'}
-          />
-        </div>
-
-        <div className="bg-slate border border-white/5 overflow-y-auto p-5 space-y-3" style={{ maxHeight: 480 }}>
-          {loadingChat ? (
-            <div className="flex items-center justify-center py-12">
-              <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
-            </div>
-          ) : messaggi.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 gap-2">
-              <MessageSquare size={28} className="text-nebbia/15" />
-              <p className="font-body text-sm text-nebbia/30">Nessun messaggio</p>
-            </div>
-          ) : messaggi.map(msg => {
-            const isMio = msg.autore_tipo === 'avvocato'
-            return (
-              <div key={msg.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-sm px-4 py-2.5 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio border border-white/10'}`}>
-                  <p className={`font-body text-[10px] font-medium mb-1 ${isMio ? 'text-oro/60 text-right' : 'text-nebbia/40'}`}>
-                    {msg.autore?.nome} {msg.autore?.cognome} · {msg.autore_tipo}
-                  </p>
-                  <p className="font-body text-sm text-nebbia leading-relaxed">{msg.testo}</p>
-                  <p className={`font-body text-[10px] text-nebbia/25 mt-1 ${isMio ? 'text-right' : ''}`}>
-                    {new Date(msg.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-          <div ref={bottomRef} />
-        </div>
-      </div>
-    )
-  }
-
-  // Lista ticket
-  return (
-    <div className="space-y-4">
-      <div className="bg-petrolio/40 border border-white/5 px-4 py-3">
-        <p className="font-body text-xs text-nebbia/40">
-          Supervisione dei messaggi tra avvocati e clienti. Clicca su una riga per leggere la conversazione.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-44">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-          <input placeholder="Cerca titolo, mittente, destinatario..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-        </div>
-        <select value={statoF} onChange={e => setStatoF(e.target.value)}
-          className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
-          <option value="">Tutti gli stati</option>
-          <option value="aperto">Aperto</option>
-          <option value="chiuso">Chiuso</option>
-        </select>
-        <div className="flex items-center gap-2">
-          <label className="font-body text-xs text-nebbia/30 whitespace-nowrap">Dal</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="font-body text-xs text-nebbia/30 whitespace-nowrap">Al</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
-        </div>
-        {hasFilters && (
-          <button onClick={() => { setSearch(''); setStatoF(''); setDateFrom(''); setDateTo('') }}
-            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors px-3 py-2.5 border border-white/5 hover:border-red-500/30">
-            Reset
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
-        </div>
-      ) : (
-        <div className="bg-slate border border-white/5 overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/5">
-                <SortTh label="Titolo" field="oggetto"    {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Mittente" field="created_at" {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Destinatario" field="created_at" {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Data" field="created_at" {...{ sortField, sortDir, onSort: handleSort }} />
-                <SortTh label="Stato" field="stato"      {...{ sortField, sortDir, onSort: handleSort }} />
-                <th className="px-4 py-3 w-10" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
-                    Nessun messaggio trovato
-                  </td>
-                </tr>
-              ) : rows.map(t => (
-                <tr key={t.id}
-                  onClick={() => apriChat(t)}
-                  className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer">
-                  <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{t.oggetto}</td>
-                  <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                    {`${t.mittente?.nome ?? ''} ${t.mittente?.cognome ?? ''}`.trim() || '—'}
-                  </td>
-                  <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                    {`${t.destinatario?.nome ?? ''} ${t.destinatario?.cognome ?? ''}`.trim() || '—'}
-                  </td>
-                  <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
-                    {new Date(t.created_at).toLocaleDateString('it-IT')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge label={t.stato === 'aperto' ? 'Aperto' : 'Chiuso'} variant={t.stato === 'aperto' ? 'salvia' : 'gray'} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20">
-                      <ArrowRight size={14} />
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────
 // PAGINA LISTA
 // ─────────────────────────────────────────────────────────────
 export function AdminAssistenza() {
-  const [tab, setTab] = useState('supporto')
-  const [nAperti, setNAperti] = useState(0)
+  const navigate = useNavigate()
+  const [adminId, setAdminId] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
-    supabase
-      .from('ticket_assistenza')
-      .select('id', { count: 'exact', head: true })
-      .is('destinatario_id', null)
-      .eq('stato', 'aperto')
-      .then(({ count }) => setNAperti(count ?? 0))
+    supabase.auth.getUser().then(({ data }) => {
+      setAdminId(data?.user?.id ?? null)
+    })
   }, [])
+
+  function onTicketCreato(ticketId) {
+    setModalOpen(false)
+    navigate(`/admin/assistenza/${ticketId}`)
+  }
 
   return (
     <div className="space-y-5">
-      <PageHeader label="Admin" title="Assistenza" />
-
-      <div className="flex gap-0 border-b border-white/8">
-        {[
-          { id: 'supporto', label: 'Supporto Lexum', badge: nAperti },
-          { id: 'comunicazioni', label: 'Avvocato / Cliente', badge: 0 },
-        ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
-              }`}>
-            {t.label}
-            {t.badge > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${tab === t.id ? 'bg-oro/20 text-oro' : 'bg-amber-400/15 text-amber-400'
-                }`}>
-                {t.badge}
-              </span>
-            )}
+      <PageHeader
+        label="Admin"
+        title="Assistenza"
+        action={
+          <button onClick={() => setModalOpen(true)}
+            className="btn-primary text-sm flex items-center gap-2">
+            <Plus size={14} /> Nuovo ticket
           </button>
-        ))}
-      </div>
+        }
+      />
 
-      {tab === 'supporto' && <TabSupporto />}
-      {tab === 'comunicazioni' && <TabComunicazioni />}
+      <ListaTicketSupporto adminId={adminId} onNuovoTicket={() => setModalOpen(true)} />
+
+      <ModalNuovoTicket
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreato={onTicketCreato}
+        adminId={adminId}
+      />
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────
-// DETTAGLIO TICKET (solo per Supporto Lexum)
+// DETTAGLIO TICKET
+// Funziona sia per ticket entranti (utente -> admin) sia uscenti
+// (admin -> utente). Lo schema è lo stesso, cambia solo chi ha aperto.
 // ─────────────────────────────────────────────────────────────
 export function AdminAssistenzaDettaglio() {
   const { id } = useParams()
@@ -508,8 +490,9 @@ export function AdminAssistenzaDettaglio() {
     const { data: t } = await supabase
       .from('ticket_assistenza')
       .select(`
-        id, oggetto, stato, created_at, mittente_ruolo, nota_interna,
-        mittente:mittente_id(id, nome, cognome, role)
+        id, oggetto, stato, created_at, mittente_ruolo, destinatario_id,
+        mittente:mittente_id(id, nome, cognome, role),
+        destinatario:destinatario_id(id, nome, cognome, role)
       `)
       .eq('id', id)
       .single()
@@ -539,8 +522,7 @@ export function AdminAssistenzaDettaglio() {
 
       if (error) throw new Error(error.message)
 
-      const { error: upErr } = await supabase.from('ticket_assistenza').update({ ultimo_mittente: 'admin' }).eq('id', id)
-      console.log('update ultimo_mittente:', upErr)
+      await supabase.from('ticket_assistenza').update({ ultimo_mittente: 'admin' }).eq('id', id)
       setMessaggi(prev => [...prev, data])
       setTesto('')
     } catch (err) {
@@ -553,12 +535,6 @@ export function AdminAssistenzaDettaglio() {
   async function aggiornaStato(nuovoStato) {
     await supabase.from('ticket_assistenza').update({ stato: nuovoStato }).eq('id', id)
     setStato(nuovoStato)
-  }
-
-  async function salvaNota() {
-    setSalvandoNota(true)
-    await supabase.from('ticket_assistenza').update({ nota_interna: notaInterna }).eq('id', id)
-    setSalvandoNota(false)
   }
 
   if (loading) {
@@ -578,8 +554,12 @@ export function AdminAssistenzaDettaglio() {
     )
   }
 
-  const rb = RUOLO_BADGE[ticket.mittente_ruolo] ?? RUOLO_BADGE.user
-  const mitt = `${ticket.mittente?.nome ?? ''} ${ticket.mittente?.cognome ?? ''}`.trim() || '—'
+  // Calcola direzione e controparte
+  const isUscente = ticket.mittente_ruolo === 'admin'
+  const controparteProfile = isUscente ? ticket.destinatario : ticket.mittente
+  const controparteNome = `${controparteProfile?.nome ?? ''} ${controparteProfile?.cognome ?? ''}`.trim() || '—'
+  const ruoloControparte = isUscente ? controparteProfile?.role : ticket.mittente_ruolo
+  const rb = RUOLO_BADGE[ruoloControparte] ?? RUOLO_BADGE.user
 
   return (
     <div className="space-y-5">
@@ -587,10 +567,12 @@ export function AdminAssistenzaDettaglio() {
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="section-label mb-2">Ticket</p>
+          <p className="section-label mb-2">Ticket {isUscente ? 'uscente' : 'entrante'}</p>
           <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <p className="font-body text-xs text-nebbia/40">{mitt}</p>
+            <p className="font-body text-xs text-nebbia/40">
+              {isUscente ? 'A: ' : 'Da: '}{controparteNome}
+            </p>
             <Badge label={rb.label} variant={rb.variant} />
             <span className="font-body text-xs text-nebbia/30">·</span>
             <p className="font-body text-xs text-nebbia/40">{new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>

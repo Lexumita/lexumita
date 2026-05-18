@@ -20,6 +20,7 @@ const TIPO_PRODOTTO_LABEL = {
     accesso_singolo: 'Accesso singolo sentenza',
     crediti_ai: 'Crediti AI',
     spazio_archiviazione: 'Spazio archiviazione',
+    gratuito: 'Prova gratuita',
 }
 
 export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
@@ -81,7 +82,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
                 .from('prodotti')
                 .select('id, nome, tipo, prezzo, posti, crediti_ai_mensili, spazio_gb, durata_mesi, include_banca_dati, include_monetizzazione')
                 .eq('attivo', true)
-                .neq('tipo', 'gratuito')
                 .order('tipo')
                 .order('prezzo')
             setProdotti(data ?? [])

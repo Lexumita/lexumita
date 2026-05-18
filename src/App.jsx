@@ -51,7 +51,7 @@ import AvvocatoClientiNuovo from './pages/avvocato/clienti/Nuovo'
 import AvvocatoClientiDettaglio from './pages/avvocato/clienti/Dettaglio'
 import { AvvocatoPratiche, AvvocatoPraticheNuova } from './pages/avvocato/Pratiche'
 import PraticaDettaglio from './pages/avvocato/PraticaDettaglio'
-import { AvvocatoSentenze, AvvocatoSentenzeNuova, AvvocatoSentenzeDettaglio, } from './pages/avvocato/Sentenze'
+import { AvvocatoSentenze, AvvocatoSentenzeNuova, AvvocatoSentenzeDettaglio } from './pages/avvocato/Sentenze'
 import AvvocatoStudio from './pages/avvocato/Studio'
 import { AvvocatoAssistenza, AvvocatoAssistenzaNuovo, AvvocatoAssistenzaDettaglio } from './pages/avvocato/Assistenza'
 import AvvocatoProfilo from './pages/avvocato/Profilo'
@@ -64,6 +64,7 @@ import Archivio from '@/pages/avvocato/Archivio'
 import ArchivioDettaglio from '@/pages/avvocato/ArchivioDettaglio'
 import SentenzaDettaglio from './pages/avvocato/SentenzaDettaglio'
 import PrassiDettaglio from './pages/avvocato/PrassiDettaglio'
+import SentenzaTributariaDettaglio from './pages/avvocato/SentenzaTributariaDettaglio'
 import { NormaDettaglio } from './pages/avvocato/NormaDettaglio'
 
 // ── Cliente ──
@@ -87,14 +88,29 @@ import ChatWidget from '@/components/ChatWidget'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000 } } })
 
-// ─── Layout vetrina (con navbar + footer) ───
+// ─── Layout vetrina (con Navbar + Footer + Analytics) ───
+// Analytics attivo solo su vetrina + auth: misura il funnel
+// visitatore → registrato. L'area autenticata non viene tracciata.
 function VetrinaLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-petrolio">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      <Analytics />
     </div>
+  )
+}
+
+// ─── Layout auth (login, registrati, recupera password, ecc.) ───
+// Niente Navbar/Footer (gestiti dalle pagine stesse), ma Analytics presente
+// per chiudere il funnel di conversione lato Vercel.
+function AuthLayout({ children }) {
+  return (
+    <>
+      {children}
+      <Analytics />
+    </>
   )
 }
 
@@ -125,7 +141,7 @@ export default function App() {
             <Routes>
 
               {/* ═══════════════════════════════════════════════════════
-                VETRINA (pubblica)
+                VETRINA (pubblica, tracciata da Vercel Analytics)
                 ═══════════════════════════════════════════════════════ */}
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
@@ -135,13 +151,13 @@ export default function App() {
               <Route path="/termini" element={<VetrinaLayout><TerminiServizio /></VetrinaLayout>} />
 
               {/* ═══════════════════════════════════════════════════════
-                AUTH
+                AUTH (tracciato da Vercel Analytics per misurare il funnel)
                 ═══════════════════════════════════════════════════════ */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/registrati" element={<Registrati />} />
-              <Route path="/recupera-password" element={<RecuperaPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/email-verificata" element={<EmailVerificata />} />
+              <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+              <Route path="/registrati" element={<AuthLayout><Registrati /></AuthLayout>} />
+              <Route path="/recupera-password" element={<AuthLayout><RecuperaPassword /></AuthLayout>} />
+              <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
+              <Route path="/email-verificata" element={<AuthLayout><EmailVerificata /></AuthLayout>} />
               <Route path="/verifica-2fa" element={
                 <ProtectedRoute roles={['admin', 'avvocato', 'cliente', 'user']}>
                   <Verifica2FA />
@@ -206,6 +222,7 @@ export default function App() {
               <Route path="/banca-dati/avvocato/:id" element={<BancaDatiSharedAvv><SentenzaDettaglio fonte="avvocato" /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/prassi/:id" element={<BancaDatiSharedAvv><PrassiDettaglio /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/norma/:id" element={<BancaDatiSharedAvv><NormaDettaglio /></BancaDatiSharedAvv>} />
+              <Route path="/banca-dati/tributario/:id" element={<BancaDatiSharedAvv><SentenzaTributariaDettaglio /></BancaDatiSharedAvv>} />
 
               {/* Studio condiviso avvocato + user */}
               <Route path="/studio" element={
@@ -245,6 +262,7 @@ export default function App() {
               <Route path="/area/avvocato/:id" element={<Usr><SentenzaDettaglio fonte="avvocato" /></Usr>} />
               <Route path="/area/prassi/:id" element={<Usr><PrassiDettaglio /></Usr>} />
               <Route path="/area/norma/:id" element={<Usr><NormaDettaglio /></Usr>} />
+              <Route path="/area/tributario/:id" element={<Usr><SentenzaTributariaDettaglio /></Usr>} />
 
               {/* Verifica identità (per diventare avvocato) */}
               <Route path="/verifica" element={<Usr><UserVerifica /></Usr>} />
@@ -275,7 +293,6 @@ export default function App() {
                 ═══════════════════════════════════════════════════════ */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            <Analytics />
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>
