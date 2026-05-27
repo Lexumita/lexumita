@@ -228,8 +228,11 @@ function ModalNuovoTicket({ open, onClose, onCreato, adminId }) {
 
 // ─────────────────────────────────────────────────────────────
 // TAB SUPPORTO — UNICA VISTA
-// Include sia i ticket aperti DA utenti verso l'admin (destinatario_id NULL)
-// sia i ticket aperti DALL'admin verso utenti (mittente_ruolo='admin').
+// Include i ticket "Supporto Lexum":
+//   - entranti aperti da utenti verso un admin specifico (destinatario_id = admin)
+//   - entranti aperti verso il supporto senza destinatario (destinatario_id IS NULL, legacy)
+//   - uscenti aperti dall'admin verso utenti (mittente_ruolo = 'admin')
+// Esclude esplicitamente i ticket cliente <-> avvocato (li gestisce l'avvocato).
 // ─────────────────────────────────────────────────────────────
 function ListaTicketSupporto({ adminId, onNuovoTicket }) {
   const navigate = useNavigate()
@@ -244,10 +247,28 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
 
   async function carica() {
     setLoading(true)
-    // Ticket "Supporto Lexum":
-    // - aperti da utenti verso admin: destinatario_id IS NULL
-    // - aperti da admin verso utenti: mittente_ruolo = 'admin'
-    const { data } = await supabase
+
+    // Carica TUTTI gli admin id, per coprire il caso in cui ci sia piu' di un admin
+    // (cosi' qualunque admin loggato vede tutti i ticket entranti verso qualsiasi admin).
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+    const adminIds = (admins ?? []).map(a => a.id)
+
+    if (adminIds.length === 0) {
+      setTickets([])
+      setLoading(false)
+      return
+    }
+
+    const adminIdsCsv = adminIds.join(',')
+
+    // Filtro:
+    //   destinatario_id IS NULL                    -> entranti legacy senza destinatario
+    //   mittente_ruolo = 'admin'                   -> uscenti aperti da un admin
+    //   destinatario_id IN (admin_ids)             -> entranti diretti verso un admin
+    const { data, error } = await supabase
       .from('ticket_assistenza')
       .select(`
         id, oggetto, stato, created_at, mittente_ruolo, destinatario_id,
@@ -255,22 +276,31 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
         destinatario:destinatario_id(id, nome, cognome, role),
         messaggi:messaggi_ticket(id, autore_tipo, created_at)
       `)
-      .or('destinatario_id.is.null,mittente_ruolo.eq.admin')
+      .or(`destinatario_id.is.null,mittente_ruolo.eq.admin,destinatario_id.in.(${adminIdsCsv})`)
       .order('created_at', { ascending: false })
-    setTickets(data ?? [])
+
+    if (error) {
+      console.error('carica ticket admin:', error.message)
+      setTickets([])
+    } else {
+      setTickets(data ?? [])
+    }
     setLoading(false)
   }
 
-  useEffect(() => { carica() }, [])
+  useEffect(() => { carica() }, [adminId])
 
   const nAperti = tickets.filter(t => t.stato === 'aperto').length
   // "Da rispondere" = ticket aperti dove l'ultimo messaggio NON è dell'admin.
   // Vale sia per ticket entranti (utente scrive, admin deve rispondere)
   // sia per ticket uscenti (admin ha scritto, utente ha risposto, admin deve replicare).
+  // Eccezione: ticket appena aperti dall'utente senza messaggi (msgs.length === 0)
+  // sono comunque "da rispondere" perché l'admin non ha ancora interagito.
   const nDaRisp = tickets.filter(t => {
     if (t.stato !== 'aperto') return false
     const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    if (msgs.length === 0) return false
+    // Nessun messaggio + ticket aperto da non-admin -> da rispondere
+    if (msgs.length === 0) return t.mittente_ruolo !== 'admin'
     return msgs[0]?.autore_tipo !== 'admin'
   }).length
 
@@ -278,12 +308,11 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
     .filter(t => {
       if (statoF && t.stato !== statoF) return false
       // Filtro per "ruolo controparte":
-      // - ticket entrante (destinatario_id null) -> ruolo del mittente
+      // - ticket entrante (destinatario_id null o uguale a un admin) -> ruolo del mittente
       // - ticket uscente (mittente_ruolo admin) -> ruolo del destinatario
       if (ruoloF) {
-        const ruoloControparte = t.destinatario_id === null
-          ? t.mittente_ruolo
-          : t.destinatario?.role
+        const isUscente = t.mittente_ruolo === 'admin'
+        const ruoloControparte = isUscente ? t.destinatario?.role : t.mittente_ruolo
         if (ruoloControparte !== ruoloF) return false
       }
       if (dateFrom && t.created_at < dateFrom) return false
@@ -324,6 +353,7 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
           <option value="">Tutti i ruoli</option>
           <option value="avvocato">Avvocato</option>
           <option value="user">User</option>
+          <option value="cliente">Cliente</option>
         </select>
         <div className="flex items-center gap-2">
           <label className="font-body text-xs text-nebbia/30 whitespace-nowrap">Dal</label>
@@ -371,7 +401,11 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
                 </tr>
               ) : rows.map(t => {
                 const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                const daRisp = t.stato === 'aperto' && msgs.length > 0 && msgs[0]?.autore_tipo !== 'admin'
+                const daRisp = t.stato === 'aperto' && (
+                  msgs.length === 0
+                    ? t.mittente_ruolo !== 'admin'
+                    : msgs[0]?.autore_tipo !== 'admin'
+                )
 
                 // Direzione e controparte
                 const isUscente = t.mittente_ruolo === 'admin'

@@ -650,7 +650,7 @@ function RigaLog({ log, aperto, onTogliApri, logsCatena }) {
                 <td className="px-3 py-2 font-body text-xs text-nebbia/60 max-w-[160px] truncate">
                     {utente}
                 </td>
-                <td className="px-3 py-2 font-body text-xs text-nebbia/50 max-w-[280px] truncate">
+                <td className="px-3 py-2 font-body text-xs text-nebbia/50 max-w-[280px] truncate" title={log.domanda ?? ''}>
                     {log.domanda ?? '—'}
                 </td>
                 <td className="px-3 py-2 font-body text-xs text-nebbia/40 text-right tabular-nums whitespace-nowrap">
@@ -706,6 +706,14 @@ function DettaglioCatena({ log, catena }) {
                     <span className="text-nebbia/40 tabular-nums">{formatDurata(totaleDurata)}</span>
                 </div>
             </div>
+
+            {/* Domanda completa dell'utente (se presente) */}
+            {log.domanda && (
+                <div className="bg-petrolio/40 border border-white/5 p-3 space-y-1">
+                    <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest">Domanda</p>
+                    <p className="font-body text-xs text-nebbia/80 leading-relaxed whitespace-pre-wrap">{log.domanda}</p>
+                </div>
+            )}
 
             <div className="space-y-1">
                 {catena.map((c) => {

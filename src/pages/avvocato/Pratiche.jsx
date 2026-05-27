@@ -177,7 +177,7 @@ export function AvvocatoPraticheNuova() {
 
   const [form, setForm] = useState({
     titolo: '', cliente_id: clientePre, tipo: '', stato: 'aperta',
-    avvocato_id: '', collaboratori: [], note: '', prossima_udienza: ''
+    avvocato_id: '', collaboratori: [], note: ''
   })
   const [clienti, setClienti] = useState([])
   const [collabs, setCollabs] = useState([])
@@ -218,7 +218,6 @@ export function AvvocatoPraticheNuova() {
         titolo: form.titolo.trim(), cliente_id: form.cliente_id,
         avvocato_id: form.avvocato_id || user.id, tipo: form.tipo,
         stato: form.stato, note: form.note.trim() || null,
-        prossima_udienza: form.prossima_udienza || null,
         creato_da: user.id, aggiornato_da: user.id,
       }).select().single()
       if (error) throw new Error(error.message)
@@ -279,15 +278,6 @@ export function AvvocatoPraticheNuova() {
                 {Object.entries(STATI).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
-          </div>
-
-          <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
-              Prossima udienza <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span>
-            </label>
-            <input type="date" value={form.prossima_udienza}
-              onChange={e => setForm(p => ({ ...p, prossima_udienza: e.target.value }))}
-              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50" />
           </div>
 
           {isStudio && tuttiMembri.length > 0 && (
