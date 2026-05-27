@@ -451,7 +451,7 @@ function PickerCategoria({ doc, categorie, sottocategorie, onAggiornata, onChiud
     }
 
     return (
-        <div className="absolute z-30 top-full left-0 mt-1 w-72 bg-slate border border-white/10 shadow-2xl">
+        <div className="absolute z-30 bottom-full left-0 mb-1 w-72 bg-slate border border-white/10 shadow-2xl">
             <div className="flex items-center justify-between p-2 border-b border-white/5">
                 <p className="font-body text-xs text-nebbia/40">Assegna categoria</p>
                 <button onClick={onChiudi} className="text-nebbia/30 hover:text-nebbia">
@@ -1257,7 +1257,7 @@ function CardDocumento({
                                         Aggiungi a pratica
                                     </button>
                                     {pickerPratica && (
-                                        <div className="absolute z-20 top-full left-0 mt-1 w-72 bg-slate border border-white/10 shadow-2xl">
+                                        <div className="absolute z-20 bottom-full left-0 mb-1 w-72 bg-slate border border-white/10 shadow-2xl">
                                             <div className="flex items-center justify-between p-2 border-b border-white/5">
                                                 <p className="font-body text-xs text-nebbia/40">Scegli una pratica</p>
                                                 <button onClick={() => setPickerPratica(false)} className="text-nebbia/30 hover:text-nebbia">
@@ -2090,9 +2090,19 @@ export default function Archivio() {
     }
 
     async function eliminaDocumento(doc) {
+        // Le fatture si eliminano dalla loro pagina dedicata
+        // (l'edge elimina-fattura gestisce cascade su righe, pagamenti, PDF storage)
+        if (doc.metadati?.kind === 'fattura') {
+            alert('Per eliminare una fattura, vai sulla pagina Fatturazione e usa il bottone "Elimina" nel dettaglio. Cosi cancelliamo correttamente anche righe, pagamenti e PDF.')
+            return
+        }
+
         if (!confirm(`Eliminare "${doc.titolo}"?`)) return
+
+        // Bucket dinamico letto da metadati (default 'archivio')
+        const bucket = doc.metadati?.bucket ?? 'archivio'
         if (doc.storage_path) {
-            await supabase.storage.from('archivio').remove([doc.storage_path])
+            await supabase.storage.from(bucket).remove([doc.storage_path])
         }
         await supabase.from('archivio_documenti').delete().eq('id', doc.id)
         setDocumenti(prev => prev.filter(d => d.id !== doc.id))

@@ -137,7 +137,7 @@ export default function AggiungiAPratica({
             </button>
 
             {aperto && (
-                <div className="absolute z-50 mt-2 w-80 bg-slate border border-white/10 shadow-2xl">
+                <div className="absolute z-50 bottom-full mb-2 w-80 bg-slate border border-white/10 shadow-2xl">
                     <div className="p-3 border-b border-white/5">
                         <div className="relative">
                             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />

@@ -90,16 +90,23 @@ export default function AggiungiAEtichetta({
         function calcolaPosizione() {
             const rect = buttonRef.current.getBoundingClientRect()
             const popWidth = 288 // w-72 = 18rem = 288px
-            // Allinea il popover sotto al bottone, ancorato a destra
+            const popHeightStimata = 360 // header + max-h-64 lista + footer errore
+
+            // Allinea il popover ancorato a destra del bottone
             let left = rect.right - popWidth
-            // Se uscirebbe a sinistra, ancora a sinistra del bottone
             if (left < 8) left = rect.left
-            // Se anche così uscirebbe a destra, fissa al bordo destro - 8px
             if (left + popWidth > window.innerWidth - 8) {
                 left = window.innerWidth - popWidth - 8
             }
+
+            // Apri sopra se c'è spazio, altrimenti sotto (fallback)
+            const spazioSopra = rect.top
+            const apriSopra = spazioSopra >= popHeightStimata + 16
+
             setPosizione({
-                top: rect.bottom + 8,
+                apriSopra,
+                top: apriSopra ? null : rect.bottom + 8,
+                bottom: apriSopra ? window.innerHeight - rect.top + 8 : null,
                 left,
             })
         }
@@ -329,7 +336,11 @@ export default function AggiungiAEtichetta({
             {aperto && (
                 <div
                     className="fixed z-[100] w-72 bg-slate border border-white/10 shadow-2xl"
-                    style={{ top: posizione.top, left: posizione.left }}
+                    style={{
+                        ...(posizione.top != null ? { top: posizione.top } : {}),
+                        ...(posizione.bottom != null ? { bottom: posizione.bottom } : {}),
+                        left: posizione.left,
+                    }}
                 >
                     {/* Search bar */}
                     <div className="p-3 border-b border-white/5">
