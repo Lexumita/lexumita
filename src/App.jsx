@@ -51,7 +51,6 @@ import AvvocatoClientiNuovo from './pages/avvocato/clienti/Nuovo'
 import AvvocatoClientiDettaglio from './pages/avvocato/clienti/Dettaglio'
 import { AvvocatoPratiche, AvvocatoPraticheNuova } from './pages/avvocato/Pratiche'
 import PraticaDettaglio from './pages/avvocato/PraticaDettaglio'
-import { AvvocatoSentenze, AvvocatoSentenzeNuova, AvvocatoSentenzeDettaglio } from './pages/avvocato/Sentenze'
 import AvvocatoStudio from './pages/avvocato/Studio'
 import { AvvocatoAssistenza, AvvocatoAssistenzaNuovo, AvvocatoAssistenzaDettaglio } from './pages/avvocato/Assistenza'
 import AvvocatoProfilo from './pages/avvocato/Profilo'
@@ -199,9 +198,6 @@ export default function App() {
               <Route path="/pratiche/nuova" element={<Avv><AvvocatoPraticheNuova /></Avv>} />
               <Route path="/pratiche/:id" element={<Avv><PraticaDettaglio /></Avv>} />
               <Route path="/calendario" element={<Avv><AvvocatoCalendar /></Avv>} />
-              <Route path="/sentenze" element={<Avv><AvvocatoSentenze /></Avv>} />
-              <Route path="/sentenze/nuova" element={<Avv><AvvocatoSentenzeNuova /></Avv>} />
-              <Route path="/sentenze/:id" element={<Avv><AvvocatoSentenzeDettaglio /></Avv>} />
               <Route path="/fatturazione" element={<Avv><AvvocatoFatturazione /></Avv>} />
               <Route path="/fatturazione/nuova" element={<Avv><AvvocatoFatturazioneNuova /></Avv>} />
               <Route path="/fatturazione/:id" element={<Avv><AvvocatoFatturazioneDettaglio /></Avv>} />

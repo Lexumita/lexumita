@@ -11,7 +11,6 @@ import ReactMarkdown from 'react-markdown'
 import UdienzaModal from '@/components/UdienzaModal'
 import ContropartiBox from '@/components/ContropartiBox'
 import ChatPratica from '@/components/ChatPratica'
-import GeneraDocumentoMenu from '@/components/GeneraDocumentoMenu'
 import BoxUdienzeETermini from '@/components/avvocato/BoxUdienzeETermini'
 import ModalEliminaPratica from '@/components/avvocato/ModalEliminaPratica'
 
@@ -541,7 +540,7 @@ export default function PraticaDettaglio() {
             </div>
 
             {/* ═══════════════ SEZIONE 1 — Grid 5 colonne ═══════════════ */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:items-stretch">
 
                 {/* SINISTRA (3/5) */}
                 <div className="lg:col-span-3 space-y-5">
@@ -684,8 +683,8 @@ export default function PraticaDettaglio() {
                     </div>
                 </div>
 
-                {/* DESTRA (2/5) — Ricerche con altezza fissa */}
-                <div className="lg:col-span-2 bg-slate border border-white/5 flex flex-col h-[600px]">
+                {/* DESTRA (2/5) — Ricerche: altezza fissa su mobile, allineata alla colonna sinistra su desktop */}
+                <div className="lg:col-span-2 bg-slate border border-white/5 flex flex-col h-[600px] lg:h-auto lg:min-h-0">
 
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
                         <p className="section-label">Ricerche e descrizione causa ({ricerche.length})</p>
@@ -825,14 +824,9 @@ export default function PraticaDettaglio() {
                 </div>
             )}
 
-            {/* ═══════════════ SEZIONE 2 — Chat Lex (60%) | Genera doc (40%) ═══════════════ */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
-                <div className="lg:col-span-3">
-                    <ChatPratica praticaId={id} />
-                </div>
-                <div className="lg:col-span-2">
-                    <GeneraDocumentoMenu praticaId={id} onDocumentoSalvato={caricaDocumenti} />
-                </div>
+            {/* ═══════════════ SEZIONE 2 — Lex per la pratica (box unico) ═══════════════ */}
+            <div>
+                <ChatPratica praticaId={id} onDocumentoSalvato={caricaDocumenti} />
             </div>
 
             {/* ═══════════ ZONA PERICOLOSA ═══════════ */}

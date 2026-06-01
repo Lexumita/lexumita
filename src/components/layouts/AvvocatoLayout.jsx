@@ -16,7 +16,6 @@ const NAV = [
   { path: '/clienti', label: 'Clienti', icon: Users },
   { path: '/pratiche', label: 'Pratiche', icon: FolderOpen },
   { path: '/calendario', label: 'Calendario', icon: Calendar },
-  { path: '/sentenze', label: 'Mie sentenze', icon: BookOpen },
   { path: '/banca-dati', label: 'Banca dati', icon: Library },
   { path: '/ricerche', label: 'Ricerche', icon: Search },
   { path: '/studio', label: 'Studio', icon: Building2 },

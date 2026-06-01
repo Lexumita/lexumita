@@ -72,7 +72,7 @@ export function AdminProdotti() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Banca dati', 'Monetizzazione', 'Prezzo', 'Durata', '% Revenue', 'Stato', ''].map(h => (
+                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Prezzo', 'Durata', 'Stato', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -80,7 +80,7 @@ export function AdminProdotti() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={10} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun prodotto trovato
                   </td>
                 </tr>
@@ -105,16 +105,6 @@ export function AdminProdotti() {
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.spazio_gb > 0 ? `${p.spazio_gb} GB` : <Dash />}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isAbb
-                        ? <Badge label={p.include_banca_dati ? 'Sì' : 'No'} variant={p.include_banca_dati ? 'salvia' : 'gray'} />
-                        : <Dash />}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isAbb
-                        ? <Badge label={p.include_monetizzazione ? 'Sì' : 'No'} variant={p.include_monetizzazione ? 'salvia' : 'gray'} />
-                        : <Dash />}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-oro font-medium">EUR {p.prezzo}</td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">

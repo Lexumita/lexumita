@@ -917,10 +917,10 @@ function DettaglioCatena({ log, catena }) {
                 })}
             </div>
 
-            {/* ── Risposta del Synthesizer (se presente) ── */}
-            {catena.some(c => c.endpoint === 'synthesizer' && c.risposta_text) && (
-                <RispostaSynthesizer catena={catena} />
-            )}
+            {/* ── Testi generati (synthesizer / documento) ── */}
+            {catena.filter(c => c.risposta_text).map(c => (
+                <RispostaTesto key={`rt-${c.id}`} row={c} />
+            ))}
 
             {log.errore && (
                 <div className="flex items-start gap-2 p-3 bg-red-900/10 border border-red-500/20">
@@ -946,15 +946,18 @@ function DettaglioCatena({ log, catena }) {
     )
 }
 
-// ─── RISPOSTA SYNTHESIZER (collapsable) ─────────────────────────
-function RispostaSynthesizer({ catena }) {
+// ─── RISPOSTA TESTUALE (synthesizer o documento generato) ───────
+function RispostaTesto({ row }) {
     const [aperto, setAperto] = useState(false)
-    const synth = catena.find(c => c.endpoint === 'synthesizer' && c.risposta_text)
-    if (!synth) return null
+    const risposta = row.risposta_text ?? ''
+    if (!risposta) return null
 
-    const risposta = synth.risposta_text ?? ''
+    const isDoc = row.endpoint === 'lex_genera_documento'
+    const titolo = isDoc ? 'Documento generato' : 'Risposta synthesizer al cliente'
+    const Icona = isDoc ? FileText : Sparkles
+
     const lunghezza = risposta.length
-    const ipotesiParole = risposta.split(/\s+/).filter(Boolean).length
+    const parole = risposta.split(/\s+/).filter(Boolean).length
 
     return (
         <div className="bg-petrolio/40 border border-oro/20">
@@ -963,12 +966,10 @@ function RispostaSynthesizer({ catena }) {
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-petrolio/60 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
-                    <Sparkles size={12} className="text-oro/70" />
-                    <span className="font-body text-xs text-oro/90">
-                        Risposta synthesizer al cliente
-                    </span>
+                    <Icona size={12} className="text-oro/70" />
+                    <span className="font-body text-xs text-oro/90">{titolo}</span>
                     <span className="font-body text-[10px] text-nebbia/40">
-                        · {ipotesiParole} parole · {lunghezza.toLocaleString('it-IT')} caratteri
+                        · {parole} parole · {lunghezza.toLocaleString('it-IT')} caratteri
                     </span>
                 </div>
                 {aperto ? <ChevronDown size={12} className="text-nebbia/50" /> : <ChevronRight size={12} className="text-nebbia/50" />}
