@@ -8,7 +8,7 @@ import {
     CreditCard, StickyNote, User, FolderOpen, ArrowRight, Sparkles,
     Edit2, Check, X, Calendar, Clock, AlertCircle, Trash2, Building2,
     ExternalLink, Eye, Upload, KeyRound, Mail, Eye as EyeIcon, EyeOff,
-    Copy, RefreshCw, CheckCircle, ShieldOff
+    Copy, RefreshCw, CheckCircle, ShieldOff, Wallet
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -58,6 +58,20 @@ function nomeCliente(c) {
     if (!c) return ''
     if (c.tipo_soggetto === 'persona_giuridica') return c.ragione_sociale ?? c.nome ?? '—'
     return `${c.nome ?? ''} ${c.cognome ?? ''}`.trim() || '—'
+}
+
+// Metodi pagamento (allineati a FatturazioneDettaglio)
+const METODI_PAGAMENTO = [
+    { value: 'bonifico', label: 'Bonifico bancario' },
+    { value: 'contanti', label: 'Contanti' },
+    { value: 'assegno', label: 'Assegno' },
+    { value: 'pos', label: 'POS / Carta' },
+    { value: 'altro', label: 'Altro' },
+]
+
+function fmtEUR(n) {
+    const v = Number(n ?? 0)
+    return v.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -609,11 +623,161 @@ function TabNoteInterne({ clienteId }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB PAGAMENTI (resterà semplice qui, la pagina dedicata verrà in Step 2)
+// MODAL REGISTRA PAGAMENTO (riuso dal flusso fatturazione)
+// Inserisce in pagamenti_fattura; lo stato fattura passa a 'pagata'
+// automaticamente via trigger trg_aggiorna_stato_da_pagamenti.
+// ─────────────────────────────────────────────────────────────
+function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
+    const [form, setForm] = useState({
+        data_pagamento: new Date().toISOString().slice(0, 10),
+        importo: residuo.toFixed(2),
+        metodo: 'bonifico',
+        riferimento: '',
+        note: '',
+    })
+    const [salvando, setSalvando] = useState(false)
+    const [errore, setErrore] = useState('')
+
+    async function handleSalva() {
+        setErrore('')
+        const imp = Number(form.importo)
+        if (isNaN(imp) || imp <= 0) { setErrore('Importo non valido'); return }
+        if (!form.data_pagamento) { setErrore('Data pagamento obbligatoria'); return }
+
+        setSalvando(true)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { error } = await supabase.from('pagamenti_fattura').insert({
+                fattura_id: fattura.id,
+                data_pagamento: form.data_pagamento,
+                importo: imp,
+                metodo: form.metodo,
+                riferimento: form.riferimento?.trim() || null,
+                note: form.note?.trim() || null,
+                registrato_da: user.id,
+            })
+            if (error) throw new Error(error.message)
+            onSuccess()
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setSalvando(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate border border-white/10 w-full max-w-md">
+                <div className="flex items-center justify-between p-5 border-b border-white/8">
+                    <div className="flex items-center gap-2">
+                        <Wallet size={16} className="text-salvia" />
+                        <h2 className="font-display text-lg text-nebbia">Registra pagamento</h2>
+                    </div>
+                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <div className="bg-petrolio/40 border border-white/5 p-3 space-y-1">
+                        <p className="font-body text-xs text-nebbia/40">
+                            Fattura <span className="text-nebbia/70">{fattura.numero}</span>
+                        </p>
+                        <p className="font-body text-xs text-nebbia/40">
+                            Residuo da incassare: <span className="text-oro font-medium">EUR {fmtEUR(residuo)}</span>
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data *</label>
+                            <input
+                                type="date"
+                                value={form.data_pagamento}
+                                onChange={e => setForm(p => ({ ...p, data_pagamento: e.target.value }))}
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Importo (EUR) *</label>
+                            <input
+                                type="number" step="0.01" min="0.01"
+                                value={form.importo}
+                                onChange={e => setForm(p => ({ ...p, importo: e.target.value }))}
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Metodo *</label>
+                        <select
+                            value={form.metodo}
+                            onChange={e => setForm(p => ({ ...p, metodo: e.target.value }))}
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                        >
+                            {METODI_PAGAMENTO.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
+                            Riferimento <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span>
+                        </label>
+                        <input
+                            placeholder="Es. CRO bonifico, N. assegno..."
+                            value={form.riferimento}
+                            onChange={e => setForm(p => ({ ...p, riferimento: e.target.value }))}
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
+                            Note <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span>
+                        </label>
+                        <textarea
+                            rows={2}
+                            value={form.note}
+                            onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 resize-none"
+                        />
+                    </div>
+
+                    {errore && (
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                            <AlertCircle size={14} /> {errore}
+                        </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                        <button onClick={onClose} disabled={salvando}
+                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+                            Annulla
+                        </button>
+                        <button onClick={handleSalva} disabled={salvando}
+                            className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
+                            {salvando
+                                ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                                : <><Check size={14} /> Registra pagamento</>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// TAB PAGAMENTI
+// Quick "Segna pagata" apre ModalRegistraPagamento (chiede metodo/data/importo);
+// lo stato fattura passa a 'pagata' via trigger DB su pagamenti_fattura.
 // ─────────────────────────────────────────────────────────────
 function TabPagamenti({ clienteId, avvocatoId }) {
     const [fatture, setFatture] = useState([])
     const [loading, setLoading] = useState(true)
+    const [fatturaPagamento, setFatturaPagamento] = useState(null)
 
     useEffect(() => { caricaTutto() }, [clienteId])
 
@@ -624,14 +788,20 @@ function TabPagamenti({ clienteId, avvocatoId }) {
         setLoading(false)
     }
 
-    async function segnaComePagata(id) {
-        const oggi = new Date().toISOString().slice(0, 10)
-        await supabase.from('fatture').update({ stato: 'pagata', data_pagamento: oggi }).eq('id', id)
-        setFatture(prev => prev.map(f => f.id === id ? { ...f, stato: 'pagata', data_pagamento: oggi } : f))
+    // Residuo = (totale_lordo ?? importo) - somma pagamenti già registrati
+    async function apriPagamento(fatt) {
+        const { data: pag } = await supabase
+            .from('pagamenti_fattura')
+            .select('importo')
+            .eq('fattura_id', fatt.id)
+        const giaPagato = (pag ?? []).reduce((a, p) => a + Number(p.importo ?? 0), 0)
+        const dovuto = Number(fatt.totale_lordo ?? fatt.importo ?? 0)
+        const residuo = Math.max(0, dovuto - giaPagato)
+        setFatturaPagamento({ ...fatt, residuo })
     }
 
-    const totaleAperto = fatture.filter(f => ['in_attesa', 'scaduta'].includes(f.stato)).reduce((a, f) => a + parseFloat(f.importo ?? 0), 0)
-    const totalePagato = fatture.filter(f => f.stato === 'pagata').reduce((a, f) => a + parseFloat(f.importo ?? 0), 0)
+    const totaleAperto = fatture.filter(f => ['in_attesa', 'scaduta'].includes(f.stato)).reduce((a, f) => a + Number(f.totale_lordo ?? f.importo ?? 0), 0)
+    const totalePagato = fatture.filter(f => f.stato === 'pagata').reduce((a, f) => a + Number(f.totale_lordo ?? f.importo ?? 0), 0)
 
     return (
         <div className="space-y-4">
@@ -639,11 +809,11 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                 <div className="grid grid-cols-2 gap-3">
                     <div className="bg-slate border border-white/5 p-4">
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Da incassare</p>
-                        <p className="font-display text-2xl font-semibold text-oro">EUR {totaleAperto.toFixed(2)}</p>
+                        <p className="font-display text-2xl font-semibold text-oro">EUR {fmtEUR(totaleAperto)}</p>
                     </div>
                     <div className="bg-slate border border-white/5 p-4">
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Incassato</p>
-                        <p className="font-display text-2xl font-semibold text-salvia">EUR {totalePagato.toFixed(2)}</p>
+                        <p className="font-display text-2xl font-semibold text-salvia">EUR {fmtEUR(totalePagato)}</p>
                     </div>
                 </div>
             )}
@@ -670,14 +840,14 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                                         return (
                                             <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                                 <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                                                <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {parseFloat(fatt.importo).toFixed(2)}</td>
+                                                <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</td>
                                                 <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
                                                 <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
                                                 <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>
                                                 <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
                                                 <td className="px-4 py-3 text-right">
-                                                    {fatt.stato === 'in_attesa' && (
-                                                        <button onClick={() => segnaComePagata(fatt.id)} className="font-body text-xs text-salvia hover:text-salvia/70 transition-colors whitespace-nowrap">Segna pagata</button>
+                                                    {['in_attesa', 'scaduta'].includes(fatt.stato) && (
+                                                        <button onClick={() => apriPagamento(fatt)} className="font-body text-xs text-salvia hover:text-salvia/70 transition-colors whitespace-nowrap">Segna pagata</button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -687,6 +857,15 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                             </table>
                         </div>
                     )}
+
+            {fatturaPagamento && (
+                <ModalRegistraPagamento
+                    fattura={fatturaPagamento}
+                    residuo={fatturaPagamento.residuo}
+                    onClose={() => setFatturaPagamento(null)}
+                    onSuccess={() => { setFatturaPagamento(null); caricaTutto() }}
+                />
+            )}
         </div>
     )
 }

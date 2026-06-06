@@ -82,31 +82,28 @@ function useCreditiAI() {
     return { crediti, setCrediti, refreshCrediti: caricaCrediti }
 }
 
+const FASI_LABEL = {
+    analisi: 'Analizzo la richiesta',
+    instradamento: 'Individuo le fonti da consultare',
+    norme_core: 'Consulto i codici',
+    norme_archivio: 'Cerco tra leggi e decreti',
+    giurisprudenza: 'Confronto la giurisprudenza',
+    prassi: 'Verifico la prassi amministrativa',
+    norme_ue: 'Esamino la normativa UE',
+    sintesi: 'Compongo la risposta',
+}
+
 // ═══════════════════════════════════════════════════════════════
 // LEX ANIMAZIONE — invariato
 // ═══════════════════════════════════════════════════════════════
 function LexAnimazione({ faseAttiva }) {
-    const frasiRotative = [
-        'Sto ricercando nell\'archivio Lex',
-        'Identifico le fonti rilevanti',
-        'Confronto sentenze e giurisprudenza',
-        'Analizzo le interpretazioni dottrinali',
-        'Consulto codici e normative',
-        'Verifico le prassi amministrative',
-        'Sto sfogliando le pagine giuste',
-        'Compongo una risposta strutturata',
-    ]
 
-    const [indiceFrase, setIndiceFrase] = useState(0)
+    const abbellisci = (s) =>
+        String(s).replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIndiceFrase((i) => (i + 1) % frasiRotative.length)
-        }, 4000)
-        return () => clearInterval(interval)
-    }, [])
-
-    const testoVisibile = frasiRotative[indiceFrase]
+    const testoVisibile = faseAttiva
+        ? (FASI_LABEL[faseAttiva] ?? abbellisci(faseAttiva))
+        : 'Lex sta consultando le fonti'
 
     return (
         <div className="px-3 py-4 max-w-[600px] mx-auto">
@@ -379,7 +376,7 @@ function LexAnimazione({ faseAttiva }) {
             <div className="text-center mt-3 min-h-[24px]">
                 {testoVisibile && (
                     <span
-                        key={indiceFrase}
+                        key={faseAttiva ?? 'attesa'}
                         className="lex-fade-text font-body text-sm text-nebbia/70 tracking-wide inline-flex items-center"
                     >
                         {testoVisibile}

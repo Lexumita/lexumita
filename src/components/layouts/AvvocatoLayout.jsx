@@ -18,10 +18,10 @@ const NAV = [
   { path: '/calendario', label: 'Calendario', icon: Calendar },
   { path: '/banca-dati', label: 'Banca dati', icon: Library },
   { path: '/ricerche', label: 'Ricerche', icon: Search },
-  { path: '/studio', label: 'Studio', icon: Building2 },
   { path: '/archivio', label: 'Archivio', icon: Archive },
   { path: '/fatturazione', label: 'Fatturazione', icon: CreditCard },
   { path: '/assistenza', label: 'Assistenza', icon: Headphones },
+  { path: '/studio', label: 'Studio', icon: Building2 },
   { path: '/profilo', label: 'Profilo', icon: User },
 ]
 

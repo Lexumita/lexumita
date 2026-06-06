@@ -65,6 +65,7 @@ import SentenzaDettaglio from './pages/avvocato/SentenzaDettaglio'
 import PrassiDettaglio from './pages/avvocato/PrassiDettaglio'
 import SentenzaTributariaDettaglio from './pages/avvocato/SentenzaTributariaDettaglio'
 import { NormaDettaglio } from './pages/avvocato/NormaDettaglio'
+import SentenzaUeDettaglio from './pages/avvocato/SentenzaUeDettaglio'
 
 // ── Cliente ──
 import ClientePanoramica from './pages/cliente/Panoramica'
@@ -207,6 +208,7 @@ export default function App() {
               <Route path="/archivio" element={<Avv><Archivio /></Avv>} />
               <Route path="/archivio/:id" element={<Avv><ArchivioDettaglio /></Avv>} />
               <Route path="/profilo" element={<Avv><AvvocatoProfilo /></Avv>} />
+              <Route path="/banca-dati/eur-lex/:id" element={<BancaDatiSharedAvv><SentenzaUeDettaglio /></BancaDatiSharedAvv>} />
 
               {/* Ricerche avvocato */}
               <Route path="/ricerche" element={<Avv><Ricerche /></Avv>} />
@@ -259,6 +261,7 @@ export default function App() {
               <Route path="/area/prassi/:id" element={<Usr><PrassiDettaglio /></Usr>} />
               <Route path="/area/norma/:id" element={<Usr><NormaDettaglio /></Usr>} />
               <Route path="/area/tributario/:id" element={<Usr><SentenzaTributariaDettaglio /></Usr>} />
+              <Route path="/area/eur-lex/:id" element={<Usr><SentenzaUeDettaglio /></Usr>} />
 
               {/* Verifica identità (per diventare avvocato) */}
               <Route path="/verifica" element={<Usr><UserVerifica /></Usr>} />
