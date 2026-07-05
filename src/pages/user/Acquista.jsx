@@ -86,13 +86,15 @@ export default function Acquista() {
             if (errCred) throw new Error(`Errore caricamento crediti: ${errCred.message}`)
             setPacchettiCrediti(cred ?? [])
 
-            // Abbonamenti (solo se verificato)
+            // Abbonamenti (solo se verificato) — filtrati per professione richiesta
             if (isApproved) {
+                const direzione = profile?.tipo_richiesta ?? 'avvocato'
                 const { data: abb, error: errAbb } = await supabase
                     .from('prodotti')
                     .select('*')
                     .eq('tipo', 'abbonamento')
                     .eq('attivo', true)
+                    .eq('target_role', direzione)
                     .order('prezzo')
                 if (errAbb) throw new Error(`Errore caricamento abbonamenti: ${errAbb.message}`)
                 setAbbonamenti(abb ?? [])

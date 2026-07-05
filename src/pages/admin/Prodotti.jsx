@@ -146,6 +146,7 @@ export function AdminProdottiForm() {
     include_banca_dati: false, include_monetizzazione: false,
     revenue_pct: '', crediti_ai_mensili: '0', spazio_gb: '0',
     limite_clienti: '0',
+    target_role: 'avvocato',
     attivo: true,
   })
   const [loading, setLoading] = useState(isEdit)
@@ -190,6 +191,7 @@ export function AdminProdottiForm() {
         crediti_ai_mensili: data.crediti_ai_mensili ?? '0',
         spazio_gb: data.spazio_gb ?? '0',
         limite_clienti: data.limite_clienti ?? '0',
+        target_role: data.target_role ?? 'avvocato',
         attivo: data.attivo,
       })
       setLoading(false)
@@ -225,6 +227,7 @@ export function AdminProdottiForm() {
         crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
         spazio_gb: (isAbb || isStorage || isGratuito) ? parseInt(form.spazio_gb) || 0 : 0,
         limite_clienti: (isAbb || isClientiAddon || isGratuito) ? parseInt(form.limite_clienti) || 0 : null,
+        target_role: (isAbb || isGratuito) ? form.target_role : 'entrambi',
         attivo: form.attivo,
       }
 
@@ -309,6 +312,29 @@ export function AdminProdottiForm() {
             ))}
           </div>
         </div>
+
+        {/* Professione di destinazione — solo abbonamento e gratuito (i tipi che assegnano ruolo) */}
+        {(isAbb || isGratuito) && (
+          <div>
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-3">Professione di destinazione *</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { v: 'avvocato', l: 'Avvocato', desc: 'Piano destinato agli avvocati' },
+                { v: 'commercialista', l: 'Commercialista', desc: 'Piano destinato ai commercialisti' },
+              ].map(({ v, l, desc }) => (
+                <button key={v} type="button" onClick={() => setForm(p => ({ ...p, target_role: v }))}
+                  className={`p-3 text-left border transition-all ${form.target_role === v
+                    ? (v === 'commercialista' ? 'bg-salvia/10 border-salvia/40 text-salvia' : 'bg-oro/10 border-oro/40 text-oro')
+                    : 'text-nebbia/50 border-white/10 hover:border-oro/20'}`}>
+                  <p className="font-body text-sm font-medium">{l}</p>
+                  <p className={`font-body text-xs mt-0.5 ${form.target_role === v
+                    ? (v === 'commercialista' ? 'text-salvia/60' : 'text-oro/60')
+                    : 'text-nebbia/25'}`}>{desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Posti — per abbonamento e seat addon */}
         {(isAbb || isAddon || isGratuito) && (

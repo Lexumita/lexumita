@@ -15,6 +15,7 @@ const navLinks = [
 const HOME_PER_RUOLO = {
   admin: '/admin/dashboard',
   avvocato: '/dashboard',
+  commercialista: '/dashboard',
   cliente: '/portale',
   user: '/area',
 }

@@ -151,10 +151,11 @@ function HeroDatabaseCard() {
         </div>
         <div className="space-y-2">
           {[
-            { t: 'Giurisprudenza italiana' },
-            { t: 'Normativa italiana' },
-            { t: 'Diritto dell\'Unione Europea' },
-            { t: 'Prassi e corpus condiviso' },
+            { t: 'Normativa italiana', s: 'Costituzione, codici, leggi e decreti (vigenti e storici)' },
+            { t: 'Giurisprudenza amministrativa e contabile', s: 'TAR, Consiglio di Stato, Corte dei Conti' },
+            { t: 'Giurisprudenza tributaria', s: 'Corti di giustizia tributaria (BDGT-MEF)' },
+            { t: 'Prassi delle autorità', s: 'Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti' },
+            { t: 'Diritto dell\'Unione Europea', s: 'Regolamenti, direttive e giurisprudenza CGUE' },
           ].map(({ t, s }) => (
             <div key={t} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">
               <div className="flex items-center gap-2 mb-0.5">

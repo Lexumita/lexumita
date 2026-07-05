@@ -607,7 +607,14 @@ function TabVerifiche({ data, loading, onDecision }) {
                 <span className="font-display text-sm font-semibold text-amber-400">{(u.nome ?? '?')[0]}</span>
               </div>
               <div className="min-w-0">
-                <p className="font-body text-sm font-medium text-nebbia">{u.nome} {u.cognome}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="font-body text-sm font-medium text-nebbia">{u.nome} {u.cognome}</p>
+                  {u.tipo_richiesta === 'commercialista'
+                    ? <span className="font-body text-[10px] px-1.5 py-0.5 border border-salvia/30 text-salvia">Commercialista</span>
+                    : u.tipo_richiesta === 'avvocato'
+                      ? <span className="font-body text-[10px] px-1.5 py-0.5 border border-oro/30 text-oro">Avvocato</span>
+                      : null}
+                </div>
                 {u.studio && <p className="font-body text-xs text-nebbia/30">{u.studio}</p>}
                 <p className="font-body text-xs text-nebbia/40 truncate">{u.email}</p>
                 <p className="font-body text-[10px] text-nebbia/25 mt-0.5">Registrato il {new Date(u.created_at).toLocaleDateString('it-IT')}</p>
@@ -622,7 +629,14 @@ function TabVerifiche({ data, loading, onDecision }) {
         <div className="bg-slate border border-white/5 p-5 space-y-4">
           <div>
             <p className="section-label mb-2">Verifica identità</p>
-            <p className="font-body text-lg font-medium text-nebbia">{selected.nome} {selected.cognome}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-body text-lg font-medium text-nebbia">{selected.nome} {selected.cognome}</p>
+              {selected.tipo_richiesta === 'commercialista'
+                ? <span className="font-body text-[10px] px-2 py-0.5 border border-salvia/30 text-salvia uppercase tracking-wider">Commercialista</span>
+                : selected.tipo_richiesta === 'avvocato'
+                  ? <span className="font-body text-[10px] px-2 py-0.5 border border-oro/30 text-oro uppercase tracking-wider">Avvocato</span>
+                  : null}
+            </div>
             {selected.studio && <p className="font-body text-sm text-nebbia/40">{selected.studio}</p>}
             <p className="font-body text-sm text-nebbia/40">{selected.email}</p>
           </div>
@@ -667,7 +681,7 @@ export default function AdminUtenti() {
     setLoading(true)
     const { data } = await supabase
       .from('profiles')
-      .select('id, nome, cognome, email, role, studio, verification_status, created_at')
+      .select('id, nome, cognome, email, role, studio, verification_status, tipo_richiesta, created_at')
       .order('created_at', { ascending: false })
     setUtenti(data ?? [])
     setLoading(false)

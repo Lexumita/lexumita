@@ -28,8 +28,9 @@ export default function EtichettaDettaglio() {
     const navigate = useNavigate()
     const { profile } = useAuth()
 
-    const basePathRicerche = profile?.role === 'avvocato' ? '/ricerche' : '/area/ricerche'
-    const basePathBancaDati = profile?.role === 'avvocato' ? '/banca-dati' : '/area'
+    const isPro = profile?.role === 'avvocato' || profile?.role === 'commercialista'
+    const basePathRicerche = isPro ? '/ricerche' : '/area/ricerche'
+    const basePathBancaDati = isPro ? '/banca-dati' : '/area'
 
     const [etichetta, setEtichetta] = useState(null)
     const [contenuti, setContenuti] = useState([])

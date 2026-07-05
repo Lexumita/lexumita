@@ -83,8 +83,9 @@ export default function Ricerche() {
     const [searchParams, setSearchParams] = useSearchParams()
     const navigate = useNavigate()
 
-    const basePathEtichette = profile?.role === 'avvocato' ? '/etichette' : '/area/etichette'
-    const basePathBancaDati = profile?.role === 'avvocato' ? '/banca-dati' : '/area'
+    const isPro = profile?.role === 'avvocato' || profile?.role === 'commercialista'
+    const basePathEtichette = isPro ? '/etichette' : '/area/etichette'
+    const basePathBancaDati = isPro ? '/banca-dati' : '/area'
 
     const [elementi, setElementi] = useState([])
     const [etichette, setEtichette] = useState([])

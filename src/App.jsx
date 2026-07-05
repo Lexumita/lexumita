@@ -10,6 +10,7 @@ import Verifica2FA from './pages/auth/Verifica2FA'
 
 import AdminLayout from './components/layouts/AdminLayout'
 import AvvocatoLayout from './components/layouts/AvvocatoLayout'
+import CommercialistaLayout from './components/layouts/CommercialistaLayout'
 import ClienteLayout from './components/layouts/ClienteLayout'
 import UserLayout from './components/layouts/UserLayout'
 import Navbar from './components/Navbar'
@@ -43,6 +44,9 @@ import LexLogs from './pages/admin/LexLogs'
 import MailLog from '@/pages/admin/MailLog'
 import AdminCalendario from './pages/admin/Calendario'
 import AdminProfilo from './pages/admin/Profilo'
+
+// ── Commercialista ──
+import CommercialistaDashboard from './pages/commercialista/Dashboard'
 
 // ── Avvocato ──
 import AvvocatoDashboard from './pages/avvocato/Dashboard'
@@ -120,14 +124,28 @@ function Adm({ children }) { return <ProtectedRoute roles={['admin']}><AdminLayo
 function Cli({ children }) { return <ProtectedRoute roles={['cliente']}><ClienteLayout>{children}</ClienteLayout></ProtectedRoute> }
 function Usr({ children }) { return <ProtectedRoute roles={['user']}><UserLayout>{children}</UserLayout></ProtectedRoute> }
 
-// ─── Banca dati condivisa user + avvocato ───
+// ─── Professionisti (avvocato + commercialista) ───
+// ProLayout sceglie il layout in base al ruolo; DashboardRuolo la dashboard.
+// Pro = rotte condivise tra i due profili professionali (stesso pattern di CH).
+function ProLayout({ children }) {
+  const { profile } = useAuth()
+  const Layout = profile?.role === 'commercialista' ? CommercialistaLayout : AvvocatoLayout
+  return <Layout>{children}</Layout>
+}
+function DashboardRuolo() {
+  const { profile } = useAuth()
+  return profile?.role === 'commercialista' ? <CommercialistaDashboard /> : <AvvocatoDashboard />
+}
+function Pro({ children }) { return <ProtectedRoute roles={['avvocato', 'commercialista']}><ProLayout>{children}</ProLayout></ProtectedRoute> }
+
+// ─── Banca dati condivisa user + professionisti ───
 // Il componente BancaDati gestisce internamente la differenza di ruolo
 // (mostra/nasconde pannello pratiche, pulsanti "Aggiungi a pratica", ecc.)
 function BancaDatiSharedUser({ children }) {
   return <ProtectedRoute roles={['user']}><UserLayout>{children}</UserLayout></ProtectedRoute>
 }
 function BancaDatiSharedAvv({ children }) {
-  return <ProtectedRoute roles={['avvocato']}><AvvocatoLayout>{children}</AvvocatoLayout></ProtectedRoute>
+  return <ProtectedRoute roles={['avvocato', 'commercialista']}><ProLayout>{children}</ProLayout></ProtectedRoute>
 }
 
 export default function App() {
@@ -159,7 +177,7 @@ export default function App() {
               <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
               <Route path="/email-verificata" element={<AuthLayout><EmailVerificata /></AuthLayout>} />
               <Route path="/verifica-2fa" element={
-                <ProtectedRoute roles={['admin', 'avvocato', 'cliente', 'user']}>
+                <ProtectedRoute roles={['admin', 'avvocato', 'commercialista', 'cliente', 'user']}>
                   <Verifica2FA />
                 </ProtectedRoute>
               } />
@@ -189,30 +207,33 @@ export default function App() {
               <Route path="/admin/profilo" element={<Adm><AdminProfilo /></Adm>} />
 
               {/* ═══════════════════════════════════════════════════════
-                AVVOCATO
+                PROFESSIONISTI (avvocato + commercialista)
+                Rotte condivise: il layout/dashboard giusti li sceglie ProLayout.
+                Le pratiche restano solo avvocato; il commercialista avrà i
+                mandati (Banco Lavoro) con la Fase 1.
                 ═══════════════════════════════════════════════════════ */}
-              <Route path="/dashboard" element={<Avv><AvvocatoDashboard /></Avv>} />
-              <Route path="/clienti" element={<Avv><AvvocatoClienti /></Avv>} />
-              <Route path="/clienti/nuovo" element={<Avv><AvvocatoClientiNuovo /></Avv>} />
-              <Route path="/clienti/:id" element={<Avv><AvvocatoClientiDettaglio /></Avv>} />
+              <Route path="/dashboard" element={<Pro><DashboardRuolo /></Pro>} />
+              <Route path="/clienti" element={<Pro><AvvocatoClienti /></Pro>} />
+              <Route path="/clienti/nuovo" element={<Pro><AvvocatoClientiNuovo /></Pro>} />
+              <Route path="/clienti/:id" element={<Pro><AvvocatoClientiDettaglio /></Pro>} />
               <Route path="/pratiche" element={<Avv><AvvocatoPratiche /></Avv>} />
               <Route path="/pratiche/nuova" element={<Avv><AvvocatoPraticheNuova /></Avv>} />
               <Route path="/pratiche/:id" element={<Avv><PraticaDettaglio /></Avv>} />
-              <Route path="/calendario" element={<Avv><AvvocatoCalendar /></Avv>} />
-              <Route path="/fatturazione" element={<Avv><AvvocatoFatturazione /></Avv>} />
-              <Route path="/fatturazione/nuova" element={<Avv><AvvocatoFatturazioneNuova /></Avv>} />
-              <Route path="/fatturazione/:id" element={<Avv><AvvocatoFatturazioneDettaglio /></Avv>} />
-              <Route path="/assistenza" element={<Avv><AvvocatoAssistenza /></Avv>} />
-              <Route path="/assistenza/nuovo" element={<Avv><AvvocatoAssistenzaNuovo /></Avv>} />
-              <Route path="/assistenza/:id" element={<Avv><AvvocatoAssistenzaDettaglio /></Avv>} />
-              <Route path="/archivio" element={<Avv><Archivio /></Avv>} />
-              <Route path="/archivio/:id" element={<Avv><ArchivioDettaglio /></Avv>} />
-              <Route path="/profilo" element={<Avv><AvvocatoProfilo /></Avv>} />
+              <Route path="/calendario" element={<Pro><AvvocatoCalendar /></Pro>} />
+              <Route path="/fatturazione" element={<Pro><AvvocatoFatturazione /></Pro>} />
+              <Route path="/fatturazione/nuova" element={<Pro><AvvocatoFatturazioneNuova /></Pro>} />
+              <Route path="/fatturazione/:id" element={<Pro><AvvocatoFatturazioneDettaglio /></Pro>} />
+              <Route path="/assistenza" element={<Pro><AvvocatoAssistenza /></Pro>} />
+              <Route path="/assistenza/nuovo" element={<Pro><AvvocatoAssistenzaNuovo /></Pro>} />
+              <Route path="/assistenza/:id" element={<Pro><AvvocatoAssistenzaDettaglio /></Pro>} />
+              <Route path="/archivio" element={<Pro><Archivio /></Pro>} />
+              <Route path="/archivio/:id" element={<Pro><ArchivioDettaglio /></Pro>} />
+              <Route path="/profilo" element={<Pro><AvvocatoProfilo /></Pro>} />
               <Route path="/banca-dati/eur-lex/:id" element={<BancaDatiSharedAvv><SentenzaUeDettaglio /></BancaDatiSharedAvv>} />
 
-              {/* Ricerche avvocato */}
-              <Route path="/ricerche" element={<Avv><Ricerche /></Avv>} />
-              <Route path="/etichette/:id" element={<Avv><EtichettaDettaglio /></Avv>} />
+              {/* Ricerche professionisti */}
+              <Route path="/ricerche" element={<Pro><Ricerche /></Pro>} />
+              <Route path="/etichette/:id" element={<Pro><EtichettaDettaglio /></Pro>} />
 
               {/* Banca dati avvocato (con pannello pratiche attivo) */}
               <Route path="/banca-dati" element={<BancaDatiSharedAvv><BancaDati /></BancaDatiSharedAvv>} />
@@ -222,9 +243,9 @@ export default function App() {
               <Route path="/banca-dati/norma/:id" element={<BancaDatiSharedAvv><NormaDettaglio /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/tributario/:id" element={<BancaDatiSharedAvv><SentenzaTributariaDettaglio /></BancaDatiSharedAvv>} />
 
-              {/* Studio condiviso avvocato + user */}
+              {/* Studio condiviso professionisti + user */}
               <Route path="/studio" element={
-                <ProtectedRoute roles={['avvocato', 'user']}>
+                <ProtectedRoute roles={['avvocato', 'commercialista', 'user']}>
                   <AvvocatoLayoutOrUser><AvvocatoStudio /></AvvocatoLayoutOrUser>
                 </ProtectedRoute>
               } />
@@ -299,10 +320,12 @@ export default function App() {
   )
 }
 
-// ─── Wrapper per /studio condiviso user/avvocato ───
+// ─── Wrapper per /studio condiviso user/professionisti ───
 function AvvocatoLayoutOrUser({ children }) {
   const { profile } = useAuth()
-  const Layout = profile?.role === 'user' ? UserLayout : AvvocatoLayout
+  const Layout = profile?.role === 'user' ? UserLayout
+    : profile?.role === 'commercialista' ? CommercialistaLayout
+      : AvvocatoLayout
   return <Layout>{children}</Layout>
 }
 

@@ -7,6 +7,7 @@ import { ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
 const ROLE_HOME = {
   admin: '/admin/dashboard',
   avvocato: '/dashboard',
+  commercialista: '/dashboard',
   cliente: '/portale',
   user: '/area',
 }

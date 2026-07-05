@@ -2,16 +2,130 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2 } from 'lucide-react'
+import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator } from 'lucide-react'
+
+// ── Config per direzione professionale (avvocato | commercialista) ──
+// Stesse chiavi documento (identita/albo/laurea) per entrambe: cambiano solo
+// etichette e testi. Così l'admin (UtentiDettaglio) mostra i doc senza modifiche.
+const PROFILI = {
+    avvocato: {
+        titolo: 'Diventa avvocato su Lexum',
+        intro: "Per accedere alla piattaforma come avvocato devi verificare la tua identità professionale. Carica i documenti richiesti e il nostro team li esaminerà entro 24-48 ore.",
+        documenti: [
+            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: true },
+            { key: 'albo', label: "Iscrizione all'Albo", hint: "Certificato di iscrizione all'Albo degli Avvocati", req: true },
+            { key: 'laurea', label: "Laurea in Giurisprudenza", hint: "Opzionale — accelera la verifica", req: false },
+        ],
+    },
+    commercialista: {
+        titolo: 'Diventa commercialista su Lexum',
+        intro: "Per accedere alla piattaforma come commercialista devi verificare la tua identità professionale. Carica i documenti richiesti e il nostro team li esaminerà entro 24-48 ore.",
+        documenti: [
+            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: true },
+            { key: 'albo', label: "Iscrizione all'Albo (ODCEC)", hint: "Certificato di iscrizione all'Albo dei Dottori Commercialisti e degli Esperti Contabili", req: true },
+            { key: 'laurea', label: "Laurea in Economia", hint: "Opzionale — accelera la verifica", req: false },
+        ],
+    },
+}
+
+// ── SCELTA DIREZIONE (se tipo_richiesta non ancora impostato) ──
+function SceltaDirezione({ onScelta, loading }) {
+    return (
+        <div className="space-y-6 max-w-2xl">
+            <div>
+                <p className="section-label mb-3">Verifica identità</p>
+                <h1 className="font-display text-4xl font-light text-nebbia mb-2">Che professionista sei?</h1>
+                <p className="font-body text-sm text-nebbia/50 leading-relaxed">
+                    Scegli il tuo profilo professionale: la piattaforma si adatta al tuo modo di lavorare.
+                </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+                <button
+                    disabled={loading}
+                    onClick={() => onScelta('avvocato')}
+                    className="bg-slate border border-white/5 hover:border-oro/40 p-6 text-left transition-colors group disabled:opacity-40"
+                >
+                    <Scale size={28} className="text-oro mb-4" />
+                    <p className="font-display text-xl text-nebbia mb-2">Avvocato</p>
+                    <p className="font-body text-xs text-nebbia/50 leading-relaxed">
+                        Pratiche, udienze, termini processuali, banca dati giuridica e generazione di atti con Lex AI.
+                    </p>
+                </button>
+
+                <button
+                    disabled={loading}
+                    onClick={() => onScelta('commercialista')}
+                    className="bg-slate border border-white/5 hover:border-oro/40 p-6 text-left transition-colors group disabled:opacity-40"
+                >
+                    <Calculator size={28} className="text-oro mb-4" />
+                    <p className="font-display text-xl text-nebbia mb-2">Commercialista</p>
+                    <p className="font-body text-xs text-nebbia/50 leading-relaxed">
+                        Mandati, scadenzario fiscale, contabilità clienti, banca dati tributaria e Lex AI per lo studio.
+                    </p>
+                </button>
+            </div>
+        </div>
+    )
+}
 
 // ── UPLOAD DOCUMENTI ──────────────────────────────────────────
 export function UserVerifica() {
-    const [docs, setDocs] = useState({ identita: null, albo: null, laurea: null })
+    const { profile } = useAuth()
+
+    // Direzione locale: parte da profiles.tipo_richiesta, si aggiorna al volo
+    // dopo la scelta senza dover ricaricare il context.
+    const [direzione, setDirezione] = useState(profile?.tipo_richiesta ?? null)
+    const [docs, setDocs] = useState({})
     const [loading, setLoading] = useState(false)
+    const [salvandoDirezione, setSalvandoDirezione] = useState(false)
     const [errore, setErrore] = useState('')
     const [inviato, setInviato] = useState(false)
 
-    const allReq = docs.identita && docs.albo
+    async function handleScelta(scelta) {
+        setSalvandoDirezione(true)
+        setErrore('')
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { error } = await supabase
+                .from('profiles')
+                .update({ tipo_richiesta: scelta })
+                .eq('id', user.id)
+            if (error) throw new Error(error.message)
+            setDirezione(scelta)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setSalvandoDirezione(false)
+        }
+    }
+
+    async function handleCambiaScelta() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            await supabase.from('profiles').update({ tipo_richiesta: null }).eq('id', user.id)
+        } finally {
+            setDocs({})
+            setDirezione(null)
+        }
+    }
+
+    if (!direzione) {
+        return (
+            <div className="space-y-4">
+                <SceltaDirezione onScelta={handleScelta} loading={salvandoDirezione} />
+                {errore && (
+                    <div className="bg-red-900/15 border border-red-500/20 px-4 py-3 max-w-2xl">
+                        <p className="font-body text-sm text-red-400">{errore}</p>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    const config = PROFILI[direzione] ?? PROFILI.avvocato
+    const documentiObbligatori = config.documenti.filter(d => d.req).map(d => d.key)
+    const allReq = documentiObbligatori.every(k => docs[k])
 
     async function handleInvia() {
         if (!allReq || loading) return
@@ -22,11 +136,9 @@ export function UserVerifica() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error('Utente non autenticato')
 
-            const uploads = [
-                { file: docs.identita, path: `${user.id}/identita` },
-                { file: docs.albo, path: `${user.id}/albo` },
-                ...(docs.laurea ? [{ file: docs.laurea, path: `${user.id}/laurea` }] : []),
-            ]
+            const uploads = config.documenti
+                .filter(d => docs[d.key])
+                .map(d => ({ file: docs[d.key], path: `${user.id}/${d.key}` }))
 
             for (const { file, path } of uploads) {
                 const ext = file.name.split('.').pop()
@@ -68,19 +180,18 @@ export function UserVerifica() {
         <div className="space-y-6 max-w-2xl">
             <div>
                 <p className="section-label mb-3">Verifica identità</p>
-                <h1 className="font-display text-4xl font-light text-nebbia mb-2">Diventa avvocato su Lexum</h1>
-                <p className="font-body text-sm text-nebbia/50 leading-relaxed">
-                    Per accedere alla piattaforma come avvocato devi verificare la tua identità professionale.
-                    Carica i documenti richiesti e il nostro team li esaminerà entro 24-48 ore.
-                </p>
+                <h1 className="font-display text-4xl font-light text-nebbia mb-2">{config.titolo}</h1>
+                <p className="font-body text-sm text-nebbia/50 leading-relaxed">{config.intro}</p>
+                <button
+                    onClick={handleCambiaScelta}
+                    className="font-body text-xs text-nebbia/30 hover:text-oro transition-colors mt-2"
+                >
+                    ‹ Non sei {direzione === 'avvocato' ? 'un avvocato' : 'un commercialista'}? Cambia scelta
+                </button>
             </div>
 
             <div className="space-y-4">
-                {[
-                    { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: true },
-                    { key: 'albo', label: "Iscrizione all'Albo", hint: "Certificato di iscrizione all'Albo degli Avvocati", req: true },
-                    { key: 'laurea', label: "Laurea in Giurisprudenza", hint: "Opzionale — accelera la verifica", req: false },
-                ].map(({ key, label, hint, req }) => (
+                {config.documenti.map(({ key, label, hint, req }) => (
                     <div key={key} className={`bg-slate border p-5 ${docs[key] ? 'border-salvia/30' : 'border-white/5'}`}>
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">

@@ -15,7 +15,7 @@ export default function EtichetteAssegnate({ elemento, refreshKey = 0 }) {
     const [etichette, setEtichette] = useState([])
     const [loading, setLoading] = useState(true)
 
-    const basePath = profile?.role === 'avvocato' ? '/etichette' : '/area/etichette'
+    const basePath = (profile?.role === 'avvocato' || profile?.role === 'commercialista') ? '/etichette' : '/area/etichette'
 
     useEffect(() => {
         if (!elemento?.id || !elemento?.tipo) return
