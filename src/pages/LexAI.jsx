@@ -332,7 +332,7 @@ export default function LexAI() {
                     <div className="flex justify-center mb-8">
                         <div className="inline-flex items-center gap-2 px-4 py-2 border border-salvia/25 bg-salvia/5">
                             <Sparkles size={11} className="text-salvia" />
-                            <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Intelligenza artificiale legale V. 1.3</span>
+                            <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Intelligenza artificiale legale V2</span>
                         </div>
                     </div>
 
@@ -856,7 +856,7 @@ export default function LexAI() {
                             <Sparkles size={20} className="text-salvia" />
                         </div>
                         <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-4">
-                            Attiva Lex AI (V. 1.3)
+                            Attiva Lex AI (V2)
                         </h2>
                         <div className="w-12 h-px bg-gradient-to-r from-transparent via-salvia/50 to-transparent mx-auto my-6" />
                         <p className="font-body text-sm text-nebbia/40 leading-relaxed mb-10 max-w-lg mx-auto">
