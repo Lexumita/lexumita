@@ -66,7 +66,7 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
             const { data } = await supabase
                 .from('profiles')
                 .select('id, nome, cognome, email, role, studio')
-                .in('role', ['user', 'avvocato'])
+                .in('role', ['user', 'avvocato', 'commercialista'])
                 .or(`nome.ilike.%${q}%,cognome.ilike.%${q}%,email.ilike.%${q}%`)
                 .limit(15)
             setUtenti(data ?? [])

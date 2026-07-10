@@ -46,7 +46,7 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
       const { data } = await supabase
         .from('profiles')
         .select('id, nome, cognome, studio')
-        .eq('role', 'avvocato')
+        .in('role', ['avvocato', 'commercialista'])
         .eq('verification_status', 'approved')
         .order('cognome')
       setAvvocati(data ?? [])

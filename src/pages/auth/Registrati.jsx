@@ -121,7 +121,7 @@ export default function Registrati() {
         <p className="section-label mb-6">Registrazione</p>
         <h1 className="font-display text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
         <p className="font-body text-sm text-nebbia/40 mb-8 leading-relaxed">
-          Inizia subito con 3 ricerche Lex AI gratuite. Se sei un avvocato, dopo la registrazione potrai verificare la tua identità e accedere a tutte le funzionalità di Lexum.
+          Inizia subito con 3 ricerche Lex AI gratuite. Se sei un avvocato o un commercialista, dopo la registrazione potrai verificare la tua identità professionale e accedere a tutte le funzionalità di Lexum.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,7 +145,7 @@ export default function Registrati() {
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25"
             />
             <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
-              Se sei un avvocato e lavori in uno studio, inserisci qui il nome. Servirà in fase di verifica. Puoi modificarlo anche dopo dal tuo profilo.
+              Se sei un professionista e lavori in uno studio, inserisci qui il nome. Servirà in fase di verifica. Puoi modificarlo anche dopo dal tuo profilo.
             </p>
           </div>
 
