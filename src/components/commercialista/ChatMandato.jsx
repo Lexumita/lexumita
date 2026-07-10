@@ -10,7 +10,8 @@
 //
 // Props:
 //   mandatoId  (string)
-//   onRicercaSalvata()  - notifica al box ricerche (refresh)
+//   onRicercaSalvata()    - notifica al box ricerche (refresh)
+//   onDocumentoSalvato()  - notifica al box documenti (refresh dopo salvataggio PDF)
 
 import { useState, useRef, useEffect } from 'react'
 import { Sparkles, Send, Loader2, Save, AlertCircle, Check, FileText, X } from 'lucide-react'
@@ -44,12 +45,13 @@ const MD = {
     p: ({ children }) => <p className="font-body text-sm text-nebbia/70 leading-relaxed mb-1.5">{children}</p>,
 }
 
-export default function ChatMandato({ mandatoId, onRicercaSalvata }) {
+export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSalvato }) {
     const [messaggi, setMessaggi] = useState([])   // { role, content, salvata?, documento?, tipo_nome? }
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [errore, setErrore] = useState('')
     const [salvandoIdx, setSalvandoIdx] = useState(null)
+    const [salvandoPdfIdx, setSalvandoPdfIdx] = useState(null)
     const [tipoDocSel, setTipoDocSel] = useState('')          // codice tipo documento | ''
     const [statoGenerazione, setStatoGenerazione] = useState('')
     const [chunkLive, setChunkLive] = useState('')
@@ -127,6 +129,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata }) {
             let eventName = ''
             let documentoFinale = null
             let tipoNomeFinale = tipo.nome
+            let tipoCodiceFinale = tipo.codice
             let accumulo = ''
 
             while (true) {
@@ -145,13 +148,14 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata }) {
                     else if (eventName === 'done') {
                         documentoFinale = data.documento_markdown ?? accumulo
                         tipoNomeFinale = data.tipo_nome ?? tipo.nome
+                        tipoCodiceFinale = data.tipo_documento ?? tipo.codice
                     }
                     else if (eventName === 'error') throw new Error(data.error ?? 'Errore nella generazione')
                 }
             }
 
             if (!documentoFinale) throw new Error('Generazione interrotta: nessun documento ricevuto.')
-            setMessaggi(m => [...m, { role: 'assistant', content: documentoFinale, documento: true, tipo_nome: tipoNomeFinale }])
+            setMessaggi(m => [...m, { role: 'assistant', content: documentoFinale, documento: true, tipo_nome: tipoNomeFinale, tipo_codice: tipoCodiceFinale }])
             setTipoDocSel('')
         } catch (e) {
             setErrore(e.message)
@@ -159,6 +163,33 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata }) {
             setLoading(false)
             setStatoGenerazione('')
             setChunkLive('')
+        }
+    }
+
+    // Salva il documento generato come PDF nell'archivio del mandato
+    // (edge salva-documento-pdf, ramo mandato_id → archivio_documenti).
+    async function salvaPdf(idx) {
+        const msg = messaggi[idx]
+        if (!msg || !msg.documento) return
+        setSalvandoPdfIdx(idx)
+        setErrore('')
+        try {
+            const { data, error } = await supabase.functions.invoke('salva-documento-pdf', {
+                body: {
+                    mandato_id: mandatoId,
+                    template_codice: msg.tipo_codice ?? 'documento',
+                    template_nome: msg.tipo_nome ?? 'Documento',
+                    markdown_finale: msg.content,
+                },
+            })
+            if (error) throw new Error(error.message ?? 'Salvataggio PDF non riuscito')
+            if (!data?.ok) throw new Error(data?.error ?? 'Salvataggio PDF non riuscito')
+            setMessaggi(m => m.map((x, i) => i === idx ? { ...x, pdf_salvato: true, pdf_url: data.url ?? null } : x))
+            onDocumentoSalvato?.()
+        } catch (e) {
+            setErrore(e.message)
+        } finally {
+            setSalvandoPdfIdx(null)
         }
     }
 
@@ -230,12 +261,28 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata }) {
                             <div className={`px-4 py-3 border ${m.documento ? 'bg-petrolio/70 border-oro/20' : 'bg-petrolio/50 border-white/5'}`}>
                                 <ReactMarkdown components={MD}>{m.content}</ReactMarkdown>
                             </div>
-                            <button onClick={() => salvaInRicerche(i)} disabled={m.salvata || salvandoIdx === i}
-                                className="self-start flex items-center gap-1.5 font-body text-[11px] text-nebbia/40 hover:text-oro transition-colors disabled:opacity-60">
-                                {salvandoIdx === i ? <Loader2 size={11} className="animate-spin" />
-                                    : m.salvata ? <><Check size={11} className="text-salvia" /> Salvato nelle ricerche</>
-                                        : <><Save size={11} /> Salva nelle ricerche</>}
-                            </button>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <button onClick={() => salvaInRicerche(i)} disabled={m.salvata || salvandoIdx === i}
+                                    className="flex items-center gap-1.5 font-body text-[11px] text-nebbia/40 hover:text-oro transition-colors disabled:opacity-60">
+                                    {salvandoIdx === i ? <Loader2 size={11} className="animate-spin" />
+                                        : m.salvata ? <><Check size={11} className="text-salvia" /> Salvato nelle ricerche</>
+                                            : <><Save size={11} /> Salva nelle ricerche</>}
+                                </button>
+                                {m.documento && (
+                                    <button onClick={() => salvaPdf(i)} disabled={m.pdf_salvato || salvandoPdfIdx === i}
+                                        className="flex items-center gap-1.5 font-body text-[11px] text-nebbia/40 hover:text-oro transition-colors disabled:opacity-60">
+                                        {salvandoPdfIdx === i ? <Loader2 size={11} className="animate-spin" />
+                                            : m.pdf_salvato ? <><Check size={11} className="text-salvia" /> PDF salvato nel mandato</>
+                                                : <><FileText size={11} /> Salva PDF nel mandato</>}
+                                    </button>
+                                )}
+                                {m.pdf_salvato && m.pdf_url && (
+                                    <a href={m.pdf_url} target="_blank" rel="noreferrer"
+                                        className="font-body text-[11px] text-oro/70 hover:text-oro underline underline-offset-2">
+                                        Scarica PDF
+                                    </a>
+                                )}
+                            </div>
                         </div>
                     )
                 ))}

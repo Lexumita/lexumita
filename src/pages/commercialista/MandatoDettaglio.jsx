@@ -58,6 +58,8 @@ export default function MandatoDettaglio() {
     const [refreshMovimenti, setRefreshMovimenti] = useState(0)
     // Quando la chat Lex salva una risposta nelle ricerche → ricarica il box ricerche.
     const [refreshRicerche, setRefreshRicerche] = useState(0)
+    // Quando la chat Lex salva un PDF nel mandato → ricarica il box documenti.
+    const [refreshDocumenti, setRefreshDocumenti] = useState(0)
 
     useEffect(() => { caricaMandato() }, [id])
 
@@ -288,6 +290,7 @@ export default function MandatoDettaglio() {
                 mandatoId={mandato.id}
                 clienteId={mandato.cliente_id}
                 onMovimentoChange={() => setRefreshMovimenti(k => k + 1)}
+                refreshTrigger={refreshDocumenti}
             />
 
             {/* RIGA 3 — Conto economico */}
@@ -328,7 +331,11 @@ export default function MandatoDettaglio() {
             <Contabilita clienteId={mandato.cliente_id} mandatoId={mandato.id} />
 
             {/* RIGA 7 — Assistente Lex del mandato */}
-            <ChatMandato mandatoId={mandato.id} onRicercaSalvata={() => setRefreshRicerche(k => k + 1)} />
+            <ChatMandato
+                mandatoId={mandato.id}
+                onRicercaSalvata={() => setRefreshRicerche(k => k + 1)}
+                onDocumentoSalvato={() => setRefreshDocumenti(k => k + 1)}
+            />
 
             {/* RIGA 8 — Ricerche */}
             <BoxRicercheMandato mandatoId={mandato.id} refreshTrigger={refreshRicerche} />
