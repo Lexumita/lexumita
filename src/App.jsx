@@ -19,6 +19,7 @@ import Footer from './components/Footer'
 // ── Vetrina ──
 import Home from './pages/Home'
 import PerAvvocati from '@/pages/PerAvvocati'
+import PerCommercialisti from '@/pages/PerCommercialisti'
 import LexAI from '@/pages/LexAI'
 import Contatti from './pages/Contatti'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
@@ -47,6 +48,8 @@ import AdminProfilo from './pages/admin/Profilo'
 
 // ── Commercialista ──
 import CommercialistaDashboard from './pages/commercialista/Dashboard'
+import BancoLavoro from './pages/commercialista/BancoLavoro'
+import MandatoDettaglio from './pages/commercialista/MandatoDettaglio'
 
 // ── Avvocato ──
 import AvvocatoDashboard from './pages/avvocato/Dashboard'
@@ -137,6 +140,8 @@ function DashboardRuolo() {
   return profile?.role === 'commercialista' ? <CommercialistaDashboard /> : <AvvocatoDashboard />
 }
 function Pro({ children }) { return <ProtectedRoute roles={['avvocato', 'commercialista']}><ProLayout>{children}</ProLayout></ProtectedRoute> }
+// Comm = rotte esclusive del commercialista (banco di lavoro / mandati)
+function Comm({ children }) { return <ProtectedRoute roles={['commercialista']}><CommercialistaLayout>{children}</CommercialistaLayout></ProtectedRoute> }
 
 // ─── Banca dati condivisa user + professionisti ───
 // Il componente BancaDati gestisce internamente la differenza di ruolo
@@ -163,6 +168,7 @@ export default function App() {
                 ═══════════════════════════════════════════════════════ */}
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
+              <Route path="/per-commercialisti" element={<VetrinaLayout><PerCommercialisti /></VetrinaLayout>} />
               <Route path="/lex-ai" element={<VetrinaLayout><LexAI /></VetrinaLayout>} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
@@ -216,6 +222,8 @@ export default function App() {
               <Route path="/clienti" element={<Pro><AvvocatoClienti /></Pro>} />
               <Route path="/clienti/nuovo" element={<Pro><AvvocatoClientiNuovo /></Pro>} />
               <Route path="/clienti/:id" element={<Pro><AvvocatoClientiDettaglio /></Pro>} />
+              <Route path="/banco-lavoro" element={<Comm><BancoLavoro /></Comm>} />
+              <Route path="/banco-lavoro/:id" element={<Comm><MandatoDettaglio /></Comm>} />
               <Route path="/pratiche" element={<Avv><AvvocatoPratiche /></Avv>} />
               <Route path="/pratiche/nuova" element={<Avv><AvvocatoPraticheNuova /></Avv>} />
               <Route path="/pratiche/:id" element={<Avv><PraticaDettaglio /></Avv>} />

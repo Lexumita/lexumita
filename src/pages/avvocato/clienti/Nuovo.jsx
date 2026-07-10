@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { PageHeader, BackButton, InputField, TextareaField } from '@/components/shared'
 import { AlertCircle, CheckCircle, User, Building2, Eye, EyeOff, Lock, Users, ShoppingBag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 // ─────────────────────────────────────────────────────────────
 // SWITCHER PF / PG
@@ -123,6 +124,10 @@ function BannerContatoreClienti({ clienti, limiteRaggiunto }) {
 // ─────────────────────────────────────────────────────────────
 export default function AvvocatoClientiNuovo() {
     const navigate = useNavigate()
+    const { profile } = useAuth()
+    // Il regime contabile è un dato fiscale utile al commercialista (guida lo
+    // scadenzario del mandato). Per l'avvocato il campo non compare.
+    const isCommercialista = profile?.role === 'commercialista'
     const [tipo, setTipo] = useState('persona_fisica')
     const [form, setForm] = useState({
         // PF
@@ -131,6 +136,8 @@ export default function AvvocatoClientiNuovo() {
         // PG
         ragione_sociale: '', partita_iva: '', sede_legale: '',
         rappr_nome: '', rappr_cognome: '', rappr_cf: '', rappr_carica: '',
+        // Fiscale (commercialista)
+        regime_contabile: '',
         // Comuni
         email: '', telefono: '', pec: '',
         indirizzo: '', comune: '', provincia: '', cap: '',
@@ -219,6 +226,7 @@ export default function AvvocatoClientiNuovo() {
                 cap: form.cap,
                 note: form.note,
                 avvocato_id: form.avvocato_id || null,
+                regime_contabile: form.regime_contabile || null,
                 attiva_portale: form.attiva_portale,
                 password_iniziale: form.attiva_portale ? form.password_iniziale : undefined,
             }
@@ -353,6 +361,29 @@ export default function AvvocatoClientiNuovo() {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {/* Inquadramento fiscale — solo commercialista */}
+                    {isCommercialista && (
+                        <div className="border-t border-white/8 pt-5 space-y-4">
+                            <p className="section-label">Inquadramento fiscale</p>
+                            <div>
+                                <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Regime contabile</label>
+                                <select
+                                    value={form.regime_contabile}
+                                    onChange={e => setForm(p => ({ ...p, regime_contabile: e.target.value }))}
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50"
+                                >
+                                    <option value="">Non impostato</option>
+                                    <option value="ordinario">Ordinario</option>
+                                    <option value="semplificato">Semplificato</option>
+                                    <option value="forfettario">Forfettario</option>
+                                </select>
+                                <p className="font-body text-xs text-nebbia/30 mt-1.5">
+                                    Determina quali scadenze fiscali vengono precaricate nei mandati (i forfettari non hanno IVA/LIPE).
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                     {/* Contatti */}

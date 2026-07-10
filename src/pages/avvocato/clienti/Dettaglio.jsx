@@ -11,6 +11,8 @@ import {
     Copy, RefreshCw, CheckCircle, ShieldOff, Wallet
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
+import GestioneMandati from '@/components/commercialista/GestioneMandati'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -1354,6 +1356,16 @@ function ModalResetPassword({ cliente, onClose }) {
 // ─────────────────────────────────────────────────────────────
 export default function AvvocatoClientiDettaglio() {
     const { id } = useParams()
+    const { profile } = useAuth()
+    // Le pratiche sono uno strumento da avvocato; il commercialista lavora per
+    // mandati (stessa posizione nella tab bar, componente diverso).
+    const isAvvocato = profile?.role === 'avvocato'
+    const isCommercialista = profile?.role === 'commercialista'
+    const tabsVisibili = isAvvocato
+        ? TABS
+        : isCommercialista
+            ? TABS.map(t => t.id === 'pratiche' ? { id: 'mandati', label: 'Mandati', icon: FolderOpen } : t)
+            : TABS.filter(t => t.id !== 'pratiche')
     const [cliente, setCliente] = useState(null)
     const [tab, setTab] = useState('panoramica')
     const [pratiche, setPratiche] = useState([])
@@ -1431,6 +1443,7 @@ export default function AvvocatoClientiDettaglio() {
                         comune: formCliente.comune,
                         provincia: formCliente.provincia,
                         cap: formCliente.cap,
+                        regime_contabile: formCliente.regime_contabile ?? null,
                         avvocato_id: avvocatoId || null,
                     }),
                 }
@@ -1495,7 +1508,7 @@ export default function AvvocatoClientiDettaglio() {
             <SezioneStrumentiAssistenza cliente={cliente} />
 
             <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
-                {TABS.map(({ id: tid, label, icon: Icon }) => (
+                {tabsVisibili.map(({ id: tid, label, icon: Icon }) => (
                     <button key={tid} onClick={() => { setTab(tid); setPraticaSelezionata(null) }}
                         className={`flex items-center gap-2 px-4 py-3 font-body text-sm whitespace-nowrap border-b-2 transition-colors ${tab === tid ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
                             } ${tid === 'note_interne' ? 'text-amber-400/70 hover:text-amber-400' : ''}`}>
@@ -1564,6 +1577,26 @@ export default function AvvocatoClientiDettaglio() {
                                             </div>
                                         </div>
                                     </>
+                                )}
+
+                                {profile?.role === 'commercialista' && (
+                                    <div className="border-t border-white/8 pt-3 space-y-3">
+                                        <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Inquadramento fiscale</p>
+                                        <div>
+                                            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Regime contabile</label>
+                                            <select
+                                                value={formCliente.regime_contabile ?? ''}
+                                                onChange={e => setFormCliente(p => ({ ...p, regime_contabile: e.target.value || null }))}
+                                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50"
+                                            >
+                                                <option value="">Non impostato</option>
+                                                <option value="ordinario">Ordinario</option>
+                                                <option value="semplificato">Semplificato</option>
+                                                <option value="forfettario">Forfettario</option>
+                                            </select>
+                                            <p className="font-body text-xs text-nebbia/30 mt-1.5">Guida lo scadenzario fiscale precaricato nei mandati.</p>
+                                        </div>
+                                    </div>
                                 )}
 
                                 <div className="border-t border-white/8 pt-3 space-y-3">
@@ -1673,7 +1706,8 @@ export default function AvvocatoClientiDettaglio() {
                 </div>
             )}
 
-            {tab === 'pratiche' && (
+            {tab === 'mandati' && isCommercialista && <GestioneMandati clienteId={id} />}
+            {tab === 'pratiche' && isAvvocato && (
                 <div className="flex gap-4 min-h-[500px]">
                     <div className={`flex flex-col gap-2 ${praticaSelezionata ? 'w-[20%] shrink-0' : 'flex-1'}`}>
                         <div className="flex justify-end mb-1">
