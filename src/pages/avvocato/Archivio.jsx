@@ -106,6 +106,36 @@ const STATUS_CONFIG = {
 
 const COLORE_DEFAULT_CATEGORIA = '#C9A45C'
 
+// Config bifronte per ruolo (stesso principio di AggiungiAPratica.jsx):
+// - role === 'avvocato'       → PRATICHE (tabella pratiche, FK pratica_id)
+// - role === 'commercialista' → MANDATI  (tabella mandati,  FK mandato_id)
+const PM_CONFIG = {
+    avvocato: {
+        tabella: 'pratiche',
+        fk: 'pratica_id',
+        filtroStato: 'aperta',
+        labelHeader: 'Avvocato',
+        labelAggiungi: 'Aggiungi a pratica',
+        labelRimuovi: 'Rimuovi dalla pratica',
+        labelScegli: 'Scegli una pratica',
+        labelVuoto: 'Nessuna pratica aperta',
+        labelFiltroTutte: 'Tutte le pratiche',
+        rotta: '/pratiche/',
+    },
+    commercialista: {
+        tabella: 'mandati',
+        fk: 'mandato_id',
+        filtroStato: 'attivo',
+        labelHeader: 'Commercialista',
+        labelAggiungi: 'Aggiungi a mandato',
+        labelRimuovi: 'Rimuovi dal mandato',
+        labelScegli: 'Scegli un mandato',
+        labelVuoto: 'Nessun mandato attivo',
+        labelFiltroTutte: 'Tutti i mandati',
+        rotta: '/banco-lavoro/',
+    },
+}
+
 // Normalizza una sentenza propria nella stessa shape usata per i documenti
 function normalizzaSentenza(s) {
     const titoloComp = titoloSentenza(s)
@@ -118,6 +148,7 @@ function normalizzaSentenza(s) {
         sottocategoria_id: s.sottocategoria_id ?? null,
         cliente_id: null,
         pratica_id: null,
+        mandato_id: null,
         tipo: 'pdf',
         storage_path: s.pdf_storage_path,
         tipo_file: 'application/pdf',
@@ -942,6 +973,8 @@ function CardDocumento({
     mostraPath = false,
 }) {
     const navigate = useNavigate()
+    const { profile } = useAuth()
+    const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
     const isSentenza = doc._kind === 'sentenza'
 
     const etichetteAssegnate = (tagsByDoc[doc.id] ?? [])
@@ -957,7 +990,7 @@ function CardDocumento({
     const [pickerPratica, setPickerPratica] = useState(false)
     const [pickerCat, setPickerCat] = useState(false)
     const [salvandoPratica, setSalvandoPratica] = useState(false)
-    const praticaCorrente = pratiche.find(p => p.id === doc.pratica_id) ?? null
+    const praticaCorrente = pratiche.find(p => p.id === doc[cfg.fk]) ?? null
     const categoriaCorrente = categorie.find(c => c.id === doc.categoria_id) ?? null
     const sottocatCorrente = sottocategorie.find(s => s.id === doc.sottocategoria_id) ?? null
 
@@ -966,7 +999,7 @@ function CardDocumento({
         try {
             await supabase
                 .from('archivio_documenti')
-                .update({ pratica_id: praticaId, updated_at: new Date().toISOString() })
+                .update({ [cfg.fk]: praticaId, updated_at: new Date().toISOString() })
                 .eq('id', doc.id)
             if (onAggiornata) await onAggiornata()
             setPickerPratica(false)
@@ -982,7 +1015,7 @@ function CardDocumento({
         try {
             await supabase
                 .from('archivio_documenti')
-                .update({ pratica_id: null, updated_at: new Date().toISOString() })
+                .update({ [cfg.fk]: null, updated_at: new Date().toISOString() })
                 .eq('id', doc.id)
             if (onAggiornata) await onAggiornata()
         } catch (err) {
@@ -1242,7 +1275,7 @@ function CardDocumento({
                                         onClick={rimuoviDaPratica}
                                         disabled={salvandoPratica}
                                         className="text-oro/50 hover:text-red-400 transition-colors ml-1"
-                                        title="Rimuovi dalla pratica"
+                                        title={cfg.labelRimuovi}
                                     >
                                         <X size={10} />
                                     </button>
@@ -1254,12 +1287,12 @@ function CardDocumento({
                                         className="flex items-center gap-1.5 px-2 py-1 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors font-body text-xs"
                                     >
                                         <FolderOpen size={10} />
-                                        Aggiungi a pratica
+                                        {cfg.labelAggiungi}
                                     </button>
                                     {pickerPratica && (
                                         <div className="absolute z-20 bottom-full left-0 mb-1 w-72 bg-slate border border-white/10 shadow-2xl">
                                             <div className="flex items-center justify-between p-2 border-b border-white/5">
-                                                <p className="font-body text-xs text-nebbia/40">Scegli una pratica</p>
+                                                <p className="font-body text-xs text-nebbia/40">{cfg.labelScegli}</p>
                                                 <button onClick={() => setPickerPratica(false)} className="text-nebbia/30 hover:text-nebbia">
                                                     <X size={12} />
                                                 </button>
@@ -1267,7 +1300,7 @@ function CardDocumento({
                                             <div className="max-h-64 overflow-y-auto">
                                                 {pratiche.length === 0 ? (
                                                     <p className="p-3 text-center font-body text-xs text-nebbia/25">
-                                                        Nessuna pratica aperta
+                                                        {cfg.labelVuoto}
                                                     </p>
                                                 ) : pratiche.map(p => (
                                                     <button
@@ -1386,6 +1419,7 @@ function CardDocumento({
 // ─── TAB SENTENZE ACQUISTATE (invariato) ───────────────────
 
 function TabSentenzeAcquistate({ meId }) {
+    const { profile } = useAuth()
     const [acquisti, setAcquisti] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTesto, setSearchTesto] = useState('')
@@ -1502,7 +1536,7 @@ function TabSentenzeAcquistate({ meId }) {
                 <EmptyState
                     icon={Gavel}
                     title="Nessuna sentenza acquistata"
-                    desc="Esplora la banca dati per trovare e acquistare sentenze rilevanti per le tue pratiche."
+                    desc={`Esplora la banca dati per trovare e acquistare sentenze rilevanti per ${profile?.role === 'commercialista' ? 'i tuoi mandati' : 'le tue pratiche'}.`}
                 />
             ) : acquistiFiltrati.length === 0 ? (
                 <div className="py-12 text-center">
@@ -1576,6 +1610,7 @@ function TabSentenzeAcquistate({ meId }) {
 
 export default function Archivio() {
     const { profile } = useAuth()
+    const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
     const location = useLocation()
     const fileInputRef = useRef(null)
 
@@ -1634,7 +1669,8 @@ export default function Archivio() {
         const params = new URLSearchParams(location.search)
         const clienteId = params.get('cliente_id')
         if (clienteId) setFiltroCliente(clienteId)
-        const praticaId = params.get('pratica_id')
+        // ?pratica_id= (dalla pagina pratica) oppure ?mandato_id= (dal mandato del commercialista)
+        const praticaId = params.get('pratica_id') || params.get('mandato_id')
         if (praticaId) setFiltroPratica(praticaId)
         const tab = params.get('tab')
         if (tab === 'sentenze') setTabPrincipale('sentenze')
@@ -1686,10 +1722,10 @@ export default function Archivio() {
                 .eq('role', 'cliente')
                 .eq('avvocato_id', tIdF),
             supabase
-                .from('pratiche')
+                .from(cfg.tabella)
                 .select('id, titolo, cliente_id')
                 .eq('avvocato_id', uIdF)
-                .eq('stato', 'aperta')
+                .eq('stato', cfg.filtroStato)
                 .order('created_at', { ascending: false }),
             supabase
                 .from('etichette')
@@ -1922,7 +1958,7 @@ export default function Archivio() {
                 autore_id: user.id,
                 titolare_id: titolareId,
                 cliente_id: metadati.cliente_id || null,
-                pratica_id: metadati.pratica_id || null,
+                [cfg.fk]: metadati.pratica_id || null,
                 categoria_id: metadati.categoria_id || null,
                 sottocategoria_id: metadati.sottocategoria_id || null,
                 tipo,
@@ -1949,7 +1985,7 @@ export default function Archivio() {
         }
 
         const params = new URLSearchParams(location.search)
-        const praticaId = params.get('pratica_id')
+        const praticaId = params.get('pratica_id') || params.get('mandato_id')
         const clienteId = params.get('cliente_id')
 
         setUploadInCorso(true)
@@ -2122,7 +2158,7 @@ export default function Archivio() {
 
     function passaFiltriBase(d) {
         if (filtroCliente && d.cliente_id !== filtroCliente) return false
-        if (filtroPratica && d.pratica_id !== filtroPratica) return false
+        if (filtroPratica && d[cfg.fk] !== filtroPratica) return false
         if (filtroEtichetta) {
             const etDoc = tagsByDoc[d.id] ?? []
             if (!etDoc.includes(filtroEtichetta)) return false
@@ -2193,7 +2229,7 @@ export default function Archivio() {
     return (
         <div className="space-y-6">
             <PageHeader
-                label="Avvocato"
+                label={cfg.labelHeader}
                 title="Archivio"
                 subtitle={tabPrincipale === 'documenti'
                     ? `${documenti.length} documenti · ${documenti.filter(d => d.ocr_status === 'completed').length} indicizzati · ${quota.occupato_gb.toFixed(2)}/${quota.gb_totali} GB`
@@ -2469,7 +2505,7 @@ export default function Archivio() {
                                 onChange={e => setFiltroPratica(e.target.value)}
                                 className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
                             >
-                                <option value="">Tutte le pratiche</option>
+                                <option value="">{cfg.labelFiltroTutte}</option>
                                 {pratiche.map(p => <option key={p.id} value={p.id}>{p.titolo}</option>)}
                             </select>
                         )}

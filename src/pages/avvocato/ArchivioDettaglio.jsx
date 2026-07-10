@@ -1,12 +1,34 @@
 // src/pages/avvocato/ArchivioDettaglio.jsx
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { BackButton, Badge } from '@/components/shared'
 import {
     FileText, File, Check, AlertCircle, Save, Eye, Sparkles,
     EyeOff, Download, Tag, User, FolderOpen, Edit2, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
+
+// Config bifronte per ruolo (stesso principio di AggiungiAPratica.jsx):
+// avvocato → pratiche (pratica_id), commercialista → mandati (mandato_id)
+const PM_CONFIG = {
+    avvocato: {
+        tabella: 'pratiche',
+        fk: 'pratica_id',
+        filtroStato: 'aperta',
+        labelCampo: 'Pratica',
+        labelNessuna: 'Nessuna pratica',
+        rotta: '/pratiche/',
+    },
+    commercialista: {
+        tabella: 'mandati',
+        fk: 'mandato_id',
+        filtroStato: 'attivo',
+        labelCampo: 'Mandato',
+        labelNessuna: 'Nessun mandato',
+        rotta: '/banco-lavoro/',
+    },
+}
 
 const STATUS_CONFIG = {
     pending: { label: 'In coda', variant: 'gray' },
@@ -25,6 +47,8 @@ function formatSize(bytes) {
 export default function ArchivioDettaglio() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { profile } = useAuth()
+    const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
 
     const [doc, setDoc] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -76,7 +100,7 @@ export default function ArchivioDettaglio() {
                     categoria: d.categoria ?? '',
                     tags: (d.tags ?? []).join(', '),
                     cliente_id: d.cliente_id ?? '',
-                    pratica_id: d.pratica_id ?? '',
+                    pratica_id: d[cfg.fk] ?? '',
                 })
 
                 // Carica URL PDF
@@ -91,7 +115,7 @@ export default function ArchivioDettaglio() {
             // Carica clienti, pratiche, categorie
             const [{ data: cl }, { data: pr }, { data: cat }] = await Promise.all([
                 supabase.from('profiles').select('id, nome, cognome').eq('role', 'cliente').eq('avvocato_id', tId),
-                supabase.from('pratiche').select('id, titolo').eq('avvocato_id', user.id).eq('stato', 'aperta'),
+                supabase.from(cfg.tabella).select('id, titolo').eq('avvocato_id', user.id).eq('stato', cfg.filtroStato),
                 supabase.from('categorie_archivio').select('id, nome').eq('titolare_id', tId).order('nome'),
             ])
             setClienti(cl ?? [])
@@ -110,7 +134,7 @@ export default function ArchivioDettaglio() {
             categoria: formMeta.categoria || null,
             tags: formMeta.tags ? formMeta.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             cliente_id: formMeta.cliente_id || null,
-            pratica_id: formMeta.pratica_id || null,
+            [cfg.fk]: formMeta.pratica_id || null,
             updated_at: new Date().toISOString(),
         }
         await supabase.from('archivio_documenti').update(aggiornato).eq('id', id)
@@ -166,7 +190,7 @@ export default function ArchivioDettaglio() {
 
     const sc = STATUS_CONFIG[doc.ocr_status] ?? STATUS_CONFIG.pending
     const cliente = clienti.find(c => c.id === doc.cliente_id)
-    const pratica = pratiche.find(p => p.id === doc.pratica_id)
+    const pratica = pratiche.find(p => p.id === doc[cfg.fk])
 
     return (
         <div className="space-y-5">
@@ -451,13 +475,13 @@ export default function ArchivioDettaglio() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1.5">Pratica</label>
+                                    <label className="block font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1.5">{cfg.labelCampo}</label>
                                     <select
                                         value={formMeta.pratica_id}
                                         onChange={e => setFormMeta(p => ({ ...p, pratica_id: e.target.value }))}
                                         className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
                                     >
-                                        <option value="">Nessuna pratica</option>
+                                        <option value="">{cfg.labelNessuna}</option>
                                         {pratiche.map(p => (
                                             <option key={p.id} value={p.id}>{p.titolo}</option>
                                         ))}
@@ -494,7 +518,16 @@ export default function ArchivioDettaglio() {
                                 {pratica && (
                                     <div className="flex items-center gap-2">
                                         <FileText size={12} className="text-nebbia/30" />
-                                        <span className="font-body text-xs text-nebbia/60 truncate">{pratica.titolo}</span>
+                                        {profile?.role === 'commercialista' ? (
+                                            <Link
+                                                to={`${cfg.rotta}${pratica.id}`}
+                                                className="font-body text-xs text-nebbia/60 truncate hover:text-oro transition-colors"
+                                            >
+                                                {pratica.titolo}
+                                            </Link>
+                                        ) : (
+                                            <span className="font-body text-xs text-nebbia/60 truncate">{pratica.titolo}</span>
+                                        )}
                                     </div>
                                 )}
 
