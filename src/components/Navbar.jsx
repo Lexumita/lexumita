@@ -8,7 +8,6 @@ const navLinks = [
   { path: '/', label: 'Home' },
   { path: '/per-avvocati', label: 'Per Studi Legali' },
   { path: '/per-commercialisti', label: 'Per Commercialisti' },
-  { path: '/lex-ai', label: 'Lex AI' },
   { path: '/contatti', label: 'Contatti' },
 ]
 

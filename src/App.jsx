@@ -20,7 +20,6 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import PerAvvocati from '@/pages/PerAvvocati'
 import PerCommercialisti from '@/pages/PerCommercialisti'
-import LexAI from '@/pages/LexAI'
 import Contatti from './pages/Contatti'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
 import TerminiServizio from '@/pages/TerminiServizio'
@@ -169,7 +168,7 @@ export default function App() {
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
               <Route path="/per-commercialisti" element={<VetrinaLayout><PerCommercialisti /></VetrinaLayout>} />
-              <Route path="/lex-ai" element={<VetrinaLayout><LexAI /></VetrinaLayout>} />
+              <Route path="/lex-ai" element={<Navigate to="/" replace />} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
               <Route path="/termini" element={<VetrinaLayout><TerminiServizio /></VetrinaLayout>} />
