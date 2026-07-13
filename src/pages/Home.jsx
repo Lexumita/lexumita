@@ -258,18 +258,18 @@ export default function Home() {
             </p>
           </div>
 
-          {/* CAROSELLO Lex — una sessione alla volta con frecce */}
+          {/* CAROSELLO Lex — una sessione alla volta con frecce (larghezza piena come CH) */}
           <FadeIn delay={0.1}>
-            <div className="mb-10 max-w-2xl mx-auto">
+            <div className="mb-10 max-w-5xl mx-auto">
               <div className="relative">
                 <div key={DEMO_VARIANTS[demoIdx]} style={{ animation: `${demoDir === 'next' ? 'demoSlideNext' : 'demoSlidePrev'} 450ms cubic-bezier(.4,0,.2,1) both` }}>
                   <LexDemoBox variant={DEMO_VARIANTS[demoIdx]} />
                 </div>
                 <button onClick={() => cambiaDemo('prev')} aria-label="Sessione precedente"
-                  className="absolute top-1/2 -translate-y-1/2 left-1 md:-left-5 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
+                  className="absolute top-1/2 -translate-y-1/2 left-1 md:-left-6 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
                   style={{ animation: 'arrowNudgeLeft 2.2s ease-in-out infinite' }}><ChevronLeft size={20} /></button>
                 <button onClick={() => cambiaDemo('next')} aria-label="Sessione successiva"
-                  className="absolute top-1/2 -translate-y-1/2 right-1 md:-right-5 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
+                  className="absolute top-1/2 -translate-y-1/2 right-1 md:-right-6 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
                   style={{ animation: 'arrowNudgeRight 2.2s ease-in-out infinite' }}><ChevronRight size={20} /></button>
               </div>
               <div className="flex items-center justify-center gap-2.5 mt-5">
