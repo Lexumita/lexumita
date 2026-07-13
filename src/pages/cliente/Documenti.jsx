@@ -1,6 +1,7 @@
 // src/pages/cliente/Documenti.jsx
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
 import { PageHeader, Badge } from '@/components/shared'
 import { Upload, FileText, Eye, Lock, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -13,6 +14,7 @@ function formatSize(bytes) {
 }
 
 export default function ClienteDocumenti() {
+    const { profile } = useAuth()
     const [documenti, setDocumenti] = useState([])
     const [loading, setLoading] = useState(true)
     const [userId, setUserId] = useState(null)
@@ -56,7 +58,8 @@ export default function ClienteDocumenti() {
                 storage_path: path,
                 tipo_mime: file.type,
                 dimensione: file.size,
-                caricato_da: 'cliente',
+                studio_id: profile?.studio_id ?? null,
+                caricato_da: userId,
                 visibile_cliente: true,
             })
             if (dbErr) throw new Error(dbErr.message)
@@ -143,7 +146,7 @@ export default function ClienteDocumenti() {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <Badge label={d.caricato_da === 'avvocato' ? 'Studio' : 'Tu'} variant={d.caricato_da === 'avvocato' ? 'oro' : 'salvia'} />
+                                            <Badge label={d.caricato_da === userId ? 'Tu' : 'Studio'} variant={d.caricato_da === userId ? 'salvia' : 'oro'} />
                                         </td>
                                         <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                                             {new Date(d.created_at).toLocaleDateString('it-IT')}

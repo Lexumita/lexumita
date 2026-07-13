@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader, Badge } from '@/components/shared'
 import { Calendar, Clock, Video, Phone, MapPin } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useTipoStudio } from '@/hooks/useTipoStudio'
 
 const STATO_CFG = {
     programmato: { label: 'Programmato', variant: 'salvia' },
@@ -19,6 +20,7 @@ const TIPO_ICON = {
 }
 
 export default function ClienteAppuntamenti() {
+    const { labelProfBreve } = useTipoStudio()
     const [appuntamenti, setAppuntamenti] = useState([])
     const [loading, setLoading] = useState(true)
     const [statoF, setStatoF] = useState('')
@@ -29,7 +31,7 @@ export default function ClienteAppuntamenti() {
             if (!user) return
             const { data } = await supabase
                 .from('appuntamenti')
-                .select('id, titolo, tipo, stato, data_ora_inizio, data_ora_fine, note_cliente, link_videocall, avvocato:avvocato_id(nome, cognome)')
+                .select('id, titolo, tipo, stato, data_ora_inizio, data_ora_fine, note_cliente, link_videocall, professionista:avvocato_id(nome, cognome)')
                 .eq('cliente_id', user.id)
                 .order('data_ora_inizio', { ascending: false })
             setAppuntamenti(data ?? [])
@@ -84,8 +86,8 @@ export default function ClienteAppuntamenti() {
                                             <h3 className="font-body text-sm font-medium text-nebbia">{a.titolo}</h3>
                                             <Badge label={st.label} variant={st.variant} />
                                         </div>
-                                        {a.avvocato && (
-                                            <p className="font-body text-xs text-nebbia/40 mt-1">Avv. {a.avvocato.nome} {a.avvocato.cognome}</p>
+                                        {a.professionista && (
+                                            <p className="font-body text-xs text-nebbia/40 mt-1">{labelProfBreve} {a.professionista.nome} {a.professionista.cognome}</p>
                                         )}
                                         <div className="flex items-center gap-4 mt-2 flex-wrap">
                                             <div className="flex items-center gap-1.5">

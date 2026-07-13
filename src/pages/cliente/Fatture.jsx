@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader, Badge } from '@/components/shared'
 import { CreditCard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useTipoStudio } from '@/hooks/useTipoStudio'
 
 const STATO_CFG = {
     in_attesa: { label: 'Da pagare', variant: 'warning' },
@@ -13,6 +14,7 @@ const STATO_CFG = {
 }
 
 export default function ClienteFatture() {
+    const { labelProfessionista } = useTipoStudio()
     const [fatture, setFatture] = useState([])
     const [loading, setLoading] = useState(true)
     const [statoF, setStatoF] = useState('')
@@ -47,7 +49,7 @@ export default function ClienteFatture() {
                             Totale da pagare: € {totaleAperto.toFixed(2)}
                         </p>
                         <p className="font-body text-xs text-amber-400/60 mt-0.5">
-                            Contatta il tuo avvocato per le modalità di pagamento.
+                            Contatta il tuo {labelProfessionista.toLowerCase()} per le modalità di pagamento.
                         </p>
                     </div>
                 </div>

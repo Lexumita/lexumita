@@ -76,6 +76,8 @@ import SentenzaUeDettaglio from './pages/avvocato/SentenzaUeDettaglio'
 // ── Cliente ──
 import ClientePanoramica from './pages/cliente/Panoramica'
 import ClientePratiche from './pages/cliente/Pratiche'
+import ClienteMandati from './pages/cliente/Mandati'
+import ClienteScadenze from './pages/cliente/Scadenze'
 import ClienteAppuntamenti from './pages/cliente/Appuntamenti'
 import ClienteDocumenti from './pages/cliente/Documenti'
 import { ClienteComunicazioni, ClienteComunicazioniDettaglio, ClienteComunicazioniNuovo } from './pages/cliente/Comunicazioni'
@@ -262,6 +264,8 @@ export default function App() {
                 ═══════════════════════════════════════════════════════ */}
               <Route path="/portale" element={<Cli><ClientePanoramica /></Cli>} />
               <Route path="/portale/pratiche" element={<Cli><ClientePratiche /></Cli>} />
+              <Route path="/portale/mandati" element={<Cli><ClienteMandati /></Cli>} />
+              <Route path="/portale/scadenze" element={<Cli><ClienteScadenze /></Cli>} />
               <Route path="/portale/appuntamenti" element={<Cli><ClienteAppuntamenti /></Cli>} />
               <Route path="/portale/documenti" element={<Cli><ClienteDocumenti /></Cli>} />
               <Route path="/portale/comunicazioni" element={<Cli><ClienteComunicazioni /></Cli>} />

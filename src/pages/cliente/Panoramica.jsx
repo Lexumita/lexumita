@@ -1,9 +1,15 @@
 // src/pages/cliente/Panoramica.jsx
+//
+// Dashboard del portale cliente. Role-aware: per un cliente di studio legale
+// mostra pratiche; per un cliente di commercialista mostra mandati + scadenze
+// fiscali. Il tipo di studio è dedotto da useTipoStudio (ruolo del professionista
+// collegato via profiles.avvocato_id).
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { Calendar, FileText, MessageSquare, CreditCard, Clock } from 'lucide-react'
+import { useTipoStudio } from '@/hooks/useTipoStudio'
+import { Calendar, FileText, Briefcase, CalendarClock, MessageSquare, CreditCard, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const STATO_PRATICA = {
@@ -13,31 +19,33 @@ const STATO_PRATICA = {
     chiusa: { label: 'Chiusa', color: 'text-nebbia/30', bg: 'bg-white/5 border-white/5' },
 }
 
+function giorniAllaScadenza(iso) {
+    if (!iso) return null
+    const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+    const target = new Date(iso); target.setHours(0, 0, 0, 0)
+    return Math.round((target - oggi) / (1000 * 60 * 60 * 24))
+}
+
 export default function ClientePanoramica() {
     const { profile } = useAuth()
+    const { isCommercialista, labelProfBreve, loading: loadingTipo } = useTipoStudio()
     const [pratiche, setPratiche] = useState([])
+    const [mandati, setMandati] = useState([])
+    const [scadenze, setScadenze] = useState([])
     const [prossimo, setProssimo] = useState(null)
     const [fatture, setFatture] = useState([])
     const [tickets, setTickets] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        if (loadingTipo) return
         async function carica() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            const [
-                { data: pr },
-                { data: app },
-                { data: fatt },
-                { data: tks },
-            ] = await Promise.all([
-                supabase.from('pratiche')
-                    .select('id, titolo, stato, tipo, avvocato:avvocato_id(nome, cognome)')
-                    .eq('cliente_id', user.id)
-                    .order('created_at', { ascending: false }),
+            const [{ data: app }, { data: fatt }, { data: tks }] = await Promise.all([
                 supabase.from('appuntamenti')
-                    .select('id, titolo, tipo, data_ora_inizio, avvocato:avvocato_id(nome, cognome)')
+                    .select('id, titolo, tipo, data_ora_inizio, professionista:avvocato_id(nome, cognome)')
                     .eq('cliente_id', user.id)
                     .eq('stato', 'programmato')
                     .gte('data_ora_inizio', new Date().toISOString())
@@ -53,15 +61,35 @@ export default function ClientePanoramica() {
                     .order('updated_at', { ascending: false })
                     .limit(3),
             ])
-
-            setPratiche(pr ?? [])
             setProssimo(app?.[0] ?? null)
             setFatture(fatt ?? [])
             setTickets(tks ?? [])
+
+            if (isCommercialista) {
+                const [{ data: mand }, { data: scad }] = await Promise.all([
+                    supabase.from('mandati')
+                        .select('id, titolo, stato, tipo')
+                        .eq('cliente_id', user.id)
+                        .order('created_at', { ascending: false }),
+                    supabase.from('scadenze_mandato')
+                        .select('id, titolo, tipo, data_scadenza, stato')
+                        .eq('cliente_id', user.id)
+                        .neq('stato', 'completata')
+                        .order('data_scadenza', { ascending: true }),
+                ])
+                setMandati(mand ?? [])
+                setScadenze(scad ?? [])
+            } else {
+                const { data: pr } = await supabase.from('pratiche')
+                    .select('id, titolo, stato, tipo, professionista:avvocato_id(nome, cognome)')
+                    .eq('cliente_id', user.id)
+                    .order('created_at', { ascending: false })
+                setPratiche(pr ?? [])
+            }
             setLoading(false)
         }
         carica()
-    }, [])
+    }, [loadingTipo, isCommercialista])
 
     const fattureInAttesa = fatture.filter(f => f.stato === 'in_attesa')
 
@@ -69,13 +97,34 @@ export default function ClientePanoramica() {
         const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         return msgs[0]?.autore_tipo ?? null
     }
-    const nMessaggiNuovi = tickets.filter(t => t.stato === 'aperto' && getUltimoAutore(t) === 'avvocato').length
+    // "Nuovo" = ultimo messaggio non scritto dal cliente (vale per avvocato e commercialista)
+    const nMessaggiNuovi = tickets.filter(t => {
+        const a = getUltimoAutore(t)
+        return t.stato === 'aperto' && a && a !== 'cliente'
+    }).length
 
-    if (loading) return (
+    const scadenzeScadute = scadenze.filter(s => {
+        const gg = giorniAllaScadenza(s.data_scadenza)
+        return gg !== null && gg < 0
+    }).length
+
+    if (loading || loadingTipo) return (
         <div className="flex items-center justify-center py-40">
             <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
         </div>
     )
+
+    const kpis = isCommercialista ? [
+        { label: 'Mandati attivi', value: mandati.filter(m => m.stato === 'attivo').length, icon: Briefcase, color: 'text-oro', to: '/portale/mandati' },
+        { label: 'Scadenze da fare', value: scadenze.length, icon: CalendarClock, color: scadenzeScadute > 0 ? 'text-red-400' : 'text-salvia', to: '/portale/scadenze' },
+        { label: 'Messaggi nuovi', value: nMessaggiNuovi, icon: MessageSquare, color: nMessaggiNuovi > 0 ? 'text-oro' : 'text-nebbia/60', to: '/portale/comunicazioni' },
+        { label: 'Fatture aperte', value: fattureInAttesa.length, icon: CreditCard, color: fattureInAttesa.length > 0 ? 'text-amber-400' : 'text-nebbia/30', to: '/portale/fatture' },
+    ] : [
+        { label: 'Pratiche attive', value: pratiche.filter(p => p.stato !== 'chiusa').length, icon: FileText, color: 'text-oro', to: '/portale/pratiche' },
+        { label: 'Appuntamenti', value: prossimo ? 1 : 0, icon: Calendar, color: 'text-salvia', to: '/portale/appuntamenti' },
+        { label: 'Messaggi nuovi', value: nMessaggiNuovi, icon: MessageSquare, color: nMessaggiNuovi > 0 ? 'text-oro' : 'text-nebbia/60', to: '/portale/comunicazioni' },
+        { label: 'Fatture aperte', value: fattureInAttesa.length, icon: CreditCard, color: fattureInAttesa.length > 0 ? 'text-amber-400' : 'text-nebbia/30', to: '/portale/fatture' },
+    ]
 
     return (
         <div className="space-y-6">
@@ -101,12 +150,7 @@ export default function ClientePanoramica() {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                    { label: 'Pratiche attive', value: pratiche.filter(p => p.stato !== 'chiusa').length, icon: FileText, color: 'text-oro', to: '/portale/pratiche' },
-                    { label: 'Appuntamenti', value: prossimo ? 1 : 0, icon: Calendar, color: 'text-salvia', to: '/portale/appuntamenti' },
-                    { label: 'Messaggi nuovi', value: nMessaggiNuovi, icon: MessageSquare, color: nMessaggiNuovi > 0 ? 'text-oro' : 'text-nebbia/60', to: '/portale/comunicazioni' },
-                    { label: 'Fatture aperte', value: fattureInAttesa.length, icon: CreditCard, color: fattureInAttesa.length > 0 ? 'text-amber-400' : 'text-nebbia/30', to: '/portale/fatture' },
-                ].map(({ label, value, icon: Icon, color, to }) => (
+                {kpis.map(({ label, value, icon: Icon, color, to }) => (
                     <Link key={label} to={to} className="bg-slate border border-white/5 p-4 hover:border-oro/20 transition-all">
                         <Icon size={16} className={`${color} mb-2`} strokeWidth={1.5} />
                         <p className={`font-display text-3xl font-semibold ${color} mb-1`}>{value}</p>
@@ -134,8 +178,8 @@ export default function ClientePanoramica() {
                             </div>
                             <div>
                                 <p className="font-body text-sm font-medium text-nebbia">{prossimo.titolo}</p>
-                                {prossimo.avvocato && (
-                                    <p className="font-body text-xs text-nebbia/40 mt-0.5">Avv. {prossimo.avvocato.nome} {prossimo.avvocato.cognome}</p>
+                                {prossimo.professionista && (
+                                    <p className="font-body text-xs text-nebbia/40 mt-0.5">{labelProfBreve} {prossimo.professionista.nome} {prossimo.professionista.cognome}</p>
                                 )}
                                 <div className="flex items-center gap-1.5 mt-1.5">
                                     <Clock size={11} className="text-nebbia/30" />
@@ -151,32 +195,64 @@ export default function ClientePanoramica() {
                     )}
                 </div>
 
-                {/* Pratiche attive */}
-                <div className="bg-slate border border-white/5 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="section-label">Pratiche attive</p>
-                        <Link to="/portale/pratiche" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
-                    </div>
-                    <div className="space-y-2">
-                        {pratiche.filter(p => p.stato !== 'chiusa').length === 0
-                            ? <p className="font-body text-sm text-nebbia/30">Nessuna pratica attiva</p>
-                            : pratiche.filter(p => p.stato !== 'chiusa').slice(0, 3).map(p => {
-                                const st = STATO_PRATICA[p.stato] ?? STATO_PRATICA.in_corso
-                                return (
-                                    <div key={p.id} className={`border p-3 ${st.bg}`}>
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-body text-sm font-medium text-nebbia">{p.titolo}</p>
-                                            <span className={`font-body text-xs ${st.color}`}>{st.label}</span>
+                {/* Destra: pratiche (avvocato) o scadenze (commercialista) */}
+                {isCommercialista ? (
+                    <div className="bg-slate border border-white/5 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="section-label">Prossime scadenze</p>
+                            <Link to="/portale/scadenze" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
+                        </div>
+                        <div className="space-y-2">
+                            {scadenze.length === 0
+                                ? <p className="font-body text-sm text-nebbia/30">Nessuna scadenza in arrivo</p>
+                                : scadenze.slice(0, 3).map(s => {
+                                    const gg = giorniAllaScadenza(s.data_scadenza)
+                                    const scaduta = gg !== null && gg < 0
+                                    const urgente = gg !== null && gg >= 0 && gg <= 7
+                                    return (
+                                        <div key={s.id} className={`border p-3 ${scaduta ? 'bg-red-900/10 border-red-500/20' : urgente ? 'bg-amber-900/10 border-amber-500/20' : 'bg-petrolio/40 border-white/5'}`}>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <p className="font-body text-sm font-medium text-nebbia truncate">{s.titolo}</p>
+                                                <span className={`font-body text-xs shrink-0 ${scaduta ? 'text-red-400' : urgente ? 'text-amber-400' : 'text-nebbia/40'}`}>
+                                                    {gg !== null && (scaduta ? `Scaduta` : gg === 0 ? 'Oggi' : `Tra ${gg} gg`)}
+                                                </span>
+                                            </div>
+                                            <p className="font-body text-xs text-nebbia/40 mt-0.5">
+                                                {new Date(s.data_scadenza).toLocaleDateString('it-IT')}{s.tipo ? ` · ${s.tipo}` : ''}
+                                            </p>
                                         </div>
-                                        <p className="font-body text-xs text-nebbia/40 mt-0.5">
-                                            {p.tipo ?? '—'}{p.avvocato ? ` · Avv. ${p.avvocato.nome} ${p.avvocato.cognome}` : ''}
-                                        </p>
-                                    </div>
-                                )
-                            })
-                        }
+                                    )
+                                })
+                            }
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="bg-slate border border-white/5 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="section-label">Pratiche attive</p>
+                            <Link to="/portale/pratiche" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
+                        </div>
+                        <div className="space-y-2">
+                            {pratiche.filter(p => p.stato !== 'chiusa').length === 0
+                                ? <p className="font-body text-sm text-nebbia/30">Nessuna pratica attiva</p>
+                                : pratiche.filter(p => p.stato !== 'chiusa').slice(0, 3).map(p => {
+                                    const st = STATO_PRATICA[p.stato] ?? STATO_PRATICA.in_corso
+                                    return (
+                                        <div key={p.id} className={`border p-3 ${st.bg}`}>
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-body text-sm font-medium text-nebbia">{p.titolo}</p>
+                                                <span className={`font-body text-xs ${st.color}`}>{st.label}</span>
+                                            </div>
+                                            <p className="font-body text-xs text-nebbia/40 mt-0.5">
+                                                {p.tipo ?? '—'}{p.professionista ? ` · ${labelProfBreve} ${p.professionista.nome} ${p.professionista.cognome}` : ''}
+                                            </p>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Ultime comunicazioni */}
@@ -191,7 +267,7 @@ export default function ClientePanoramica() {
                     <div className="space-y-2">
                         {tickets.map(t => {
                             const ultimoAutore = getUltimoAutore(t)
-                            const nonLetto = t.stato === 'aperto' && ultimoAutore === 'avvocato'
+                            const nonLetto = t.stato === 'aperto' && ultimoAutore && ultimoAutore !== 'cliente'
                             return (
                                 <Link key={t.id} to={`/portale/comunicazioni`}
                                     className="flex items-center justify-between p-3 border border-white/5 hover:border-oro/20 transition-all">

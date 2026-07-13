@@ -13,6 +13,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import GestioneMandati from '@/components/commercialista/GestioneMandati'
+import DocumentiPortale from '@/components/shared/DocumentiPortale'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -432,9 +433,13 @@ function TabDocumenti({ clienteId }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            {/* Canale portale: pubblica/condividi documenti col cliente */}
+            <DocumentiPortale clienteId={clienteId} />
+
+            {/* Archivio documentale interno (indicizzato, collegato alle pratiche) */}
+            <div className="flex justify-between items-center pt-2">
                 <p className="font-body text-sm text-nebbia/40">
-                    {documenti.length} {documenti.length === 1 ? 'documento' : 'documenti'}
+                    {documenti.length} {documenti.length === 1 ? 'documento in archivio' : 'documenti in archivio'}
                     {documenti.length > 0 && (
                         <span className="ml-2 text-nebbia/25">
                             · {documenti.filter(d => d.ocr_status === 'completed').length} indicizzati

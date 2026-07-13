@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTipoStudio } from '@/hooks/useTipoStudio'
 import logo from '@/assets/logo.png'
 import {
-  Home, FolderOpen, Calendar, FileText,
+  Home, FolderOpen, Briefcase, CalendarClock, Calendar, FileText,
   MessageSquare, CreditCard, User, LogOut, Menu
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 
-const NAV = [
-  { path: '/portale', label: 'Panoramica', icon: Home },
-  { path: '/portale/pratiche', label: 'Pratiche', icon: FolderOpen },
+// Menu comune a entrambi i tipi di studio
+const NAV_COMUNE = [
   { path: '/portale/appuntamenti', label: 'Appuntamenti', icon: Calendar },
   { path: '/portale/documenti', label: 'Documenti', icon: FileText },
   { path: '/portale/comunicazioni', label: 'Comunicazioni', icon: MessageSquare },
@@ -18,10 +18,24 @@ const NAV = [
   { path: '/portale/profilo', label: 'Profilo', icon: User },
 ]
 
+// Voci specifiche: pratiche (avvocato) vs mandati + scadenze (commercialista)
+const NAV_AVVOCATO = [{ path: '/portale/pratiche', label: 'Pratiche', icon: FolderOpen }]
+const NAV_COMMERCIALISTA = [
+  { path: '/portale/mandati', label: 'Mandati', icon: Briefcase },
+  { path: '/portale/scadenze', label: 'Scadenze', icon: CalendarClock },
+]
+
 export default function ClienteLayout({ children }) {
   const { profile, signOut } = useAuth()
+  const { isCommercialista } = useTipoStudio()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+
+  const NAV = [
+    { path: '/portale', label: 'Panoramica', icon: Home },
+    ...(isCommercialista ? NAV_COMMERCIALISTA : NAV_AVVOCATO),
+    ...NAV_COMUNE,
+  ]
 
   async function handleSignOut() {
     await signOut()
