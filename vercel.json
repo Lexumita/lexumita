@@ -1,4 +1,9 @@
 {
-  "cleanUrls": true,
-  "rewrites": [{ "source": "(.*)", "destination": "/index.html" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/per-avvocati", "destination": "/per-avvocati.html" },
+    { "source": "/per-commercialisti", "destination": "/per-commercialisti.html" },
+    { "source": "/contatti", "destination": "/contatti.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

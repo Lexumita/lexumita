@@ -11,9 +11,17 @@
 // riferimenti agli asset con hash) e per ogni rotta pubblica scriviamo un file
 // dist/<rotta>.html identico, ma con <title>/description/canonical/OG/Twitter
 // specifici della pagina. Su Vercel i file statici hanno precedenza sui rewrite,
-// e con `cleanUrls: true` (vercel.json) /per-commercialisti serve
-// per-commercialisti.html. Le rotte applicative (senza file) continuano a cadere
-// sul rewrite catch-all → index.html (SPA invariata).
+// e vercel.json mappa esplicitamente /per-commercialisti → /per-commercialisti.html
+// (rewrite dedicato per ogni pagina qui sotto). Le rotte applicative (senza file)
+// cadono sul rewrite catch-all → index.html (SPA invariata).
+//
+// ⚠️ NON usare `cleanUrls: true` in vercel.json: con la SPA romperebbe il fallback
+// (il rewrite catch-all → /index.html verrebbe 308-redirezionato a /, e ogni
+// rotta app profonda darebbe 404). Le URL pulite delle pagine vetrina si ottengono
+// coi rewrite espliciti in vercel.json.
+// ⚠️ SINCRONIZZAZIONE: se aggiungi una rotta a PAGES, aggiungi il rewrite
+// corrispondente in vercel.json (prima del catch-all), altrimenti la sua testata
+// social non viene servita.
 //
 // NB: è "head-only" — il <body> resta il mount della SPA. Serve alle anteprime
 // social e a dare a Google una testata corretta anche senza rendering JS. Non è
