@@ -109,8 +109,15 @@ export const GRUPPI_COMPETENZE = [
       { key: 'volontaria_giurisdizione', label: 'Volontaria giurisdizione',                     tipo: 'compensoUnico' },
       { key: 'procedimenti_monitori',    label: 'Procedimenti monitori (decreto ingiuntivo)',   tipo: 'compensoUnico' },
       { key: 'procedimenti_cautelari',   label: 'Procedimenti cautelari',                       tipo: 'scaglione' },
-      { key: 'esecuzioni',               label: 'Esecuzioni (mobiliare, immobiliare, terzi)',   tipo: 'scaglione' },
+      { key: 'istruzione_preventiva',    label: 'Istruzione preventiva',                        tipo: 'scaglione' },
+      { key: 'precetto',                 label: 'Atto di precetto',                             tipo: 'compensoUnico' },
       { key: 'sfratti',                  label: 'Convalida di sfratto / licenza',               tipo: 'scaglione' },
+      { key: 'esecuzioni',               label: 'Esecuzioni mobiliari',                         tipo: 'scaglione' },
+      { key: 'esecuzioni_presso_terzi',  label: 'Esecuzioni presso terzi / consegna e rilascio',tipo: 'scaglione' },
+      { key: 'esecuzioni_immobiliari',   label: 'Esecuzioni immobiliari',                       tipo: 'scaglione' },
+      { key: 'iscrizione_ipotecaria',    label: 'Iscrizione ipotecaria / affari tavolari',      tipo: 'compensoUnico' },
+      { key: 'fallimento',               label: 'Dichiarazione di fallimento',                  tipo: 'compensoUnico' },
+      { key: 'accertamento_passivo',     label: 'Accertamento del passivo (fall./liq. giud.)',  tipo: 'scaglione' },
     ],
   },
   {
@@ -125,6 +132,14 @@ export const GRUPPI_COMPETENZE = [
     voci: [
       { key: 'cgt_primo_grado',   label: 'Corte di Giustizia Tributaria — primo grado',   tipo: 'scaglione' },
       { key: 'cgt_secondo_grado', label: 'Corte di Giustizia Tributaria — secondo grado', tipo: 'scaglione' },
+    ],
+  },
+  {
+    gruppo: 'Altre giurisdizioni',
+    voci: [
+      { key: 'corte_dei_conti',        label: 'Corte dei Conti',                               tipo: 'scaglione' },
+      { key: 'corte_costituzionale_ue',label: 'Corte Cost. / Corte Europea / Corte Giust. UE', tipo: 'scaglione' },
+      { key: 'arbitrato',              label: 'Arbitrato',                                     tipo: 'compensoUnico' },
     ],
   },
   {
