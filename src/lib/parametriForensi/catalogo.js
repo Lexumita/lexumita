@@ -57,10 +57,11 @@ export const FASI_COMPENSO = [
   { id: 'compenso', label: 'Compenso', sigla: 'Compenso' },
 ]
 
-// Fasi da usare per una competenza, in base al suo tipo.
+// Fasi da usare per una competenza, in base al suo tipo. Le tabelle a compenso
+// unico (stragiudiziale, monitori, volontaria) usano la "fase" sintetica.
 export function getFasi(competenzaKey) {
   const c = getCompetenza(competenzaKey)
-  return c?.tipo === 'stragiudiziale' ? FASI_COMPENSO : FASI
+  return (c?.tipo === 'stragiudiziale' || c?.tipo === 'compensoUnico') ? FASI_COMPENSO : FASI
 }
 
 export const LIVELLI = [
@@ -105,8 +106,8 @@ export const GRUPPI_COMPETENZE = [
     gruppo: 'Civile — materie e riti speciali',
     voci: [
       { key: 'lavoro',                   label: 'Cause di lavoro e previdenza',                 tipo: 'scaglione' },
-      { key: 'volontaria_giurisdizione', label: 'Volontaria giurisdizione',                     tipo: 'scaglione' },
-      { key: 'procedimenti_monitori',    label: 'Procedimenti monitori (decreto ingiuntivo)',   tipo: 'scaglione' },
+      { key: 'volontaria_giurisdizione', label: 'Volontaria giurisdizione',                     tipo: 'compensoUnico' },
+      { key: 'procedimenti_monitori',    label: 'Procedimenti monitori (decreto ingiuntivo)',   tipo: 'compensoUnico' },
       { key: 'procedimenti_cautelari',   label: 'Procedimenti cautelari',                       tipo: 'scaglione' },
       { key: 'esecuzioni',               label: 'Esecuzioni (mobiliare, immobiliare, terzi)',   tipo: 'scaglione' },
       { key: 'sfratti',                  label: 'Convalida di sfratto / licenza',               tipo: 'scaglione' },

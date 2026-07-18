@@ -51,9 +51,10 @@ export function valoreMedioFase(competenzaKey, versione, scaglioneId, faseId) {
     return tab.scaglioni?.[scaglioneId]?.[faseId] ?? null
   }
   // Scaglione calcolato (> € 520.000): progressione art. 6 solo per le tabelle a
-  // scaglione. La stragiudiziale, oltre € 520.000, segue una regola a percentuale
-  // (non ancora caricata) → non disponibile.
-  if (competenza?.tipo === 'stragiudiziale') return null
+  // scaglione (civile/amm/tributario). Le tabelle a compenso unico
+  // (stragiudiziale/monitori/volontaria), oltre € 520.000, seguono regole
+  // proprie non ancora caricate → non disponibile.
+  if (competenza?.tipo !== 'scaglione') return null
   const base = tab.scaglioni?.[SCAGLIONE_BASE_ID]?.[faseId]
   if (base == null) return null
   const k = scaglioniComputatiOltreBase(scaglioneId)
@@ -128,9 +129,9 @@ export function calcolaParcella(input) {
     const valore = r2(medio * fattoreLivello(livello, versione))
     compensoFasi += valore
     const livLabel = LIVELLI.find(l => l.id === livello)?.label ?? 'Medio'
-    const descr = competenza.tipo === 'penale'
-      ? `Compenso — ${f.label} (${livLabel}) · ${competenza.label}`
-      : `Compenso — ${f.label} (${livLabel}) · ${competenza.label}, ${scaglione.label}`
+    const faseTxt = f.id === 'compenso' ? 'Compenso' : `Compenso — ${f.label}`
+    const scagTxt = competenza.tipo === 'penale' ? competenza.label : `${competenza.label}, ${scaglione.label}`
+    const descr = `${faseTxt} (${livLabel}) · ${scagTxt}`
     righe.push({ descrizione: descr, quantita: 1, prezzo_unitario: valore })
     dettaglioFasi.push({ faseId: f.id, label: f.label, livello, valore })
   }

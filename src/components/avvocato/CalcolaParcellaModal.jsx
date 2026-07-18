@@ -203,7 +203,7 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
 
               {/* Fasi */}
               <div className="border-t border-white/5 pt-4">
-                <p className="section-label mb-3">{competenza?.tipo === 'stragiudiziale' ? 'Compenso' : 'Fasi'}</p>
+                <p className="section-label mb-3">{fasiCompetenza[0]?.id === 'compenso' ? 'Compenso' : 'Fasi'}</p>
                 <div className="space-y-2">
                   {fasiCompetenza.map(f => {
                     const disp = disponibili.includes(f.id)

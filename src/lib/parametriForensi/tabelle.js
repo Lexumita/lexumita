@@ -11,10 +11,7 @@
 // Forma:
 //  - scaglione (civile/amm/tributario): { scaglioni: { <scaglioneId>: {studio,introduttiva,istruttoria,decisionale} } }  (solo i 6 tabulati fino a 520k)
 //  - penale: { tipo:'penale', valoriMedi: {studio,introduttiva,istruttoria,decisionale} }
-//  - stragiudiziale: { tipo:'stragiudiziale', scaglioni: { <scaglioneId>: {compenso} } }
-//
-// NON caricate (struttura "fase unica" anomala, da gestire a parte):
-// procedimenti_monitori, volontaria_giurisdizione.
+//  - compensoUnico / stragiudiziale: { tipo, scaglioni: { <scaglioneId>: {compenso} } }  (fase unica; "fino a €5.200" = fino_1100 e da_1101_5200)
 
 export const TABELLE = {
   '2022': {
@@ -612,6 +609,52 @@ export const TABELLE = {
           compenso: 6164
         }
       }
+    },
+    procedimenti_monitori: {
+      tipo: "compensoUnico",
+      scaglioni: {
+        fino_1100: {
+          compenso: 473
+        },
+        da_1101_5200: {
+          compenso: 473
+        },
+        da_5201_26000: {
+          compenso: 567
+        },
+        da_26001_52000: {
+          compenso: 1370
+        },
+        da_52001_260000: {
+          compenso: 2242
+        },
+        da_260001_520000: {
+          compenso: 4394
+        }
+      }
+    },
+    volontaria_giurisdizione: {
+      tipo: "compensoUnico",
+      scaglioni: {
+        fino_1100: {
+          compenso: 425
+        },
+        da_1101_5200: {
+          compenso: 425
+        },
+        da_5201_26000: {
+          compenso: 1418
+        },
+        da_26001_52000: {
+          compenso: 2336
+        },
+        da_52001_260000: {
+          compenso: 3329
+        },
+        da_260001_520000: {
+          compenso: 4536
+        }
+      }
     }
   },
 }
@@ -758,6 +801,18 @@ export const TABELLE_META = {
       confidenza: "high",
       fonte: "Allegato al DM 55/2014 come modificato dal DM 147/2022 (Gazzetta Ufficiale n. 236 dell'08/10/2022, in vigore dal 23/10/2022), Tabella 25 \"Prestazioni di assiste",
       validataGU: false
+    },
+    procedimenti_monitori: {
+      confidenza: "high",
+      fonte: "Procedimenti monitori (decreto ingiuntivo) — Tab. DM 55/2014 agg. DM 147/2022; compenso unico, triangolato su fonti reputate.",
+      validataGU: false,
+      note: "Compenso unico (fase monitoria). L'opposizione a d.i. segue la tabella cognizione ordinaria."
+    },
+    volontaria_giurisdizione: {
+      confidenza: "high",
+      fonte: "Volontaria giurisdizione — Tab. 7 DM 55/2014 agg. DM 147/2022; compenso unico onnicomprensivo; verify su fonte primaria G.U. 236/2022.",
+      validataGU: false,
+      note: "Compenso unico onnicomprensivo per l'intero procedimento."
     }
   },
 }
