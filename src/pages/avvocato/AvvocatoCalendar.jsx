@@ -251,6 +251,8 @@ export default function AvvocatoCalendar() {
       if (error) throw new Error(error.message)
       setForm(formVuoto); setShowNew(false)
       await caricaAppuntamenti()
+      // Sync su Google Calendar (best-effort, non blocca l'UI se non collegato)
+      supabase.functions.invoke('google-calendar-sync').catch(() => { })
     } catch (err) { setErrore(err.message) }
     finally { setSalvando(false) }
   }
@@ -258,6 +260,7 @@ export default function AvvocatoCalendar() {
   async function cambiaStato(id, nuovoStato) {
     await supabase.from('appuntamenti').update({ stato: nuovoStato }).eq('id', id)
     await caricaAppuntamenti()
+    supabase.functions.invoke('google-calendar-sync').catch(() => { })
   }
 
   const righe = appuntamenti
