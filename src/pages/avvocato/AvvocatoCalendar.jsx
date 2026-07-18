@@ -1,7 +1,7 @@
 // src/pages/avvocato/Calendario.jsx
 
 import { useState, useEffect, useCallback } from 'react'
-import { MapPin, Video, Phone, Calendar, ChevronLeft, ChevronRight, X, Check, Plus, Clock, Search, AlertTriangle } from 'lucide-react'
+import { MapPin, Video, Phone, Calendar, ChevronLeft, ChevronRight, X, Check, Plus, Clock, Search, AlertTriangle, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
@@ -76,6 +76,9 @@ export default function AvvocatoCalendar() {
   const [showNew, setShowNew] = useState(false)
   const [expandedEvent, setExpandedEvent] = useState(null)
   const [filtroAvv, setFiltroAvv] = useState('')
+
+  const [mostraColleghi, setMostraColleghi] = useState(false)
+  const [eventiColleghi, setEventiColleghi] = useState([])
 
   const [tabellaSearch, setTabellaSearch] = useState('')
   const [tabellaFrom, setTabellaFrom] = useState('')
@@ -174,6 +177,20 @@ export default function AvvocatoCalendar() {
 
   useEffect(() => { caricaAppuntamenti() }, [caricaAppuntamenti])
 
+  // Eventi dei colleghi (stesso studio) che hanno scelto una visibilità condivisa
+  useEffect(() => {
+    async function caricaColleghi() {
+      if (!mostraColleghi) { setEventiColleghi([]); return }
+      const y = currentDate.getFullYear(), m = currentDate.getMonth()
+      const da = new Date(y, m, 1).toISOString()
+      const a = new Date(y, m + 1, 0, 23, 59, 59).toISOString()
+      const { data } = await supabase.rpc('eventi_colleghi', { p_da: da, p_a: a })
+      const idsSet = new Set(ids)
+      setEventiColleghi((data ?? []).filter(e => !idsSet.has(e.proprietario_id)))
+    }
+    caricaColleghi()
+  }, [mostraColleghi, currentDate, ids])
+
   const anno = currentDate.getFullYear()
   const mese = currentDate.getMonth()
   const primo = new Date(anno, mese, 1)
@@ -193,6 +210,15 @@ export default function AvvocatoCalendar() {
   })
 
   const eventiGiorno = selectedDay ? (perGiorno[dateKey(selectedDay)] ?? []) : []
+
+  const colleghiPerGiorno = {}
+  eventiColleghi.forEach(e => {
+    const k = dataDa(e.data_ora_inizio)
+    if (!colleghiPerGiorno[k]) colleghiPerGiorno[k] = []
+    colleghiPerGiorno[k].push(e)
+  })
+  const eventiColleghiGiorno = selectedDay ? (colleghiPerGiorno[dateKey(selectedDay)] ?? []) : []
+
   const isToday = d => dateKey(d) === dateKey(today)
   const isSelected = d => selectedDay && dateKey(d) === dateKey(selectedDay)
 
@@ -260,7 +286,12 @@ export default function AvvocatoCalendar() {
           <p className="section-label mb-2">Agenda</p>
           <h1 className="font-display text-4xl font-light text-nebbia">Calendario <span className="text-oro-static italic">appuntamenti</span></h1>
         </div>
-        {isStudio && membri.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => setMostraColleghi(v => !v)}
+            className={`flex items-center gap-1.5 font-body text-xs px-3 py-1.5 border transition-colors ${mostraColleghi ? 'bg-salvia/15 border-salvia/40 text-salvia' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
+            <Users size={13} /> Colleghi
+          </button>
+          {isStudio && membri.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-body text-xs text-nebbia/30">Visualizza:</span>
             <button onClick={() => setFiltroAvv('')}
@@ -275,7 +306,8 @@ export default function AvvocatoCalendar() {
               </button>
             ))}
           </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -321,6 +353,7 @@ export default function AvvocatoCalendar() {
                     {nUd > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 border border-red-500/40 font-body">⚖ {nUd}</span>}
                     {nScad > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-500/40 font-body">⏱ {nScad}</span>}
                     {nApp > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-oro/15 text-oro border border-oro/30 font-body">{nApp} app.</span>}
+                    {mostraColleghi && (colleghiPerGiorno[k]?.length > 0) && <span className="text-[10px] px-1.5 py-0.5 bg-salvia/15 text-salvia border border-salvia/30 font-body">👥 {colleghiPerGiorno[k].length}</span>}
                     {isStudio && !filtroAvv && avvIds.length > 0 && (
                       <div className="flex gap-0.5 mt-0.5">
                         {avvIds.slice(0, 3).map((id, idx) => {
@@ -444,7 +477,7 @@ export default function AvvocatoCalendar() {
             )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {eventiGiorno.length === 0 ? (
+              {eventiGiorno.length === 0 && eventiColleghiGiorno.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Calendar size={28} className="text-nebbia/15 mb-3" />
                   <p className="font-body text-sm text-nebbia/30">Nessun appuntamento</p>
@@ -532,6 +565,26 @@ export default function AvvocatoCalendar() {
                   </div>
                 )
               })}
+
+              {mostraColleghi && eventiColleghiGiorno.length > 0 && (
+                <div className="pt-2 mt-1 border-t border-white/5 space-y-2">
+                  <p className="font-body text-[10px] text-salvia/70 uppercase tracking-widest">Colleghi</p>
+                  {[...eventiColleghiGiorno].sort((a, b) => (a.data_ora_inizio ?? '').localeCompare(b.data_ora_inizio ?? '')).map((e, i) => (
+                    <div key={`col-${i}`} className="border border-salvia/20 bg-salvia/5 p-3">
+                      <div className="flex items-start gap-2">
+                        <Users size={13} className="text-salvia/70 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body text-sm text-nebbia truncate">{e.titolo}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-body text-xs text-nebbia/40">{oraDa(e.data_ora_inizio)}{e.data_ora_fine ? ` – ${oraDa(e.data_ora_fine)}` : ''}</span>
+                            {e.proprietario_nome && <span className="font-body text-xs text-salvia/70 truncate">· {e.proprietario_nome}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

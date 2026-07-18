@@ -5,7 +5,7 @@
 // verso i colleghi. I token restano lato server; qui si legge solo lo stato.
 
 import { useState, useEffect } from 'react'
-import { Calendar, Check, AlertCircle, Link2, Unlink, Loader2, Users } from 'lucide-react'
+import { Calendar, Check, AlertCircle, Link2, Unlink, Loader2, Users, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const VISIBILITA = [
@@ -20,11 +20,27 @@ export default function BoxGoogleCalendar() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [banner, setBanner] = useState(null) // 'connesso' | 'errore'
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
 
   async function carica() {
     const { data } = await supabase.rpc('mio_calendar_stato')
     setStato(Array.isArray(data) && data.length > 0 ? data[0] : null)
     setLoading(false)
+  }
+
+  async function sincronizza(silenzioso = false) {
+    if (!silenzioso) { setSyncing(true); setSyncMsg('') }
+    try {
+      const { data, error } = await supabase.functions.invoke('google-calendar-sync')
+      if (error) throw new Error(error.message)
+      if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+      const tot = (data.creati ?? 0) + (data.aggiornati ?? 0)
+      setSyncMsg(tot > 0
+        ? `Sincronizzati ${tot} eventi${data.eliminati ? `, rimossi ${data.eliminati}` : ''}.`
+        : 'Agenda già aggiornata.')
+    } catch (e) { if (!silenzioso) setSyncMsg('Sincronizzazione non riuscita.') }
+    finally { if (!silenzioso) setSyncing(false) }
   }
 
   useEffect(() => {
@@ -37,7 +53,8 @@ export default function BoxGoogleCalendar() {
       url.searchParams.delete('calendar')
       window.history.replaceState({}, '', url.toString())
     }
-    carica()
+    // Al primo collegamento, avvia una sincronizzazione iniziale silenziosa
+    carica().then(() => { if (c === 'connesso') sincronizza(true) })
   }, [])
 
   async function collega() {
@@ -145,6 +162,18 @@ export default function BoxGoogleCalendar() {
               ))}
             </div>
           </div>
+
+          <div className="flex items-center gap-3 flex-wrap border-t border-white/5 pt-4">
+            <button onClick={() => sincronizza()} disabled={syncing}
+              className="font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-40 transition-colors">
+              {syncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Sincronizza ora
+            </button>
+            {syncMsg && <span className="font-body text-xs text-nebbia/40">{syncMsg}</span>}
+          </div>
+          <p className="font-body text-[11px] text-nebbia/30">
+            Appuntamenti, udienze e scadenze della tua agenda vengono copiati nel tuo Google Calendar.
+            La sincronizzazione avviene al collegamento e quando premi "Sincronizza ora".
+          </p>
         </>
       )}
 
