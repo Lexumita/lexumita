@@ -177,7 +177,7 @@ export function AvvocatoPraticheNuova() {
 
   const [form, setForm] = useState({
     titolo: '', cliente_id: clientePre, tipo: '', stato: 'aperta',
-    avvocato_id: '', collaboratori: [], note: ''
+    avvocato_id: '', collaboratori: [], note: '', ore_dedicate: ''
   })
   const [clienti, setClienti] = useState([])
   const [collabs, setCollabs] = useState([])
@@ -218,6 +218,7 @@ export function AvvocatoPraticheNuova() {
         titolo: form.titolo.trim(), cliente_id: form.cliente_id,
         avvocato_id: form.avvocato_id || user.id, tipo: form.tipo,
         stato: form.stato, note: form.note.trim() || null,
+        ore_dedicate: form.ore_dedicate ? Number(form.ore_dedicate) : null,
         creato_da: user.id, aggiornato_da: user.id,
       }).select().single()
       if (error) throw new Error(error.message)
@@ -320,6 +321,14 @@ export function AvvocatoPraticheNuova() {
               )}
             </>
           )}
+
+          <div>
+            <InputField label="Ore dedicate (opzionale)" type="number" step="0.5" min="0"
+              placeholder="Es. 12.5" {...f('ore_dedicate')} />
+            <p className="font-body text-xs text-nebbia/30 mt-2">
+              Ore che dedichi (o prevedi di dedicare) alla pratica. Campo libero, modificabile in qualsiasi momento dalla scheda pratica.
+            </p>
+          </div>
 
           <div>
             <TextareaField label="Note interne (opzionale)" rows={4}

@@ -238,6 +238,10 @@ export default function PraticaDettaglio() {
     const [mostraNoteModal, setMostraNoteModal] = useState(false)
     const [noteSalvate, setNoteSalvate] = useState(false)
 
+    const [oreDedicate, setOreDedicate] = useState('')
+    const [salvandoOre, setSalvandoOre] = useState(false)
+    const [oreSalvate, setOreSalvate] = useState(false)
+
     const [mostraEsito, setMostraEsito] = useState(false)
     const [esito, setEsito] = useState('')
     const [mostraEliminaModal, setMostraEliminaModal] = useState(false)
@@ -275,9 +279,9 @@ export default function PraticaDettaglio() {
 
             const { data: p } = await supabase
                 .from('pratiche')
-                .select('id, titolo, tipo, stato, note, note_esito, esito, created_at, prossima_udienza, avvocato_id, cliente_id, cliente:cliente_id(id, nome, cognome, ragione_sociale, tipo_soggetto), aggiornato_da, aggiornatore:aggiornato_da(nome, cognome), updated_at')
+                .select('id, titolo, tipo, stato, note, note_esito, esito, ore_dedicate, created_at, prossima_udienza, avvocato_id, cliente_id, cliente:cliente_id(id, nome, cognome, ragione_sociale, tipo_soggetto), aggiornato_da, aggiornatore:aggiornato_da(nome, cognome), updated_at')
                 .eq('id', id).single()
-            if (p) { setPratica(p); setNote(p.note ?? ''); setNoteEsito(p.note_esito ?? '') }
+            if (p) { setPratica(p); setNote(p.note ?? ''); setNoteEsito(p.note_esito ?? ''); setOreDedicate(p.ore_dedicate ?? '') }
 
             const { data: cp } = await supabase
                 .from('pratica_collaboratori')
@@ -312,6 +316,16 @@ export default function PraticaDettaglio() {
         setSalvando(false)
         setNoteSalvate(true)
         setTimeout(() => setNoteSalvate(false), 2500)
+    }
+
+    async function salvaOre() {
+        setSalvandoOre(true)
+        const val = oreDedicate === '' || oreDedicate === null ? null : Number(oreDedicate)
+        await supabase.from('pratiche').update({ ore_dedicate: val }).eq('id', id)
+        setPratica(prev => ({ ...prev, ore_dedicate: val }))
+        setSalvandoOre(false)
+        setOreSalvate(true)
+        setTimeout(() => setOreSalvate(false), 2000)
     }
 
     async function caricaDocumenti() {
@@ -571,6 +585,33 @@ export default function PraticaDettaglio() {
                                     <span className="font-body text-sm text-nebbia">{v}</span>
                                 </div>
                             ))}
+
+                            {/* Ore dedicate — campo libero editabile dall'avvocato */}
+                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Clock size={11} className="text-nebbia/30" /> Ore dedicate
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="number" step="0.5" min="0"
+                                        value={oreDedicate}
+                                        onChange={e => setOreDedicate(e.target.value)}
+                                        placeholder="—"
+                                        className="w-20 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-2.5 py-1 text-right outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                    />
+                                    <button
+                                        onClick={salvaOre}
+                                        disabled={salvandoOre}
+                                        className="font-body text-xs text-oro/70 border border-oro/25 px-2 py-1 hover:bg-oro/10 hover:text-oro transition-colors disabled:opacity-40"
+                                        title="Salva ore"
+                                    >
+                                        {salvandoOre
+                                            ? <span className="inline-block animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full align-middle" />
+                                            : oreSalvate ? <Check size={12} className="text-salvia" /> : 'Salva'}
+                                    </button>
+                                </div>
+                            </div>
+
                             {isStudio && (
                                 <div>
                                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-2">Collaboratori</p>
