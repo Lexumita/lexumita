@@ -11,9 +11,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { PageHeader, BackButton, InputField } from '@/components/shared'
 import {
     Plus, Trash2, AlertCircle, FileText, Building2, User,
-    Loader2, Save, FileSignature, ChevronDown, Info
+    Loader2, Save, FileSignature, ChevronDown, Info, Scale
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import CalcolaParcellaModal from '@/components/avvocato/CalcolaParcellaModal'
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -192,6 +193,7 @@ export default function AvvocatoFatturazioneNuova() {
     const [righe, setRighe] = useState([
         { descrizione: '', quantita: 1, prezzo_unitario: '' }
     ])
+    const [mostraCalcolatore, setMostraCalcolatore] = useState(false)
 
     // Caricamento iniziale
     useEffect(() => {
@@ -280,6 +282,22 @@ export default function AvvocatoFatturazioneNuova() {
 
     function rimuoviRiga(i) {
         setRighe(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev)
+    }
+
+    // Righe prodotte dal calcolatore parametri forensi (fasi + aumenti/riduzioni
+    // + spese generali). 'sostituisci' rimpiazza tutto; 'aggiungi' appende dopo
+    // aver scartato le righe vuote.
+    function inserisciRigheParcella(nuove, modalita) {
+        const mapped = nuove.map(r => ({
+            descrizione: r.descrizione,
+            quantita: r.quantita ?? 1,
+            prezzo_unitario: r.prezzo_unitario,
+        }))
+        setRighe(prev => {
+            if (modalita === 'sostituisci') return mapped
+            const nonVuote = prev.filter(r => r.descrizione?.trim())
+            return [...nonVuote, ...mapped]
+        })
     }
 
     // ─── Validazione ────────────────────────────────────────────
@@ -443,14 +461,23 @@ export default function AvvocatoFatturazioneNuova() {
 
                     {/* Step 3: Righe prestazioni */}
                     <div className="bg-slate border border-white/5 p-5 space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                             <p className="section-label !m-0">Prestazioni</p>
-                            <button
-                                onClick={aggiungiRiga}
-                                className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors"
-                            >
-                                <Plus size={12} /> Aggiungi riga
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setMostraCalcolatore(true)}
+                                    className="flex items-center gap-1.5 font-body text-xs text-petrolio bg-oro border border-oro px-3 py-1.5 hover:bg-oro/85 transition-colors"
+                                    title="Calcola il compenso sui parametri forensi (DM 55/2014)"
+                                >
+                                    <Scale size={12} /> Calcola parcella
+                                </button>
+                                <button
+                                    onClick={aggiungiRiga}
+                                    className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors"
+                                >
+                                    <Plus size={12} /> Aggiungi riga
+                                </button>
+                            </div>
                         </div>
 
                         <div className="space-y-3">
@@ -714,6 +741,14 @@ export default function AvvocatoFatturazioneNuova() {
                     />
                 </div>
             </div>
+
+            {/* Calcolatore parcella (parametri forensi DM 55/2014) */}
+            {mostraCalcolatore && (
+                <CalcolaParcellaModal
+                    onClose={() => setMostraCalcolatore(false)}
+                    onInserisci={inserisciRigheParcella}
+                />
+            )}
         </div>
     )
 }
