@@ -7,6 +7,7 @@ import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, ArrowRig
 import { supabase } from '@/lib/supabase'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
+import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
 
 function Campo({ label, value, placeholder = '—', type = 'text', disabled = false, editing, onChange }) {
     if (!editing || disabled) {
@@ -401,6 +402,9 @@ export default function AvvocatoProfilo() {
                     }
                 </div>
             )}
+
+            {/* GOOGLE CALENDAR */}
+            <BoxGoogleCalendar />
 
             {/* PASSWORD */}
             <div className="bg-slate border border-white/5 p-6 space-y-4">
