@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { escapeHtml } from '@/lib/escapeHtml'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
@@ -1195,9 +1196,10 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
     }
 
     function evidenziaParola(testo, cerca) {
-        if (!cerca?.trim() || !testo) return testo
+        const safe = escapeHtml(testo ?? '')
+        if (!cerca?.trim() || !testo) return safe
         const regex = new RegExp(`(${cerca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-        return testo.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
+        return safe.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
     }
 
     function docLabel(n) {
@@ -1668,9 +1670,10 @@ function TabLeggiDecreti() {
     }
 
     function evidenziaParola(testo, cerca) {
-        if (!cerca?.trim() || !testo) return testo
+        const safe = escapeHtml(testo ?? '')
+        if (!cerca?.trim() || !testo) return safe
         const regex = new RegExp(`(${cerca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-        return testo.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
+        return safe.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
     }
 
     function attoLabel(a) {

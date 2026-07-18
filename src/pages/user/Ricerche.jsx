@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { escapeHtml } from '@/lib/escapeHtml'
 import { useAuth } from '@/context/AuthContext'
 import ReactMarkdown from 'react-markdown'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
@@ -38,15 +39,16 @@ function coloreCasuale() {
 }
 
 function evidenziaParola(testo, cerca) {
-    if (!cerca?.trim() || !testo) return testo ?? ''
+    const safe = escapeHtml(testo ?? '')
+    if (!cerca?.trim() || !testo) return safe
     const escaped = cerca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const regex = new RegExp(`(${escaped})`, 'gi')
-    return testo.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
+    return safe.replace(regex, '<mark class="bg-oro/30 text-nebbia rounded px-0.5">$1</mark>')
 }
 
 function evidenziaParoleMultiple(testo, parole, classe = 'bg-salvia/30') {
-    if (!parole?.length || !testo) return testo ?? ''
-    let risultato = testo
+    let risultato = escapeHtml(testo ?? '')
+    if (!parole?.length || !testo) return risultato
     // Ordina dalle più lunghe alle più corte per evitare match parziali
     const ordinate = [...parole].sort((a, b) => b.length - a.length)
     for (const parola of ordinate) {

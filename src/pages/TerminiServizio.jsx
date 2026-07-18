@@ -129,7 +129,7 @@ export default function TerminiServizio() {
           <Sub title="4.2 Fatturazione">
             <p>
               Gli abbonamenti sono fatturati anticipatamente per il periodo selezionato
-              (mensile o annuale). I pagamenti sono elaborati tramite Stripe.
+              (mensile o annuale). I pagamenti sono elaborati tramite un fornitore di servizi di pagamento certificato.
               La fattura viene emessa automaticamente al momento del pagamento.
             </p>
           </Sub>

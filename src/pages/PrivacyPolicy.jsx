@@ -115,7 +115,7 @@ export default function PrivacyPolicy() {
                             {
                                 finalita: 'Fatturazione e adempimenti fiscali',
                                 base: 'Obbligo legale (art. 6.1.c GDPR)',
-                                desc: 'Emissione di fatture, gestione dei pagamenti tramite Stripe, conservazione della documentazione contabile secondo la legge svizzera e italiana.'
+                                desc: 'Emissione di fatture, gestione dei pagamenti tramite un fornitore di servizi di pagamento, conservazione della documentazione contabile secondo la legge svizzera e italiana.'
                             },
                             {
                                 finalita: 'Sicurezza della piattaforma',
@@ -154,17 +154,19 @@ export default function PrivacyPolicy() {
                         esclusivamente per le finalità indicate:
                     </p>
                     <ul className="list-disc list-inside space-y-2 pl-2">
-                        <li><span className="text-nebbia/80">Supabase Inc.</span> — infrastruttura cloud, database e autenticazione (USA, con garanzie adeguate)</li>
-                        <li><span className="text-nebbia/80">Stripe Inc.</span> — elaborazione pagamenti (USA, con garanzie adeguate)</li>
-                        <li><span className="text-nebbia/80">Anthropic PBC</span> — elaborazione AI per le funzionalità Lex (USA, con garanzie adeguate)</li>
-                        <li><span className="text-nebbia/80">OpenAI LLC</span> — generazione di embeddings per la ricerca semantica (USA, con garanzie adeguate)</li>
-                        <li><span className="text-nebbia/80">Postmark/Wildbit</span> — invio email transazionali (USA, con garanzie adeguate)</li>
+                        <li><span className="text-nebbia/80">Fornitori di infrastruttura cloud, database e autenticazione</span> — hosting, archiviazione dei dati e gestione degli accessi (UE/USA, con garanzie adeguate)</li>
+                        <li><span className="text-nebbia/80">Fornitori di servizi di pagamento</span> — elaborazione delle transazioni e fatturazione (USA, con garanzie adeguate)</li>
+                        <li><span className="text-nebbia/80">Fornitori di posta elettronica transazionale</span> — invio di email di servizio e notifiche (USA, con garanzie adeguate)</li>
+                        <li><span className="text-nebbia/80">Fornitori di servizi di intelligenza artificiale</span> — riconoscimento ottico dei documenti, elaborazione del linguaggio naturale e generazione di rappresentazioni semantiche per le funzionalità dell'assistente e della ricerca (UE/USA, con garanzie adeguate); i contenuti trasmessi sono esclusi dall'addestramento dei modelli</li>
+                        <li><span className="text-nebbia/80">Consulenti professionali</span> — consulenti legali, fiscali e revisori, vincolati a obblighi di riservatezza, ove necessario</li>
                         <li><span className="text-nebbia/80">Autorità competenti</span> — su richiesta legittima di autorità giudiziarie o amministrative</li>
                     </ul>
                     <p>
                         Tutti i fornitori di servizi sono vincolati da accordi di trattamento dei dati (DPA)
                         conformi al GDPR. Per i trasferimenti verso paesi terzi (in particolare USA)
                         vengono adottate le Clausole Contrattuali Standard approvate dalla Commissione Europea.
+                        L'elenco nominativo e aggiornato dei responsabili del trattamento è disponibile
+                        su richiesta scritta al Titolare, ai recapiti indicati nella presente informativa.
                     </p>
                 </Section>
 

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import { supabase } from '@/lib/supabase'
+import { escapeHtml } from '@/lib/escapeHtml'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 
 const MAX_FILES = 100
@@ -34,8 +35,8 @@ function isPdf(file) {
 }
 
 function evidenziaParole(testo, parole, classe = 'bg-salvia/30') {
-    if (!parole?.length || !testo) return testo ?? ''
-    let risultato = testo
+    let risultato = escapeHtml(testo ?? '')
+    if (!parole?.length || !testo) return risultato
     const ordinate = [...parole].sort((a, b) => b.length - a.length)
     for (const parola of ordinate) {
         if (!parola?.trim()) continue
