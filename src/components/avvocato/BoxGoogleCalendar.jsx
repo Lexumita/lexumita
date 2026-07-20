@@ -22,6 +22,7 @@ export default function BoxGoogleCalendar() {
   const [banner, setBanner] = useState(null) // 'connesso' | 'errore'
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
+  const [countdown, setCountdown] = useState('')
 
   async function carica() {
     const { data } = await supabase.rpc('mio_calendar_stato')
@@ -56,6 +57,24 @@ export default function BoxGoogleCalendar() {
     // Al primo collegamento, avvia una sincronizzazione iniziale silenziosa
     carica().then(() => { if (c === 'connesso') sincronizza(true) })
   }, [])
+
+  // Countdown alla prossima sincronizzazione automatica con Google.
+  // Il cron gira ogni 5 minuti (minuti :00, :05, :10, ...): mostra il tempo
+  // mancante al prossimo giro.
+  useEffect(() => {
+    if (!stato?.connesso) { setCountdown(''); return }
+    function tick() {
+      const now = new Date()
+      const next = new Date(now)
+      next.setSeconds(0, 0)
+      next.setMinutes(Math.floor(now.getMinutes() / 5) * 5 + 5)
+      const s = Math.max(0, Math.round((next.getTime() - now.getTime()) / 1000))
+      setCountdown(`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`)
+    }
+    tick()
+    const iv = setInterval(tick, 1000)
+    return () => clearInterval(iv)
+  }, [stato?.connesso])
 
   async function collega() {
     setBusy(true); setErr('')
@@ -170,9 +189,15 @@ export default function BoxGoogleCalendar() {
             </button>
             {syncMsg && <span className="font-body text-xs text-nebbia/40">{syncMsg}</span>}
           </div>
+          {countdown && (
+            <p className="font-body text-[11px] text-nebbia/40 flex items-center gap-1.5">
+              <RefreshCw size={10} className="text-nebbia/30" />
+              Prossima sincronizzazione automatica con Google tra <span className="text-oro/80 tabular-nums">{countdown}</span>
+            </p>
+          )}
           <p className="font-body text-[11px] text-nebbia/30">
-            Appuntamenti, udienze e scadenze della tua agenda vengono copiati nel tuo Google Calendar.
-            La sincronizzazione avviene al collegamento e quando premi "Sincronizza ora".
+            Appuntamenti, udienze e scadenze della tua agenda vengono copiati nel tuo Google Calendar:
+            i nuovi eventi vengono inviati subito, e comunque risincronizzati automaticamente ogni 5 minuti.
           </p>
         </>
       )}

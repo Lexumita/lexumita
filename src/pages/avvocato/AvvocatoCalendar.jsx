@@ -79,6 +79,7 @@ export default function AvvocatoCalendar() {
 
   const [mostraColleghi, setMostraColleghi] = useState(false)
   const [eventiColleghi, setEventiColleghi] = useState([])
+  const [refreshTick, setRefreshTick] = useState(0)
 
   const [tabellaSearch, setTabellaSearch] = useState('')
   const [tabellaFrom, setTabellaFrom] = useState('')
@@ -177,6 +178,16 @@ export default function AvvocatoCalendar() {
 
   useEffect(() => { caricaAppuntamenti() }, [caricaAppuntamenti])
 
+  // Auto-refresh ogni 60s: tiene aggiornati i propri eventi e quelli dei colleghi
+  // mentre il calendario è aperto (agisce sul calendario LEXUM, non su Google).
+  useEffect(() => {
+    const iv = setInterval(() => {
+      caricaAppuntamenti()
+      setRefreshTick(t => t + 1)
+    }, 60000)
+    return () => clearInterval(iv)
+  }, [caricaAppuntamenti])
+
   // Eventi dei colleghi (stesso studio) che hanno scelto una visibilità condivisa
   useEffect(() => {
     async function caricaColleghi() {
@@ -189,7 +200,7 @@ export default function AvvocatoCalendar() {
       setEventiColleghi((data ?? []).filter(e => !idsSet.has(e.proprietario_id)))
     }
     caricaColleghi()
-  }, [mostraColleghi, currentDate, ids])
+  }, [mostraColleghi, currentDate, ids, refreshTick])
 
   const anno = currentDate.getFullYear()
   const mese = currentDate.getMonth()
