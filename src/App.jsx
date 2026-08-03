@@ -11,6 +11,7 @@ import Verifica2FA from './pages/auth/Verifica2FA'
 import AdminLayout from './components/layouts/AdminLayout'
 import AvvocatoLayout from './components/layouts/AvvocatoLayout'
 import CommercialistaLayout from './components/layouts/CommercialistaLayout'
+import CommercialeLayout from './components/layouts/CommercialeLayout'
 import ClienteLayout from './components/layouts/ClienteLayout'
 import UserLayout from './components/layouts/UserLayout'
 import Navbar from './components/Navbar'
@@ -36,7 +37,8 @@ import AdminUtenti from './pages/admin/Utenti'
 import AdminUtentiDettaglio from './pages/admin/UtentiDettaglio'
 import { AdminProdotti, AdminProdottiForm } from './pages/admin/Prodotti'
 import { AdminSentenze, AdminSentenzeDettaglio } from './pages/admin/Sentenze'
-import { AdminPagamenti, AdminCompensi } from './pages/admin/Pagamenti'
+import { AdminPagamenti } from './pages/admin/Pagamenti'
+import AdminCompensi from './pages/admin/Compensi'
 import { AdminAssistenza, AdminAssistenzaDettaglio } from './pages/admin/Assistenza'
 import AdminNormativa from './pages/admin/Normativa'
 import AdminNormativaDettaglio from './pages/admin/NormativaDettaglio'
@@ -44,6 +46,13 @@ import LexLogs from './pages/admin/LexLogs'
 import MailLog from '@/pages/admin/MailLog'
 import AdminCalendario from './pages/admin/Calendario'
 import AdminProfilo from './pages/admin/Profilo'
+
+// ── Commerciale (venditore) ──
+import CommercialeDashboard from './pages/commerciale/Dashboard'
+import CommercialeProvvigioni from './pages/commerciale/Provvigioni'
+import CommercialeClienti from './pages/commerciale/Clienti'
+import CommercialeCalendario from './pages/commerciale/Calendario'
+import CommercialeProfilo from './pages/commerciale/Profilo'
 
 // ── Commercialista ──
 import CommercialistaDashboard from './pages/commercialista/Dashboard'
@@ -143,6 +152,9 @@ function DashboardRuolo() {
 function Pro({ children }) { return <ProtectedRoute roles={['avvocato', 'commercialista']}><ProLayout>{children}</ProLayout></ProtectedRoute> }
 // Comm = rotte esclusive del commercialista (banco di lavoro / mandati)
 function Comm({ children }) { return <ProtectedRoute roles={['commercialista']}><CommercialistaLayout>{children}</CommercialistaLayout></ProtectedRoute> }
+// Vend = rotte del COMMERCIALE (venditore). Da non confondere con Comm:
+// il commerciale vende Lexum, il commercialista è un cliente professionista.
+function Vend({ children }) { return <ProtectedRoute roles={['commerciale']}><CommercialeLayout>{children}</CommercialeLayout></ProtectedRoute> }
 
 // ─── Banca dati condivisa user + professionisti ───
 // Il componente BancaDati gestisce internamente la differenza di ruolo
@@ -184,7 +196,7 @@ export default function App() {
               <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
               <Route path="/email-verificata" element={<AuthLayout><EmailVerificata /></AuthLayout>} />
               <Route path="/verifica-2fa" element={
-                <ProtectedRoute roles={['admin', 'avvocato', 'commercialista', 'cliente', 'user']}>
+                <ProtectedRoute roles={['admin', 'avvocato', 'commercialista', 'commerciale', 'cliente', 'user']}>
                   <Verifica2FA />
                 </ProtectedRoute>
               } />
@@ -212,6 +224,16 @@ export default function App() {
               <Route path="/admin/lex-logs" element={<Adm><LexLogs /></Adm>} />
               <Route path="/admin/calendario" element={<Adm><AdminCalendario /></Adm>} />
               <Route path="/admin/profilo" element={<Adm><AdminProfilo /></Adm>} />
+
+              {/* ═══════════════════════════════════════════════════════
+                COMMERCIALE (venditore con codice personale + provvigioni)
+                ═══════════════════════════════════════════════════════ */}
+              <Route path="/commerciale" element={<Navigate to="/commerciale/dashboard" replace />} />
+              <Route path="/commerciale/dashboard" element={<Vend><CommercialeDashboard /></Vend>} />
+              <Route path="/commerciale/provvigioni" element={<Vend><CommercialeProvvigioni /></Vend>} />
+              <Route path="/commerciale/clienti" element={<Vend><CommercialeClienti /></Vend>} />
+              <Route path="/commerciale/calendario" element={<Vend><CommercialeCalendario /></Vend>} />
+              <Route path="/commerciale/profilo" element={<Vend><CommercialeProfilo /></Vend>} />
 
               {/* ═══════════════════════════════════════════════════════
                 PROFESSIONISTI (avvocato + commercialista)

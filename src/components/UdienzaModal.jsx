@@ -70,6 +70,25 @@ const STATO_COLORS = {
     red: 'bg-red-500/10 border-red-500/30 text-red-400',
 }
 
+// Converte un timestamp ISO (timestamptz/UTC) nelle componenti data/ora LOCALI.
+// Necessario perché il salvataggio fa new Date(`${data}T${ora}`).toISOString()
+// (locale → UTC): senza riconvertire in locale al caricamento, lo slice della
+// stringa mostrerebbe l'ora UTC, spostando l'orario a ogni apertura in modifica.
+function isoAData(iso) {
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return ''
+    const p = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+function isoAOra(iso, fallback = '09:00') {
+    if (!iso) return fallback
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return fallback
+    const p = n => String(n).padStart(2, '0')
+    return `${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 /**
  * Modale per creare o modificare un'udienza.
  *
@@ -90,8 +109,8 @@ export default function UdienzaModal({
 
     // ── Stato form ──
     const [form, setForm] = useState({
-        data: udienza?.data_ora?.slice(0, 10) ?? '',
-        ora: udienza?.data_ora?.slice(11, 16) ?? '09:00',
+        data: isoAData(udienza?.data_ora),
+        ora: isoAOra(udienza?.data_ora),
         durata_minuti: udienza?.durata_minuti ?? 120,
         tipo: udienza?.tipo ?? '',
         tipo_libero: '',
@@ -102,7 +121,7 @@ export default function UdienzaModal({
         giudice: udienza?.giudice ?? '',
         stato: udienza?.stato ?? 'programmata',
         esito: udienza?.esito ?? '',
-        data_rinvio: udienza?.data_rinvio?.slice(0, 10) ?? '',
+        data_rinvio: isoAData(udienza?.data_rinvio),
         note_preparazione: udienza?.note_preparazione ?? '',
     })
 

@@ -72,7 +72,7 @@ export function AdminProdotti() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Prezzo', 'Durata', 'Stato', ''].map(h => (
+                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Prezzo', 'Durata', 'Revenue', 'Provvigione', 'Stato', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -80,7 +80,7 @@ export function AdminProdotti() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={12} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun prodotto trovato
                   </td>
                 </tr>
@@ -112,6 +112,15 @@ export function AdminProdotti() {
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.revenue_pct ? `${p.revenue_pct}%` : <Dash />}
+                    </td>
+                    <td className="px-4 py-3 font-body text-sm">
+                      {p.provvigione_tipo
+                        ? <span className="text-oro">
+                            {p.provvigione_tipo === 'percentuale'
+                              ? `${Number(p.provvigione_valore)}%`
+                              : `EUR ${Number(p.provvigione_valore)}`}
+                          </span>
+                        : <Dash />}
                     </td>
                     <td className="px-4 py-3">
                       <Badge label={p.attivo ? 'Attivo' : 'Inattivo'} variant={p.attivo ? 'salvia' : 'gray'} />
@@ -147,6 +156,7 @@ export function AdminProdottiForm() {
     revenue_pct: '', crediti_ai_mensili: '0', spazio_gb: '0',
     limite_clienti: '0',
     target_role: 'avvocato',
+    provvigione_tipo: '', provvigione_valore: '',
     attivo: true,
   })
   const [loading, setLoading] = useState(isEdit)
@@ -192,6 +202,8 @@ export function AdminProdottiForm() {
         spazio_gb: data.spazio_gb ?? '0',
         limite_clienti: data.limite_clienti ?? '0',
         target_role: data.target_role ?? 'avvocato',
+        provvigione_tipo: data.provvigione_tipo ?? '',
+        provvigione_valore: data.provvigione_valore ?? '',
         attivo: data.attivo,
       })
       setLoading(false)
@@ -212,6 +224,11 @@ export function AdminProdottiForm() {
     if (isAccesso && (!form.revenue_pct || isNaN(parseInt(form.revenue_pct)))) return setErrore('La % revenue è obbligatoria')
     if (isStorage && (!form.spazio_gb || parseInt(form.spazio_gb) < 1)) return setErrore('Indica i GB del pacchetto')
     if (isClientiAddon && (!form.limite_clienti || parseInt(form.limite_clienti) < 1)) return setErrore('Indica quanti clienti aggiuntivi sblocca questo pacchetto')
+    if (form.provvigione_tipo) {
+      const v = parseFloat(form.provvigione_valore)
+      if (!form.provvigione_valore || isNaN(v) || v < 0) return setErrore('Indica il valore della provvigione')
+      if (form.provvigione_tipo === 'percentuale' && v > 100) return setErrore('La percentuale di provvigione non può superare 100')
+    }
 
     setSalvando(true)
     try {
@@ -228,6 +245,10 @@ export function AdminProdottiForm() {
         spazio_gb: (isAbb || isStorage || isGratuito) ? parseInt(form.spazio_gb) || 0 : 0,
         limite_clienti: (isAbb || isClientiAddon || isGratuito) ? parseInt(form.limite_clienti) || 0 : null,
         target_role: (isAbb || isGratuito) ? form.target_role : 'entrambi',
+        // Provvigione per i commerciali: se il tipo è vuoto il prodotto non
+        // genera alcuna provvigione (comportamento di default).
+        provvigione_tipo: form.provvigione_tipo || null,
+        provvigione_valore: form.provvigione_tipo ? parseFloat(form.provvigione_valore) : null,
         attivo: form.attivo,
       }
 
@@ -447,6 +468,56 @@ export function AdminProdottiForm() {
                 Avvocato: {form.revenue_pct}% · Lexum: {100 - parseInt(form.revenue_pct)}%
               </p>
             )}
+          </div>
+        )}
+
+        {/* Provvigione commerciale — vale per qualsiasi prodotto a pagamento */}
+        {!isGratuito && (
+          <div className="border border-white/5 bg-petrolio/30 p-4">
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              Provvigione commerciale
+              <span className="ml-2 text-nebbia/25 normal-case tracking-normal">— opzionale</span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <select {...f('provvigione_tipo')}
+                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50">
+                <option value="">Nessuna provvigione</option>
+                <option value="percentuale">Percentuale sul prezzo</option>
+                <option value="fisso">Importo fisso</option>
+              </select>
+
+              {form.provvigione_tipo && (
+                <div className="relative">
+                  <input type="number" step="0.01" min="0"
+                    max={form.provvigione_tipo === 'percentuale' ? 100 : undefined}
+                    {...f('provvigione_valore')}
+                    placeholder={form.provvigione_tipo === 'percentuale' ? '15' : '50'}
+                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 pr-10 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body text-sm text-nebbia/30">
+                    {form.provvigione_tipo === 'percentuale' ? '%' : 'EUR'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 p-3 border bg-petrolio/40 border-white/5 flex items-start gap-2">
+              <Info size={13} className="text-salvia/60 shrink-0 mt-0.5" />
+              <div className="font-body text-xs text-nebbia/50 leading-relaxed">
+                {form.provvigione_tipo === 'percentuale' && form.provvigione_valore && !isNaN(parseFloat(form.provvigione_valore)) ? (
+                  <>
+                    Su un prezzo di EUR {form.prezzo || '—'} il commerciale guadagna{' '}
+                    <span className="text-oro">
+                      EUR {form.prezzo ? (parseFloat(form.prezzo) * parseFloat(form.provvigione_valore) / 100).toFixed(2) : '—'}
+                    </span> per ogni vendita.
+                  </>
+                ) : form.provvigione_tipo === 'fisso' && form.provvigione_valore ? (
+                  <>Il commerciale guadagna <span className="text-oro">EUR {form.provvigione_valore}</span> per ogni vendita, a prescindere dal prezzo.</>
+                ) : (
+                  <>Senza provvigione questo prodotto <span className="text-nebbia/70">non genera compensi</span> per i commerciali, anche se il cliente è attribuito a uno di loro.</>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

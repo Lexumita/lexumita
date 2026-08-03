@@ -58,9 +58,9 @@ export default function TerminiServizio() {
             I presenti Termini di Servizio regolano il rapporto contrattuale tra:
           </p>
           <div className="bg-slate border border-white/5 p-5 space-y-1.5">
-            <p className="font-medium text-nebbia">Alpi Consulenti Associati SA</p>
-            <p>CHE-243.562.655</p>
-            <p>c/o SAFEINVEST SA, Via Campo Marzio 7, 6900 Lugano, Svizzera</p>
+            <p className="font-medium text-nebbia">Mosaico Experiences SA</p>
+            <p>CHE-365.261.725</p>
+            <p>Via Cantonale 1, 6900 Lugano, Svizzera</p>
             <p className="text-nebbia/40 text-xs mt-2">(di seguito "Lexum", "noi" o "il Fornitore")</p>
           </div>
           <p>e l'utente registrato alla piattaforma (di seguito "Utente" o "Cliente"),
@@ -323,7 +323,7 @@ export default function TerminiServizio() {
           <p>
             La piattaforma Lexum, il suo codice sorgente, il design, i loghi, i marchi
             e tutti i contenuti originali prodotti da Lexum sono di proprietà esclusiva
-            di Alpi Consulenti Associati SA e sono protetti dalla normativa svizzera e
+            di Mosaico Experiences SA e sono protetti dalla normativa svizzera e
             internazionale sul diritto d'autore e sulla proprietà intellettuale.
           </p>
           <p>
@@ -424,8 +424,7 @@ export default function TerminiServizio() {
         <div className="bg-slate border border-white/5 p-5 flex items-start gap-3">
           <FileText size={14} className="text-nebbia/30 shrink-0 mt-0.5" />
           <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-            Alpi Consulenti Associati SA · CHE-243.562.655 · c/o SAFEINVEST SA,
-            Via Campo Marzio 7, 6900 Lugano, Svizzera ·
+            Mosaico Experiences SA · CHE-365.261.725 · Via Cantonale 1, 6900 Lugano, Svizzera ·
             <a href="mailto:info@lexum.it" className="text-oro hover:text-oro/70 transition-colors ml-1">info@lexum.it</a>
           </p>
         </div>

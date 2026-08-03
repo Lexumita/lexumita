@@ -577,4 +577,5 @@ export function AdminPagamenti() {
     )
 }
 
-export function AdminCompensi() { return <AdminPagamenti /> }
+// NB: la pagina "Compensi" ora vive in src/pages/admin/Compensi.jsx
+// (gestione provvigioni commerciali). Qui restava un alias segnaposto.

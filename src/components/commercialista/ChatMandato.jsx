@@ -260,6 +260,11 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                             )}
                             <div className={`px-4 py-3 border ${m.documento ? 'bg-petrolio/70 border-oro/20' : 'bg-petrolio/50 border-white/5'}`}>
                                 <ReactMarkdown components={MD}>{m.content}</ReactMarkdown>
+                                {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
+                                <p className="mt-4 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                    Contenuto generato con intelligenza artificiale. Lex può commettere errori:
+                                    verifica sempre le fonti citate prima dell'uso professionale.
+                                </p>
                             </div>
                             <div className="flex items-center gap-3 flex-wrap">
                                 <button onClick={() => salvaInRicerche(i)} disabled={m.salvata || salvandoIdx === i}

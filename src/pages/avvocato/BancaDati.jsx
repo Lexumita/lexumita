@@ -602,6 +602,57 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
     const abortControllerRef = useRef(null)
 
+    // ── Documento allegato (effimero: non entra nell'archivio, scade in 4 ore) ──
+    const [documento, setDocumento] = useState(null)   // { id, nome, n_chunk, troncato, scadenza }
+    const [caricandoDoc, setCaricandoDoc] = useState(false)
+    const [erroreDoc, setErroreDoc] = useState(null)
+    const fileInputRef = useRef(null)
+
+    async function allegaDocumento(file) {
+        if (!file) return
+        setErroreDoc(null)
+        setCaricandoDoc(true)
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+
+            // 1) estrazione del testo (con OCR di fallback lato server)
+            const formData = new FormData()
+            formData.append('file', file)
+            const resTesto = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-pdf-text`,
+                { method: 'POST', headers: { Authorization: `Bearer ${session?.access_token}` }, body: formData }
+            )
+            const jsonTesto = await resTesto.json()
+            if (!jsonTesto.ok) throw new Error(jsonTesto.error ?? 'Estrazione del testo non riuscita')
+
+            // 2) indicizzazione effimera: il file NON viene salvato, solo il testo
+            const resDoc = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analizza-documento`,
+                {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ testo: jsonTesto.testo, nome_file: file.name }),
+                }
+            )
+            const jsonDoc = await resDoc.json()
+            if (!jsonDoc.ok) throw new Error(jsonDoc.error ?? 'Indicizzazione non riuscita')
+
+            setDocumento({
+                id: jsonDoc.documento_id,
+                nome: file.name,
+                n_chunk: jsonDoc.n_chunk,
+                troncato: jsonDoc.troncato,
+                scadenza: jsonDoc.expires_at,
+            })
+        } catch (err) {
+            setErroreDoc(err.message)
+            setDocumento(null)
+        } finally {
+            setCaricandoDoc(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
     async function cerca(domandaInput, opzioni = {}) {
         const domandaCorrente = domandaInput ?? domanda
         if (!domandaCorrente.trim()) return
@@ -638,6 +689,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                         subagent_target: opzioni.subagentTarget,
                         filtro_approfondimento: opzioni.filtroApprofondimento,
                         client_conversation_id: clientConversationId,
+                        documento_id: documento?.id ?? null,
                     }),
                     signal: abortControllerRef.current.signal,
                 }
@@ -930,6 +982,13 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025:
+                                        ogni risposta è marcata come generata da un sistema di IA. */}
+                                    <p className="mt-5 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                        Contenuto generato con intelligenza artificiale. Lex può commettere errori:
+                                        verifica sempre le fonti citate prima dell'uso professionale.
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -1013,13 +1072,74 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
                 <textarea
                     rows={3}
-                    placeholder={conversazione.length > 0 ? 'Approfondisci o fai una nuova domanda...' : 'Es. Il mio cliente è accusato di omicidio colposo...'}
+                    placeholder={
+                        documento
+                            ? 'Cosa devo cercare in questo documento? Es. verifica le clausole vessatorie...'
+                            : conversazione.length > 0
+                                ? 'Approfondisci o fai una nuova domanda...'
+                                : 'Es. Il mio cliente è accusato di omicidio colposo...'
+                    }
                     value={domanda}
                     onChange={e => setDomanda(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) cerca() }}
                     disabled={cercando}
                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
                 />
+
+                {/* ── Documento allegato: effimero, mai archiviato ── */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={e => allegaDocumento(e.target.files?.[0])}
+                />
+
+                {!documento ? (
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={cercando || caricandoDoc}
+                        className="flex items-center gap-2 font-body text-xs text-nebbia/40 hover:text-salvia transition-colors disabled:opacity-40"
+                    >
+                        {caricandoDoc
+                            ? <><span className="animate-spin w-3 h-3 border-2 border-salvia border-t-transparent rounded-full" /> Lettura del documento...</>
+                            : <><Plus size={12} /> Allega un documento da analizzare</>
+                        }
+                    </button>
+                ) : (
+                    <div className="bg-petrolio/60 border border-salvia/20 px-3 py-2.5 space-y-1.5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-2 min-w-0">
+                                <FileText size={13} className="text-salvia shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                    <p className="font-body text-xs text-nebbia/80 truncate">{documento.nome}</p>
+                                    <p className="font-body text-[11px] text-nebbia/35">
+                                        {documento.n_chunk} passaggi indicizzati · non archiviato, si cancella dopo 4 ore
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setDocumento(null)}
+                                className="text-nebbia/30 hover:text-red-400 transition-colors shrink-0"
+                                title="Rimuovi il documento"
+                            >
+                                <X size={13} />
+                            </button>
+                        </div>
+                        {documento.troncato && (
+                            <p className="font-body text-[11px] text-amber-400/80 flex items-start gap-1.5">
+                                <AlertCircle size={11} className="shrink-0 mt-0.5" />
+                                Documento molto lungo: analizzata solo la prima parte.
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {erroreDoc && (
+                    <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
+                        <AlertCircle size={11} />{erroreDoc}
+                    </p>
+                )}
 
                 {errore && errore !== 'crediti_esauriti' && (
                     <p className="font-body text-xs text-red-400 flex items-center gap-1.5">

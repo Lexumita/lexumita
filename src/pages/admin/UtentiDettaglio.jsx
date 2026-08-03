@@ -6,7 +6,7 @@ import { BackButton, Badge, StatCard } from '@/components/shared'
 import {
   ShieldOff, Lock, Clock, FileText,
   FolderOpen, User, KeyRound, Mail, X, Eye, EyeOff, Copy, Check,
-  CheckCircle, XCircle, AlertCircle, ArrowRight, RefreshCw
+  CheckCircle, XCircle, AlertCircle, ArrowRight, RefreshCw, Download
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -17,9 +17,14 @@ import { supabase } from '@/lib/supabase'
 const ROLE_BADGE = {
   admin: { label: 'Admin', variant: 'red' },
   avvocato: { label: 'Avvocato', variant: 'oro' },
+  commercialista: { label: 'Commercialista', variant: 'oro' },
+  commerciale: { label: 'Commerciale', variant: 'warning' },
   cliente: { label: 'Cliente', variant: 'salvia' },
   user: { label: 'User', variant: 'gray' },
 }
+
+const euro = (n) =>
+  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n ?? 0))
 
 const STATI_PRATICA = {
   in_corso: { label: 'In corso', variant: 'salvia' },
@@ -716,6 +721,239 @@ function SezioneUser({ utente, onDecision }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// SEZIONE COMMERCIALE (venditore)
+// Anagrafica + performance + azione critica sul codice personale.
+// ─────────────────────────────────────────────────────────────
+function SezioneCommerciale({ utente, onAggiorna }) {
+  const [dati, setDati] = useState({ prov: [], clienti: 0, richieste: [] })
+  const [loading, setLoading] = useState(true)
+  const [nuovoCodice, setNuovoCodice] = useState(utente.codice_commerciale ?? '')
+  const [salvando, setSalvando] = useState(false)
+  const [msg, setMsg] = useState(null) // { tipo:'ok'|'err', testo }
+
+  useEffect(() => {
+    async function carica() {
+      setLoading(true)
+      const [p, c, r] = await Promise.all([
+        supabase.from('provvigioni').select('stato, importo').eq('commerciale_id', utente.id),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('commerciale_id', utente.id),
+        supabase.from('richieste_pagamento')
+          .select('id, importo, stato, note, nota_admin, created_at')
+          .eq('commerciale_id', utente.id)
+          .order('created_at', { ascending: false }),
+      ])
+      setDati({ prov: p.data ?? [], clienti: c.count ?? 0, richieste: r.data ?? [] })
+      setLoading(false)
+    }
+    carica()
+  }, [utente.id])
+
+  const somma = (stato) => dati.prov
+    .filter(x => x.stato === stato)
+    .reduce((acc, x) => acc + Number(x.importo ?? 0), 0)
+
+  async function salvaCodice() {
+    const c = nuovoCodice.trim().toUpperCase()
+    if (!/^[A-Z0-9][A-Z0-9-]{2,29}$/.test(c)) {
+      setMsg({ tipo: 'err', testo: 'Codice non valido: 3-30 caratteri tra lettere, numeri e trattino' })
+      return
+    }
+    if (!confirm(
+      `Cambiare il codice da "${utente.codice_commerciale ?? '—'}" a "${c}"?\n\n` +
+      'Le attribuzioni già fatte restano valide, ma chi userà il vecchio codice non verrà più collegato a questo commerciale.'
+    )) return
+
+    setSalvando(true)
+    setMsg(null)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ codice_commerciale: c })
+        .eq('id', utente.id)
+      if (error) throw error
+      setMsg({ tipo: 'ok', testo: 'Codice aggiornato' })
+      onAggiorna?.({ codice_commerciale: c })
+    } catch (err) {
+      setMsg({
+        tipo: 'err',
+        testo: /duplicate|unique/i.test(err.message)
+          ? 'Codice già assegnato a un altro commerciale'
+          : err.message,
+      })
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Performance */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Clienti portati" value={loading ? '…' : dati.clienti} colorClass="text-nebbia" />
+        <StatCard label="Da liquidare" value={loading ? '…' : euro(somma('maturata'))} colorClass="text-oro" />
+        <StatCard label="Richieste" value={loading ? '…' : euro(somma('richiesta'))} colorClass="text-amber-400" />
+        <StatCard label="Già pagate" value={loading ? '…' : euro(somma('pagata'))} colorClass="text-salvia" />
+      </div>
+
+      {/* Codice personale — azione critica */}
+      <div className="bg-slate border border-white/5 p-5">
+        <p className="section-label mb-3">Codice commerciale</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-56">
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-1.5">Codice</label>
+            <input
+              value={nuovoCodice}
+              onChange={e => setNuovoCodice(e.target.value.toUpperCase())}
+              placeholder="LEX-ROSSI"
+              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 tracking-wider"
+            />
+          </div>
+          <button
+            onClick={salvaCodice}
+            disabled={salvando || nuovoCodice.trim().toUpperCase() === (utente.codice_commerciale ?? '')}
+            className="px-4 py-2.5 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            {salvando ? 'Salvo…' : 'Aggiorna codice'}
+          </button>
+        </div>
+        {msg && (
+          <p className={`mt-2 font-body text-xs flex items-center gap-1 ${msg.tipo === 'ok' ? 'text-salvia' : 'text-red-400'}`}>
+            {msg.tipo === 'ok' ? <Check size={12} /> : <AlertCircle size={12} />} {msg.testo}
+          </p>
+        )}
+        <p className="font-body text-xs text-nebbia/25 mt-3 leading-relaxed">
+          È la chiave di attribuzione delle vendite. Il commerciale non può modificarla.
+        </p>
+      </div>
+
+      {/* Richieste di pagamento */}
+      <div className="bg-slate border border-white/5 p-5">
+        <p className="section-label mb-3">Richieste di pagamento</p>
+        {loading ? (
+          <p className="font-body text-sm text-nebbia/30">Caricamento…</p>
+        ) : dati.richieste.length === 0 ? (
+          <p className="font-body text-sm text-nebbia/30">Nessuna richiesta inviata.</p>
+        ) : (
+          <div className="space-y-2">
+            {dati.richieste.map(r => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-petrolio/40 border border-white/5">
+                <div>
+                  <p className="font-body text-sm text-oro">{euro(r.importo)}</p>
+                  <p className="font-body text-xs text-nebbia/30">
+                    {new Date(r.created_at).toLocaleDateString('it-IT')}
+                    {r.note ? ` · ${r.note}` : ''}
+                  </p>
+                </div>
+                <Badge label={r.stato === 'in_attesa' ? 'In attesa' : r.stato} variant={r.stato === 'pagata' ? 'salvia' : 'warning'} />
+              </div>
+            ))}
+            <Link to="/admin/compensi"
+              className="inline-flex items-center gap-1.5 font-body text-xs text-oro hover:text-oro/70 mt-2">
+              Gestisci in Compensi <ArrowRight size={12} />
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// BOX ATTRIBUZIONE COMMERCIALE (per utenti NON commerciali)
+// Permette all'admin di collegare/scollegare il cliente a un commerciale
+// anche dopo la registrazione (es. il cliente ha dimenticato il codice).
+// ─────────────────────────────────────────────────────────────
+function BoxAttribuzioneCommerciale({ utente, onAggiorna }) {
+  const { profile: adminProfile } = useAuth()
+  const [commerciali, setCommerciali] = useState([])
+  const [sel, setSel] = useState(utente.commerciale_id ?? '')
+  const [salvando, setSalvando] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  useEffect(() => {
+    supabase.from('profiles')
+      .select('id, nome, cognome, codice_commerciale')
+      .eq('role', 'commerciale')
+      .order('cognome')
+      .then(({ data }) => setCommerciali(data ?? []))
+  }, [])
+
+  const attuale = commerciali.find(c => c.id === utente.commerciale_id)
+
+  async function salva() {
+    const nuovo = sel || null
+    const testo = nuovo
+      ? `Attribuire ${utente.nome} ${utente.cognome} al commerciale selezionato?\n\nGli acquisti FUTURI genereranno provvigioni per lui. Quelli già effettuati non vengono ricalcolati.`
+      : `Rimuovere l'attribuzione commerciale di ${utente.nome} ${utente.cognome}?\n\nGli acquisti futuri non genereranno più provvigioni.`
+    if (!confirm(testo)) return
+
+    setSalvando(true)
+    setMsg(null)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          commerciale_id: nuovo,
+          commerciale_assegnato_il: nuovo ? new Date().toISOString() : null,
+          commerciale_assegnato_da: nuovo ? (adminProfile?.id ?? null) : null,
+        })
+        .eq('id', utente.id)
+      if (error) throw error
+      setMsg({ tipo: 'ok', testo: nuovo ? 'Attribuzione aggiornata' : 'Attribuzione rimossa' })
+      onAggiorna?.({ commerciale_id: nuovo })
+    } catch (err) {
+      setMsg({ tipo: 'err', testo: err.message })
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="bg-slate border border-white/5 p-5">
+      <p className="section-label mb-3">Attribuzione commerciale</p>
+
+      {attuale ? (
+        <p className="font-body text-sm text-nebbia/60 mb-3">
+          Attualmente attribuito a <span className="text-nebbia">{attuale.nome} {attuale.cognome}</span>
+          {attuale.codice_commerciale && <span className="text-oro/70 tracking-wider"> · {attuale.codice_commerciale}</span>}
+          {utente.commerciale_assegnato_il && (
+            <span className="text-nebbia/25"> (dal {new Date(utente.commerciale_assegnato_il).toLocaleDateString('it-IT')})</span>
+          )}
+        </p>
+      ) : (
+        <p className="font-body text-sm text-nebbia/30 mb-3">Nessun commerciale attribuito: gli acquisti non generano provvigioni.</p>
+      )}
+
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-56">
+          <select value={sel} onChange={e => setSel(e.target.value)}
+            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50">
+            <option value="">— Nessuno —</option>
+            {commerciali.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.cognome} {c.nome}{c.codice_commerciale ? ` — ${c.codice_commerciale}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button onClick={salva} disabled={salvando || sel === (utente.commerciale_id ?? '')}
+          className="px-4 py-2.5 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+          {salvando ? 'Salvo…' : 'Applica'}
+        </button>
+      </div>
+
+      {msg && (
+        <p className={`mt-2 font-body text-xs flex items-center gap-1 ${msg.tipo === 'ok' ? 'text-salvia' : 'text-red-400'}`}>
+          {msg.tipo === 'ok' ? <Check size={12} /> : <AlertCircle size={12} />} {msg.testo}
+        </p>
+      )}
+      {commerciali.length === 0 && (
+        <p className="font-body text-xs text-nebbia/25 mt-2">Nessun commerciale registrato.</p>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
 // PAGINA PRINCIPALE
 // ─────────────────────────────────────────────────────────────
 export default function AdminUtentiDettaglio() {
@@ -777,6 +1015,20 @@ export default function AdminUtentiDettaglio() {
       {/* Strumenti di assistenza (nascosto se admin guarda se stesso) */}
       {!isSelf && <SezioneStrumentiAssistenza utente={utente} />}
 
+      {/* Attribuzione commerciale: per chi può acquistare (non admin, non commerciale) */}
+      {['user', 'avvocato', 'commercialista'].includes(utente.role) && (
+        <BoxAttribuzioneCommerciale
+          utente={utente}
+          onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
+        />
+      )}
+
+      {utente.role === 'commerciale' && (
+        <SezioneCommerciale
+          utente={utente}
+          onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
+        />
+      )}
       {utente.role === 'avvocato' && <SezioneAvvocato utente={utente} />}
       {utente.role === 'cliente' && <SezioneCliente utente={utente} />}
       {utente.role === 'user' && (

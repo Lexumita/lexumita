@@ -58,9 +58,9 @@ export default function PrivacyPolicy() {
                         Il titolare del trattamento dei dati personali è:
                     </p>
                     <div className="bg-slate border border-white/5 p-5 space-y-1.5">
-                        <p className="font-medium text-nebbia">Alpi Consulenti Associati SA</p>
-                        <p>CHE-243.562.655</p>
-                        <p>c/o SAFEINVEST SA, Via Campo Marzio 7, 6900 Lugano, Svizzera</p>
+                        <p className="font-medium text-nebbia">Mosaico Experiences SA</p>
+                        <p>CHE-365.261.725</p>
+                        <p>Via Cantonale 1, 6900 Lugano, Svizzera</p>
                         <p>Email: <a href="mailto:privacy@lexum.it" className="text-oro hover:text-oro/70 transition-colors">privacy@lexum.it</a></p>
                     </div>
                     <p>
@@ -266,8 +266,7 @@ export default function PrivacyPolicy() {
                         Per qualsiasi domanda relativa al trattamento dei tuoi dati personali contatta il nostro
                         responsabile privacy all'indirizzo{' '}
                         <a href="mailto:privacy@lexum.it" className="text-oro hover:text-oro/70 transition-colors">privacy@lexum.it</a>
-                        {' '}oppure scrivi a Alpi Consulenti Associati SA, c/o SAFEINVEST SA,
-                        Via Campo Marzio 7, 6900 Lugano, Svizzera.
+                        {' '}oppure scrivi a Mosaico Experiences SA, Via Cantonale 1, 6900 Lugano, Svizzera.
                     </p>
                 </div>
 

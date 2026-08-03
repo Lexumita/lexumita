@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase'
 const ROLE_BADGE = {
   admin: { label: 'Admin', variant: 'red' },
   avvocato: { label: 'Avvocato', variant: 'oro' },
+  commercialista: { label: 'Commercialista', variant: 'oro' },
+  commerciale: { label: 'Commerciale', variant: 'warning' },
   cliente: { label: 'Cliente', variant: 'salvia' },
   user: { label: 'User', variant: 'gray' },
 }
@@ -31,6 +33,7 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
   const [noteIniziali, setNoteIniziali] = useState('')
   const [avvocatoId, setAvvocatoId] = useState('')
   const [confirmAdmin, setConfirmAdmin] = useState(false)
+  const [codiceComm, setCodiceComm] = useState('')
 
   // Stati flusso
   const [avvocati, setAvvocati] = useState([])
@@ -58,7 +61,7 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
   function reset() {
     setRole('user'); setNome(''); setCognome(''); setEmail('')
     setTelefono(''); setCf(''); setIndirizzo(''); setNoteIniziali('')
-    setAvvocatoId(''); setConfirmAdmin(false)
+    setAvvocatoId(''); setConfirmAdmin(false); setCodiceComm('')
     setErrore(''); setSuccesso(null); setCopiato(false)
   }
 
@@ -78,6 +81,13 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
     if (!/\S+@\S+\.\S+/.test(email)) return setErrore('Email non valida')
     if (role === 'cliente' && !avvocatoId) return setErrore("Seleziona l'avvocato di appartenenza")
     if (role === 'admin' && !confirmAdmin) return setErrore('Devi confermare la creazione del nuovo admin')
+    if (role === 'commerciale') {
+      const c = codiceComm.trim().toUpperCase()
+      if (!c) return setErrore('Il codice commerciale è obbligatorio')
+      if (!/^[A-Z0-9][A-Z0-9-]{2,29}$/.test(c)) {
+        return setErrore('Codice non valido: 3-30 caratteri tra lettere, numeri e trattino (es. LEX-ROSSI)')
+      }
+    }
 
     setLoading(true)
     try {
@@ -101,6 +111,7 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
             note_iniziali: noteIniziali.trim() || null,
             avvocato_id: role === 'cliente' ? avvocatoId : null,
             confirm_admin: role === 'admin' ? true : undefined,
+            codice_commerciale: role === 'commerciale' ? codiceComm.trim().toUpperCase() : undefined,
           }),
         }
       )
@@ -230,10 +241,11 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
                   Tipo utente
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'user', label: 'User', desc: 'Account base' },
                     { id: 'cliente', label: 'Cliente', desc: 'Per avvocato' },
+                    { id: 'commerciale', label: 'Commerciale', desc: 'Venditore' },
                     { id: 'admin', label: 'Admin', desc: 'Pieni poteri' },
                   ].map(r => (
                     <button key={r.id}
@@ -275,6 +287,23 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading}
                   className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
               </div>
+
+              {/* Campo specifico per COMMERCIALE */}
+              {role === 'commerciale' && (
+                <div>
+                  <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-1.5">
+                    Codice commerciale <span className="text-red-400 normal-case tracking-normal">*</span>
+                  </label>
+                  <input value={codiceComm}
+                    onChange={e => setCodiceComm(e.target.value.toUpperCase())}
+                    disabled={loading} placeholder="LEX-ROSSI"
+                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 tracking-wider" />
+                  <p className="font-body text-[11px] text-nebbia/30 mt-1.5 leading-relaxed">
+                    È la chiave con cui gli vengono attribuite le vendite: il cliente lo inserisce in
+                    registrazione. Deve essere univoco e non sarà modificabile dal commerciale.
+                  </p>
+                </div>
+              )}
 
               {/* Campi specifici per CLIENTE */}
               {role === 'cliente' && (
@@ -416,6 +445,8 @@ function TabellaUtenti({ data, loading }) {
           className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
           <option value="">Tutti i ruoli</option>
           <option value="avvocato">Avvocato</option>
+          <option value="commercialista">Commercialista</option>
+          <option value="commerciale">Commerciale</option>
           <option value="cliente">Cliente</option>
           <option value="user">User</option>
           <option value="admin">Admin</option>
@@ -462,6 +493,9 @@ function TabellaUtenti({ data, loading }) {
                       <p className="font-body text-sm font-medium text-nebbia">{u.nome} {u.cognome}</p>
                       {u.studio && (
                         <p className="font-body text-xs text-nebbia/30 mt-0.5">{u.studio}</p>
+                      )}
+                      {u.codice_commerciale && (
+                        <p className="font-body text-xs text-oro/70 mt-0.5 tracking-wider">{u.codice_commerciale}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">{u.email}</td>
@@ -681,7 +715,7 @@ export default function AdminUtenti() {
     setLoading(true)
     const { data } = await supabase
       .from('profiles')
-      .select('id, nome, cognome, email, role, studio, verification_status, tipo_richiesta, created_at')
+      .select('id, nome, cognome, email, role, studio, verification_status, tipo_richiesta, created_at, codice_commerciale')
       .order('created_at', { ascending: false })
     setUtenti(data ?? [])
     setLoading(false)
@@ -697,6 +731,7 @@ export default function AdminUtenti() {
   const nAvvocati = utenti.filter(u => u.role === 'avvocato').length
   const nClienti = utenti.filter(u => u.role === 'cliente').length
   const nUser = utenti.filter(u => u.role === 'user').length
+  const nCommerciali = utenti.filter(u => u.role === 'commerciale').length
   const nVerifiche = utenti.filter(u => u.verification_status === 'pending').length
 
   const TABS = [
@@ -719,6 +754,7 @@ export default function AdminUtenti() {
         <StatCard label="Avvocati" value={nAvvocati} colorClass="text-oro" />
         <StatCard label="Clienti" value={nClienti} colorClass="text-salvia" />
         <StatCard label="User" value={nUser} colorClass="text-nebbia/40" />
+        <StatCard label="Commerciali" value={nCommerciali} colorClass={nCommerciali > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
         <StatCard label="Da verificare" value={nVerifiche} colorClass={nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
       </div>
 

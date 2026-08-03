@@ -6,7 +6,7 @@ import { ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 
 export default function Registrati() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', studio: '', password: '', conferma: '' })
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', studio: '', codice_commerciale: '', password: '', conferma: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -38,13 +38,17 @@ export default function Registrati() {
             nome: form.nome.trim(),
             cognome: form.cognome.trim(),
             studio: form.studio.trim() || null,
+            // Codice del commerciale che ha portato il cliente (opzionale).
+            // Il trigger lo risolve in commerciale_id; se errato viene ignorato
+            // e la registrazione va comunque a buon fine.
+            codice_commerciale: form.codice_commerciale.trim() || null,
           },
         },
       })
       if (authErr) throw authErr
 
       // Il trigger DB handle_new_user crea automaticamente il profilo
-      // leggendo nome/cognome/studio dai metadata.
+      // leggendo nome/cognome/studio/codice_commerciale dai metadata.
 
       setSuccess(true)
     } catch (err) {
@@ -146,6 +150,24 @@ export default function Registrati() {
             />
             <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
               Se sei un professionista e lavori in uno studio, inserisci qui il nome. Servirà in fase di verifica. Puoi modificarlo anche dopo dal tuo profilo.
+            </p>
+          </div>
+
+          {/* Codice commerciale — opzionale */}
+          <div>
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              Codice commerciale
+              <span className="ml-2 text-nebbia/25 normal-case tracking-normal">— opzionale</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Es. LEX-ROSSI"
+              value={form.codice_commerciale}
+              onChange={e => setForm(f => ({ ...f, codice_commerciale: e.target.value.toUpperCase() }))}
+              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25 tracking-wider"
+            />
+            <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
+              Se un nostro consulente ti ha seguito, inserisci qui il codice che ti ha fornito.
             </p>
           </div>
 

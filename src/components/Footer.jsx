@@ -68,7 +68,7 @@ export default function Footer() {
             </p>
             <span className="hidden sm:block text-nebbia/10">·</span>
             <p className="font-body text-xs text-nebbia/20">
-              Alpi Consulenti Associati SA · CHE-243.562.655 · c/o SAFEINVEST SA, Via Campo Marzio 7, 6900 Lugano
+              Mosaico Experiences SA · CHE-365.261.725 · Via Cantonale 1, 6900 Lugano
             </p>
           </div>
           <div className="flex items-center gap-6">

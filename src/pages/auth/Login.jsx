@@ -8,6 +8,7 @@ const ROLE_HOME = {
   admin: '/admin/dashboard',
   avvocato: '/dashboard',
   commercialista: '/dashboard',
+  commerciale: '/commerciale/dashboard',
   cliente: '/portale',
   user: '/area',
 }
