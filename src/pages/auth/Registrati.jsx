@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import { ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 
 export default function Registrati() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', studio: '', codice_commerciale: '', password: '', conferma: '' })
+
+  // Codice commerciale dal link di invito (?ref=DA-NI-01): precompilato ma
+  // sempre modificabile, così chi arriva da un link non deve digitarlo.
+  const [searchParams] = useSearchParams()
+  const refIniziale = (searchParams.get('ref') ?? '').trim().toUpperCase()
+
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)

@@ -7,11 +7,17 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, LoadingSpinner } from '@/components/shared'
-import { Save, AlertCircle, CheckCircle2, Copy, Check, Lock } from 'lucide-react'
+import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
+import BoxSicurezza2FA from '@/components/sicurezza/BoxSicurezza2FA'
+import { Save, AlertCircle, CheckCircle2, Copy, Check, Lock, Landmark } from 'lucide-react'
 
 export default function CommercialeProfilo() {
   const { profile, user } = useAuth()
-  const [form, setForm] = useState({ nome: '', cognome: '', telefono: '' })
+  const [form, setForm] = useState({
+    nome: '', cognome: '', telefono: '',
+    // Dati per il pagamento delle provvigioni
+    iban: '', partita_iva: '', regime_fiscale: '',
+  })
   const [salvando, setSalvando] = useState(false)
   const [errore, setErrore] = useState('')
   const [ok, setOk] = useState('')
@@ -28,6 +34,9 @@ export default function CommercialeProfilo() {
       nome: profile.nome ?? '',
       cognome: profile.cognome ?? '',
       telefono: profile.telefono ?? '',
+      iban: profile.iban ?? '',
+      partita_iva: profile.partita_iva ?? '',
+      regime_fiscale: profile.regime_fiscale ?? '',
     })
   }, [profile])
 
@@ -48,6 +57,11 @@ export default function CommercialeProfilo() {
           nome: form.nome.trim(),
           cognome: form.cognome.trim(),
           telefono: form.telefono.trim() || null,
+          // IBAN normalizzato: senza spazi e in maiuscolo, così il bonifico
+          // non salta per un copia-incolla formattato dall'home banking.
+          iban: form.iban.replace(/\s+/g, '').toUpperCase() || null,
+          partita_iva: form.partita_iva.trim() || null,
+          regime_fiscale: form.regime_fiscale.trim() || null,
         })
         .eq('id', profile.id)
       if (error) throw error
@@ -144,12 +158,55 @@ export default function CommercialeProfilo() {
             </div>
           </div>
 
+          {/* Dati per il pagamento delle provvigioni */}
+          <div className="mt-6 pt-5 border-t border-white/5 space-y-4">
+            <div>
+              <h3 className="font-display text-lg font-light text-nebbia flex items-center gap-2">
+                <Landmark size={16} className="text-nebbia/30" /> Coordinate per il pagamento
+              </h3>
+              <p className="font-body text-xs text-nebbia/35 mt-1">
+                Su questi dati vengono liquidate le provvigioni. Senza IBAN il pagamento non può essere disposto.
+              </p>
+            </div>
+
+            <InputField label="IBAN" value={form.iban}
+              onChange={e => setForm(f => ({ ...f, iban: e.target.value }))}
+              placeholder="IT60 X054 2811 1010 0000 0123 456" />
+
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Partita IVA" value={form.partita_iva}
+                onChange={e => setForm(f => ({ ...f, partita_iva: e.target.value }))}
+                placeholder="Se fatturi le provvigioni" />
+              <div>
+                <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+                  Regime fiscale
+                </label>
+                <select
+                  value={form.regime_fiscale}
+                  onChange={e => setForm(f => ({ ...f, regime_fiscale: e.target.value }))}
+                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50"
+                >
+                  <option value="">— Non specificato —</option>
+                  <option value="forfettario">Forfettario</option>
+                  <option value="ordinario">Ordinario</option>
+                  <option value="occasionale">Prestazione occasionale</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <button onClick={salva} disabled={salvando} className="btn-primary w-full justify-center mt-5">
             {salvando
               ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
               : <><Save size={15} /> Salva</>}
           </button>
         </div>
+
+        {/* Calendario Google — stesso componente degli altri ruoli */}
+        <BoxGoogleCalendar />
+
+        {/* Sicurezza accesso (2FA + codici di recupero) */}
+        <BoxSicurezza2FA />
 
         {/* Password */}
         <div className="bg-slate border border-white/5 p-5">

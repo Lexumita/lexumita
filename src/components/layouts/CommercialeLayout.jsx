@@ -17,9 +17,9 @@ import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 
 const NAV = [
   { path: '/commerciale/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/commerciale/provvigioni', label: 'Provvigioni', icon: Wallet },
-  { path: '/commerciale/clienti', label: 'Clienti', icon: Users },
   { path: '/commerciale/calendario', label: 'Calendario', icon: Calendar },
+  { path: '/commerciale/clienti', label: 'Clienti', icon: Users },
+  { path: '/commerciale/provvigioni', label: 'Provvigioni', icon: Wallet },
   { path: '/commerciale/profilo', label: 'Profilo', icon: User },
 ]
 

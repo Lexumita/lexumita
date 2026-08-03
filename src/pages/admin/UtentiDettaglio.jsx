@@ -965,6 +965,34 @@ function SezioneCommerciale({ utente, onAggiorna }) {
         </p>
       </div>
 
+      {/* Coordinate per la liquidazione — sola lettura: le compila il commerciale */}
+      <div className="bg-slate border border-white/5 p-5">
+        <p className="section-label mb-3">Coordinate per il pagamento</p>
+        {utente.iban ? (
+          <div className="space-y-3">
+            <div>
+              <p className="font-body text-[11px] text-nebbia/35 uppercase tracking-widest mb-1">IBAN</p>
+              <p className="font-body text-sm text-nebbia/85 tracking-wide select-all break-all">{utente.iban}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="font-body text-[11px] text-nebbia/35 uppercase tracking-widest mb-1">Partita IVA</p>
+                <p className="font-body text-sm text-nebbia/70">{utente.partita_iva || '—'}</p>
+              </div>
+              <div>
+                <p className="font-body text-[11px] text-nebbia/35 uppercase tracking-widest mb-1">Regime fiscale</p>
+                <p className="font-body text-sm text-nebbia/70">{utente.regime_fiscale || '—'}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="font-body text-sm text-amber-400/80 flex items-start gap-2">
+            <AlertCircle size={13} className="shrink-0 mt-0.5" />
+            IBAN non inserito: il commerciale deve compilarlo dal proprio profilo prima che si possa liquidare.
+          </p>
+        )}
+      </div>
+
       {/* Richieste di pagamento */}
       <div className="bg-slate border border-white/5 p-5">
         <p className="section-label mb-3">Richieste di pagamento</p>

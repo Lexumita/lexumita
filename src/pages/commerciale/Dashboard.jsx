@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { PageHeader, StatCard, EmptyState, LoadingSpinner, Badge } from '@/components/shared'
 import {
   Wallet, Clock, CheckCircle2, Users, CalendarDays, ArrowRight, Copy, Check,
+  Link2 as LinkIcon,
 } from 'lucide-react'
 
 export const euro = (n) =>
@@ -47,6 +48,7 @@ export default function CommercialeDashboard() {
   const [appuntamenti, setAppuntamenti] = useState([])
   const [ultime, setUltime] = useState([])
   const [copiato, setCopiato] = useState(false)
+  const [linkCopiato, setLinkCopiato] = useState(false)
 
   useEffect(() => {
     if (!profile?.id) return
@@ -103,6 +105,21 @@ export default function CommercialeDashboard() {
     } catch { /* clipboard non disponibile */ }
   }
 
+  // Link d'invito: chi lo apre trova il codice già inserito nel form di
+  // registrazione, così l'attribuzione non dipende dal fatto che lo digiti.
+  const linkInvito = profile?.codice_commerciale
+    ? `${window.location.origin}/registrati?ref=${encodeURIComponent(profile.codice_commerciale)}`
+    : null
+
+  async function copiaLink() {
+    if (!linkInvito) return
+    try {
+      await navigator.clipboard.writeText(linkInvito)
+      setLinkCopiato(true)
+      setTimeout(() => setLinkCopiato(false), 1500)
+    } catch { /* clipboard non disponibile */ }
+  }
+
   if (loading) return <LoadingSpinner fullPage />
 
   return (
@@ -136,6 +153,22 @@ export default function CommercialeDashboard() {
           </button>
         )}
       </div>
+
+      {/* Link d'invito — il codice arriva già compilato, niente da digitare */}
+      {linkInvito && (
+        <div className="bg-slate border border-oro/15 p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-1">Il tuo link d'invito</p>
+            <p className="font-body text-sm text-oro/90 break-all">{linkInvito}</p>
+            <p className="font-body text-xs text-nebbia/25 mt-1">
+              Chi si registra da questo link ha già il tuo codice inserito: l'attribuzione è automatica.
+            </p>
+          </div>
+          <button onClick={copiaLink} className="btn-secondary flex items-center gap-2 shrink-0">
+            {linkCopiato ? <><Check size={14} /> Copiato</> : <><LinkIcon size={14} /> Copia link</>}
+          </button>
+        </div>
+      )}
 
       {/* Riepilogo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
