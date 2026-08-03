@@ -1099,10 +1099,10 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={cercando || caricandoDoc}
-                        className="flex items-center gap-2 font-body text-xs text-nebbia/40 hover:text-salvia transition-colors disabled:opacity-40"
+                        className="flex items-center gap-2 font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
                     >
                         {caricandoDoc
-                            ? <><span className="animate-spin w-3 h-3 border-2 border-salvia border-t-transparent rounded-full" /> Lettura del documento...</>
+                            ? <><span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" /> Lettura del documento...</>
                             : <><Plus size={12} /> Allega un documento da analizzare</>
                         }
                     </button>

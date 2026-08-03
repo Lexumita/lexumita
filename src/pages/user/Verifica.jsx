@@ -9,7 +9,7 @@ import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale
 // etichette e testi. Così l'admin (UtentiDettaglio) mostra i doc senza modifiche.
 const PROFILI = {
     avvocato: {
-        titolo: 'Diventa avvocato su Lexum',
+        titolo: 'Verifica identità — Avvocato',
         intro: "Per accedere alla piattaforma come avvocato devi verificare la tua identità professionale. Carica i documenti richiesti e il nostro team li esaminerà entro 24-48 ore.",
         documenti: [
             { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: true },
@@ -18,7 +18,7 @@ const PROFILI = {
         ],
     },
     commercialista: {
-        titolo: 'Diventa commercialista su Lexum',
+        titolo: 'Verifica identità — Commercialista',
         intro: "Per accedere alla piattaforma come commercialista devi verificare la tua identità professionale. Carica i documenti richiesti e il nostro team li esaminerà entro 24-48 ore.",
         documenti: [
             { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: true },

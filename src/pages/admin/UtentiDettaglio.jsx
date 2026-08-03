@@ -721,6 +721,146 @@ function SezioneUser({ utente, onDecision }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// CAMBIO RUOLO
+// È l'unico modo per nominare un COMMERCIALE: quel ruolo non ha un
+// percorso di auto-registrazione, lo assegna l'admin.
+// Se l'utente ha clienti o pratiche collegate la funzione chiede
+// conferma: cambiando ruolo perde l'accesso a quei dati.
+// ─────────────────────────────────────────────────────────────
+const RUOLI_ASSEGNABILI = [
+  { valore: 'user', label: 'Utente', nota: 'Accesso base, senza area professionale' },
+  { valore: 'avvocato', label: 'Avvocato', nota: 'Area studio completa' },
+  { valore: 'commercialista', label: 'Commercialista', nota: 'Area studio commercialista' },
+  { valore: 'commerciale', label: 'Commerciale', nota: 'Venditore: provvigioni e codice personale' },
+]
+
+function BoxCambioRuolo({ utente, onAggiorna }) {
+  const [sel, setSel] = useState(utente.role ?? '')
+  const [codice, setCodice] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [msg, setMsg] = useState(null)      // { tipo:'ok'|'err', testo }
+  const [conferma, setConferma] = useState(null) // { testo, n_clienti, n_pratiche }
+
+  const cambiato = sel && sel !== utente.role
+
+  async function applica(confermaDistacco = false) {
+    setSalvando(true); setMsg(null)
+    try {
+      const body = { action: 'set-role', user_id: utente.id, nuovo_ruolo: sel }
+      if (sel === 'commerciale' && codice.trim()) body.codice_commerciale = codice.trim()
+      if (confermaDistacco) body.conferma_distacco = true
+
+      const { data, error } = await supabase.functions.invoke('admin-user-actions', { body })
+      if (error) throw new Error(error.message)
+
+      // Il backend chiede conferma se ci sono clienti/pratiche collegate
+      if (!data?.ok && data?.richiede_conferma) {
+        setConferma({ testo: data.error, n_clienti: data.n_clienti, n_pratiche: data.n_pratiche })
+        return
+      }
+      if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+
+      setConferma(null)
+      setMsg({ tipo: 'ok', testo: data.messaggio })
+      onAggiorna({ role: data.nuovo_ruolo, ...(data.codice_commerciale ? { codice_commerciale: data.codice_commerciale } : {}) })
+    } catch (err) {
+      setMsg({ tipo: 'err', testo: err.message })
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="bg-slate border border-white/5 p-5 space-y-4">
+      <div>
+        <p className="font-display text-base font-medium text-nebbia">Ruolo dell'utente</p>
+        <p className="font-body text-xs text-nebbia/35 mt-1">
+          Ruolo attuale: <span className="text-nebbia/60">{utente.role}</span>
+          {utente.codice_commerciale && <> · codice <span className="text-oro/70 tracking-wider">{utente.codice_commerciale}</span></>}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {RUOLI_ASSEGNABILI.map(r => (
+          <button
+            key={r.valore}
+            onClick={() => { setSel(r.valore); setConferma(null); setMsg(null) }}
+            disabled={salvando}
+            className={`text-left px-3 py-2.5 border transition-colors disabled:opacity-40 ${
+              sel === r.valore
+                ? 'bg-oro/10 border-oro/40'
+                : 'bg-petrolio border-white/10 hover:border-white/25'
+            }`}
+          >
+            <p className={`font-body text-sm ${sel === r.valore ? 'text-oro' : 'text-nebbia/70'}`}>
+              {r.label}{r.valore === utente.role && <span className="text-nebbia/30"> · attuale</span>}
+            </p>
+            <p className="font-body text-[11px] text-nebbia/30 mt-0.5">{r.nota}</p>
+          </button>
+        ))}
+      </div>
+
+      {sel === 'commerciale' && utente.role !== 'commerciale' && (
+        <div>
+          <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-2">
+            Codice personale <span className="normal-case tracking-normal text-nebbia/25">— lascia vuoto per generarlo</span>
+          </label>
+          <input
+            type="text"
+            value={codice}
+            onChange={e => setCodice(e.target.value.toUpperCase())}
+            placeholder="Es. LEX-ROSSI"
+            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 tracking-wider placeholder:text-nebbia/25"
+          />
+          <p className="mt-1.5 font-body text-[11px] text-nebbia/30">
+            È il codice che i clienti inseriscono in registrazione per essere attribuiti a questo venditore.
+          </p>
+        </div>
+      )}
+
+      {conferma && (
+        <div className="bg-amber-500/5 border border-amber-500/30 p-3 space-y-2.5">
+          <p className="font-body text-xs text-amber-300/90 leading-relaxed flex items-start gap-2">
+            <AlertCircle size={13} className="shrink-0 mt-0.5" />{conferma.testo}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => applica(true)}
+              disabled={salvando}
+              className="font-body text-xs text-amber-300 border border-amber-500/40 px-3 py-1.5 hover:bg-amber-500/10 transition-colors disabled:opacity-40"
+            >
+              Procedi comunque
+            </button>
+            <button
+              onClick={() => setConferma(null)}
+              className="font-body text-xs text-nebbia/50 border border-white/10 px-3 py-1.5 hover:text-nebbia transition-colors"
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg && (
+        <p className={`font-body text-xs ${msg.tipo === 'ok' ? 'text-salvia' : 'text-red-400'}`}>
+          {msg.testo}
+        </p>
+      )}
+
+      {!conferma && (
+        <button
+          onClick={() => applica(false)}
+          disabled={!cambiato || salvando}
+          className="w-full py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-30"
+        >
+          {salvando ? 'Aggiornamento...' : cambiato ? `Imposta come ${RUOLI_ASSEGNABILI.find(r => r.valore === sel)?.label}` : 'Seleziona un ruolo diverso'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
 // SEZIONE COMMERCIALE (venditore)
 // Anagrafica + performance + azione critica sul codice personale.
 // ─────────────────────────────────────────────────────────────
@@ -1041,6 +1181,15 @@ export default function AdminUtentiDettaglio() {
         <div className="bg-slate border border-white/5 p-5">
           <p className="font-body text-sm text-nebbia/40">Account amministratore.</p>
         </div>
+      )}
+
+      {/* Cambio ruolo: unico modo per nominare un COMMERCIALE (non esiste
+          auto-registrazione per quel ruolo). Nascosto per admin e clienti. */}
+      {!['admin', 'cliente'].includes(utente.role) && (
+        <BoxCambioRuolo
+          utente={utente}
+          onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
+        />
       )}
     </div>
   )

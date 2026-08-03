@@ -40,7 +40,7 @@ export default function UserLayout({ children }) {
 
   // Voce sidebar verifica (nascosta se rejected)
   const verifyItem = isRejected ? null : isUnverified
-    ? { path: '/verifica', label: 'Diventa avvocato', icon: ShieldCheck }
+    ? { path: '/verifica', label: 'Verifica identità', icon: ShieldCheck }
     : isPending
       ? { path: '/verifica/stato', label: 'Verifica identità', icon: ShieldCheck, badge: 'In corso', badgeColor: 'amber' }
       : { path: '/verifica/stato', label: 'Verifica identità', icon: ShieldCheck, badge: 'Approvata', badgeColor: 'salvia' }
