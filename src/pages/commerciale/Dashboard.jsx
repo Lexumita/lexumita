@@ -136,39 +136,42 @@ export default function CommercialeDashboard() {
         </div>
       )}
 
-      {/* Codice personale */}
-      <div className="bg-slate border border-white/5 p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-1">Il tuo codice</p>
+      {/* Codice personale e link d'invito — affiancati; se manca il link, il codice occupa tutta la riga */}
+      <div className={`grid gap-4 mb-6 ${linkInvito ? 'lg:grid-cols-2' : ''}`}>
+        {/* Codice personale */}
+        <div className="bg-slate border border-white/5 p-5 flex flex-col">
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Il tuo codice</p>
+            {profile?.codice_commerciale && (
+              <button onClick={copiaCodice} className="btn-secondary flex items-center gap-2 shrink-0">
+                {copiato ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Copia</>}
+              </button>
+            )}
+          </div>
           <p className="font-display text-2xl font-light text-oro tracking-widest">
             {profile?.codice_commerciale ?? '— non assegnato —'}
           </p>
-          <p className="font-body text-xs text-nebbia/25 mt-1">
-            Falla inserire al cliente in fase di registrazione: solo così i suoi acquisti ti vengono attribuiti.
+          <p className="font-body text-xs text-nebbia/25 mt-auto pt-2">
+            Fallo inserire al cliente in fase di registrazione: solo così i suoi acquisti ti vengono attribuiti.
           </p>
         </div>
-        {profile?.codice_commerciale && (
-          <button onClick={copiaCodice} className="btn-secondary flex items-center gap-2">
-            {copiato ? <><Check size={14} /> Copiato</> : <><Copy size={14} /> Copia</>}
-          </button>
-        )}
-      </div>
 
-      {/* Link d'invito — il codice arriva già compilato, niente da digitare */}
-      {linkInvito && (
-        <div className="bg-slate border border-oro/15 p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-1">Il tuo link d'invito</p>
+        {/* Link d'invito — il codice arriva già compilato, niente da digitare */}
+        {linkInvito && (
+          <div className="bg-slate border border-oro/15 p-5 flex flex-col min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Il tuo link d'invito</p>
+              <button onClick={copiaLink} className="btn-secondary flex items-center gap-2 shrink-0">
+                {linkCopiato ? <><Check size={14} /> Copiato</> : <><LinkIcon size={14} /> Copia link</>}
+              </button>
+            </div>
             <p className="font-body text-sm text-oro/90 break-all">{linkInvito}</p>
-            <p className="font-body text-xs text-nebbia/25 mt-1">
+            <p className="font-body text-xs text-nebbia/25 mt-auto pt-2">
               Chi si registra da questo link ha già il tuo codice inserito: l'attribuzione è automatica.
             </p>
           </div>
-          <button onClick={copiaLink} className="btn-secondary flex items-center gap-2 shrink-0">
-            {linkCopiato ? <><Check size={14} /> Copiato</> : <><LinkIcon size={14} /> Copia link</>}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Riepilogo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

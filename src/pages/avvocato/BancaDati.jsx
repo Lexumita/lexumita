@@ -2,7 +2,7 @@
 // Pagina "Banca dati" — 4 tab primari: Italiana | UE | Sentenze | Prassi
 // Salvataggio in pratica tramite popover inline (no pannello laterale)
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { escapeHtml } from '@/lib/escapeHtml'
@@ -1593,6 +1593,361 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                         )}
                     </div>
                 </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GIURISPRUDENZA EUROPEA (eur_lex) — DUE CORTI DIVERSE
+//
+// La tabella eur_lex ne contiene due che non vanno confuse:
+//   · Corte di giustizia UE (Lussemburgo) — interpreta il diritto dell'Unione,
+//     si cita per numero di causa (C-311/18), ha un CELEX vero.
+//   · Corte europea dei diritti dell'uomo (Strasburgo) — giudica sulla
+//     Convenzione EDU, NON e' un organo dell'Unione, si cita per numero di
+//     ricorso (43517/09). Il suo celex_id e' un codice interno CEDU_… che non
+//     va mai mostrato come CELEX.
+// Per questo il catalogo tiene le due corti su due schede separate.
+// Porting della sezione gia' esistente su LEXUM CH.
+// ═══════════════════════════════════════════════════════════════
+
+// Ordinati per AUTOREVOLEZZA, non per numerosita': la Grande Camera e' la
+// pronuncia di vertice, le decisioni sulla ricevibilita' (le piu' numerose)
+// non sono precedenti sul merito e stanno in fondo.
+const TIPI_CEDU = [
+    { v: 'grande_camera', l: 'Grande Camera', d: 'Pronunce di vertice sull\'interpretazione della Convenzione (17 giudici)' },
+    { v: 'sentenza_cedu', l: 'Sentenze', d: 'Sentenze di Camera sul merito del ricorso' },
+    { v: 'altro_cedu', l: 'Sentenze — altre formazioni', d: 'Comitato e formazioni ridotte, in genere casi ripetitivi' },
+    { v: 'parere_cedu', l: 'Pareri consultivi', d: 'Protocollo 16 — autorevoli ma non vincolanti' },
+    { v: 'decisione_cedu', l: 'Decisioni sulla ricevibilità', d: 'In larga maggioranza dichiarano il ricorso irricevibile: non sono precedenti sul merito' },
+]
+
+function TabGiurisprudenzaEuropea() {
+    const navigate = useNavigate()
+    // Stesso criterio del resto del file: la rotta segue DOVE si trova l'utente
+    // (/area per il cliente, /banca-dati per il professionista), non il ruolo.
+    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+    const PER_PAGINA_SENT = 50
+
+    // Corte attiva: 'cgue' (Lussemburgo) | 'cedu' (Strasburgo)
+    const [corte, setCorte] = useState('cgue')
+    const [vista, setVista] = useState('catalogo')   // 'catalogo' | 'lista'
+    const [organoSel, setOrganoSel] = useState(null)
+    const [tipoCeduSel, setTipoCeduSel] = useState(null)
+
+    const [conteggi, setConteggi] = useState([])
+    const [loadingConteggi, setLoadingConteggi] = useState(true)
+
+    const [lista, setLista] = useState([])
+    const [totale, setTotale] = useState(0)
+    const [loadingLista, setLoadingLista] = useState(false)
+    const [pagina, setPagina] = useState(0)
+    const [input, setInput] = useState('')
+    const [cerca, setCerca] = useState('')
+    const [aperta, setAperta] = useState(null)
+
+    // Conteggi dalla vista materializzata (rinfrescata dalla pipeline settimanale)
+    useEffect(() => {
+        let annullato = false
+        async function carica() {
+            setLoadingConteggi(true)
+            const { data } = await supabase
+                .from('conteggi_eu_it')
+                .select('sezione, chiave, totale')
+            if (annullato) return
+            setConteggi(data ?? [])
+            setLoadingConteggi(false)
+        }
+        carica()
+        return () => { annullato = true }
+    }, [])
+
+    const organiCgue = conteggi
+        .filter(c => c.sezione === 'sentenze' && c.chiave !== 'CEDU')
+        .sort((a, b) => Number(b.totale) - Number(a.totale))
+    const totaleCedu = conteggi.find(c => c.sezione === 'sentenze' && c.chiave === 'CEDU')?.totale ?? 0
+    const contaTipoCedu = (v) => conteggi.find(c => c.sezione === 'cedu' && c.chiave === v)?.totale ?? 0
+
+    // Lista: per organo (Lussemburgo) oppure per tipo (Strasburgo)
+    useEffect(() => {
+        if (vista !== 'lista') return
+        let annullato = false
+        async function carica() {
+            setLoadingLista(true)
+            let q = supabase
+                .from('eur_lex')
+                .select('id, celex_id, ecli, tipo, numero_caso, organo, data_decisione, oggetto, parti, testo_lingua, materia', { count: 'exact' })
+            if (corte === 'cedu') {
+                q = q.eq('organo', 'CEDU')
+                if (tipoCeduSel) q = q.eq('tipo', tipoCeduSel)
+            } else {
+                q = q.eq('organo', organoSel)
+            }
+            if (cerca.trim()) {
+                q = q.or(`numero_caso.ilike.%${cerca}%,oggetto.ilike.%${cerca}%,parti.ilike.%${cerca}%,ecli.ilike.%${cerca}%`)
+            }
+            q = q.order('data_decisione', { ascending: false, nullsFirst: false })
+                .range(pagina * PER_PAGINA_SENT, (pagina + 1) * PER_PAGINA_SENT - 1)
+            const { data, count } = await q
+            if (annullato) return
+            setLista(data ?? [])
+            setTotale(count ?? 0)
+            setLoadingLista(false)
+        }
+        carica()
+        return () => { annullato = true }
+    }, [vista, corte, organoSel, tipoCeduSel, cerca, pagina])
+
+    function reset() {
+        setPagina(0); setInput(''); setCerca(''); setAperta(null)
+    }
+    function cambiaCorte(c) {
+        if (c === corte) return
+        setCorte(c); setVista('catalogo'); setOrganoSel(null); setTipoCeduSel(null); reset()
+    }
+    function apriOrgano(org) { setOrganoSel(org); setVista('lista'); reset() }
+    function apriTipoCedu(tp) { setTipoCeduSel(tp); setVista('lista'); reset() }
+    function tornaCatalogo() { setVista('catalogo'); setOrganoSel(null); setTipoCeduSel(null); reset() }
+
+    function evidenzia(testo, q) {
+        const safe = escapeHtml(testo ?? '')
+        if (!q?.trim() || !testo) return safe
+        const re = new RegExp(`(${escapeHtml(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+        return safe.replace(re, '<mark class="bg-oro/20 text-oro">$1</mark>')
+    }
+
+    const pagine = Math.ceil(totale / PER_PAGINA_SENT)
+    const titoloLista = corte === 'cedu'
+        ? (TIPI_CEDU.find(t => t.v === tipoCeduSel)?.l ?? 'Corte EDU')
+        : organoSel
+
+    return (
+        <div className="space-y-5">
+
+            {/* Due corti, due schede: non vanno mai confuse */}
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <button onClick={() => cambiaCorte('cgue')}
+                    className={`px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cgue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    Corte di giustizia UE
+                </button>
+                <button onClick={() => cambiaCorte('cedu')}
+                    className={`px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cedu' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    Corte EDU
+                </button>
+            </div>
+
+            {/* Nota istituzionale: la differenza che conta per un avvocato italiano */}
+            <div className="bg-petrolio/40 border border-white/5 px-4 py-2.5 flex items-start gap-2.5">
+                <Scale size={12} className="text-salvia shrink-0 mt-0.5" />
+                <p className="font-body text-[11px] text-nebbia/50 leading-relaxed">
+                    {corte === 'cedu' ? (
+                        <>
+                            <strong className="text-nebbia/75">Corte europea dei diritti dell'uomo</strong> (Strasburgo, Consiglio d'Europa).
+                            Non è un organo dell'Unione europea: giudica sulla Convenzione EDU, che vincola l'Italia come norma
+                            interposta ex art. 117 co. 1 Cost. Il giudice non disapplica la norma interna contrastante — solleva
+                            questione di legittimità costituzionale. Si cita per numero di ricorso.
+                        </>
+                    ) : (
+                        <>
+                            <strong className="text-nebbia/75">Corte di giustizia dell'Unione europea</strong> (Lussemburgo).
+                            Interpreta il diritto dell'Unione: la sua giurisprudenza rileva per il rinvio pregiudiziale e per la
+                            disapplicazione del diritto interno contrastante. Si cita per numero di causa.
+                        </>
+                    )}
+                </p>
+            </div>
+
+            {/* ── CATALOGO ── */}
+            {vista === 'catalogo' && (
+                loadingConteggi ? (
+                    <div className="flex items-center justify-center py-20">
+                        <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
+                    </div>
+                ) : corte === 'cedu' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {TIPI_CEDU.map(tp => (
+                            <button key={tp.v} onClick={() => apriTipoCedu(tp.v)}
+                                className="bg-slate border border-white/5 p-5 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors leading-snug">{tp.l}</p>
+                                        <p className="font-body text-[11px] text-nebbia/35 mt-1 leading-snug">{tp.d}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="font-body text-xs text-oro/70">{Number(contaTipoCedu(tp.v)).toLocaleString('it-IT')}</p>
+                                        <ChevronRight size={15} className="text-nebbia/20 group-hover:text-oro/60 transition-colors ml-auto mt-1" />
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                        <div className="md:col-span-2 px-1">
+                            <p className="font-body text-[11px] text-nebbia/30">
+                                {Number(totaleCedu).toLocaleString('it-IT')} pronunce complessive, dal 1955 a oggi. Fonte: HUDOC — Consiglio d'Europa.
+                                La maggior parte è in inglese e francese: sono le lingue ufficiali della Corte.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {organiCgue.map(c => (
+                            <button key={c.chiave} onClick={() => apriOrgano(c.chiave)}
+                                className="bg-slate border border-white/5 p-5 text-left hover:border-oro/30 hover:bg-petrolio/60 transition-all group">
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors leading-snug">{c.chiave}</p>
+                                    <div className="text-right shrink-0">
+                                        <p className="font-body text-xs text-oro/70">{Number(c.totale).toLocaleString('it-IT')}</p>
+                                        <ChevronRight size={15} className="text-nebbia/20 group-hover:text-oro/60 transition-colors ml-auto mt-1" />
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )
+            )}
+
+            {/* ── LISTA ── */}
+            {vista === 'lista' && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button onClick={tornaCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <ChevronLeft size={13} /> {corte === 'cedu' ? 'Tutte le tipologie' : 'Tutti gli organi'}
+                        </button>
+                        <p className="font-display text-lg text-nebbia text-right">{titoloLista}</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+                            <input
+                                placeholder={corte === 'cedu' ? 'Numero di ricorso, parti, oggetto…' : 'Numero di causa, parti, oggetto…'}
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { setPagina(0); setCerca(input) } }}
+                                className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+                        </div>
+                        <button onClick={() => { setPagina(0); setCerca(input) }}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            <Search size={13} /> Cerca
+                        </button>
+                        {cerca && (
+                            <button onClick={() => { setInput(''); setCerca(''); setPagina(0) }}
+                                className="px-3 py-2.5 text-nebbia/30 hover:text-red-400 transition-colors font-body text-xs flex items-center gap-1">
+                                <X size={11} /> Pulisci
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="bg-slate border border-white/5 overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase whitespace-nowrap">
+                                        {corte === 'cedu' ? 'Ricorso n.' : 'Causa'}
+                                    </th>
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">Oggetto / parti</th>
+                                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase whitespace-nowrap">Data</th>
+                                    <th className="px-4 py-3 w-8" />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loadingLista ? (
+                                    <tr><td colSpan={4} className="px-4 py-20 text-center"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full inline-block" /></td></tr>
+                                ) : lista.length === 0 ? (
+                                    <tr><td colSpan={4} className="px-4 py-20 text-center"><p className="font-body text-sm text-nebbia/30">Nessuna pronuncia trovata.</p></td></tr>
+                                ) : lista.map(s => (
+                                    <Fragment key={s.id}>
+                                        <tr className="border-b border-white/5 hover:bg-petrolio/40 transition-colors cursor-pointer"
+                                            onClick={() => setAperta(aperta?.id === s.id ? null : s)}>
+                                            <td className="px-4 py-3 font-body text-sm text-oro font-medium whitespace-nowrap align-top">
+                                                {/* Per Strasburgo mai il celex: e' un codice interno */}
+                                                {s.numero_caso || (corte === 'cedu' ? (s.ecli || '—') : (s.celex_id || '—'))}
+                                                {s.testo_lingua && s.testo_lingua !== 'it' && (
+                                                    <span className="ml-2 font-body text-[10px] text-nebbia/35 border border-white/10 px-1.5 py-0.5 uppercase">{s.testo_lingua}</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 font-body text-sm text-nebbia/60 max-w-lg">
+                                                <p className="line-clamp-2" dangerouslySetInnerHTML={{ __html: evidenzia(s.oggetto || s.parti || 'Senza oggetto', cerca) }} />
+                                            </td>
+                                            <td className="px-4 py-3 font-body text-sm text-nebbia/50 whitespace-nowrap align-top">{s.data_decisione ?? '—'}</td>
+                                            <td className="px-4 py-3"><ChevronRight size={13} className={`text-nebbia/20 transition-transform ${aperta?.id === s.id ? 'rotate-90' : ''}`} /></td>
+                                        </tr>
+                                        {aperta?.id === s.id && (
+                                            <tr className="border-b border-white/5 bg-petrolio/20">
+                                                <td colSpan={4} className="px-4 py-4 space-y-3">
+                                                    {s.parti && <div><p className="font-body text-[11px] text-salvia/60 uppercase tracking-wider mb-1">Parti</p><p className="font-body text-sm text-nebbia/70">{s.parti}</p></div>}
+                                                    {s.oggetto && <div><p className="font-body text-[11px] text-salvia/60 uppercase tracking-wider mb-1">Oggetto</p><p className="font-body text-sm text-nebbia/70 leading-relaxed line-clamp-6">{s.oggetto}</p></div>}
+                                                    {Array.isArray(s.materia) && s.materia.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {s.materia.map((m, i) => <span key={i} className="font-body text-[11px] text-salvia/70 bg-salvia/5 border border-salvia/20 px-2 py-0.5">{m}</span>)}
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`${prefix}/eur-lex/${s.id}`) }}
+                                                        className="flex items-center gap-2 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors">
+                                                        <Eye size={12} /> Apri la pronuncia
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {pagine > 1 && (
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="font-body text-xs text-nebbia/30">
+                                {pagina * PER_PAGINA_SENT + 1}–{Math.min((pagina + 1) * PER_PAGINA_SENT, totale)} di {totale.toLocaleString('it-IT')}
+                            </p>
+                            <div className="flex gap-2">
+                                <button disabled={pagina === 0} onClick={() => { setPagina(p => p - 1); setAperta(null) }}
+                                    className="px-3 py-1.5 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
+                                    Precedente
+                                </button>
+                                <button disabled={pagina >= pagine - 1} onClick={() => { setPagina(p => p + 1); setAperta(null) }}
+                                    className="px-3 py-1.5 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
+                                    Successiva
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB UE — normativa (norme_ue) + giurisprudenza (eur_lex)
+// ═══════════════════════════════════════════════════════════════
+function TabUE({ crediti, setCrediti, messaggiConversazione, setMessaggiConversazione }) {
+    const [sezione, setSezione] = useState('norme')
+
+    return (
+        <div className="space-y-5">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <button onClick={() => setSezione('norme')}
+                    className={`px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'norme' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    Normativa
+                </button>
+                <button onClick={() => setSezione('giurisprudenza')}
+                    className={`px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    Giurisprudenza
+                </button>
+            </div>
+
+            {sezione === 'norme' ? (
+                <TabNormativa
+                    datasetFonte="ue"
+                    crediti={crediti}
+                    setCrediti={setCrediti}
+                    messaggiConversazione={messaggiConversazione}
+                    setMessaggiConversazione={setMessaggiConversazione}
+                />
+            ) : (
+                <TabGiurisprudenzaEuropea />
             )}
         </div>
     )
@@ -3867,8 +4222,7 @@ export function BancaDati() {
                     />
                 )}
                 {tabAttivo === 'ue' && (
-                    <TabNormativa
-                        datasetFonte="ue"
+                    <TabUE
                         key="ue"
                         crediti={crediti}
                         setCrediti={setCrediti}

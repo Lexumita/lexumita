@@ -1,5 +1,9 @@
 // src/pages/avvocato/SentenzaUeDettaglio.jsx
-// Pagina di dettaglio per una pronuncia della Corte di giustizia dell'UE (CGUE).
+// Pagina di dettaglio per una pronuncia europea. Serve DUE corti diverse che
+// condividono la tabella eur_lex: la Corte di giustizia dell'UE (Lussemburgo,
+// identificata da CELEX e numero di causa) e la Corte europea dei diritti
+// dell'uomo (Strasburgo, identificata dal numero di ricorso; il suo celex_id
+// e' un codice interno CEDU_… che non va mai mostrato come CELEX).
 // Tabella sorgente: eur_lex
 // Fonte: EUR-Lex © Unione europea, 1998–oggi — riuso autorizzato (Dec. 2011/833/UE) con indicazione della fonte.
 //
@@ -237,12 +241,30 @@ export default function SentenzaUeDettaglio() {
             conclusioni_ag: "Conclusioni dell'Avvocato Generale",
             view_ag: "Presa di posizione dell'Avvocato Generale",
             opinione_giuridica: 'Parere',
+            // Corte EDU (Strasburgo)
+            grande_camera: 'Sentenza della Grande Camera',
+            sentenza_cedu: 'Sentenza',
+            altro_cedu: 'Sentenza',
+            parere_cedu: 'Parere consultivo (Prot. 16)',
+            decisione_cedu: 'Decisione sulla ricevibilità',
         }
         return map[t] ?? (t ? String(t).replace(/_/g, ' ') : 'Pronuncia')
     }
 
+    // Questa pagina serve DUE corti diverse, che condividono la tabella eur_lex:
+    // Lussemburgo (Corte di giustizia UE) e Strasburgo (Corte EDU). Vanno
+    // distinte: hanno trattati, identificativi e conseguenze processuali diversi.
+    // Il celex_id delle CEDU e' un codice interno (CEDU_001-1), NON un CELEX:
+    // mostrarlo come tale darebbe all'avvocato un identificativo inesistente.
+    const isCedu = sentenza && (sentenza.organo === 'CEDU' || String(sentenza.celex_id ?? '').startsWith('CEDU_'))
+
     // Conclusioni AG / pareri: autorevoli ma NON vincolanti → badge informativo
-    const isNonVincolante = sentenza && ['conclusioni_ag', 'view_ag', 'opinione_giuridica'].includes(sentenza.tipo)
+    const isNonVincolante = sentenza && (
+        ['conclusioni_ag', 'view_ag', 'opinione_giuridica'].includes(sentenza.tipo) ||
+        // Strasburgo: il parere ex Prot. 16 non vincola, e la decisione di
+        // ricevibilita' non e' un precedente sul merito.
+        ['parere_cedu', 'decisione_cedu'].includes(sentenza.tipo)
+    )
 
     function asArray(v) {
         if (Array.isArray(v)) return v.filter(Boolean)
@@ -278,17 +300,25 @@ export default function SentenzaUeDettaglio() {
     const normeRichiamate = asArray(sentenza.norme_richiamate)
     const giurCollegata = asArray(sentenza.giurisprudenza_collegata)
 
-    const titoloBreve = [
-        sentenza.organo,
-        sentenza.numero_caso && `causa ${sentenza.numero_caso}`,
-    ].filter(Boolean).join(' · ') || sentenza.celex_id || 'Pronuncia CGUE'
+    // Strasburgo si cita per NUMERO DI RICORSO, Lussemburgo per numero di CAUSA.
+    const titoloBreve = isCedu
+        ? ['Corte EDU', sentenza.numero_caso && `ric. n. ${sentenza.numero_caso}`]
+            .filter(Boolean).join(' · ') || sentenza.ecli || 'Pronuncia della Corte EDU'
+        : [
+            sentenza.organo,
+            sentenza.numero_caso && `causa ${sentenza.numero_caso}`,
+        ].filter(Boolean).join(' · ') || sentenza.celex_id || 'Pronuncia CGUE'
 
     const ricercaSave = {
         sentenza_id: sentenza.id,
-        domanda: `${sentenza.organo ?? 'CGUE'} — ${sentenza.numero_caso ? `causa ${sentenza.numero_caso}` : sentenza.celex_id}${sentenza.oggetto ? ` — ${String(sentenza.oggetto).slice(0, 120)}` : ''}`,
+        domanda: isCedu
+            ? `Corte EDU — ${sentenza.numero_caso ? `ric. n. ${sentenza.numero_caso}` : sentenza.ecli}${sentenza.oggetto ? ` — ${String(sentenza.oggetto).slice(0, 120)}` : ''}`
+            : `${sentenza.organo ?? 'CGUE'} — ${sentenza.numero_caso ? `causa ${sentenza.numero_caso}` : sentenza.celex_id}${sentenza.oggetto ? ` — ${String(sentenza.oggetto).slice(0, 120)}` : ''}`,
         testo: [
             sentenza.ecli && `ECLI: ${sentenza.ecli}`,
-            sentenza.celex_id && `CELEX: ${sentenza.celex_id}`,
+            isCedu
+                ? (sentenza.numero_caso && `Ricorso n. ${sentenza.numero_caso}`)
+                : (sentenza.celex_id && `CELEX: ${sentenza.celex_id}`),
             sentenza.oggetto && `Oggetto: ${sentenza.oggetto}`,
             sentenza.url_originale && `Fonte: ${sentenza.url_originale}`,
         ].filter(Boolean).join('\n\n'),
@@ -307,19 +337,33 @@ export default function SentenzaUeDettaglio() {
                 </button>
             </div>
 
-            {/* Banner attribuzione UE — sempre visibile in cima */}
+            {/* Banner attribuzione — due corti diverse, due attribuzioni diverse */}
             <div className="bg-petrolio/60 border border-salvia/15 px-4 py-3 flex items-start gap-3">
                 <Scale size={14} className="text-salvia shrink-0 mt-0.5" />
                 <div className="flex-1">
-                    <p className="font-body text-xs text-nebbia/70 leading-relaxed">
-                        Pronuncia della <strong className="text-nebbia">Corte di giustizia dell'Unione europea</strong>
-                        {sentenza.organo && sentenza.organo !== 'Corte di Giustizia UE' && (
-                            <> &mdash; <strong className="text-nebbia">{sentenza.organo}</strong></>
-                        )}
-                    </p>
-                    <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
-                        Fonte: EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi
-                    </p>
+                    {isCedu ? (
+                        <>
+                            <p className="font-body text-xs text-nebbia/70 leading-relaxed">
+                                Pronuncia della <strong className="text-nebbia">Corte europea dei diritti dell'uomo</strong> (Strasburgo)
+                            </p>
+                            <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                                Fonte: HUDOC &mdash; Consiglio d'Europa. Non è un organo dell'Unione europea:
+                                giudica sulla Convenzione EDU, che vincola l'Italia tramite l'art. 117 co. 1 Cost.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <p className="font-body text-xs text-nebbia/70 leading-relaxed">
+                                Pronuncia della <strong className="text-nebbia">Corte di giustizia dell'Unione europea</strong>
+                                {sentenza.organo && sentenza.organo !== 'Corte di Giustizia UE' && (
+                                    <> &mdash; <strong className="text-nebbia">{sentenza.organo}</strong></>
+                                )}
+                            </p>
+                            <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                                Fonte: EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -332,10 +376,21 @@ export default function SentenzaUeDettaglio() {
                         </p>
                         <h1 className="font-display text-2xl text-nebbia leading-tight">{titoloBreve}</h1>
                         <div className="flex flex-wrap gap-2 mt-3">
-                            {sentenza.celex_id && (
-                                <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
-                                    CELEX {sentenza.celex_id}
-                                </span>
+                            {/* Il celex delle CEDU e' un codice interno: al suo posto
+                                si mostra il numero di ricorso, che e' l'identificativo
+                                con cui un avvocato cerca e cita una pronuncia di Strasburgo. */}
+                            {isCedu ? (
+                                sentenza.numero_caso && (
+                                    <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
+                                        Ricorso n. {sentenza.numero_caso}
+                                    </span>
+                                )
+                            ) : (
+                                sentenza.celex_id && (
+                                    <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
+                                        CELEX {sentenza.celex_id}
+                                    </span>
+                                )
                             )}
                             {sentenza.ecli && (
                                 <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
@@ -440,18 +495,33 @@ export default function SentenzaUeDettaglio() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/60 font-body text-sm hover:border-oro/30 hover:text-oro transition-colors"
                     >
-                        <ExternalLink size={13} /> Vedi su EUR-Lex
+                        <ExternalLink size={13} /> {isCedu ? 'Vedi su HUDOC' : 'Vedi su EUR-Lex'}
                     </a>
                 )}
             </div>
 
-            {/* Conclusioni AG: avviso non vincolante */}
+            {/* Avviso: pronunce autorevoli ma non vincolanti (Lussemburgo e Strasburgo) */}
             {isNonVincolante && (
                 <div className="bg-oro/5 border border-oro/20 px-4 py-3 flex items-start gap-3">
                     <AlertCircle size={12} className="text-oro shrink-0 mt-0.5" />
                     <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                        Le conclusioni dell'Avvocato Generale sono <strong className="text-nebbia/80">autorevoli ma non vincolanti</strong>:
-                        non costituiscono la decisione della Corte. Verificare l'eventuale sentenza definitiva sulla medesima causa.
+                        {sentenza.tipo === 'decisione_cedu' ? (
+                            <>
+                                Questa è una <strong className="text-nebbia/80">decisione sulla ricevibilità</strong>, non una sentenza
+                                sul merito: nella grande maggioranza dei casi dichiara il ricorso irricevibile.
+                                Non costituisce un precedente sull'interpretazione della Convenzione.
+                            </>
+                        ) : sentenza.tipo === 'parere_cedu' ? (
+                            <>
+                                I pareri consultivi ex Protocollo 16 sono <strong className="text-nebbia/80">autorevoli ma non vincolanti</strong>
+                                per il giudice che li ha richiesti.
+                            </>
+                        ) : (
+                            <>
+                                Le conclusioni dell'Avvocato Generale sono <strong className="text-nebbia/80">autorevoli ma non vincolanti</strong>:
+                                non costituiscono la decisione della Corte. Verificare l'eventuale sentenza definitiva sulla medesima causa.
+                            </>
+                        )}
                     </p>
                 </div>
             )}
@@ -524,18 +594,34 @@ export default function SentenzaUeDettaglio() {
                 </div>
             )}
 
-            {/* Attribuzione finale */}
+            {/* Attribuzione finale — cambia con la corte: fonti e licenze diverse */}
             <div className="bg-slate border border-white/5 p-4">
-                <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
-                    <strong className="text-nebbia/60">Fonte:</strong> EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi.
-                    Riuso autorizzato (Decisione 2011/833/UE) con indicazione della fonte.
-                    {sentenza.url_originale && (
-                        <> &middot; <a href={sentenza.url_originale} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">EUR-Lex</a></>
-                    )}
-                </p>
-                <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
-                    Solo i testi pubblicati nell'edizione cartacea o elettronica della Gazzetta ufficiale dell'Unione europea fanno fede.
-                </p>
+                {isCedu ? (
+                    <>
+                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
+                            <strong className="text-nebbia/60">Fonte:</strong> HUDOC &mdash; Corte europea dei diritti dell'uomo, Consiglio d'Europa.
+                            {sentenza.url_originale && (
+                                <> &middot; <a href={sentenza.url_originale} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">HUDOC</a></>
+                            )}
+                        </p>
+                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
+                            Fanno fede solo i testi ufficiali nelle lingue della Corte (inglese e francese) pubblicati su HUDOC.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
+                            <strong className="text-nebbia/60">Fonte:</strong> EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi.
+                            Riuso autorizzato (Decisione 2011/833/UE) con indicazione della fonte.
+                            {sentenza.url_originale && (
+                                <> &middot; <a href={sentenza.url_originale} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">EUR-Lex</a></>
+                            )}
+                        </p>
+                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
+                            Solo i testi pubblicati nell'edizione cartacea o elettronica della Gazzetta ufficiale dell'Unione europea fanno fede.
+                        </p>
+                    </>
+                )}
             </div>
 
         </div>
