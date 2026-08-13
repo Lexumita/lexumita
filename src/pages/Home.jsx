@@ -156,7 +156,8 @@ function HeroDatabaseCard() {
             { t: 'Giurisprudenza tributaria', s: 'Corti di giustizia tributaria (BDGT-MEF)' },
             { t: 'Prassi delle autorità', s: 'Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti' },
             { t: 'Diritto dell\'Unione Europea', s: 'Regolamenti, direttive e giurisprudenza della Corte di giustizia UE' },
-            { t: 'Corte europea dei diritti dell\'uomo', s: 'Sentenze e decisioni di Strasburgo dal 1955 (banca dati HUDOC)' },
+            { t: 'Corte europea dei diritti dell\'uomo', s: 'Convenzione (testo vigente) e giurisprudenza di Strasburgo dal 1955 (HUDOC)' },
+            { t: 'Diritti fondamentali internazionali', s: 'Dichiarazione universale dei diritti umani e leggi di ratifica dei trattati' },
             { t: 'Deontologia e disciplina forense', s: 'Codice deontologico e 21.000 massime del Consiglio Nazionale Forense' },
           ].map(({ t, s }) => (
             <div key={t} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">

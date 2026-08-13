@@ -258,9 +258,14 @@ export function NormaDettaglio() {
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                         <p className="section-label !m-0">{cfg.label}</p>
-                        {norma.vigente === false && (
+                        {/* Nell'archivio `vigente=false` NON significa fuori vigore: il 78%
+                            degli atti non abrogati ce l'ha a false (la pipeline di
+                            riallineamento non li ha toccati). Il segnale affidabile lì è
+                            `abrogato`. Mostrare "Non vigente" sulla L. 881/1977 era
+                            un'informazione giuridicamente falsa. */}
+                        {(tipoFonte === 'archivio' ? norma.abrogato === true : norma.vigente === false) && (
                             <span className="font-body text-xs text-red-400/70 border border-red-400/30 bg-red-400/5 px-2 py-0.5">
-                                Non vigente
+                                {tipoFonte === 'archivio' ? 'Abrogato' : 'Non vigente'}
                             </span>
                         )}
                         {norma.tipo_elemento && norma.tipo_elemento !== 'articolo' && (

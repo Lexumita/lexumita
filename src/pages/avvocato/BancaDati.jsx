@@ -44,6 +44,23 @@ const CONFIG_UE = {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// LOG RICERCHE
+// Prima di questa funzione la barra di ricerca non lasciava traccia e le
+// segnalazioni dei clienti («non trovo la legge X») si ricostruivano per
+// ipotesi. Le righe con risultati=0 sono la lista delle fonti mancanti.
+// Fire-and-forget: se il log fallisce, la ricerca per l'utente è andata lo stesso.
+// ═══════════════════════════════════════════════════════════════
+async function logRicercaBancaDati({ query, ambito, codice = null, risultati = null }) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        await supabase.from('ricerche_bancadati').insert({
+            user_id: user.id, query: String(query).slice(0, 300), ambito, codice, risultati,
+        })
+    } catch { /* mai bloccante */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HOOK CREDITI
 // ═══════════════════════════════════════════════════════════════
 function useCreditiAI() {
@@ -1261,6 +1278,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
             const { data, count } = await q.limit(50)
             setNormeGlobali(data ?? [])
             setTotaleGlobale(count ?? 0)
+            logRicercaBancaDati({ query: inputTradGlobale, ambito: dataset, risultati: count ?? 0 })
         } finally { setLoadingGlobale(false) }
     }
 
@@ -1291,6 +1309,10 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
             const { data, count } = await q
             setNorme(data ?? [])
             setTotaleNorme(count ?? 0)
+            // solo alla prima pagina: la paginazione non è una nuova ricerca
+            if (cercaTrad.trim() && pagina === 0) {
+                logRicercaBancaDati({ query: cercaTrad, ambito: dataset, codice: codiceSelezionato, risultati: count ?? 0 })
+            }
         } finally { setLoadingNorme(false) }
     }
 
@@ -1693,6 +1715,9 @@ function TabGiurisprudenzaEuropea() {
             if (annullato) return
             setLista(data ?? [])
             setTotale(count ?? 0)
+            if (cerca.trim() && pagina === 0) {
+                logRicercaBancaDati({ query: cerca, ambito: 'giur_eu', codice: corte, risultati: count ?? 0 })
+            }
             setLoadingLista(false)
         }
         carica()
@@ -2024,17 +2049,29 @@ function TabLeggiDecreti() {
         setLoadingGlobale(true)
         setArticoloApertoGlobale(null)
         try {
-            const filtroOr = `articolo.ilike.%${inputGlobale}%,rubrica.ilike.%${inputGlobale}%,testo.ilike.%${inputGlobale}%,titolo_doc.ilike.%${inputGlobale}%`
-            const { data } = await supabase
+            const filtroCampi = `articolo.ilike.%${inputGlobale}%,rubrica.ilike.%${inputGlobale}%,testo.ilike.%${inputGlobale}%,titolo_doc.ilike.%${inputGlobale}%`
+            // Le citazioni tipo «881/1977», «l. 881/1977» o «legge 881 del 1977»
+            // non compaiono in nessun campo di testo: numero e anno vivono in
+            // numero_atto/anno_atto. Senza questo ramo la L. 881/1977 risultava
+            // «mancante» pur essendo in archivio (segnalazione cliente 13/08/2026).
+            const cit = inputGlobale.match(/(\d{1,5})\s*(?:\/|\s+del\s+|\s+)(\d{4})\b/)
+            const filtroOr = cit
+                ? `and(numero_atto.eq.${cit[1]},anno_atto.eq.${cit[2]}),${filtroCampi}`
+                : filtroCampi
+            const { data, count } = await supabase
                 .from('norme_archivio')
-                .select('id, urn, tipo_atto, numero_atto, anno_atto, titolo_doc, articolo, rubrica, testo, tipo_elemento')
-                .eq('vigente', true)
+                .select('id, urn, tipo_atto, numero_atto, anno_atto, titolo_doc, articolo, rubrica, testo, tipo_elemento', { count: 'exact' })
+                // abrogato=false, NON vigente=true: nell'archivio `vigente` marca solo
+                // gli atti riallineati dalla pipeline — il 78% degli atti in vigore ce
+                // l'ha a false. Filtrando su vigente la L. 881/1977 spariva dal tab.
+                .eq('abrogato', false)
                 .or(filtroOr)
                 .order('tipo_atto')
                 .order('anno_atto', { ascending: false })
                 .order('articolo')
                 .limit(50)
             setRisultatiGlobali(data ?? [])
+            logRicercaBancaDati({ query: inputGlobale, ambito: 'archivio', risultati: count ?? (data?.length ?? 0) })
         } finally {
             setLoadingGlobale(false)
         }
@@ -2047,7 +2084,7 @@ function TabLeggiDecreti() {
             let q = supabase
                 .from('norme_archivio')
                 .select('tipo_atto, numero_atto, anno_atto, titolo_doc, urn')
-                .eq('vigente', true)
+                .eq('abrogato', false)
                 .eq('tipo_atto', tipoAttoSelezionato)
 
             if (filtroAnno) q = q.eq('anno_atto', parseInt(filtroAnno))
@@ -2083,7 +2120,7 @@ function TabLeggiDecreti() {
             let q = supabase
                 .from('norme_archivio')
                 .select('id, urn, tipo_atto, numero_atto, anno_atto, articolo, rubrica, testo, tipo_elemento, titolo_doc')
-                .eq('vigente', true)
+                .eq('abrogato', false)
                 .eq('tipo_atto', attoSelezionato.tipo_atto)
 
             if (attoSelezionato.numero_atto) q = q.eq('numero_atto', attoSelezionato.numero_atto)
