@@ -155,7 +155,7 @@ function HeroDatabaseCard() {
             { t: 'Giurisprudenza amministrativa e contabile', s: 'TAR, Consiglio di Stato, Corte dei Conti' },
             { t: 'Giurisprudenza tributaria', s: 'Corti di giustizia tributaria (BDGT-MEF)' },
             { t: 'Prassi delle autorità', s: 'Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti' },
-            { t: 'Diritto dell\'Unione Europea', s: 'Regolamenti, direttive e giurisprudenza della Corte di giustizia UE' },
+            { t: 'Diritto dell\'Unione Europea', s: 'Trattati (TUE, TFUE, Carta), regolamenti, direttive e giurisprudenza della Corte di giustizia UE' },
             { t: 'Corte europea dei diritti dell\'uomo', s: 'Convenzione (testo vigente) e giurisprudenza di Strasburgo dal 1955 (HUDOC)' },
             { t: 'Diritti fondamentali internazionali', s: 'Dichiarazione universale dei diritti umani e leggi di ratifica dei trattati' },
             { t: 'Deontologia e disciplina forense', s: 'Codice deontologico e 21.000 massime del Consiglio Nazionale Forense' },
