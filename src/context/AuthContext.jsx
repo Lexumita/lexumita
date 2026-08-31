@@ -43,6 +43,10 @@ export function AuthProvider({ children }) {
     profile,
     loading,
     role: profile?.role ?? null,
+    // Ricarica il profilo dal DB. Serve dopo un salvataggio: senza, le pagine
+    // che decidono in base al profilo (es. Acquista, che sblocca i piani sul
+    // profilo completo) continuerebbero a leggere lo stato precedente.
+    refreshProfile: async () => { if (user?.id) await loadProfile(user.id) },
     signOut: () => supabase.auth.signOut(),
   }
 

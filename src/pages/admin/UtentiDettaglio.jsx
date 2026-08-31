@@ -6,7 +6,8 @@ import { BackButton, Badge, StatCard } from '@/components/shared'
 import {
   ShieldOff, Lock, Clock, FileText,
   FolderOpen, User, KeyRound, Mail, X, Eye, EyeOff, Copy, Check,
-  CheckCircle, XCircle, AlertCircle, ArrowRight, RefreshCw, Download
+  CheckCircle, XCircle, AlertCircle, ArrowRight, RefreshCw, Download,
+  CreditCard, Sparkles, Receipt, CalendarClock
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -1124,6 +1125,219 @@ function BoxAttribuzioneCommerciale({ utente, onAggiorna }) {
 // ─────────────────────────────────────────────────────────────
 // PAGINA PRINCIPALE
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// SEZIONE ABBONAMENTO, CREDITI E STORICO ACQUISTI
+//
+// Mostra lo stato REALE calcolato dalla data di scadenza, non il campo
+// `abbonamento_stato`: quel campo non viene aggiornato da nessuno quando la
+// data passa, quindi in archivio ci sono profili marcati "attivo" con la
+// scadenza superata da settimane. Se i due valori divergono lo diciamo,
+// invece di far vedere all'admin un dato falso.
+// ─────────────────────────────────────────────────────────────
+function statoAbbonamento(utente) {
+  const scad = utente?.abbonamento_scadenza ? new Date(utente.abbonamento_scadenza) : null
+  const grazia = utente?.grazia_fino_al ? new Date(utente.grazia_fino_al) : null
+  const ora = new Date()
+  if (!scad && !utente?.abbonamento_tipo) return { chiave: 'nessuno', label: 'Nessun abbonamento', variant: 'gray' }
+  if (!scad) return { chiave: 'senza_data', label: 'Attivo senza scadenza registrata', variant: 'warning' }
+  const giorni = Math.ceil((scad - ora) / 86400000)
+  if (giorni < 0) {
+    if (grazia && grazia > ora) {
+      return { chiave: 'grazia', label: `Scaduto, in grazia fino al ${grazia.toLocaleDateString('it-IT')}`, variant: 'warning', giorni }
+    }
+    return { chiave: 'scaduto', label: `Scaduto da ${Math.abs(giorni)} giorni`, variant: 'red', giorni }
+  }
+  if (giorni <= 15) return { chiave: 'in_scadenza', label: `In scadenza fra ${giorni} giorni`, variant: 'warning', giorni }
+  return { chiave: 'attivo', label: `Attivo, ancora ${giorni} giorni`, variant: 'salvia', giorni }
+}
+
+function SezioneAbbonamento({ utente }) {
+  const [dati, setDati] = useState({ transazioni: [], crediti: [], prodotto: null })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let vivo = true
+    async function carica() {
+      setLoading(true)
+      const [tx, cr, pr] = await Promise.all([
+        supabase.from('transazioni')
+          .select('id, prodotto_nome, tipo, importo, stato, created_at, stripe_payment_id')
+          .eq('user_id', utente.id).order('created_at', { ascending: false }).limit(50),
+        supabase.from('crediti_ai')
+          .select('id, tipo, crediti_totali, crediti_usati, periodo_inizio, periodo_fine, created_at')
+          .eq('user_id', utente.id).order('created_at', { ascending: false }),
+        utente.piano_id
+          ? supabase.from('prodotti').select('nome, prezzo, durata_mesi, posti, crediti_ai_mensili, spazio_gb').eq('id', utente.piano_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      if (!vivo) return
+      setDati({ transazioni: tx.data ?? [], crediti: cr.data ?? [], prodotto: pr.data ?? null })
+      setLoading(false)
+    }
+    carica()
+    return () => { vivo = false }
+  }, [utente.id, utente.piano_id])
+
+  const st = statoAbbonamento(utente)
+  // il campo in archivio contraddice la data?
+  const campoIncoerente =
+    utente.abbonamento_stato === 'attivo' && st.chiave === 'scaduto'
+
+  const ora = new Date()
+  const creditiResidui = dati.crediti.reduce((acc, c) => {
+    const res = (c.crediti_totali ?? 0) - (c.crediti_usati ?? 0)
+    const scaduto = c.periodo_fine && new Date(c.periodo_fine) < ora
+    return acc + (res > 0 && !scaduto ? res : 0)
+  }, 0)
+  const speso = dati.transazioni
+    .filter(t => t.stato === 'completato')
+    .reduce((a, t) => a + Number(t.importo ?? 0), 0)
+
+  const riga = (k, v) => (
+    <div className="flex items-baseline justify-between gap-4 py-1.5 border-b border-white/5 last:border-0">
+      <span className="font-body text-xs text-nebbia/40">{k}</span>
+      <span className="font-body text-xs text-nebbia/80 text-right">{v ?? '—'}</span>
+    </div>
+  )
+
+  return (
+    <div className="bg-slate border border-white/5 p-5 space-y-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="font-body text-sm font-medium text-nebbia flex items-center gap-2">
+          <CreditCard size={15} className="text-oro" /> Abbonamento e acquisti
+        </p>
+        <Badge label={st.label} variant={st.variant} />
+      </div>
+
+      {campoIncoerente && (
+        <div className="bg-amber-500/8 border border-amber-500/25 px-4 py-3 flex items-start gap-2">
+          <AlertCircle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+          <p className="font-body text-xs text-amber-400/90 leading-relaxed">
+            Dato incoerente in archivio: <code className="text-amber-300">abbonamento_stato</code> vale
+            «attivo» ma la scadenza è passata. Nessuna procedura aggiorna quel campo allo scadere:
+            qui sopra è mostrato lo stato reale calcolato dalla data.
+          </p>
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div className="bg-petrolio/40 border border-white/5 p-4">
+          <p className="font-body text-[10px] text-nebbia/35 uppercase tracking-widest mb-2">Piano</p>
+          <p className="font-display text-lg text-nebbia leading-tight">
+            {utente.abbonamento_tipo ?? dati.prodotto?.nome ?? 'Nessuno'}
+          </p>
+          {dati.prodotto && (
+            <p className="font-body text-xs text-nebbia/35 mt-1">
+              {euro(dati.prodotto.prezzo)} · {dati.prodotto.durata_mesi} mesi · {dati.prodotto.posti} post{dati.prodotto.posti === 1 ? 'o' : 'i'}
+            </p>
+          )}
+        </div>
+        <div className="bg-petrolio/40 border border-white/5 p-4">
+          <p className="font-body text-[10px] text-nebbia/35 uppercase tracking-widest mb-2">Crediti AI disponibili</p>
+          <p className="font-display text-lg text-oro leading-tight">{loading ? '—' : creditiResidui}</p>
+          <p className="font-body text-xs text-nebbia/35 mt-1">
+            su {dati.crediti.length} assegnazion{dati.crediti.length === 1 ? 'e' : 'i'}
+          </p>
+        </div>
+        <div className="bg-petrolio/40 border border-white/5 p-4">
+          <p className="font-body text-[10px] text-nebbia/35 uppercase tracking-widest mb-2">Totale speso</p>
+          <p className="font-display text-lg text-salvia leading-tight">{loading ? '—' : euro(speso)}</p>
+          <p className="font-body text-xs text-nebbia/35 mt-1">
+            {dati.transazioni.filter(t => t.stato === 'completato').length} pagament{dati.transazioni.filter(t => t.stato === 'completato').length === 1 ? 'o' : 'i'}
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <p className="font-body text-xs text-nebbia/50 mb-2 flex items-center gap-1.5">
+          <CalendarClock size={12} /> Dettaglio abbonamento
+        </p>
+        <div className="bg-petrolio/30 border border-white/5 px-4 py-2">
+          {riga('Tipo', utente.abbonamento_tipo)}
+          {riga('Stato in archivio', utente.abbonamento_stato ?? '(non impostato)')}
+          {riga('Scadenza', utente.abbonamento_scadenza
+            ? new Date(utente.abbonamento_scadenza).toLocaleDateString('it-IT') : null)}
+          {riga('Periodo di grazia', utente.grazia_fino_al
+            ? `fino al ${new Date(utente.grazia_fino_al).toLocaleDateString('it-IT')}` : null)}
+          {riga('Posti acquistati / usati', utente.posti_acquistati != null
+            ? `${utente.posti_acquistati} / ${utente.posti_usati ?? 0}` : null)}
+          {riga('Spazio del piano', utente.spazio_gb_piano ? `${utente.spazio_gb_piano} GB` : null)}
+          {riga('Prova gratuita', utente.prova_gratuita_usata ? 'già usata' : 'mai usata')}
+          {riga('Cliente Stripe', utente.stripe_customer_id)}
+        </div>
+      </div>
+
+      <div>
+        <p className="font-body text-xs text-nebbia/50 mb-2 flex items-center gap-1.5">
+          <Sparkles size={12} /> Assegnazioni crediti AI
+        </p>
+        {loading ? (
+          <p className="font-body text-xs text-nebbia/30 py-3">Caricamento…</p>
+        ) : dati.crediti.length === 0 ? (
+          <p className="font-body text-xs text-nebbia/30 py-3">Nessuna assegnazione.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {dati.crediti.map(c => {
+              const res = (c.crediti_totali ?? 0) - (c.crediti_usati ?? 0)
+              const scaduto = c.periodo_fine && new Date(c.periodo_fine) < ora
+              const esaurito = res <= 0
+              return (
+                <div key={c.id} className="flex items-center justify-between gap-3 bg-petrolio/30 border border-white/5 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="font-body text-xs text-nebbia/80">
+                      {c.tipo} · {c.crediti_totali - c.crediti_usati}/{c.crediti_totali} residui
+                    </p>
+                    <p className="font-body text-[11px] text-nebbia/30">
+                      dal {new Date(c.periodo_inizio ?? c.created_at).toLocaleDateString('it-IT')}
+                      {c.periodo_fine ? ` al ${new Date(c.periodo_fine).toLocaleDateString('it-IT')}` : ' · senza scadenza'}
+                    </p>
+                  </div>
+                  <Badge
+                    label={scaduto ? 'Scaduto' : esaurito ? 'Esaurito' : 'Disponibile'}
+                    variant={scaduto ? 'red' : esaurito ? 'gray' : 'salvia'}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="font-body text-xs text-nebbia/50 mb-2 flex items-center gap-1.5">
+          <Receipt size={12} /> Storico acquisti
+        </p>
+        {loading ? (
+          <p className="font-body text-xs text-nebbia/30 py-3">Caricamento…</p>
+        ) : dati.transazioni.length === 0 ? (
+          <p className="font-body text-xs text-nebbia/30 py-3">Nessun acquisto registrato.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {dati.transazioni.map(t => (
+              <div key={t.id} className="flex items-center justify-between gap-3 bg-petrolio/30 border border-white/5 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="font-body text-xs text-nebbia/80 truncate">{t.prodotto_nome ?? t.tipo ?? 'Acquisto'}</p>
+                  <p className="font-body text-[11px] text-nebbia/30">
+                    {new Date(t.created_at).toLocaleDateString('it-IT')}
+                    {t.stripe_payment_id ? ` · Stripe ${String(t.stripe_payment_id).slice(-8)}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-body text-xs text-nebbia/70">{euro(t.importo)}</span>
+                  <Badge
+                    label={t.stato === 'completato' ? 'Pagato' : t.stato ?? '—'}
+                    variant={t.stato === 'completato' ? 'salvia' : t.stato === 'fallito' ? 'red' : 'gray'}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminUtentiDettaglio() {
   const { id } = useParams()
   const { profile: adminProfile } = useAuth()
@@ -1189,6 +1403,11 @@ export default function AdminUtentiDettaglio() {
           utente={utente}
           onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
         />
+      )}
+
+      {/* Abbonamento, crediti e storico acquisti: per i ruoli che comprano */}
+      {['user', 'avvocato', 'commercialista'].includes(utente.role) && (
+        <SezioneAbbonamento utente={utente} />
       )}
 
       {utente.role === 'commerciale' && (

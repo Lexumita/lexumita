@@ -28,7 +28,21 @@ const STATO_ABB = {
   attivo: { label: 'Attivo', variant: 'salvia' },
   scaduto: { label: 'Scaduto', variant: 'red' },
   in_scadenza: { label: 'In scadenza', variant: 'warning' },
+  in_grazia: { label: 'In grazia', variant: 'warning' },
   prova: { label: 'Prova', variant: 'oro' },
+}
+
+// Lo stato si DERIVA dalla scadenza, non si legge da `abbonamento_stato`.
+// Quel campo viene riallineato da un job notturno: fra un giro e l'altro puo'
+// essere vecchio di ore, e un venditore vedrebbe "attivo" un cliente scaduto
+// stamattina. La data invece non puo' mentire. Il campo resta come ripiego
+// quando la data manca (es. abbonamenti senza scadenza registrata).
+function statoAbbonamentoCliente(c) {
+  if (!c?.abbonamento_scadenza) return STATO_ABB[c?.abbonamento_stato]
+  const giorni = Math.ceil((new Date(c.abbonamento_scadenza) - new Date()) / 86400000)
+  if (giorni < 0) return STATO_ABB.scaduto
+  if (giorni <= 15) return STATO_ABB.in_scadenza
+  return STATO_ABB.attivo
 }
 
 const dataIt = (iso) => iso ? new Date(iso).toLocaleDateString('it-IT') : '—'
@@ -139,7 +153,7 @@ export default function CommercialeClienti() {
             const lista = acquistiPerCliente.get(c.id) ?? []
             const isOpen = aperto === c.id
             const ruolo = RUOLO[c.role] ?? RUOLO.user
-            const abb = STATO_ABB[c.abbonamento_stato]
+            const abb = statoAbbonamentoCliente(c)
             const righe = [
               <Tr key={c.id} onClick={() => setAperto(isOpen ? null : c.id)}>
                 <Td className="w-8">

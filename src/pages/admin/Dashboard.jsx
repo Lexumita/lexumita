@@ -50,6 +50,7 @@ export default function AdminDashboard() {
         { count: nTicket },
         { count: nSentenze },
         { count: nClienti },
+        { count: nUtenti },
         revenuRes,
       ] = await Promise.all([
         // Avvocati attivi (con piano attivo)
@@ -78,6 +79,13 @@ export default function AdminDashboard() {
           .select('id', { count: 'exact', head: true })
           .eq('role', 'cliente'),
 
+        // Utenti registrati: TUTTI i profili, qualunque ruolo. Gli altri
+        // contatori filtrano per ruolo e insieme non fanno il totale: oggi
+        // due terzi degli iscritti hanno ruolo 'user', cioè si sono registrati
+        // ma non hanno ancora completato la verifica professionale.
+        supabase.from('profiles')
+          .select('id', { count: 'exact', head: true }),
+
         // Revenue totale (somma transazioni completate)
         supabase.from('transazioni')
           .select('importo')
@@ -92,6 +100,7 @@ export default function AdminDashboard() {
         nTicket: nTicket ?? 0,
         nSentenze: nSentenze ?? 0,
         nClienti: nClienti ?? 0,
+        nUtenti: nUtenti ?? 0,
         revenue,
       })
       setLoading(false)
@@ -100,6 +109,12 @@ export default function AdminDashboard() {
   }, [])
 
   const STATS = [
+    {
+      label: 'Utenti registrati',
+      value: loading ? '—' : stats?.nUtenti ?? 0,
+      colorClass: 'text-nebbia',
+      icon: Users,
+    },
     {
       label: 'Avvocati attivi',
       value: loading ? '—' : stats?.nAvvocati ?? 0,

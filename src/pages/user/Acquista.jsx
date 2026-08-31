@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import {
     Sparkles, ShoppingBag, CreditCard, ArrowRight, CheckCircle,
@@ -28,8 +29,14 @@ export default function Acquista() {
     const [acquistando, setAcquistando] = useState(null)
     const [errore, setErrore] = useState('')
 
-    // Tab attivo: "crediti" (sempre visibile), "abbonamenti" (solo verificato)
-    const isApproved = profile?.verification_status === 'approved'
+    // Tab attivo: "crediti" (sempre visibile), "abbonamenti" (profilo completo).
+    // A sbloccare i piani sono i DATI DI FATTURAZIONE, non la verifica dei
+    // documenti: si validano da soli (una P.IVA errata fa fallire la fattura)
+    // e non richiedono approvazione manuale. Chi era già stato approvato in
+    // passato resta sbloccato, altrimenti gli toglieremmo un diritto acquisito.
+    const haProfiloCompleto = profiloCompleto(profile)
+    const isApproved = haProfiloCompleto || profile?.verification_status === 'approved'
+    const mancanti = campiMancanti(profile)
     const haPianoStudio = profile?.posti_acquistati > 1
     const [tabAttivo, setTabAttivo] = useState('crediti')
 
@@ -296,54 +303,28 @@ export default function Acquista() {
                 />
             )}
 
-            {/* CTA verifica — varia in base allo stato */}
+            {/* CTA: cosa manca per sbloccare i piani */}
             {!isApproved && (() => {
-                const stato = profile?.verification_status
-                if (stato === 'pending') {
-                    return (
-                        <div className="bg-slate border border-amber-500/20 p-6 flex items-start gap-3">
-                            <Shield size={18} className="text-amber-400 shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="font-body text-sm font-medium text-amber-400 mb-1">Verifica in corso</p>
-                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
-                                    Stiamo esaminando i tuoi documenti. Riceverai una notifica via email entro 24-48 ore.
-                                </p>
-                                <Link to="/verifica/stato" className="font-body text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1.5">
-                                    Vedi stato verifica <ArrowRight size={12} />
-                                </Link>
-                            </div>
-                        </div>
-                    )
-                }
-                if (stato === 'rejected') {
-                    return (
-                        <div className="bg-slate border border-red-500/20 p-6 flex items-start gap-3">
-                            <Shield size={18} className="text-red-400 shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="font-body text-sm font-medium text-red-400 mb-1">Verifica non approvata</p>
-                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
-                                    {profile?.verification_note
-                                        ? `Motivo: ${profile.verification_note}`
-                                        : 'Puoi riprovare ricaricando i documenti corretti.'}
-                                </p>
-                                <Link to="/verifica" className="font-body text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5">
-                                    Riprova la verifica <ArrowRight size={12} />
-                                </Link>
-                            </div>
-                        </div>
-                    )
-                }
                 return (
                     <div className="bg-slate border border-oro/20 p-6">
                         <div className="flex items-start gap-3">
                             <Shield size={18} className="text-oro shrink-0 mt-0.5" />
                             <div className="flex-1">
-                                <p className="font-body text-sm font-medium text-nebbia mb-1">Sei un avvocato?</p>
-                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-3">
-                                    Verifica la tua identità e accedi a piani con crediti mensili inclusi, gestionale completo, banca dati sentenze e molto altro.
+                                <p className="font-body text-sm font-medium text-nebbia mb-1">
+                                    Ti manca poco per sbloccare i piani
                                 </p>
+                                <p className="font-body text-xs text-nebbia/50 leading-relaxed mb-1">
+                                    I piani includono crediti mensili, gestionale completo, portale clienti e
+                                    fatturazione. Per attivarli servono solo i dati di fatturazione: nessuna
+                                    attesa, nessuna approvazione.
+                                </p>
+                                {mancanti.length > 0 && (
+                                    <p className="font-body text-xs text-nebbia/35 leading-relaxed mb-3">
+                                        Da compilare: {mancanti.join(' · ')}
+                                    </p>
+                                )}
                                 <Link to="/verifica" className="btn-primary text-xs">
-                                    Inizia la verifica <ArrowRight size={12} />
+                                    Completa il profilo <ArrowRight size={12} />
                                 </Link>
                             </div>
                         </div>

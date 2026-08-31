@@ -12,7 +12,7 @@ export default function Registrati() {
   const [searchParams] = useSearchParams()
   const refIniziale = (searchParams.get('ref') ?? '').trim().toUpperCase()
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', telefono: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -24,6 +24,11 @@ export default function Registrati() {
     if (!form.nome.trim()) e.nome = 'Campo obbligatorio'
     if (!form.cognome.trim()) e.cognome = 'Campo obbligatorio'
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Email non valida'
+    // Il telefono è facoltativo: si valida SOLO se compilato, altrimenti un
+    // campo opzionale bloccherebbe la registrazione di chi lo lascia vuoto.
+    if (form.telefono.trim() && !/^[+\d][\d\s./-]{6,19}$/.test(form.telefono.trim())) {
+      e.telefono = 'Numero non valido'
+    }
     if (form.password.length < 8) e.password = 'Minimo 8 caratteri'
     if (form.password !== form.conferma) e.conferma = 'Le password non coincidono'
     return e
@@ -43,6 +48,7 @@ export default function Registrati() {
           data: {
             nome: form.nome.trim(),
             cognome: form.cognome.trim(),
+            telefono: form.telefono.trim() || null,
             studio: form.studio.trim() || null,
             // Codice del commerciale che ha portato il cliente (opzionale).
             // Il trigger lo risolve in commerciale_id; se errato viene ignorato
@@ -140,6 +146,28 @@ export default function Registrati() {
             {field('cognome', 'Cognome *', 'text', 'Rossi')}
           </div>
           {field('email', 'Email *', 'email', 'mario@studiorossi.it')}
+
+          {/* Telefono — opzionale */}
+          <div>
+            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
+              Telefono
+              <span className="ml-2 text-nebbia/25 normal-case tracking-normal">— opzionale</span>
+            </label>
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="Es. +39 333 1234567"
+              value={form.telefono}
+              onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
+              className={`w-full bg-petrolio border ${errors.telefono ? 'border-red-500/60' : 'border-white/10'} text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25`}
+            />
+            {errors.telefono
+              ? <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors.telefono}</p>
+              : <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
+                  Lascialo se vuoi ricevere le offerte riservate e gli sconti sui pacchetti. Niente chiamate commerciali indesiderate: puoi toglierlo quando vuoi dal tuo profilo.
+                </p>}
+          </div>
 
           {/* Studio — opzionale */}
           <div>

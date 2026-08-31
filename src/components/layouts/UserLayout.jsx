@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { profiloCompleto } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import {
@@ -39,11 +40,16 @@ export default function UserLayout({ children }) {
   const isUnverified = !status || status === 'none'
 
   // Voce sidebar verifica (nascosta se rejected)
-  const verifyItem = isRejected ? null : isUnverified
-    ? { path: '/verifica', label: 'Verifica identità', icon: ShieldCheck }
+  // A sbloccare la piattaforma è il PROFILO COMPLETO, non più la verifica dei
+  // documenti: la voce resta finché mancano dati, poi diventa il distintivo.
+  const completo = profiloCompleto(profile)
+  const verifyItem = !completo
+    ? { path: '/verifica', label: 'Completa il profilo', icon: ShieldCheck, badge: 'Da fare', badgeColor: 'amber' }
     : isPending
-      ? { path: '/verifica/stato', label: 'Verifica identità', icon: ShieldCheck, badge: 'In corso', badgeColor: 'amber' }
-      : { path: '/verifica/stato', label: 'Verifica identità', icon: ShieldCheck, badge: 'Approvata', badgeColor: 'salvia' }
+      ? { path: '/verifica/stato', label: 'Profilo', icon: ShieldCheck, badge: 'In verifica', badgeColor: 'amber' }
+      : isApproved
+        ? { path: '/verifica/stato', label: 'Profilo', icon: ShieldCheck, badge: 'Verificato', badgeColor: 'salvia' }
+        : { path: '/verifica', label: 'Profilo', icon: ShieldCheck }
 
   const NAV = [
     { path: '/area', label: 'Banca Dati', icon: Home, end: true },
@@ -56,18 +62,19 @@ export default function UserLayout({ children }) {
 
   // Banner contestuale
   const banner = bannerDismissed ? null
-    : isPending ? {
+    : !completo ? {
       icon: Clock, color: 'amber',
-      text: 'I tuoi documenti sono in revisione. Riceverai una risposta entro 24-48 ore.',
+      text: 'Completa i dati di fatturazione per sbloccare pratiche, clienti, atti e fatture. Bastano due minuti: nessuna approvazione da attendere.',
+      link: { to: '/verifica', label: 'Completa ora →' },
     }
-      : isApproved && !profile?.piano_id ? {
+      : !profile?.piano_id ? {
         icon: CheckCircle, color: 'salvia',
-        text: 'Verifica completata! Acquista un piano per accedere a pratiche, clienti e tutte le funzionalità Lexum.',
+        text: 'Profilo completo: i piani sono sbloccati. Scegli quello adatto al tuo studio.',
         link: { to: '/area/acquista', label: 'Vedi piani →' },
       }
         : isRejected ? {
           icon: XCircle, color: 'red',
-          text: 'La tua verifica non è stata approvata. Visita il profilo per vedere i dettagli.',
+          text: 'I documenti inviati per il distintivo non sono stati approvati. La piattaforma resta pienamente utilizzabile.',
           link: { to: '/area/profilo', label: 'Profilo →' },
         }
           : null
