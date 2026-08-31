@@ -729,8 +729,10 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             let buffer = ''
             let testoAccumulato = ''
             let metaFinale = null
+            let doneRicevuto = false
             let tipoRisposta = null
 
+            let eventoCorrente = null   // FUORI dal while: deve persistere tra le reader.read()
             while (true) {
                 const { value, done } = await reader.read()
                 if (done) break
@@ -739,7 +741,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 const lines = buffer.split('\n')
                 buffer = lines.pop() ?? ''
 
-                let eventoCorrente = null
                 for (const line of lines) {
                     if (!line.trim()) continue
 
@@ -768,6 +769,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             }
 
                             if (eventoCorrente === 'done') {
+                                doneRicevuto = true
                                 metaFinale = data.meta
                                 tipoRisposta = data.tipo_risposta
                                 if (data.crediti_rimasti !== undefined) setCrediti(data.crediti_rimasti)
@@ -783,11 +785,19 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 }
             }
 
+            // Se lo stream si chiude SENZA l'evento 'done', la risposta e' mozza.
+            // Prima veniva salvata come se fosse intera e senza alcun avviso:
+            // un avvocato non deve scambiare mezzo ragionamento per il tutto.
+            if (!doneRicevuto && testoAccumulato) {
+                setErrore('La risposta si e\u0300 interrotta prima della fine: il testo qui sotto e\u0300 parziale. Rilancia la domanda per averla completa.')
+            }
+
             const messaggioCompleto = {
                 role: 'assistant',
                 content: testoAccumulato,
                 meta: metaFinale,
                 tipo_risposta: tipoRisposta,
+                interrotta: !doneRicevuto || undefined,
             }
             const convFinale = [...nuovaConv, messaggioCompleto]
             setConversazione(convFinale)
