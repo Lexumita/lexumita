@@ -108,6 +108,7 @@ const FASI_LABEL = {
     giurisprudenza: 'Confronto la giurisprudenza',
     prassi: 'Verifico la prassi amministrativa',
     norme_ue: 'Esamino la normativa UE',
+    ragionamento: 'Ragiono sul caso',
     sintesi: 'Compongo la risposta',
 }
 
