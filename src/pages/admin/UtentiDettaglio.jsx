@@ -522,34 +522,9 @@ function SezioneUser({ utente, onDecision }) {
 
   return (
     <div className="space-y-4">
-      {/* Status verifica */}
-      <div className={`border p-4 flex items-center gap-3 ${decisione === 'approved' ? 'bg-salvia/5 border-salvia/20' :
-        decisione === 'rejected' ? 'bg-red-900/10 border-red-500/20' :
-          decisione === 'pending' ? 'bg-amber-900/10 border-amber-500/20' :
-            'bg-slate border-white/5'
-        }`}>
-        <div className={`w-2 h-2 rounded-full shrink-0 ${decisione === 'approved' ? 'bg-salvia' :
-          decisione === 'rejected' ? 'bg-red-400' :
-            decisione === 'pending' ? 'bg-amber-400' :
-              'bg-nebbia/20'
-          }`} />
-        <p className={`font-body text-sm flex-1 ${decisione === 'approved' ? 'text-salvia' :
-          decisione === 'rejected' ? 'text-red-400' :
-            decisione === 'pending' ? 'text-amber-400' :
-              'text-nebbia/60'
-          }`}>
-          {decisione === 'approved' ? 'Verifica approvata — l\'utente può accedere come avvocato' :
-            decisione === 'rejected' ? 'Verifica rifiutata' :
-              decisione === 'pending' ? 'Verifica identità in attesa di revisione' :
-                'Nessuna richiesta di verifica'}
-        </p>
-        {utente.prova_gratuita_usata && (
-          <span className="font-body text-xs px-2 py-0.5 bg-white/5 border border-white/10 text-nebbia/50">
-            Trial usato
-          </span>
-        )}
-      </div>
-
+      {/* Anagrafica e Account affiancati: sono i due riquadri che si
+          guardano sempre, e prima Account finiva in fondo alla colonna */}
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
       {/* Anagrafica */}
       <div className="bg-slate border border-white/5 p-5 space-y-3">
         <p className="section-label mb-3">Anagrafica</p>
@@ -576,7 +551,26 @@ function SezioneUser({ utente, onDecision }) {
         <CampoRiga label="Data di nascita" value={utente.data_nascita ? new Date(utente.data_nascita).toLocaleDateString('it-IT') : null} />
         <CampoRiga label="Luogo di nascita" value={utente.luogo_nascita} />
       </div>
+      {/* Account */}
+      <div className="bg-slate border border-white/5 p-5 space-y-3">
+        <p className="section-label mb-3">Account</p>
+        <CampoRiga label="Ruolo" value={utente.role} />
+        <CampoRiga label="Tipo account" value={utente.tipo_account} />
+        <CampoRiga label="Tipo soggetto" value={utente.tipo_soggetto} />
+        <CampoRiga label="Visibile pubblicamente" value={utente.visibile_pubblicamente ? 'Sì' : 'No'} />
+        <CampoRiga label="Stripe customer ID" value={utente.stripe_customer_id} />
+        <CampoRiga label="Registrato il" value={new Date(utente.created_at).toLocaleString('it-IT')} />
+        <CampoRiga label="Ultimo aggiornamento" value={utente.updated_at ? new Date(utente.updated_at).toLocaleString('it-IT') : null} />
+        <CampoRiga label="Email verificata il" value={emailStatus?.email_confirmed_at ? new Date(emailStatus.email_confirmed_at).toLocaleString('it-IT') : null} />
+        <CampoRiga label="Ultimo accesso" value={emailStatus?.last_sign_in_at ? new Date(emailStatus.last_sign_in_at).toLocaleString('it-IT') : null} />
+      </div>
+      </div>
 
+      {/* Residenza, dati professionali e persona giuridica: compaiono solo
+          se compilati. La griglia si monta solo se c'è almeno un riquadro,
+          altrimenti lascerebbe uno spazio vuoto sotto l'anagrafica. */}
+      {(haDatiResidenza || haDatiAvvocato || utente.specializzazioni?.length > 0 || utente.studio || utente.partita_iva || isPersonaGiuridica) && (
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
       {/* Residenza/Indirizzo */}
       {haDatiResidenza && (
         <div className="bg-slate border border-white/5 p-5 space-y-3">
@@ -622,20 +616,8 @@ function SezioneUser({ utente, onDecision }) {
           <CampoRiga label="Carica" value={utente.rappr_carica} />
         </div>
       )}
-
-      {/* Account */}
-      <div className="bg-slate border border-white/5 p-5 space-y-3">
-        <p className="section-label mb-3">Account</p>
-        <CampoRiga label="Ruolo" value={utente.role} />
-        <CampoRiga label="Tipo account" value={utente.tipo_account} />
-        <CampoRiga label="Tipo soggetto" value={utente.tipo_soggetto} />
-        <CampoRiga label="Visibile pubblicamente" value={utente.visibile_pubblicamente ? 'Sì' : 'No'} />
-        <CampoRiga label="Stripe customer ID" value={utente.stripe_customer_id} />
-        <CampoRiga label="Registrato il" value={new Date(utente.created_at).toLocaleString('it-IT')} />
-        <CampoRiga label="Ultimo aggiornamento" value={utente.updated_at ? new Date(utente.updated_at).toLocaleString('it-IT') : null} />
-        <CampoRiga label="Email verificata il" value={emailStatus?.email_confirmed_at ? new Date(emailStatus.email_confirmed_at).toLocaleString('it-IT') : null} />
-        <CampoRiga label="Ultimo accesso" value={emailStatus?.last_sign_in_at ? new Date(emailStatus.last_sign_in_at).toLocaleString('it-IT') : null} />
       </div>
+      )}
 
       {/* Note admin (se presenti) */}
       {haNoteAdmin && (
@@ -1123,6 +1105,42 @@ function BoxAttribuzioneCommerciale({ utente, onAggiorna }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// STATO VERIFICA — riquadro compatto, sta in riga con l'attribuzione
+// commerciale invece di occupare una fascia per conto suo.
+// Legge da `utente.verification_status`, che la pagina principale aggiorna
+// quando l'admin decide: resta allineato senza stato locale.
+// ─────────────────────────────────────────────────────────────
+function BoxStatoVerifica({ utente }) {
+  const stato = utente.verification_status
+  const stile =
+    stato === 'approved' ? { box: 'bg-salvia/5 border-salvia/20', punto: 'bg-salvia', testo: 'text-salvia' }
+      : stato === 'rejected' ? { box: 'bg-red-900/10 border-red-500/20', punto: 'bg-red-400', testo: 'text-red-400' }
+        : stato === 'pending' ? { box: 'bg-amber-900/10 border-amber-500/20', punto: 'bg-amber-400', testo: 'text-amber-400' }
+          : { box: 'bg-slate border-white/5', punto: 'bg-nebbia/20', testo: 'text-nebbia/60' }
+
+  const testo =
+    stato === 'approved' ? "Verifica approvata — l'utente può accedere come avvocato"
+      : stato === 'rejected' ? 'Verifica rifiutata'
+        : stato === 'pending' ? 'Verifica identità in attesa di revisione'
+          : 'Nessuna richiesta di verifica'
+
+  return (
+    <div className={`border p-5 h-full ${stile.box}`}>
+      <p className="section-label mb-3">Stato verifica</p>
+      <div className="flex items-center gap-3">
+        <div className={`w-2 h-2 rounded-full shrink-0 ${stile.punto}`} />
+        <p className={`font-body text-sm flex-1 ${stile.testo}`}>{testo}</p>
+        {utente.prova_gratuita_usata && (
+          <span className="font-body text-xs px-2 py-0.5 bg-white/5 border border-white/10 text-nebbia/50 shrink-0">
+            Trial usato
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
 // PAGINA PRINCIPALE
 // ─────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
@@ -1397,12 +1415,15 @@ export default function AdminUtentiDettaglio() {
       {/* Strumenti di assistenza (nascosto se admin guarda se stesso) */}
       {!isSelf && <SezioneStrumentiAssistenza utente={utente} />}
 
-      {/* Attribuzione commerciale: per chi può acquistare (non admin, non commerciale) */}
+      {/* Attribuzione commerciale e stato verifica, affiancati */}
       {['user', 'avvocato', 'commercialista'].includes(utente.role) && (
-        <BoxAttribuzioneCommerciale
-          utente={utente}
-          onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
-        />
+        <div className="grid lg:grid-cols-2 gap-5 items-start">
+          <BoxAttribuzioneCommerciale
+            utente={utente}
+            onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
+          />
+          <BoxStatoVerifica utente={utente} />
+        </div>
       )}
 
       {/* Abbonamento, crediti e storico acquisti: per i ruoli che comprano */}
