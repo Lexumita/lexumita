@@ -16,7 +16,15 @@ import {
     FileText, Plus, Eye, Flag, Globe, Clock,
     Scale, Filter, Landmark, Calendar, Building2, ScrollText
 } from 'lucide-react'
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
+
+// Un messaggio completato non cambia mai: senza memo, OGNI chunk dello
+// streaming ri-analizzava l'INTERA conversazione (costo quadratico — con le
+// risposte lunghe la pagina si impastava proprio nel momento peggiore).
+const MarkdownMemo = React.memo(function MarkdownMemo({ components, children }) {
+    return <ReactMarkdown components={components}>{children}</ReactMarkdown>
+})
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIG (norme italiane / UE)
@@ -771,6 +779,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
                             if (eventoCorrente === 'done') {
                                 doneRicevuto = true
+                                if (data.stop_reason === 'max_tokens') {
+                                    setErrore('La risposta ha raggiunto il limite di lunghezza: il finale potrebbe essere incompleto. Puoi chiedere "continua" per la parte restante.')
+                                }
                                 metaFinale = data.meta
                                 tipoRisposta = data.tipo_risposta
                                 if (data.crediti_rimasti !== undefined) setCrediti(data.crediti_rimasti)
@@ -940,9 +951,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <p className="font-body text-sm text-nebbia/60 leading-relaxed">{m.content}</p>
                             ) : (
                                 <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2">
-                                    <ReactMarkdown components={markdownComponents}>
+                                    <MarkdownMemo components={markdownComponents}>
                                         {m.content}
-                                    </ReactMarkdown>
+                                    </MarkdownMemo>
 
                                     {m.meta?.sentenze_marketplace?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">

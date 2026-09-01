@@ -33,6 +33,7 @@ const TL_ENDPOINTS = new Set([
 
 const ESITO_BADGES = {
     ok: { label: 'OK', class: 'text-green-400 border-green-500/30 bg-green-500/10' },
+    ok_con_errori: { label: 'OK (intoppi interni)', class: 'border-yellow-500/40 text-yellow-200' },
     error: { label: 'Errore', class: 'text-red-400 border-red-500/30 bg-red-500/10' },
     rate_limit: { label: 'Rate Limit', class: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
     no_credits: { label: 'No crediti', class: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
@@ -120,7 +121,10 @@ export default function LexLogs() {
             const costoTotale = catena.reduce((s, c) => s + parseFloat(c.costo_totale_usd ?? 0), 0)
             const tokenInTotale = catena.reduce((s, c) => s + (c.token_input ?? 0), 0)
             const tokenOutTotale = catena.reduce((s, c) => s + (c.token_output ?? 0), 0)
-            const durataTotale = catena.reduce((s, c) => s + (c.durata_ms ?? 0), 0)
+            // La durata vera e' quella della radice (i figli corrono in parallelo:
+            // sommarli raddoppiava il tempo mostrato — 263s per una catena da 132s)
+            const radice = catena.find(c => c.endpoint === 'lead_complete') ?? topLevel
+            const durataTotale = radice?.durata_ms ?? catena.reduce((s, c) => Math.max(s, c.durata_ms ?? 0), 0)
 
             // Esito worst-case: se anche una sola chiamata in catena ha errore → errore
             const ESITI_ORDINE = ['error', 'timeout', 'rate_limit', 'no_credits', 'rejected', 'ok']
@@ -130,6 +134,11 @@ export default function LexLogs() {
                     esitoPeggiore = c.esito
                 }
             }
+            // Se la risposta finale e' arrivata (lead_complete ok), un errore di
+            // un figlio e' un intoppo interno, non un fallimento della richiesta:
+            // il rosso pieno mentiva (es. un subagent senza dossier, risposta ok).
+            const fineOk = catena.some(c => c.endpoint === 'lead_complete' && c.esito === 'ok')
+            if (fineOk && esitoPeggiore !== 'ok') esitoPeggiore = 'ok_con_errori'
 
             richieste.push({
                 ...topLevel,
@@ -766,9 +775,11 @@ function RigaLog({ log, aperto, onTogliApri, logsCatena }) {
     const esitoMeta = ESITO_BADGES[esitoEffettivo] ?? { label: esitoEffettivo, class: 'border-white/10 text-nebbia' }
     const Icon = meta.icon
 
+    // user_id nullo = chiamata di sistema (collaudi golden via lex-eval-proxy,
+    // job interni): non e' un utente senza nome, e' il banco di prova.
     const utente = log.profiles
         ? `${log.profiles.nome ?? ''} ${log.profiles.cognome ?? ''}`.trim() || log.profiles.email
-        : '—'
+        : (log.user_id ? '(utente eliminato)' : 'Collaudo · sistema')
 
     return (
         <>
@@ -849,7 +860,11 @@ function DettaglioCatena({ log, catena }) {
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <p className="font-body text-xs text-nebbia/60">
-                    Catena richiesta · <span className="text-nebbia/40">{log.request_id.slice(0, 8)}…</span>
+                    Catena richiesta · <span
+                        className="text-nebbia/40 cursor-pointer hover:text-oro transition-colors select-all"
+                        title="Clicca per copiare l'id completo"
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(log.request_id) }}
+                    >{log.request_id}</span>
                 </p>
                 <div className="flex items-center gap-4 font-body text-xs">
                     <span className="text-nebbia/40">{catena.length} chiamate</span>
