@@ -52,17 +52,54 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4">
-      {/* Logo only */}
-      <Link to="/" className="mb-8 sm:mb-10 group">
-        <img src={logo} alt="Lexum" className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
-      </Link>
+    <div className="min-h-screen bg-petrolio">
+      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
 
-      {/* Card */}
-      <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
+        {/* SINISTRA — bentornato. Nascosta su telefono: al login il form
+            deve essere subito raggiungibile. */}
+        <div className="hidden lg:flex flex-col justify-center relative overflow-hidden px-10 xl:px-16 py-12 border-r border-white/5">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/3 left-1/4 w-[420px] h-[420px] bg-oro/[0.05] rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-[340px] h-[340px] bg-salvia/[0.05] rounded-full blur-3xl" />
+          </div>
+          <div className="relative w-full max-w-xl mx-auto">
+            <p className="section-label mb-3">Bentornato</p>
+            <h2 className="font-display text-4xl xl:text-5xl font-light text-nebbia leading-tight mb-5">
+              Riprendi da dove<br />
+              <span className="text-oro-static italic">eri rimasto.</span>
+            </h2>
+            <p className="font-body text-base text-nebbia/45 leading-relaxed mb-9 max-w-md">
+              Pratiche, scadenze e ricerche sono dove le hai lasciate.
+            </p>
+            <div className="space-y-2 max-w-md">
+              {[
+                { t: 'Lex AI e banca dati', s: 'Oltre 4 milioni di documenti giuridici e fiscali, con le fonti verificate' },
+                { t: 'Agenda e scadenze', s: 'Udienze, appuntamenti e termini, sincronizzati con Google Calendar' },
+                { t: 'Pratiche e clienti', s: 'Fascicoli, documenti e portale cliente in un posto solo' },
+                { t: 'Fatturazione', s: 'Parcelle sui parametri forensi e fatture in pochi passaggi' },
+              ].map(({ t, s }) => (
+                <div key={t} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="w-1 h-1 rounded-full bg-oro/60 shrink-0" />
+                    <span className="font-body text-xs text-nebbia/75 font-medium">{t}</span>
+                  </div>
+                  <p className="font-body text-xs text-nebbia/40 leading-snug pl-3">{s}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* DESTRA — form di accesso */}
+        <div className="flex flex-col items-center justify-center px-4 py-10">
+          <Link to="/" className="mb-8 sm:mb-10 group">
+            <img src={logo} alt="Lexum" className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
+          </Link>
+
+          <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         <p className="section-label mb-6">Accesso</p>
         <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-8">
-          Bentornato
+          Accedi al tuo account
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -125,6 +162,9 @@ export default function Login() {
             </Link>
           </p>
         </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
