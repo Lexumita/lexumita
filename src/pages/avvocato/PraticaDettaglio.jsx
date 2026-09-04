@@ -36,7 +36,7 @@ function BackToPratiche() {
     return (
         <Link
             to="/pratiche"
-            className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
+            className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors py-2 lg:py-0"
         >
             <ArrowLeft size={11} /> Tutte le pratiche
         </Link>
@@ -70,7 +70,7 @@ function NoteInterneModal({ note, setNote, onSalva, salvando, salvate, ultimaMod
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-nebbia/40 hover:text-nebbia transition-colors"
+                        className="p-2 -m-2 lg:p-0 lg:m-0 text-nebbia/40 hover:text-nebbia transition-colors"
                     >
                         <X size={16} />
                     </button>
@@ -97,23 +97,23 @@ function NoteInterneModal({ note, setNote, onSalva, salvando, salvate, ultimaMod
                     )}
                 </div>
 
-                <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/5 shrink-0">
+                <div className="flex items-center justify-between flex-wrap gap-3 px-5 py-4 border-t border-white/5 shrink-0">
                     <p className="font-body text-xs text-nebbia/30">
                         {ultimaModifica
                             ? `Ultima modifica: ${ultimaModifica.autore} · ${ultimaModifica.data}`
                             : 'Mai modificate'}
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors"
+                            className="flex-1 sm:flex-none px-4 py-3 sm:py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors"
                         >
                             Chiudi
                         </button>
                         <button
                             onClick={onSalva}
                             disabled={salvando}
-                            className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-40"
+                            className="btn-primary text-xs px-4 py-3 sm:py-2 flex-1 sm:flex-none flex items-center justify-center sm:justify-start gap-1.5 disabled:opacity-40"
                         >
                             {salvando
                                 ? <span className="animate-spin w-3 h-3 border-2 border-petrolio border-t-transparent rounded-full" />
@@ -156,7 +156,7 @@ function RicercaEspandibile({ contenuto, id, tipo, onSalva }) {
                 <button
                     onClick={salva}
                     disabled={salvando}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3 py-2.5 lg:py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
                 >
                     {salvando
                         ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
@@ -165,7 +165,7 @@ function RicercaEspandibile({ contenuto, id, tipo, onSalva }) {
                 </button>
                 <button
                     onClick={() => { setModifica(false); setContenutoEdit(contenuto ?? '') }}
-                    className="px-3 py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors"
+                    className="px-3 py-2.5 lg:py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors"
                 >
                     Annulla
                 </button>
@@ -196,17 +196,17 @@ function RicercaEspandibile({ contenuto, id, tipo, onSalva }) {
                     {contenuto}
                 </p>
             )}
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-4 lg:gap-3 mt-1">
                 <button
                     onClick={() => setEspansa(!espansa)}
-                    className="font-body text-xs text-nebbia/25 hover:text-nebbia/50 transition-colors"
+                    className="font-body text-xs text-nebbia/25 hover:text-nebbia/50 transition-colors py-2 lg:py-0"
                 >
                     {espansa ? '▲ Riduci' : '▼ Espandi'}
                 </button>
                 {tipo === 'ricerca_manuale' && (
                     <button
                         onClick={() => setModifica(true)}
-                        className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors"
+                        className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors py-2 lg:py-0"
                     >
                         Modifica
                     </button>
@@ -454,7 +454,7 @@ export default function PraticaDettaglio() {
     )
 
     if (!pratica) return (
-        <div className="space-y-5 px-6 pt-10 pb-24">
+        <div className="space-y-5 px-4 lg:px-6 pt-10 pb-24">
             <BackToPratiche />
             <p className="font-body text-sm text-nebbia/40">Pratica non trovata.</p>
         </div>
@@ -473,22 +473,22 @@ export default function PraticaDettaglio() {
         : null
 
     return (
-        <div className="space-y-5 px-6 pb-20">
+        <div className="space-y-5 px-4 lg:px-6 pb-20">
             {/* ═══════════════ Header ═══════════════ */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
                     <p className="section-label mb-2">Pratica</p>
-                    <h1 className="font-display text-4xl font-light text-nebbia">{pratica.titolo}</h1>
+                    <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-light text-nebbia break-words">{pratica.titolo}</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-1">
                         {nomeClienteDisplay(pratica.cliente)} · {pratica.tipo ?? '—'}
                     </p>
                 </div>
-                <div className="flex flex-col items-end gap-3 shrink-0">
+                <div className="flex flex-col items-start lg:items-end gap-3 shrink-0">
                     <BackToPratiche />
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <div className="flex items-center gap-2 flex-wrap justify-start lg:justify-end w-full lg:w-auto">
                         <button
                             onClick={() => setMostraNoteModal(true)}
-                            className="relative flex items-center gap-1.5 font-body text-xs text-nebbia/60 border border-white/15 hover:border-oro/40 hover:text-oro hover:bg-oro/5 px-3 py-1.5 transition-colors"
+                            className="relative flex items-center gap-1.5 font-body text-xs text-nebbia/60 border border-white/15 hover:border-oro/40 hover:text-oro hover:bg-oro/5 px-3 py-2.5 lg:py-1.5 transition-colors"
                         >
                             <StickyNote size={11} />
                             Note interne
@@ -500,11 +500,11 @@ export default function PraticaDettaglio() {
                         <Badge label={sc.label} variant={sc.variant} />
                         {pratica.stato === 'aperta' ? (
                             mostraEsito ? (
-                                <div className="flex items-center gap-2 bg-slate border border-white/10 p-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate border border-white/10 p-2 w-full lg:w-auto">
                                     <select
                                         value={esito}
                                         onChange={e => setEsito(e.target.value)}
-                                        className="bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-1.5 outline-none focus:border-oro/50"
+                                        className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/50"
                                     >
                                         <option value="">Seleziona esito</option>
                                         <option value="vinta">Vinta</option>
@@ -519,13 +519,13 @@ export default function PraticaDettaglio() {
                                             setPratica(prev => ({ ...prev, stato: 'chiusa', esito }))
                                             setMostraEsito(false)
                                         }}
-                                        className="font-body text-xs text-red-400 border border-red-500/30 px-3 py-1.5 hover:bg-red-500/10 transition-colors"
+                                        className="font-body text-xs text-red-400 border border-red-500/30 px-3 py-2.5 lg:py-1.5 hover:bg-red-500/10 transition-colors"
                                     >
                                         Conferma chiusura
                                     </button>
                                     <button
                                         onClick={() => { setMostraEsito(false); setEsito('') }}
-                                        className="font-body text-xs text-nebbia/30 hover:text-nebbia transition-colors px-2"
+                                        className="font-body text-xs text-nebbia/30 hover:text-nebbia transition-colors px-2 py-2.5 lg:py-0"
                                     >
                                         Annulla
                                     </button>
@@ -533,7 +533,7 @@ export default function PraticaDettaglio() {
                             ) : (
                                 <button
                                     onClick={() => setMostraEsito(true)}
-                                    className="font-body text-xs text-nebbia/50 hover:text-red-400 border border-white/15 hover:border-red-500/30 hover:bg-red-500/5 px-3 py-1.5 transition-colors"
+                                    className="font-body text-xs text-nebbia/50 hover:text-red-400 border border-white/15 hover:border-red-500/30 hover:bg-red-500/5 px-3 py-2.5 lg:py-1.5 transition-colors"
                                 >
                                     Chiudi pratica
                                 </button>
@@ -544,7 +544,7 @@ export default function PraticaDettaglio() {
                                     await supabase.from('pratiche').update({ stato: 'aperta', esito: null }).eq('id', id)
                                     setPratica(prev => ({ ...prev, stato: 'aperta', esito: null }))
                                 }}
-                                className="font-body text-xs text-salvia/70 border border-salvia/30 bg-salvia/5 hover:bg-salvia/15 px-3 py-1.5 transition-colors"
+                                className="font-body text-xs text-salvia/70 border border-salvia/30 bg-salvia/5 hover:bg-salvia/15 px-3 py-2.5 lg:py-1.5 transition-colors"
                             >
                                 Riapri pratica
                             </button>
@@ -580,15 +580,15 @@ export default function PraticaDettaglio() {
                                 )]] : []),
                                 ...(isStudio ? [['Avvocato', nomeAvv]] : []),
                             ].map(([l, v]) => (
-                                <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                    <span className="font-body text-sm text-nebbia">{v}</span>
+                                <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0">{l}</span>
+                                    <span className="font-body text-sm text-nebbia min-w-0 text-right break-words">{v}</span>
                                 </div>
                             ))}
 
                             {/* Ore dedicate — campo libero editabile dall'avvocato */}
-                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                                <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest flex items-center gap-1.5">
+                            <div className="flex items-center justify-between flex-wrap lg:flex-nowrap gap-2 lg:gap-0 border-b border-white/5 pb-2">
+                                <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
                                     <Clock size={11} className="text-nebbia/30" /> Ore dedicate
                                 </span>
                                 <div className="flex items-center gap-1.5">
@@ -597,12 +597,12 @@ export default function PraticaDettaglio() {
                                         value={oreDedicate}
                                         onChange={e => setOreDedicate(e.target.value)}
                                         placeholder="—"
-                                        className="w-20 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-2.5 py-1 text-right outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                        className="w-24 lg:w-20 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-2.5 py-2 lg:py-1 text-right outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                     />
                                     <button
                                         onClick={salvaOre}
                                         disabled={salvandoOre}
-                                        className="font-body text-xs text-oro/70 border border-oro/25 px-2 py-1 hover:bg-oro/10 hover:text-oro transition-colors disabled:opacity-40"
+                                        className="font-body text-xs text-oro/70 border border-oro/25 px-3 py-2.5 lg:px-2 lg:py-1 hover:bg-oro/10 hover:text-oro transition-colors disabled:opacity-40"
                                         title="Salva ore"
                                     >
                                         {salvandoOre
@@ -621,7 +621,7 @@ export default function PraticaDettaglio() {
                                             : collabPratica.map(c => (
                                                 <span key={c.id} className="flex items-center gap-1 font-body text-xs px-2 py-1 bg-salvia/10 border border-salvia/25 text-salvia">
                                                     {c.nome}
-                                                    <button onClick={() => toggleCollab(c.id)} className="text-salvia/50 hover:text-red-400 ml-0.5">×</button>
+                                                    <button onClick={() => toggleCollab(c.id)} className="text-salvia/50 hover:text-red-400 ml-0.5 px-1.5 -mr-1 lg:px-0 lg:mr-0">×</button>
                                                 </span>
                                             ))
                                         }
@@ -630,7 +630,7 @@ export default function PraticaDettaglio() {
                                         <div className="flex flex-wrap gap-1">
                                             {collabDisp.map(c => (
                                                 <button key={c.id} onClick={() => toggleCollab(c.id)}
-                                                    className="font-body text-xs px-2 py-1 border border-white/10 text-nebbia/30 hover:border-salvia/30 hover:text-salvia transition-colors">
+                                                    className="font-body text-xs px-2 py-2 lg:py-1 border border-white/10 text-nebbia/30 hover:border-salvia/30 hover:text-salvia transition-colors">
                                                     + {c.nome} {c.cognome}
                                                 </button>
                                             ))}
@@ -664,7 +664,7 @@ export default function PraticaDettaglio() {
                             <p className="section-label">Documenti pratica ({documenti.length})</p>
                             <Link
                                 to="/archivio"
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2.5 lg:py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
                             >
                                 <Plus size={11} /> Aggiungi documento
                             </Link>
@@ -683,7 +683,7 @@ export default function PraticaDettaglio() {
                                 <span className="font-body text-xs text-nebbia/25 mt-1">Usa "Aggiungi documento" qui sopra per caricarlo</span>
                             </div>
                         ) : (
-                            <div className={`space-y-2 ${documenti.length > 5 ? 'max-h-80 overflow-y-auto -mr-1 pr-1' : ''}`}>
+                            <div className={`space-y-2 ${documenti.length > 5 ? 'lg:max-h-80 lg:overflow-y-auto lg:-mr-1 lg:pr-1' : ''}`}>
                                 {documenti.map(doc => (
                                     <div key={`${doc.fonte}-${doc.id}`} className="flex items-start justify-between gap-3 p-3 bg-petrolio border border-white/5">
                                         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -692,7 +692,7 @@ export default function PraticaDettaglio() {
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="font-body text-sm text-nebbia truncate">{doc.nome_file}</p>
                                                     {doc.fonte === 'archivio' && (
-                                                        <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/25 text-salvia uppercase tracking-wider">
+                                                        <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/25 text-salvia uppercase tracking-wider shrink-0">
                                                             Archivio
                                                         </span>
                                                     )}
@@ -708,11 +708,11 @@ export default function PraticaDettaglio() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <button onClick={() => scaricaDocumento(doc)} className="text-nebbia/30 hover:text-oro transition-colors" title="Scarica">
+                                        <div className="flex items-center gap-1 lg:gap-2 shrink-0 -mr-1 lg:mr-0">
+                                            <button onClick={() => scaricaDocumento(doc)} className="p-2.5 lg:p-0 text-nebbia/30 hover:text-oro transition-colors" title="Scarica">
                                                 <Download size={13} />
                                             </button>
-                                            <button onClick={() => eliminaDocumento(doc)} className="text-nebbia/30 hover:text-red-400 transition-colors"
+                                            <button onClick={() => eliminaDocumento(doc)} className="p-2.5 lg:p-0 text-nebbia/30 hover:text-red-400 transition-colors"
                                                 title={doc.fonte === 'archivio' ? 'Rimuovi dalla pratica' : 'Elimina'}>
                                                 <X size={13} />
                                             </button>
@@ -724,21 +724,22 @@ export default function PraticaDettaglio() {
                     </div>
                 </div>
 
-                {/* DESTRA (2/5) — Ricerche: altezza fissa su mobile, allineata alla colonna sinistra su desktop */}
-                <div className="lg:col-span-2 bg-slate border border-white/5 flex flex-col h-[600px] lg:h-auto lg:min-h-0">
+                {/* DESTRA (2/5) — Ricerche: su telefono cresce con il contenuto (niente scroll dentro
+                    lo scroll), su desktop resta a colonna piena allineata alla colonna sinistra */}
+                <div className="lg:col-span-2 bg-slate border border-white/5 flex flex-col h-auto lg:min-h-0">
 
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-0 px-4 py-3 border-b border-white/5 shrink-0">
                         <p className="section-label">Ricerche e descrizione causa ({ricerche.length})</p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
                             <button
                                 onClick={() => navigate('/banca-dati')}
-                                className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1"
+                                className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1 py-2 lg:py-0"
                             >
                                 <Search size={11} /> Cerca in Banca Dati
                             </button>
                             <button
                                 onClick={() => setMostraForm(!mostraFormRicerca)}
-                                className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors"
+                                className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-2.5 lg:py-1.5 hover:bg-oro/10 transition-colors"
                             >
                                 <Plus size={11} /> Aggiungi
                             </button>
@@ -769,7 +770,7 @@ export default function PraticaDettaglio() {
                                 <button
                                     onClick={salvaRicercaManuale}
                                     disabled={salvandoRicerca}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
+                                    className="flex items-center gap-1.5 px-3 py-2.5 lg:py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
                                 >
                                     {salvandoRicerca
                                         ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
@@ -778,7 +779,7 @@ export default function PraticaDettaglio() {
                                 </button>
                                 <button
                                     onClick={() => { setMostraForm(false); setNuovaRicerca({ titolo: '', contenuto: '' }); setErroreRicerca(null) }}
-                                    className="px-3 py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors"
+                                    className="px-3 py-2.5 lg:py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors"
                                 >
                                     Annulla
                                 </button>
@@ -786,7 +787,7 @@ export default function PraticaDettaglio() {
                         </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="lg:flex-1 lg:overflow-y-auto">
                         {loadingRicerche ? (
                             <div className="flex justify-center py-8">
                                 <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
@@ -801,7 +802,7 @@ export default function PraticaDettaglio() {
                             </div>
                         ) : ricerche.map(r => (
                             <div key={r.id} className="border-b border-white/5 last:border-0 p-4 space-y-2">
-                                <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start justify-between flex-wrap lg:flex-nowrap gap-x-2 gap-y-1">
                                     <div className="flex items-center gap-2">
                                         {r.tipo === 'ricerca_ai' || r.tipo === 'chat_lex'
                                             ? <Sparkles size={11} className="text-salvia shrink-0 mt-0.5" />
@@ -818,7 +819,7 @@ export default function PraticaDettaglio() {
                                         <span className="font-body text-xs text-nebbia/25">
                                             {r.autore ? `${r.autore.nome} ${r.autore.cognome}` : '—'} · {new Date(r.created_at).toLocaleDateString('it-IT')}
                                         </span>
-                                        <button onClick={() => eliminaRicerca(r.id)} className="text-nebbia/20 hover:text-red-400 transition-colors">
+                                        <button onClick={() => eliminaRicerca(r.id)} className="p-2 -m-1 lg:p-0 lg:m-0 text-nebbia/20 hover:text-red-400 transition-colors">
                                             <X size={12} />
                                         </button>
                                     </div>
@@ -855,7 +856,7 @@ export default function PraticaDettaglio() {
                             setSalvandoNoteEsito(false)
                         }}
                         disabled={salvandoNoteEsito}
-                        className="font-body text-xs text-nebbia/50 border border-white/10 hover:border-white/25 hover:text-nebbia px-4 py-2 mt-3 transition-colors"
+                        className="font-body text-xs text-nebbia/50 border border-white/10 hover:border-white/25 hover:text-nebbia px-4 py-3 lg:py-2 mt-3 transition-colors w-full sm:w-auto"
                     >
                         {salvandoNoteEsito
                             ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
@@ -882,7 +883,7 @@ export default function PraticaDettaglio() {
                     </div>
                     <button
                         onClick={() => setMostraEliminaModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/10 transition-colors shrink-0"
+                        className="flex items-center justify-center lg:justify-start gap-2 w-full lg:w-auto px-4 py-3 lg:py-2 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/10 transition-colors shrink-0"
                     >
                         <Trash2 size={13} /> Elimina pratica
                     </button>

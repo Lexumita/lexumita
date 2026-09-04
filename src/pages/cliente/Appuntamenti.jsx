@@ -48,7 +48,7 @@ export default function ClienteAppuntamenti() {
 
             <div className="flex gap-3">
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-3 lg:py-2.5 outline-none focus:border-oro/50">
                     <option value="">Tutti gli stati</option>
                     <option value="programmato">Programmati</option>
                     <option value="concluso">Conclusi</option>
@@ -77,13 +77,13 @@ export default function ClienteAppuntamenti() {
                                 <div className="flex items-start gap-4">
                                     <div className="bg-oro/10 border border-oro/20 p-3 text-center min-w-14 shrink-0">
                                         <p className="font-display text-2xl font-semibold text-oro leading-none">{inizio.getDate()}</p>
-                                        <p className="font-body text-[10px] text-oro/60 uppercase">
+                                        <p className="font-body text-xs text-oro/60 uppercase">
                                             {inizio.toLocaleString('it-IT', { month: 'short' })}
                                         </p>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <h3 className="font-body text-sm font-medium text-nebbia">{a.titolo}</h3>
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <h3 className="font-body text-sm font-medium text-nebbia min-w-0">{a.titolo}</h3>
                                             <Badge label={st.label} variant={st.variant} />
                                         </div>
                                         {a.professionista && (
@@ -110,8 +110,8 @@ export default function ClienteAppuntamenti() {
                                         )}
                                         {a.link_videocall && a.stato === 'programmato' && (
                                             <a href={a.link_videocall} target="_blank" rel="noreferrer"
-                                                className="mt-2 inline-flex items-center gap-1.5 font-body text-xs text-oro hover:text-oro/70">
-                                                <Video size={12} /> Entra nella videocall
+                                                className="mt-3 lg:mt-2 inline-flex items-center gap-2 font-body text-xs text-oro hover:text-oro/70 border border-oro/25 px-3 py-2.5 lg:border-0 lg:px-0 lg:py-0">
+                                                <Video size={14} className="lg:w-3 lg:h-3" /> Entra nella videocall
                                             </a>
                                         )}
                                     </div>

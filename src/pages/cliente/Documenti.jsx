@@ -88,11 +88,11 @@ export default function ClienteDocumenti() {
             {/* Upload */}
             <div className="bg-slate border border-white/5 p-5">
                 <p className="section-label mb-3">Carica un documento</p>
-                <div className="flex items-center gap-3">
-                    <label className="cursor-pointer flex-1">
-                        <div className={`border border-dashed p-4 text-center transition-all ${file ? 'border-salvia/30 bg-salvia/5' : 'border-white/15 hover:border-oro/30'}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label className="cursor-pointer w-full sm:flex-1">
+                        <div className={`border border-dashed p-4 min-h-[52px] flex items-center justify-center text-center transition-all ${file ? 'border-salvia/30 bg-salvia/5' : 'border-white/15 hover:border-oro/30'}`}>
                             {file
-                                ? <p className="font-body text-sm text-salvia">{file.name}</p>
+                                ? <p className="font-body text-sm text-salvia break-all">{file.name}</p>
                                 : <div className="flex items-center justify-center gap-2 text-nebbia/30">
                                     <Upload size={16} />
                                     <span className="font-body text-sm">Seleziona un file</span>
@@ -103,7 +103,7 @@ export default function ClienteDocumenti() {
                             onChange={e => { setFile(e.target.files?.[0] ?? null); setErrore('') }} />
                     </label>
                     <button onClick={handleUpload} disabled={!file || uploading}
-                        className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                        className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center shrink-0">
                         {uploading ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : 'Carica'}
                     </button>
                 </div>
@@ -128,6 +128,33 @@ export default function ClienteDocumenti() {
                             <p className="font-body text-sm text-nebbia/30">Nessun documento disponibile</p>
                         </div>
                     ) : (
+                        <>
+                        {/* Mobile: lista di card */}
+                        <div className="lg:hidden divide-y divide-white/5">
+                            {documenti.map(d => (
+                                <div key={d.id} className="p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <FileText size={15} className="text-nebbia/30 shrink-0 mt-0.5" />
+                                        <span className="font-body text-sm text-nebbia break-words min-w-0">{d.nome}</span>
+                                    </div>
+                                    <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                                        <Badge label={d.caricato_da === userId ? 'Tu' : 'Studio'} variant={d.caricato_da === userId ? 'salvia' : 'oro'} />
+                                        <span className="font-body text-xs text-nebbia/50 whitespace-nowrap">
+                                            {new Date(d.created_at).toLocaleDateString('it-IT')}
+                                        </span>
+                                        <span className="font-body text-xs text-nebbia/20">·</span>
+                                        <span className="font-body text-xs text-nebbia/40 whitespace-nowrap">{formatSize(d.dimensione)}</span>
+                                    </div>
+                                    <button onClick={() => apriDoc(d)}
+                                        className="w-full min-h-[44px] px-4 py-2.5 inline-flex items-center justify-center gap-2 border border-oro/30 bg-oro/5 font-body text-sm text-oro hover:bg-oro/10 transition-colors">
+                                        <Eye size={16} /> Visualizza
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop: tabella invariata */}
+                        <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/5">
@@ -161,6 +188,8 @@ export default function ClienteDocumenti() {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
+                        </>
                     )}
                 </div>
             )}

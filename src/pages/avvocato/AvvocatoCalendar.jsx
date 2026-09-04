@@ -42,9 +42,9 @@ function dataDa(iso) { if (!iso) return ''; return new Date(iso).toISOString().s
 
 function StatBox({ label, value, colorClass = 'text-oro' }) {
   return (
-    <div className="bg-slate border border-white/5 px-5 py-4">
-      <p className={`font-display text-3xl font-semibold ${colorClass}`}>{value}</p>
-      <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mt-1">{label}</p>
+    <div className="bg-slate border border-white/5 px-4 py-3 sm:px-5 sm:py-4">
+      <p className={`font-display text-2xl sm:text-3xl font-semibold ${colorClass}`}>{value}</p>
+      <p className="font-body text-[10px] sm:text-xs text-nebbia/40 tracking-widest uppercase mt-1 leading-tight">{label}</p>
     </div>
   )
 }
@@ -298,23 +298,23 @@ export default function AvvocatoCalendar() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <p className="section-label mb-2">Agenda</p>
-          <h1 className="font-display text-4xl font-light text-nebbia">Calendario <span className="text-oro-static italic">appuntamenti</span></h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia">Calendario <span className="text-oro-static italic">appuntamenti</span></h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => setMostraColleghi(v => !v)}
-            className={`flex items-center gap-1.5 font-body text-xs px-3 py-1.5 border transition-colors ${mostraColleghi ? 'bg-salvia/15 border-salvia/40 text-salvia' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
+            className={`flex items-center gap-1.5 font-body text-xs px-3 py-2.5 sm:py-1.5 border transition-colors ${mostraColleghi ? 'bg-salvia/15 border-salvia/40 text-salvia' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
             <Users size={13} /> Colleghi
           </button>
           {isStudio && membri.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-body text-xs text-nebbia/30">Visualizza:</span>
             <button onClick={() => setFiltroAvv('')}
-              className={`font-body text-xs px-3 py-1.5 border transition-colors ${!filtroAvv ? 'bg-oro/15 border-oro/40 text-oro' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
+              className={`font-body text-xs px-3 py-2.5 sm:py-1.5 border transition-colors ${!filtroAvv ? 'bg-oro/15 border-oro/40 text-oro' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
               Tutti
             </button>
             {membri.map(m => (
               <button key={m.id} onClick={() => setFiltroAvv(filtroAvv === m.id ? '' : m.id)}
-                className={`flex items-center gap-2 font-body text-xs px-3 py-1.5 border transition-colors ${filtroAvv === m.id ? 'bg-oro/15 border-oro/40 text-oro' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
+                className={`flex items-center gap-2 font-body text-xs px-3 py-2.5 sm:py-1.5 border transition-colors ${filtroAvv === m.id ? 'bg-oro/15 border-oro/40 text-oro' : 'border-white/10 text-nebbia/40 hover:border-white/20'}`}>
                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${m.color}`}>{m.nome[0]}</span>
                 {m.nome}
               </button>
@@ -332,20 +332,20 @@ export default function AvvocatoCalendar() {
         <StatBox label="Conclusi" value={loadingApp ? '—' : conclusi} colorClass="text-nebbia/50" />
       </div>
 
-      <div className="flex gap-5 items-start">
+      <div className="flex flex-col lg:flex-row gap-5 items-stretch lg:items-start">
         {/* GRIGLIA MESE */}
-        <div className="flex-1 bg-slate border border-white/5 p-5">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display text-2xl font-semibold text-nebbia">{MESI[mese]} <span className="text-nebbia/40 font-light">{anno}</span></h2>
+        <div className="flex-1 min-w-0 bg-slate border border-white/5 p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
+            <h2 className="font-display text-xl sm:text-2xl font-semibold text-nebbia">{MESI[mese]} <span className="text-nebbia/40 font-light">{anno}</span></h2>
             <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className="p-2 text-nebbia/50 hover:text-oro transition-colors"><ChevronLeft size={18} /></button>
-              <button onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))} className="btn-secondary text-xs px-3 py-1.5">Oggi</button>
-              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))} className="p-2 text-nebbia/50 hover:text-oro transition-colors"><ChevronRight size={18} /></button>
+              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className="p-2.5 sm:p-2 text-nebbia/50 hover:text-oro transition-colors"><ChevronLeft size={18} /></button>
+              <button onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))} className="btn-secondary text-xs px-3 py-2.5 sm:py-1.5">Oggi</button>
+              <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))} className="p-2.5 sm:p-2 text-nebbia/50 hover:text-oro transition-colors"><ChevronRight size={18} /></button>
             </div>
           </div>
 
           <div className="grid grid-cols-7 mb-1">
-            {GIORNI.map(g => <div key={g} className="text-center font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase py-2">{g}</div>)}
+            {GIORNI.map(g => <div key={g} className="text-center font-body text-[10px] sm:text-xs font-medium text-nebbia/30 tracking-widest uppercase py-2">{g}</div>)}
           </div>
 
           <div className="grid grid-cols-7 border border-white/8 overflow-hidden">
@@ -356,14 +356,29 @@ export default function AvvocatoCalendar() {
               const nScad = eventi.filter(e => e.tipo === 'scadenza' && e.stato !== 'annullato').length
               const nApp = eventi.filter(e => e.tipo !== 'udienza' && e.tipo !== 'scadenza' && e.stato !== 'annullato').length
               const avvIds = [...new Set(eventi.map(e => e.avvocato_id))]
+              const nColl = mostraColleghi ? (colleghiPerGiorno[k]?.length ?? 0) : 0
+              // Su telefono le celle sono ~48px: al posto dei badge testuali mostriamo max 3 pallini
+              const pallini = [
+                nUd > 0 && 'bg-red-400',
+                nScad > 0 && 'bg-amber-400',
+                nApp > 0 && 'bg-oro',
+                nColl > 0 && 'bg-salvia',
+              ].filter(Boolean).slice(0, 3)
               return (
                 <button key={i}
                   onClick={() => { setSelectedDay(date); setShowNew(false); setExpandedEvent(null) }}
-                  className={`min-h-[72px] p-2 text-left flex flex-col transition-colors border-r border-b border-white/5 ${!cur ? 'opacity-20' : ''} ${isSelected(date) ? 'bg-oro/10 ring-inset ring-1 ring-oro/50' : 'bg-petrolio hover:bg-slate/60'}`}>
-                  <span className={`font-body text-sm w-7 h-7 flex items-center justify-center mb-1 ${isToday(date) ? 'bg-oro text-petrolio font-semibold' : isSelected(date) ? 'text-oro font-medium' : 'text-nebbia/60'}`}>
+                  className={`min-h-[56px] sm:min-h-[72px] p-1 sm:p-2 text-left flex flex-col transition-colors border-r border-b border-white/5 ${!cur ? 'opacity-20' : ''} ${isSelected(date) ? 'bg-oro/10 ring-inset ring-1 ring-oro/50' : 'bg-petrolio hover:bg-slate/60'}`}>
+                  <span className={`font-body text-sm w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center mb-1 ${isToday(date) ? 'bg-oro text-petrolio font-semibold' : isSelected(date) ? 'text-oro font-medium' : 'text-nebbia/60'}`}>
                     {date.getDate()}
                   </span>
-                  <div className="flex flex-wrap gap-0.5 mt-auto">
+
+                  {/* Mobile: solo pallini colorati */}
+                  <div className="flex sm:hidden items-center gap-1 mt-auto pl-0.5">
+                    {pallini.map((c, idx) => <span key={idx} className={`w-1.5 h-1.5 rounded-full ${c}`} />)}
+                  </div>
+
+                  {/* Desktop/tablet: badge testuali (invariati) */}
+                  <div className="hidden sm:flex flex-wrap gap-0.5 mt-auto">
                     {nUd > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 border border-red-500/40 font-body">⚖ {nUd}</span>}
                     {nScad > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-500/40 font-body">⏱ {nScad}</span>}
                     {nApp > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-oro/15 text-oro border border-oro/30 font-body">{nApp} app.</span>}
@@ -397,8 +412,8 @@ export default function AvvocatoCalendar() {
 
         {/* PANNELLO GIORNO */}
         {selectedDay && (
-          <div className="w-96 shrink-0 bg-slate border border-white/5 flex flex-col" style={{ maxHeight: 680 }}>
-            <div className="flex items-center justify-between p-5 border-b border-white/5">
+          <div className="w-full lg:w-96 lg:shrink-0 bg-slate border border-white/5 flex flex-col max-h-[70vh] lg:max-h-[680px]">
+            <div className="flex items-center justify-between gap-2 p-4 sm:p-5 border-b border-white/5">
               <div>
                 <p className="font-body text-xs text-nebbia/30 tracking-widest uppercase">{GIORNI[(selectedDay.getDay() + 6) % 7]}</p>
                 <h3 className="font-display text-2xl font-semibold text-nebbia mt-0.5">{selectedDay.getDate()} {MESI[selectedDay.getMonth()]}</h3>
@@ -407,7 +422,7 @@ export default function AvvocatoCalendar() {
                 <div className="text-right"><p className="font-body text-[10px] text-nebbia/30">App.</p><p className="font-display text-lg font-semibold text-oro">{eventiGiorno.filter(e => e.tipo !== 'udienza' && e.tipo !== 'scadenza').length}</p></div>
                 <div className="text-right"><p className="font-body text-[10px] text-nebbia/30">Ud.</p><p className="font-display text-lg font-semibold text-red-400">{eventiGiorno.filter(e => e.tipo === 'udienza').length}</p></div>
                 <div className="text-right"><p className="font-body text-[10px] text-nebbia/30">Scad.</p><p className="font-display text-lg font-semibold text-amber-400">{eventiGiorno.filter(e => e.tipo === 'scadenza').length}</p></div>
-                <button onClick={() => { setSelectedDay(null); setShowNew(false) }} className="text-nebbia/30 hover:text-nebbia ml-2"><X size={16} /></button>
+                <button onClick={() => { setSelectedDay(null); setShowNew(false) }} className="text-nebbia/30 hover:text-nebbia ml-2 p-2 lg:p-0"><X size={16} /></button>
               </div>
             </div>
 
@@ -432,12 +447,12 @@ export default function AvvocatoCalendar() {
                   {clienti.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
                 </select>
 
-                <div className="grid grid-cols-4 gap-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                   {['presenza', 'videocall', 'telefonico', 'udienza'].map(t => {
                     const Icon = TIPO_ICON[t]; const isUd = t === 'udienza'
                     return (
                       <button key={t} type="button" onClick={() => setForm(f => ({ ...f, tipo: t }))}
-                        className={`flex items-center justify-center gap-1 py-2 text-xs font-body border transition-all ${form.tipo === t
+                        className={`flex items-center justify-center gap-1 py-2.5 sm:py-2 text-xs font-body border transition-all ${form.tipo === t
                           ? isUd ? 'bg-red-500/70 text-white border-red-500' : 'bg-oro text-petrolio border-oro'
                           : isUd ? 'text-red-400/60 border-red-500/25' : 'text-nebbia/50 border-white/10 hover:border-oro/30'}`}>
                         <Icon size={10} /> {TIPO_LABEL[t].split(' ')[0]}
@@ -482,8 +497,8 @@ export default function AvvocatoCalendar() {
                 {errore && <p className="font-body text-xs text-red-400">{errore}</p>}
 
                 <div className="flex gap-2">
-                  <button onClick={() => { setShowNew(false); setErrore('') }} className="btn-secondary text-xs flex-1 py-2">Annulla</button>
-                  <button onClick={handleSalva} disabled={salvando} className="btn-primary text-xs flex-1 py-2 justify-center disabled:opacity-40">
+                  <button onClick={() => { setShowNew(false); setErrore('') }} className="btn-secondary text-xs flex-1 py-2.5 lg:py-2">Annulla</button>
+                  <button onClick={handleSalva} disabled={salvando} className="btn-primary text-xs flex-1 py-2.5 lg:py-2 justify-center disabled:opacity-40">
                     {salvando ? <span className="animate-spin w-3 h-3 border border-petrolio border-t-transparent rounded-full" /> : 'Salva'}
                   </button>
                 </div>
@@ -555,10 +570,10 @@ export default function AvvocatoCalendar() {
                         )}
                         {e.stato === 'programmato' && !isScad && e.tipo !== 'udienza' && (
                           <div className="flex gap-2">
-                            <button onClick={() => cambiaStato(e.id, 'concluso')} className="flex-1 font-body text-xs py-1.5 border border-salvia/30 text-salvia hover:bg-salvia/10 transition-colors flex items-center justify-center gap-1">
+                            <button onClick={() => cambiaStato(e.id, 'concluso')} className="flex-1 font-body text-xs py-2.5 lg:py-1.5 border border-salvia/30 text-salvia hover:bg-salvia/10 transition-colors flex items-center justify-center gap-1">
                               <Check size={11} /> Concluso
                             </button>
-                            <button onClick={() => cambiaStato(e.id, 'annullato')} className="font-body text-xs py-1.5 px-3 border border-red-500/30 text-red-400 hover:bg-red-900/10 transition-colors">Annulla</button>
+                            <button onClick={() => cambiaStato(e.id, 'annullato')} className="font-body text-xs py-2.5 lg:py-1.5 px-3 border border-red-500/30 text-red-400 hover:bg-red-900/10 transition-colors">Annulla</button>
                           </div>
                         )}
                         {isUd && e.pratica && (
@@ -606,20 +621,20 @@ export default function AvvocatoCalendar() {
 
       {/* TABELLA RIEPILOGO */}
       <div className="bg-slate border border-white/5">
-        <div className="p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="p-4 sm:p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center gap-3">
           <div>
             <h2 className="font-display text-xl font-semibold text-nebbia">Riepilogo agenda</h2>
             <p className="font-body text-xs text-nebbia/40 mt-0.5">Tutti gli eventi: appuntamenti, udienze, scadenze</p>
           </div>
           <div className="sm:ml-auto flex flex-wrap gap-2">
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-nebbia/30" />
               <input placeholder="Cerca..." value={tabellaSearch} onChange={e => setTabellaSearch(e.target.value)}
-                className="bg-petrolio border border-white/10 text-nebbia font-body text-xs pl-8 pr-3 py-2 outline-none focus:border-oro/50 w-40 placeholder:text-nebbia/25" />
+                className="bg-petrolio border border-white/10 text-nebbia font-body text-xs pl-8 pr-3 py-2.5 sm:py-2 outline-none focus:border-oro/50 w-full sm:w-40 placeholder:text-nebbia/25" />
             </div>
-            <input type="date" value={tabellaFrom} onChange={e => setTabellaFrom(e.target.value)} className="bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2 outline-none focus:border-oro/50" />
-            <input type="date" value={tabellaTo} onChange={e => setTabellaTo(e.target.value)} className="bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2 outline-none focus:border-oro/50" />
-            <select value={tabellaTipo} onChange={e => setTabellaTipo(e.target.value)} className="bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2 outline-none focus:border-oro/50">
+            <input type="date" value={tabellaFrom} onChange={e => setTabellaFrom(e.target.value)} className="flex-1 sm:flex-initial bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 sm:py-2 outline-none focus:border-oro/50" />
+            <input type="date" value={tabellaTo} onChange={e => setTabellaTo(e.target.value)} className="flex-1 sm:flex-initial bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 sm:py-2 outline-none focus:border-oro/50" />
+            <select value={tabellaTipo} onChange={e => setTabellaTipo(e.target.value)} className="flex-1 sm:flex-initial bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 sm:py-2 outline-none focus:border-oro/50">
               <option value="">Tutti i tipi</option>
               <option value="presenza">In presenza</option>
               <option value="videocall">Videocall</option>
@@ -638,12 +653,63 @@ export default function AvvocatoCalendar() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div>
           {loadingApp ? (
             <div className="flex items-center justify-center py-16"><span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" /></div>
           ) : righe.length === 0 ? (
             <p className="text-center py-12 font-body text-sm text-nebbia/30">Nessun evento trovato</p>
           ) : (
+          <>
+            {/* Mobile: lista di card */}
+            <div className="lg:hidden divide-y divide-white/5">
+              {righe.map(r => {
+                const Icon = TIPO_ICON[r.tipo] ?? MapPin
+                const membre = membri.find(m => m.id === r.avvocato_id)
+                const isUd = r.tipo === 'udienza'
+                const isScad = r.tipo === 'scadenza'
+                const dataOra = r.data_ora_inizio ? `${new Date(r.data_ora_inizio).toLocaleDateString('it-IT')} ${oraDa(r.data_ora_inizio)}` : '—'
+
+                const tipoColor = isUd
+                  ? 'border-red-500/30 text-red-400'
+                  : isScad
+                    ? 'border-amber-500/30 text-amber-400'
+                    : 'border-oro/30 text-oro'
+
+                return (
+                  <div key={r.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-body text-sm font-medium text-nebbia">{r.titolo}</p>
+                      <span className="shrink-0"><BadgeStato stato={r.stato} /></span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`font-body text-[10px] px-2 py-0.5 border tracking-widest uppercase inline-flex items-center gap-1 ${tipoColor}`}>
+                        <Icon size={10} /> {TIPO_LABEL[r.tipo] ?? r.tipo}
+                      </span>
+                      <span className="font-body text-xs text-nebbia/50 whitespace-nowrap">{dataOra}</span>
+                    </div>
+                    {r.cliente && (
+                      <p className="font-body text-xs text-nebbia/60">{r.cliente.nome} {r.cliente.cognome}</p>
+                    )}
+                    {isStudio && membre && (
+                      <div className="flex items-center gap-2">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${membre.color}`}>{membre.nome[0]}</span>
+                        <span className="font-body text-xs text-nebbia/60">{membre.nome}</span>
+                      </div>
+                    )}
+                    {r.pratica && (
+                      <Link to={`/pratiche/${r.pratica.id}`}
+                        className="flex items-center justify-between gap-2 min-h-[40px] px-3 py-2 border border-oro/20 bg-oro/5 text-oro/80 font-body text-xs">
+                        <span className="truncate">{r.pratica.titolo}</span>
+                        <span className="shrink-0">→</span>
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop: tabella invariata */}
+            <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/5">
@@ -699,6 +765,8 @@ export default function AvvocatoCalendar() {
                 })}
               </tbody>
             </table>
+            </div>
+          </>
           )}
         </div>
       </div>

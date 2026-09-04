@@ -40,7 +40,7 @@ export default function ClientePratiche() {
 
             <div className="flex gap-3">
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-3 lg:py-2.5 outline-none focus:border-oro/50">
                     <option value="">Tutti gli stati</option>
                     <option value="in_corso">In corso</option>
                     <option value="in_udienza">In udienza</option>
@@ -64,8 +64,8 @@ export default function ClientePratiche() {
                         const st = STATO_CFG[p.stato] ?? STATO_CFG.in_corso
                         return (
                             <div key={p.id} className="bg-slate border border-white/5 p-5 space-y-3">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0">
                                         <h3 className="font-display text-xl font-semibold text-nebbia">{p.titolo}</h3>
                                         <p className="font-body text-xs text-nebbia/40 mt-1">
                                             {p.tipo ?? '—'}
@@ -75,7 +75,7 @@ export default function ClientePratiche() {
                                     <Badge label={st.label} variant={st.variant} />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="bg-petrolio/40 border border-white/5 p-3">
                                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Aperta il</p>
                                         <p className="font-body text-sm text-nebbia">{new Date(p.created_at).toLocaleDateString('it-IT')}</p>

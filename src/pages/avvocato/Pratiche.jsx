@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/components/shared'
-import { Plus, Search, AlertCircle, CheckCircle } from 'lucide-react'
+import { Plus, Search, AlertCircle, CheckCircle, SlidersHorizontal } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const STATI = {
@@ -37,6 +37,7 @@ export function AvvocatoPratiche() {
   const [meId, setMeId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [errore, setErrore] = useState('')
+  const [filtriAperti, setFiltriAperti] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -78,46 +79,63 @@ export function AvvocatoPratiche() {
   }
 
   const hasFilters = search || statoF || avvF || dateFrom || dateTo
+  const nFiltriAttivi = [statoF, avvF, dateFrom, dateTo].filter(Boolean).length
 
   return (
     <div className="space-y-5">
       <PageHeader label="Pratiche" title="Le pratiche"
         action={<Link to="/pratiche/nuova" className="btn-primary text-sm"><Plus size={15} />Nuova pratica</Link>} />
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-          <input placeholder="Cerca pratica o cliente..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-        </div>
-        <select value={statoF} onChange={e => setStatoF(e.target.value)}
-          className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
-          <option value="">Tutti gli stati</option>
-          {Object.entries(STATI).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-        {isStudio && collabs.length > 0 && (
-          <select value={avvF} onChange={e => setAvvF(e.target.value)}
-            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
-            <option value="">Tutti gli avvocati</option>
-            {collabs.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
-          </select>
-        )}
-        <div className="flex items-center gap-2">
-          <label className="font-body text-xs text-nebbia/30">Dal</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="font-body text-xs text-nebbia/30">Al</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
-        </div>
-        {hasFilters && (
-          <button onClick={() => { setSearch(''); setStatoF(''); setAvvF(''); setDateFrom(''); setDateTo('') }}
-            className="font-body text-xs text-nebbia/30 hover:text-red-400 px-3 py-2.5 border border-white/5 hover:border-red-500/30 transition-colors">
-            Reset
+      <div className="flex flex-col lg:flex-row lg:flex-wrap gap-3">
+        {/* Riga sempre visibile: ricerca + pulsante Filtri (solo mobile) */}
+        <div className="flex gap-3 lg:contents">
+          <div className="relative flex-1 min-w-0 lg:min-w-48">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
+            <input placeholder="Cerca pratica o cliente..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+          </div>
+          <button type="button" onClick={() => setFiltriAperti(v => !v)} aria-expanded={filtriAperti}
+            className={`lg:hidden shrink-0 flex items-center gap-2 font-body text-sm px-3 py-2.5 border transition-colors ${filtriAperti || nFiltriAttivi > 0
+              ? 'bg-slate border-oro/40 text-oro'
+              : 'bg-slate border-white/10 text-nebbia/60'
+              }`}>
+            <SlidersHorizontal size={15} />
+            Filtri
+            {nFiltriAttivi > 0 && <span className="text-xs text-oro">({nFiltriAttivi})</span>}
           </button>
-        )}
+        </div>
+
+        {/* Filtri: a scomparsa su mobile, in linea da lg */}
+        <div className={`${filtriAperti ? 'flex' : 'hidden'} flex-col gap-3 lg:contents`}>
+          <select value={statoF} onChange={e => setStatoF(e.target.value)}
+            className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+            <option value="">Tutti gli stati</option>
+            {Object.entries(STATI).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+          {isStudio && collabs.length > 0 && (
+            <select value={avvF} onChange={e => setAvvF(e.target.value)}
+              className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+              <option value="">Tutti gli avvocati</option>
+              {collabs.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
+            </select>
+          )}
+          <div className="flex items-center gap-2">
+            <label className="font-body text-xs text-nebbia/30 w-6 lg:w-auto">Dal</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="flex-1 lg:flex-none bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="font-body text-xs text-nebbia/30 w-6 lg:w-auto">Al</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="flex-1 lg:flex-none bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50" />
+          </div>
+          {hasFilters && (
+            <button onClick={() => { setSearch(''); setStatoF(''); setAvvF(''); setDateFrom(''); setDateTo('') }}
+              className="font-body text-xs text-nebbia/30 hover:text-red-400 px-3 py-2.5 border border-white/5 hover:border-red-500/30 transition-colors">
+              Reset
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -129,7 +147,40 @@ export function AvvocatoPratiche() {
           <AlertCircle size={14} /> {errore}
         </div>
       ) : (
-        <div className="bg-slate border border-white/5 overflow-x-auto">
+        <div className="bg-slate border border-white/5">
+          {/* Mobile: lista di card */}
+          <div className="lg:hidden divide-y divide-white/5">
+            {rows.length === 0 ? (
+              <div className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessuna pratica trovata</div>
+            ) : rows.map(p => {
+              const sc = STATI[p.stato] ?? STATI.aperta
+              return (
+                <Link key={p.id} to={`/pratiche/${p.id}`}
+                  className="block p-4 space-y-2 active:bg-petrolio/40 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-body text-sm font-medium text-nebbia leading-snug">{p.titolo}</span>
+                    <span className="shrink-0"><Badge label={sc.label} variant={sc.variant} /></span>
+                  </div>
+                  <p className="font-body text-sm text-nebbia/60">
+                    {p.cliente ? `${p.cliente.nome} ${p.cliente.cognome}` : '—'}
+                    {isStudio && <span className="text-nebbia/40"> · {nomeAvv(p.avvocato_id)}</span>}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs text-nebbia/40">
+                    <span className="text-nebbia/50 uppercase tracking-widest">{p.tipo ?? '—'}</span>
+                    <span className="whitespace-nowrap">Creata {new Date(p.created_at).toLocaleDateString('it-IT')}</span>
+                    {p.prossima_udienza && (
+                      <span className="text-oro whitespace-nowrap">
+                        Udienza {new Date(p.prossima_udienza).toLocaleDateString('it-IT')}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Desktop: tabella invariata */}
+          <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
@@ -164,6 +215,7 @@ export function AvvocatoPratiche() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
@@ -251,7 +303,7 @@ export function AvvocatoPraticheNuova() {
       <BackButton to="/pratiche" label="Tutte le pratiche" />
       <PageHeader label="Pratiche" title="Nuova pratica" />
       <form onSubmit={handleSubmit}>
-        <div className="bg-slate border border-white/5 p-6 space-y-5">
+        <div className="bg-slate border border-white/5 p-4 sm:p-6 space-y-5">
           <InputField label="Titolo pratica *" placeholder="Es. Causa civile Rossi vs Ferrari" {...f('titolo')} />
 
           <div>
@@ -263,7 +315,7 @@ export function AvvocatoPraticheNuova() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Tipo causa *</label>
               <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))}

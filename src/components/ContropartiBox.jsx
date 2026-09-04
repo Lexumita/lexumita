@@ -39,6 +39,15 @@ function labelRuolo(v) {
 // ─────────────────────────────────────────────────────────────
 // FIELD (a livello di modulo: non si rimonta a ogni render del parent)
 // ─────────────────────────────────────────────────────────────
+// Lo span di colonna parte da sm: in su — su telefono la griglia e' a una colonna
+// e ogni campo occupa la riga intera (niente style inline, altrimenti non e' responsive).
+const COL_SPAN = {
+    1: '',
+    2: 'sm:col-span-2',
+    3: 'sm:col-span-3',
+    4: 'sm:col-span-4',
+}
+
 function Field({
     label,
     type = 'text',
@@ -51,7 +60,7 @@ function Field({
     uppercase = false,
 }) {
     return (
-        <div style={{ gridColumn: `span ${colSpan}` }}>
+        <div className={COL_SPAN[colSpan] ?? ''}>
             <label className="block font-body text-[10px] text-nebbia/40 tracking-widest uppercase mb-1.5">{label}</label>
             <input
                 type={type}
@@ -70,17 +79,17 @@ function Field({
 // ─────────────────────────────────────────────────────────────
 function SwitcherTipo({ value, onChange }) {
     return (
-        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-fit">
+        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-full sm:w-fit">
             <button type="button"
                 onClick={() => onChange('persona_fisica')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 font-body text-xs transition-colors ${value === 'persona_fisica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-1.5 font-body text-xs transition-colors ${value === 'persona_fisica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'}`}>
                 <User size={11} /> Persona fisica
             </button>
             <button type="button"
                 onClick={() => onChange('persona_giuridica')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 font-body text-xs transition-colors ${value === 'persona_giuridica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-1.5 px-3 py-2.5 sm:py-1.5 font-body text-xs transition-colors ${value === 'persona_giuridica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'}`}>
                 <Building2 size={11} /> Persona giuridica
@@ -222,7 +231,7 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
                 <p className="font-body text-sm font-medium text-oro">
                     {isEdit ? 'Modifica controparte' : 'Nuova controparte'}
                 </p>
-                <button onClick={onAnnulla} className="text-nebbia/30 hover:text-nebbia transition-colors">
+                <button onClick={onAnnulla} className="p-2 -m-2 lg:p-0 lg:m-0 text-nebbia/30 hover:text-nebbia transition-colors">
                     <X size={14} />
                 </button>
             </div>
@@ -242,12 +251,12 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
             {/* Anagrafici condizionali */}
             {tipo === 'persona_fisica' ? (
                 <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field label="Nome *" placeholder="Tizio" {...f('nome')} />
                         <Field label="Cognome *" placeholder="Caio" {...f('cognome')} />
                     </div>
                     <Field label="Codice fiscale" placeholder="TZICAI70A01H501Z" {...f('cf')} />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field label="Data nascita" type="date" {...f('data_nascita')} />
                         <Field label="Luogo nascita" placeholder="Roma" {...f('luogo_nascita')} />
                     </div>
@@ -255,18 +264,18 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
             ) : (
                 <div className="space-y-3">
                     <Field label="Ragione sociale *" placeholder="Alfa Srl" {...f('ragione_sociale')} />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field label="Partita IVA" placeholder="12345678901" {...f('partita_iva')} />
                         <Field label="Codice fiscale" placeholder="se diverso da P.IVA" {...f('cf')} />
                     </div>
                     <Field label="Sede legale" placeholder="Via Roma 1, Milano" {...f('sede_legale')} />
                     <div className="border-t border-white/8 pt-3 space-y-3">
                         <p className="font-body text-[10px] text-nebbia/40 tracking-widest uppercase">Rappresentante legale</p>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Nome" {...f('rappr_nome')} />
                             <Field label="Cognome" {...f('rappr_cognome')} />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="CF rappresentante" {...f('rappr_cf')} />
                             <Field label="Carica" placeholder="Es. Amministratore Unico" {...f('rappr_carica')} />
                         </div>
@@ -278,7 +287,7 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
             <div className="border-t border-white/8 pt-3 space-y-3">
                 <p className="font-body text-[10px] text-nebbia/40 tracking-widest uppercase">Indirizzo</p>
                 <Field label="Indirizzo" placeholder="Via Garibaldi 5" {...f('indirizzo')} />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Field label="Comune" placeholder="Milano" colSpan={2} {...f('comune')} />
                     <Field label="Prov." placeholder="MI" maxLength={2} uppercase {...f('provincia')} />
                 </div>
@@ -288,7 +297,7 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
             {/* Contatti */}
             <div className="border-t border-white/8 pt-3 space-y-3">
                 <p className="font-body text-[10px] text-nebbia/40 tracking-widest uppercase">Contatti</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Email" type="email" {...f('email')} />
                     <Field label="Telefono" {...f('telefono')} />
                 </div>
@@ -298,7 +307,7 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
             {/* Legale avversario (collassabile) */}
             <div className="border-t border-white/8 pt-3">
                 <button type="button" onClick={() => setMostraLegale(v => !v)}
-                    className="flex items-center gap-2 font-body text-xs text-nebbia/50 hover:text-oro transition-colors w-full">
+                    className="flex items-center gap-2 font-body text-xs text-nebbia/50 hover:text-oro transition-colors w-full py-2 lg:py-0">
                     {mostraLegale ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     <Scale size={11} />
                     <span className="tracking-widest uppercase">Legale avversario</span>
@@ -306,11 +315,11 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
                 </button>
                 {mostraLegale && (
                     <div className="space-y-3 mt-3 pl-2">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Nome" {...f('legale_nome')} />
                             <Field label="Cognome" {...f('legale_cognome')} />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Foro" placeholder="Foro di Milano" {...f('legale_foro')} />
                             <Field label="N. albo" {...f('legale_albo')} />
                         </div>
@@ -333,15 +342,15 @@ function FormControparte({ controparte, praticaId, onSalvato, onAnnulla }) {
                 </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                 <button onClick={handleSalva} disabled={salvando}
-                    className="flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40">
+                    className="flex items-center justify-center sm:justify-start gap-2 px-4 py-3 sm:py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40">
                     {salvando
                         ? <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
                         : <><Check size={13} /> {isEdit ? 'Salva modifiche' : 'Aggiungi controparte'}</>
                     }
                 </button>
-                <button onClick={onAnnulla} className="px-4 py-2 border border-white/10 text-nebbia/40 font-body text-sm hover:text-nebbia transition-colors">
+                <button onClick={onAnnulla} className="px-4 py-3 sm:py-2 border border-white/10 text-nebbia/40 font-body text-sm hover:text-nebbia transition-colors">
                     Annulla
                 </button>
             </div>
@@ -382,7 +391,7 @@ function CardControparte({ c, onModifica, onElimina }) {
                     </div>
 
                     {(c.cf || c.partita_iva) && (
-                        <p className="font-mono text-[11px] text-nebbia/40 mt-1">
+                        <p className="font-mono text-xs text-nebbia/40 mt-1 break-words">
                             {c.partita_iva && <>P.IVA {c.partita_iva}</>}
                             {c.partita_iva && c.cf && ' · '}
                             {c.cf && <>CF {c.cf}</>}
@@ -487,14 +496,14 @@ export default function ContropartiBox({ praticaId }) {
 
     return (
         <div className="bg-slate border border-white/5 p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between flex-wrap lg:flex-nowrap gap-2 lg:gap-0 mb-4">
                 <p className="section-label flex items-center gap-2">
                     <Scale size={12} className="text-oro/60" />
                     Controparti ({controparti.length})
                 </p>
                 {!mostraForm && (
                     <button onClick={apriNuovo}
-                        className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors">
+                        className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-2.5 lg:py-1.5 hover:bg-oro/10 transition-colors">
                         <Plus size={11} /> Aggiungi controparte
                     </button>
                 )}
@@ -507,7 +516,7 @@ export default function ContropartiBox({ praticaId }) {
                     onClick={annulla}
                 >
                     <div
-                        className="w-full max-w-2xl my-8"
+                        className="w-full max-w-2xl my-4 sm:my-8"
                         onClick={e => e.stopPropagation()}
                     >
                         <FormControparte

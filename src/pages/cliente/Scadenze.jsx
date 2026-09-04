@@ -80,10 +80,10 @@ export default function ClienteScadenze() {
             </div>
 
             {/* Filtri */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 {FILTRI.map(({ key, label }) => (
                     <button key={key} onClick={() => setFiltro(key)}
-                        className={`font-body text-sm px-4 py-2 border transition-colors ${filtro === key
+                        className={`font-body text-sm px-4 py-3 lg:py-2 border transition-colors ${filtro === key
                             ? 'bg-oro/10 border-oro/40 text-oro'
                             : 'bg-slate border-white/10 text-nebbia/50 hover:text-nebbia'}`}>
                         {label}
@@ -114,7 +114,7 @@ export default function ClienteScadenze() {
                                     : scaduta ? 'bg-red-900/10 border-red-500/20'
                                         : urgente ? 'bg-amber-900/10 border-amber-500/20'
                                             : 'bg-slate border-white/5'}`}>
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             {s.tipo && (
@@ -123,7 +123,7 @@ export default function ClienteScadenze() {
                                                 </span>
                                             )}
                                             {s.mandato?.titolo && (
-                                                <span className="font-body text-[11px] text-nebbia/35">{s.mandato.titolo}</span>
+                                                <span className="font-body text-xs text-nebbia/35">{s.mandato.titolo}</span>
                                             )}
                                         </div>
                                         <p className={`font-body text-sm font-medium mt-1.5 ${completata ? 'text-nebbia/50 line-through' : 'text-nebbia'}`}>
@@ -131,14 +131,14 @@ export default function ClienteScadenze() {
                                         </p>
                                         {s.note && <p className="font-body text-xs text-nebbia/40 mt-1">{s.note}</p>}
                                     </div>
-                                    <div className="text-right shrink-0">
+                                    <div className="sm:text-right sm:shrink-0">
                                         <p className="font-body text-sm text-nebbia">{fmtData(s.data_scadenza)}</p>
                                         {completata ? (
-                                            <span className="font-body text-xs text-oro flex items-center gap-1 justify-end mt-1">
+                                            <span className="font-body text-xs text-oro flex items-center gap-1 sm:justify-end mt-1">
                                                 <Check size={12} /> Completata
                                             </span>
                                         ) : gg !== null && (
-                                            <span className={`font-body text-xs flex items-center gap-1 justify-end mt-1 ${scaduta ? 'text-red-400' : urgente ? 'text-amber-400' : 'text-nebbia/40'}`}>
+                                            <span className={`font-body text-xs flex items-center gap-1 sm:justify-end mt-1 ${scaduta ? 'text-red-400' : urgente ? 'text-amber-400' : 'text-nebbia/40'}`}>
                                                 <Clock size={11} />
                                                 {scaduta ? `Scaduta da ${Math.abs(gg)} gg` : gg === 0 ? 'Oggi' : `Tra ${gg} gg`}
                                             </span>

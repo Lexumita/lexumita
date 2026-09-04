@@ -349,7 +349,7 @@ function PopoverCapacita({ onClose, onEsempio }) {
                         <Sparkles size={14} className="text-salvia" />
                         <p className="font-body text-sm font-medium text-nebbia">Cosa puoi chiedere a Lex</p>
                     </div>
-                    <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia transition-colors">
+                    <button onClick={onClose} className="flex items-center justify-center min-w-[40px] min-h-[40px] lg:min-w-0 lg:min-h-0 -mr-2 lg:mr-0 text-nebbia/40 hover:text-nebbia transition-colors">
                         <X size={16} />
                     </button>
                 </div>
@@ -525,7 +525,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                 <div className="flex items-center gap-1.5 shrink-0">
                     <button
                         onClick={() => setVista('preview')}
-                        className={`flex items-center gap-1 px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'preview'
+                        className={`flex items-center justify-center gap-1 min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'preview'
                             ? 'bg-oro/10 border-oro/30 text-oro'
                             : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}
                     >
@@ -533,7 +533,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                     </button>
                     <button
                         onClick={() => setVista('edit')}
-                        className={`flex items-center gap-1 px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'edit'
+                        className={`flex items-center justify-center gap-1 min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'edit'
                             ? 'bg-oro/10 border-oro/30 text-oro'
                             : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}
                         title="Modifica il testo dell'atto"
@@ -574,12 +574,31 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                                 </button>
                             </div>
                         ) : pdfUrl ? (
-                            <iframe
-                                src={pdfUrl}
-                                title="Anteprima atto"
-                                className="w-full bg-white shadow-xl"
-                                style={{ height: '560px', border: 'none' }}
-                            />
+                            <>
+                                {/* Mobile: il PDF blob dentro un iframe non e' affidabile nel
+                                    browser di Capacitor — si apre in una scheda esterna */}
+                                <div className="lg:hidden">
+                                    <a
+                                        href={pdfUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-white text-petrolio font-body text-sm font-medium px-4 py-3 border border-neutral-400 shadow-xl"
+                                    >
+                                        <Eye size={16} /> Apri anteprima PDF
+                                    </a>
+                                    <p className="font-body text-xs text-neutral-700 text-center mt-2">
+                                        L'atto impaginato si apre in una nuova scheda.
+                                    </p>
+                                </div>
+
+                                {/* Desktop: anteprima inline invariata */}
+                                <iframe
+                                    src={pdfUrl}
+                                    title="Anteprima atto"
+                                    className="hidden lg:block w-full bg-white shadow-xl"
+                                    style={{ height: '560px', border: 'none' }}
+                                />
+                            </>
                         ) : null}
                     </div>
                 ) : (
@@ -601,7 +620,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                             <button
                                 onClick={async () => { await generaAnteprima(markdown); setVista('preview') }}
                                 disabled={generandoPdf || !markdown.trim()}
-                                className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors disabled:opacity-40"
+                                className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[40px] lg:min-h-0 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors disabled:opacity-40"
                             >
                                 {generandoPdf
                                     ? <><Loader2 size={11} className="animate-spin" /> Rigenero...</>
@@ -634,7 +653,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                             </div>
                             <button
                                 onClick={scarica}
-                                className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors"
+                                className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[40px] lg:min-h-0 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors"
                             >
                                 <Download size={11} /> Scarica PDF
                             </button>
@@ -643,7 +662,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                         <button
                             onClick={salvaPdf}
                             disabled={salvando || !nomeFile.trim()}
-                            className="flex items-center gap-2 px-4 py-2 border border-oro/30 text-oro font-body text-sm font-medium hover:bg-oro/10 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center lg:justify-start gap-2 w-full lg:w-auto min-h-[44px] lg:min-h-0 px-4 py-2 border border-oro/30 text-oro font-body text-sm font-medium hover:bg-oro/10 transition-colors disabled:opacity-40"
                         >
                             {salvando
                                 ? <><Loader2 size={13} className="animate-spin" /> Salvataggio...</>
@@ -662,13 +681,13 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
                                 value={nomeFile}
                                 onChange={e => setNomeFile(e.target.value)}
                                 disabled={salvando}
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 disabled:opacity-40"
+                                className="w-full min-h-[44px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 disabled:opacity-40"
                             />
                         </div>
                         <button
                             onClick={salvaPdf}
                             disabled={salvando || !nomeFile.trim()}
-                            className="flex items-center gap-2 px-4 py-2 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center lg:justify-start gap-2 w-full lg:w-auto min-h-[44px] lg:min-h-0 px-4 py-2 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors disabled:opacity-40"
                         >
                             {salvando
                                 ? <><Loader2 size={13} className="animate-spin" /> Salvataggio...</>
@@ -986,27 +1005,27 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
         <div className="bg-slate border border-salvia/20 flex flex-col" style={{ minHeight: haMessaggi || inviando ? 560 : 'auto' }}>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
-                <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-salvia" />
+            <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 lg:gap-0 px-5 py-4 border-b border-white/5 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Sparkles size={16} className="text-salvia shrink-0" />
                     <p className="font-body text-base font-medium text-salvia">Lex per questa pratica</p>
                     {crediti !== null && (
                         <span className="font-body text-xs text-nebbia/30 ml-2">{crediti} crediti</span>
                     )}
                 </div>
                 {haMessaggi && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={() => setMostraSalva(v => !v)}
                             disabled={inviando}
-                            className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors disabled:opacity-40"
                         >
                             <Save size={11} /> Salva conversazione
                         </button>
                         <button
                             onClick={richiediNuovaChat}
                             disabled={inviando}
-                            className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 border border-white/10 px-3 py-1.5 hover:text-nebbia hover:border-white/25 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 border border-white/10 px-3 py-1.5 hover:text-nebbia hover:border-white/25 transition-colors disabled:opacity-40"
                         >
                             <Plus size={11} /> Nuova chat
                         </button>
@@ -1017,16 +1036,16 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             {/* Conferma nuova chat */}
             {confermaNuova && (
                 <div className="px-5 py-3 border-b border-amber-500/30 bg-amber-500/5 shrink-0">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <p className="font-body text-xs text-amber-400">
                             <AlertCircle size={12} className="inline mr-1" />
                             La conversazione corrente andrà persa. Continuare?
                         </p>
-                        <div className="flex gap-2">
-                            <button onClick={nuovaChat} className="font-body text-xs text-amber-400 border border-amber-500/40 px-3 py-1 hover:bg-amber-500/10">
+                        <div className="flex gap-2 shrink-0">
+                            <button onClick={nuovaChat} className="flex-1 sm:flex-initial min-h-[40px] sm:min-h-0 font-body text-xs text-amber-400 border border-amber-500/40 px-3 py-1 hover:bg-amber-500/10">
                                 Sì, nuova chat
                             </button>
-                            <button onClick={() => setConfermaNuova(false)} className="font-body text-xs text-nebbia/40 px-3 py-1 hover:text-nebbia">
+                            <button onClick={() => setConfermaNuova(false)} className="flex-1 sm:flex-initial min-h-[40px] sm:min-h-0 font-body text-xs text-nebbia/40 px-3 py-1 hover:text-nebbia">
                                 Annulla
                             </button>
                         </div>
@@ -1049,7 +1068,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                 <div className="px-5 py-4 border-b border-white/5 bg-petrolio/30 shrink-0 space-y-3">
                     <div className="flex items-center justify-between">
                         <p className="font-body text-xs text-oro tracking-widest uppercase">Salva nelle ricerche</p>
-                        <button onClick={() => { setMostraSalva(false); setTitoloSalva('') }} className="text-nebbia/30 hover:text-nebbia">
+                        <button onClick={() => { setMostraSalva(false); setTitoloSalva('') }} className="flex items-center justify-center min-w-[40px] min-h-[40px] lg:min-w-0 lg:min-h-0 -mr-2 lg:mr-0 text-nebbia/30 hover:text-nebbia">
                             <X size={13} />
                         </button>
                     </div>
@@ -1059,20 +1078,20 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                         onChange={e => setTitoloSalva(e.target.value)}
                         placeholder="Es. Strategia per udienza del 15 marzo"
                         autoFocus
-                        className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                        className="w-full min-h-[44px] lg:min-h-0 bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={salvaConversazione}
                             disabled={salvando || !titoloSalva.trim()}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center gap-1.5 min-h-[40px] lg:min-h-0 px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
                         >
                             {salvando
                                 ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
                                 : <><Save size={11} /> Conferma salvataggio</>
                             }
                         </button>
-                        <button onClick={() => { setMostraSalva(false); setTitoloSalva('') }} className="px-3 py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors">
+                        <button onClick={() => { setMostraSalva(false); setTitoloSalva('') }} className="min-h-[40px] lg:min-h-0 px-3 py-1.5 border border-white/10 text-nebbia/40 font-body text-xs hover:text-nebbia transition-colors">
                             Annulla
                         </button>
                     </div>
@@ -1130,7 +1149,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                                     {m.content}
                                 </ReactMarkdown>
                                 {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
-                                <p className="mt-4 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                <p className="mt-4 pt-3 border-t border-white/5 font-body text-xs lg:text-[11px] text-nebbia/35 leading-relaxed">
                                     Contenuto generato con intelligenza artificiale. Lex può commettere errori:
                                     verifica sempre le fonti citate prima dell'uso professionale.
                                 </p>
@@ -1197,7 +1216,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             )}
 
             {errore === 'crediti_esauriti' && (
-                <div className="mx-5 mb-3 flex items-center justify-between gap-3 p-3 bg-oro/5 border border-oro/20">
+                <div className="mx-5 mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-oro/5 border border-oro/20">
                     <div className="flex items-center gap-2">
                         <AlertCircle size={13} className="text-oro shrink-0" />
                         <p className="font-body text-xs text-nebbia/60">Crediti Lex esauriti.</p>
@@ -1206,7 +1225,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                         href="/studio?tab=acquista"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap"
+                        className="flex sm:inline items-center justify-center min-h-[44px] sm:min-h-0 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap"
                     >
                         Acquista crediti →
                     </a>
@@ -1226,13 +1245,13 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                             ? "Crediti esauriti — acquista crediti per continuare"
                             : "Chiedi a Lex un'analisi o di generare un atto... (Ctrl+Enter per inviare)"
                         }
-                        className="flex-1 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
+                        className="flex-1 min-w-0 min-h-[44px] bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
                         style={{ minHeight: '60px', maxHeight: '200px' }}
                     />
                     <button
                         onClick={() => invia()}
                         disabled={inviando || !domandaLibera.trim() || creditiZero}
-                        className="px-4 py-3 bg-salvia/10 border border-salvia/30 text-salvia hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed self-end"
+                        className="px-4 py-3 min-w-[48px] min-h-[48px] lg:min-w-0 lg:min-h-0 bg-salvia/10 border border-salvia/30 text-salvia hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed self-end"
                         title={creditiZero ? 'Crediti esauriti' : 'Invia (Ctrl+Enter)'}
                     >
                         {inviando

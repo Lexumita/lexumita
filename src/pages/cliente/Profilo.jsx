@@ -76,9 +76,9 @@ export default function ClienteProfilo() {
                     ['Studio', profile?.studio ?? '-'],
                     [labelProfessionista, profile?.avvocato_id ? 'Assegnato' : '-'],
                 ].map(([l, v]) => (
-                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                    <div key={l} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/5 pb-2">
                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                        <span className="font-body text-sm text-nebbia">{v}</span>
+                        <span className="font-body text-sm text-nebbia break-words min-w-0">{v}</span>
                     </div>
                 ))}
             </div>
@@ -86,14 +86,14 @@ export default function ClienteProfilo() {
             {/* Dati personali */}
             <div className="bg-slate border border-white/5 p-6 space-y-5">
                 <p className="section-label">Dati personali</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InputField label="Nome"    {...f('nome')} />
                     <InputField label="Cognome" {...f('cognome')} />
                 </div>
                 <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501U" {...f('cf')} />
                 <InputField label="Telefono" placeholder="+39 02 1234567"    {...f('telefono')} />
                 <InputField label="Indirizzo" placeholder="Via Roma 1, Milano" {...f('indirizzo')} />
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <button onClick={salvaProfilo} disabled={salvando} className="btn-primary text-sm disabled:opacity-50">
                         {salvando ? 'Salvataggio…' : 'Salva modifiche'}
                     </button>
@@ -108,7 +108,7 @@ export default function ClienteProfilo() {
                     value={pw.nuova} onChange={e => setPw(p => ({ ...p, nuova: e.target.value }))} />
                 <InputField label="Conferma password" type="password" placeholder="••••••••"
                     value={pw.conferma} onChange={e => setPw(p => ({ ...p, conferma: e.target.value }))} />
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <button onClick={aggiornaPassword} disabled={pwLoading} className="btn-secondary text-sm disabled:opacity-50">
                         {pwLoading ? 'Aggiornamento…' : 'Aggiorna password'}
                     </button>

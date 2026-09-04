@@ -130,20 +130,20 @@ export default function ClientePanoramica() {
         <div className="space-y-6">
             <div>
                 <p className="section-label mb-1">Portale cliente</p>
-                <h1 className="font-display text-4xl font-light text-nebbia">
+                <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia">
                     Bentornato{profile?.nome ? `, ${profile.nome}` : ''}
                 </h1>
             </div>
 
             {fattureInAttesa.length > 0 && (
-                <div className="bg-amber-900/10 border border-amber-500/20 p-4 flex items-center justify-between gap-4">
+                <div className="bg-amber-900/10 border border-amber-500/20 p-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <CreditCard size={16} className="text-amber-400 shrink-0" />
                         <p className="font-body text-sm text-amber-400">
                             Hai {fattureInAttesa.length} {fattureInAttesa.length === 1 ? 'fattura' : 'fatture'} in attesa di pagamento
                         </p>
                     </div>
-                    <Link to="/portale/fatture" className="font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap">
+                    <Link to="/portale/fatture" className="font-body text-xs text-oro border border-oro/30 px-4 py-3 lg:px-3 lg:py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap">
                         Visualizza
                     </Link>
                 </div>
@@ -164,19 +164,19 @@ export default function ClientePanoramica() {
                 <div className="bg-slate border border-white/5 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <p className="section-label">Prossimo appuntamento</p>
-                        <Link to="/portale/appuntamenti" className="font-body text-xs text-oro hover:text-oro/70">Tutti →</Link>
+                        <Link to="/portale/appuntamenti" className="font-body text-xs text-oro hover:text-oro/70 p-3 -m-3">Tutti →</Link>
                     </div>
                     {prossimo ? (
                         <div className="flex items-start gap-3">
-                            <div className="bg-oro/10 border border-oro/20 p-3 text-center min-w-14">
+                            <div className="bg-oro/10 border border-oro/20 p-3 text-center min-w-14 shrink-0">
                                 <p className="font-display text-2xl font-semibold text-oro leading-none">
                                     {new Date(prossimo.data_ora_inizio).getDate()}
                                 </p>
-                                <p className="font-body text-[10px] text-oro/60 uppercase">
+                                <p className="font-body text-xs text-oro/60 uppercase">
                                     {new Date(prossimo.data_ora_inizio).toLocaleString('it-IT', { month: 'short' })}
                                 </p>
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="font-body text-sm font-medium text-nebbia">{prossimo.titolo}</p>
                                 {prossimo.professionista && (
                                     <p className="font-body text-xs text-nebbia/40 mt-0.5">{labelProfBreve} {prossimo.professionista.nome} {prossimo.professionista.cognome}</p>
@@ -200,7 +200,7 @@ export default function ClientePanoramica() {
                     <div className="bg-slate border border-white/5 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <p className="section-label">Prossime scadenze</p>
-                            <Link to="/portale/scadenze" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
+                            <Link to="/portale/scadenze" className="font-body text-xs text-oro hover:text-oro/70 p-3 -m-3">Tutte →</Link>
                         </div>
                         <div className="space-y-2">
                             {scadenze.length === 0
@@ -211,8 +211,8 @@ export default function ClientePanoramica() {
                                     const urgente = gg !== null && gg >= 0 && gg <= 7
                                     return (
                                         <div key={s.id} className={`border p-3 ${scaduta ? 'bg-red-900/10 border-red-500/20' : urgente ? 'bg-amber-900/10 border-amber-500/20' : 'bg-petrolio/40 border-white/5'}`}>
-                                            <div className="flex items-center justify-between gap-3">
-                                                <p className="font-body text-sm font-medium text-nebbia truncate">{s.titolo}</p>
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <p className="font-body text-sm font-medium text-nebbia truncate min-w-0">{s.titolo}</p>
                                                 <span className={`font-body text-xs shrink-0 ${scaduta ? 'text-red-400' : urgente ? 'text-amber-400' : 'text-nebbia/40'}`}>
                                                     {gg !== null && (scaduta ? `Scaduta` : gg === 0 ? 'Oggi' : `Tra ${gg} gg`)}
                                                 </span>
@@ -230,7 +230,7 @@ export default function ClientePanoramica() {
                     <div className="bg-slate border border-white/5 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <p className="section-label">Pratiche attive</p>
-                            <Link to="/portale/pratiche" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
+                            <Link to="/portale/pratiche" className="font-body text-xs text-oro hover:text-oro/70 p-3 -m-3">Tutte →</Link>
                         </div>
                         <div className="space-y-2">
                             {pratiche.filter(p => p.stato !== 'chiusa').length === 0
@@ -239,8 +239,8 @@ export default function ClientePanoramica() {
                                     const st = STATO_PRATICA[p.stato] ?? STATO_PRATICA.in_corso
                                     return (
                                         <div key={p.id} className={`border p-3 ${st.bg}`}>
-                                            <div className="flex items-center justify-between">
-                                                <p className="font-body text-sm font-medium text-nebbia">{p.titolo}</p>
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <p className="font-body text-sm font-medium text-nebbia min-w-0">{p.titolo}</p>
                                                 <span className={`font-body text-xs ${st.color}`}>{st.label}</span>
                                             </div>
                                             <p className="font-body text-xs text-nebbia/40 mt-0.5">
@@ -259,7 +259,7 @@ export default function ClientePanoramica() {
             <div className="bg-slate border border-white/5 p-5">
                 <div className="flex items-center justify-between mb-4">
                     <p className="section-label">Ultime comunicazioni</p>
-                    <Link to="/portale/comunicazioni" className="font-body text-xs text-oro hover:text-oro/70">Tutte →</Link>
+                    <Link to="/portale/comunicazioni" className="font-body text-xs text-oro hover:text-oro/70 p-3 -m-3">Tutte →</Link>
                 </div>
                 {tickets.length === 0 ? (
                     <p className="font-body text-sm text-nebbia/30">Nessuna comunicazione</p>
@@ -281,7 +281,7 @@ export default function ClientePanoramica() {
                                         </div>
                                     </div>
                                     {nonLetto && (
-                                        <span className="font-body text-[10px] text-oro bg-oro/10 px-1.5 py-0.5 shrink-0 ml-3">nuovo</span>
+                                        <span className="font-body text-xs text-oro bg-oro/10 px-2 py-0.5 shrink-0 ml-3">nuovo</span>
                                     )}
                                 </Link>
                             )

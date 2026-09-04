@@ -79,18 +79,18 @@ export function ClienteComunicazioni() {
                 </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                     <input
                         placeholder="Cerca conversazione..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                        className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-3 lg:py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                     />
                 </div>
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-3 lg:py-2.5 outline-none focus:border-oro/50">
                     <option value="">Tutti</option>
                     <option value="aperto">Aperti</option>
                     <option value="chiuso">Chiusi</option>
@@ -254,10 +254,10 @@ export function ClienteComunicazioniDettaglio() {
         <div className="space-y-5 max-w-3xl">
             <BackButton to="/portale/comunicazioni" label="Messaggi" />
 
-            <div className="flex items-start justify-between gap-4">
-                <div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
                     <p className="section-label mb-1">Con {controparte || 'Avvocato'}</p>
-                    <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
+                    <h1 className="font-display text-2xl sm:text-3xl font-light text-nebbia break-words">{ticket.oggetto}</h1>
                     <p className="font-body text-xs text-nebbia/30 mt-1">
                         Aperto il {new Date(ticket.created_at).toLocaleDateString('it-IT')}
                     </p>
@@ -266,7 +266,7 @@ export function ClienteComunicazioniDettaglio() {
             </div>
 
             {/* Messaggi */}
-            <div className="bg-slate border border-white/5 p-5 space-y-4 min-h-64 max-h-[500px] overflow-y-auto">
+            <div className="bg-slate border border-white/5 p-4 sm:p-5 space-y-4 min-h-64 max-h-[60vh] lg:max-h-[500px] overflow-y-auto">
                 {messaggi.length === 0 ? (
                     <p className="font-body text-sm text-nebbia/30 text-center py-6">Nessun messaggio ancora.</p>
                 ) : messaggi.map(m => {
@@ -274,15 +274,15 @@ export function ClienteComunicazioniDettaglio() {
                     const nomeAutore = m.autore ? `${m.autore.nome} ${m.autore.cognome}` : m.autore_tipo
                     return (
                         <div key={m.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[75%] space-y-1 p-3 ${isMio
+                            <div className={`max-w-[85%] lg:max-w-[75%] space-y-1 p-3 ${isMio
                                 ? 'bg-oro/15 border border-oro/20'
                                 : 'bg-petrolio/60 border border-white/8'
                                 }`}>
-                                <p className={`font-body text-[10px] font-medium ${isMio ? 'text-oro/60' : 'text-nebbia/40'}`}>
+                                <p className={`font-body text-xs font-medium ${isMio ? 'text-oro/60' : 'text-nebbia/40'}`}>
                                     {nomeAutore}
                                 </p>
                                 <p className="font-body text-sm text-nebbia leading-relaxed whitespace-pre-wrap">{m.testo}</p>
-                                <p className="font-body text-[10px] text-nebbia/25">
+                                <p className="font-body text-xs text-nebbia/25">
                                     {new Date(m.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -316,7 +316,7 @@ export function ClienteComunicazioniDettaglio() {
                             {inviando ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                         </button>
                     </div>
-                    <p className="font-body text-[10px] text-nebbia/20">Invio con Enter · A capo con Shift+Enter</p>
+                    <p className="font-body text-xs text-nebbia/20">Invio con Enter · A capo con Shift+Enter</p>
                 </div>
             ) : (
                 <div className="bg-petrolio/40 border border-white/5 p-4 text-center">
