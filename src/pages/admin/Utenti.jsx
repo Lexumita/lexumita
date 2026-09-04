@@ -8,6 +8,7 @@ import {
   UserPlus, X, Copy, Check, ShieldAlert
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import UtentiQuestionari from './UtentiQuestionari'
 
 const ROLE_BADGE = {
   admin: { label: 'Admin', variant: 'red' },
@@ -737,6 +738,7 @@ export default function AdminUtenti() {
   const TABS = [
     { id: 'tutti', label: 'Tutti', badge: null },
     { id: 'verifiche', label: 'Da verificare', badge: nVerifiche },
+    { id: 'questionari', label: 'Questionari', badge: null },
   ]
 
   return (
@@ -772,9 +774,9 @@ export default function AdminUtenti() {
         ))}
       </div>
 
-      {tab === 'verifiche'
-        ? <TabVerifiche data={utenti} loading={loading} onDecision={handleDecision} />
-        : <TabellaUtenti data={utenti} loading={loading} />
+      {tab === 'verifiche'   ? <TabVerifiche data={utenti} loading={loading} onDecision={handleDecision} />
+       : tab === 'questionari' ? <UtentiQuestionari />
+       : <TabellaUtenti data={utenti} loading={loading} />
       }
 
       <ModalCreaUtente

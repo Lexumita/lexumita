@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 import { Analytics } from '@vercel/analytics/react'
+import Questionario from './pages/Questionario'
 import { useAuth } from './context/AuthContext'
 import { HelmetProvider } from 'react-helmet-async'
 import Verifica2FA from './pages/auth/Verifica2FA'
@@ -190,6 +191,11 @@ export default function App() {
               {/* ═══════════════════════════════════════════════════════
                 AUTH (tracciato da Vercel Analytics per misurare il funnel)
                 ═══════════════════════════════════════════════════════ */}
+              {/* Questionario di feedback — NUDO di proposito.
+                  L'indirizzo contiene un token che vale come credenziale:
+                  dentro VetrinaLayout o AuthLayout finirebbe a Vercel Analytics. */}
+              <Route path="/questionario/:token" element={<Questionario />} />
+
               <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
               <Route path="/registrati" element={<AuthLayout><Registrati /></AuthLayout>} />
               <Route path="/recupera-password" element={<AuthLayout><RecuperaPassword /></AuthLayout>} />
