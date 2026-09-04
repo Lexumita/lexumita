@@ -19,7 +19,7 @@ export default function UserCheckout() {
         return (
             <div className="text-center py-12 space-y-4">
                 <p className="font-body text-sm text-nebbia/50">Nessun prodotto selezionato.</p>
-                <Link to="/abbonamenti" className="btn-secondary text-sm inline-flex">
+                <Link to="/abbonamenti" className="btn-secondary text-sm inline-flex w-full sm:w-auto justify-center">
                     Torna ai piani
                 </Link>
             </div>
@@ -78,9 +78,9 @@ export default function UserCheckout() {
                     ['Nome', `${profile?.nome ?? ''} ${profile?.cognome ?? ''}`.trim() || '—'],
                     ['Email', profile?.email ?? '—'],
                 ].map(([l, v]) => (
-                    <div key={l} className="flex justify-between items-center py-2 border-b border-white/5">
+                    <div key={l} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-3 py-2 border-b border-white/5">
                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                        <span className="font-body text-sm text-nebbia">{v}</span>
+                        <span className="font-body text-sm text-nebbia break-words sm:text-right">{v}</span>
                     </div>
                 ))}
                 <p className="font-body text-xs text-nebbia/25 pt-1">
@@ -94,7 +94,7 @@ export default function UserCheckout() {
             {/* Prodotto */}
             <div className="bg-slate border border-oro/20 p-5 space-y-2">
                 <p className="section-label">Piano selezionato</p>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div>
                         <p className="font-display text-xl font-semibold text-nebbia">{prodotto.nome}</p>
                         <p className="font-body text-xs text-nebbia/40 mt-1">
@@ -111,11 +111,11 @@ export default function UserCheckout() {
                             )}
                         </div>
                     </div>
-                    <p className="font-display text-4xl font-light text-oro shrink-0">EUR {prodotto.prezzo}</p>
+                    <p className="font-display text-3xl sm:text-4xl font-light text-oro shrink-0">EUR {prodotto.prezzo}</p>
                 </div>
                 <button
                     onClick={() => navigate('/abbonamenti')}
-                    className="font-body text-xs text-nebbia/30 hover:text-oro transition-colors pt-1"
+                    className="font-body text-xs text-nebbia/30 hover:text-oro transition-colors py-2 lg:py-0 lg:pt-1 text-left"
                 >
                     Cambia piano
                 </button>

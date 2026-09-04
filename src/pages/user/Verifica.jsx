@@ -196,7 +196,7 @@ export function UserVerifica() {
                 Li esamineremo entro 24-48 ore per assegnarti il distintivo di professionista verificato.
                 Nel frattempo puoi continuare a usare Lexum senza limitazioni.
             </p>
-            <Link to="/area/acquista" className="btn-primary justify-center inline-flex">
+            <Link to="/area/acquista" className="btn-primary justify-center inline-flex w-full sm:w-auto">
                 Vedi i piani <ArrowRight size={14} />
             </Link>
         </div>
@@ -299,11 +299,11 @@ export function UserVerifica() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <button
                         onClick={handleSalvaDati}
                         disabled={salvandoDati}
-                        className="btn-primary justify-center disabled:opacity-40"
+                        className="btn-primary justify-center w-full sm:w-auto disabled:opacity-40"
                     >
                         {salvandoDati
                             ? <><Loader2 size={16} className="animate-spin" /> Salvataggio…</>
@@ -343,17 +343,17 @@ export function UserVerifica() {
                 <div className="space-y-3">
                     {config.documenti.map(({ key, label, hint }) => (
                         <div key={key} className={`border p-4 ${docs[key] ? 'border-salvia/30' : 'border-white/5'}`}>
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                                <div className="flex-1 min-w-0">
                                     <p className="font-body text-sm text-nebbia mb-0.5">{label}</p>
                                     <p className="font-body text-xs text-nebbia/40">{hint}</p>
                                     {docs[key] && (
-                                        <p className="font-body text-xs text-salvia mt-1">
+                                        <p className="font-body text-xs text-salvia mt-1 break-words">
                                             ✓ {docs[key].name} ({(docs[key].size / 1024).toFixed(0)} KB)
                                         </p>
                                     )}
                                 </div>
-                                <label className={`cursor-pointer ${docs[key] ? 'btn-secondary' : 'btn-secondary'} text-xs px-3 py-2 flex items-center gap-1.5`}>
+                                <label className={`cursor-pointer ${docs[key] ? 'btn-secondary' : 'btn-secondary'} text-xs px-3 py-3 sm:py-2 w-full sm:w-auto justify-center flex items-center gap-1.5`}>
                                     <Upload size={12} /> {docs[key] ? 'Cambia' : 'Carica'}
                                     <input
                                         type="file"
@@ -432,7 +432,7 @@ export function UserVerificaStato() {
                             {profile?.note_iniziali || 'Documenti non leggibili o incompleti. Ricarica i file in alta qualità.'}
                         </p>
                     </div>
-                    <Link to="/verifica" className="btn-primary justify-center inline-flex">Ricarica documenti</Link>
+                    <Link to="/verifica" className="btn-primary justify-center inline-flex w-full sm:w-auto">Ricarica documenti</Link>
                 </div>
             )}
         </div>

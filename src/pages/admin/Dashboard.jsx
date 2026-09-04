@@ -157,7 +157,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <PageHeader label="Admin" title="Dashboard" subtitle="Panoramica della piattaforma" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {STATS.map(s => (
           <StatCard key={s.label} {...s} />
         ))}
@@ -165,9 +165,9 @@ export default function AdminDashboard() {
 
       {/* Alert verifiche pendenti */}
       {!loading && stats?.nVerifiche > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-amber-900/10 border border-amber-500/20">
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-amber-900/10 border border-amber-500/20">
           <AlertCircle size={16} className="text-amber-400 shrink-0" />
-          <p className="font-body text-sm text-amber-400">
+          <p className="font-body text-sm text-amber-400 min-w-0 flex-1">
             {stats.nVerifiche} {stats.nVerifiche === 1 ? 'avvocato in attesa' : 'avvocati in attesa'} di verifica identità
           </p>
           <Link to="/admin/utenti" className="font-body text-xs text-amber-400 border border-amber-500/30 px-3 py-1.5 hover:bg-amber-400/10 transition-colors ml-auto whitespace-nowrap">
@@ -178,9 +178,9 @@ export default function AdminDashboard() {
 
       {/* Alert ticket aperti */}
       {!loading && stats?.nTicket > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-red-900/10 border border-red-500/20">
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-red-900/10 border border-red-500/20">
           <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <p className="font-body text-sm text-red-400">
+          <p className="font-body text-sm text-red-400 min-w-0 flex-1">
             {stats.nTicket} {stats.nTicket === 1 ? 'ticket aperto' : 'ticket aperti'} da gestire
           </p>
           <Link to="/admin/assistenza" className="font-body text-xs text-red-400 border border-red-500/30 px-3 py-1.5 hover:bg-red-400/10 transition-colors ml-auto whitespace-nowrap">

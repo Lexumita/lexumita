@@ -79,7 +79,7 @@ function AggiungiAPratica({ norma, tipoFonte, codiceLabel }) {
     return (
         <div>
             <button onClick={() => setAperto(!aperto)} className="btn-secondary text-sm flex items-center gap-2">
-                <Save size={13} /> {aperto ? 'Annulla' : 'Aggiungi a pratica'}
+                <Save size={15} /> {aperto ? 'Annulla' : 'Aggiungi a pratica'}
             </button>
             {aperto && (
                 <div className="mt-3 bg-slate border border-white/10 p-4 space-y-3">
@@ -269,14 +269,14 @@ export function NormaDettaglio() {
                             </span>
                         )}
                         {norma.tipo_elemento && norma.tipo_elemento !== 'articolo' && (
-                            <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                            <span className="font-body text-xs text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
                                 {norma.tipo_elemento}
                             </span>
                         )}
                     </div>
-                    <h1 className="font-display text-3xl text-nebbia leading-snug">{riferimento}</h1>
+                    <h1 className="font-display text-2xl lg:text-3xl text-nebbia leading-snug break-words">{riferimento}</h1>
                     {norma.rubrica && (
-                        <p className="font-body text-sm text-nebbia/60 italic mt-2">{norma.rubrica}</p>
+                        <p className="font-body text-sm text-nebbia/60 italic mt-2 break-words">{norma.rubrica}</p>
                     )}
 
                     {/* Riferimenti aggiuntivi */}
@@ -319,7 +319,7 @@ export function NormaDettaglio() {
 
                 {/* Azioni in alto a destra (solo avvocati) */}
                 {isAvvocato && (
-                    <div className="shrink-0 flex flex-col items-end gap-2">
+                    <div className="w-full lg:w-auto shrink-0 flex flex-col items-start lg:items-end gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <AggiungiAPratica norma={norma} tipoFonte={tipoFonte} codiceLabel={codiceLabel} />
                             <AggiungiAEtichetta
@@ -338,7 +338,7 @@ export function NormaDettaglio() {
             {/* Testo principale */}
             <div className="bg-slate border border-white/5 p-6">
                 {norma.testo ? (
-                    <div className="font-body text-base text-nebbia/80 leading-relaxed whitespace-pre-line">
+                    <div className="font-body text-base text-nebbia/80 leading-relaxed whitespace-pre-line break-words">
                         {norma.testo}
                     </div>
                 ) : (

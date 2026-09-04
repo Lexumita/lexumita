@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, Badge } from '@/components/shared'
-import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale } from 'lucide-react'
+import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, Clock, Loader2 } from 'lucide-react'
 
 export default function UserProfilo() {
     const { profile } = useAuth()
@@ -110,9 +110,9 @@ export default function UserProfilo() {
                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Ruolo</span>
                     <Badge label="User" variant="gray" />
                 </div>
-                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 border-b border-white/5 pb-2">
                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Email</span>
-                    <span className="font-body text-sm text-nebbia">{profile?.email ?? '—'}</span>
+                    <span className="font-body text-sm text-nebbia break-words sm:text-right">{profile?.email ?? '—'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Verifica identità</span>
@@ -143,7 +143,7 @@ export default function UserProfilo() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InputField label="Nome"    {...f('nome')} />
                     <InputField label="Cognome" {...f('cognome')} />
                 </div>
@@ -156,8 +156,8 @@ export default function UserProfilo() {
                 )}
 
                 {isDirty && (
-                    <div className="flex gap-3">
-                        <button onClick={handleAnnullaDati} className="btn-secondary text-sm flex-1">Annulla</button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button onClick={handleAnnullaDati} className="btn-secondary text-sm flex-1 justify-center">Annulla</button>
                         <button
                             onClick={handleSalvaDati}
                             disabled={salvandoDati}
@@ -184,7 +184,7 @@ export default function UserProfilo() {
                 </div>
 
                 {!editingPwd ? (
-                    <button onClick={() => setEditingPwd(true)} className="btn-secondary text-sm">
+                    <button onClick={() => setEditingPwd(true)} className="btn-secondary text-sm w-full sm:w-auto justify-center">
                         Modifica password
                     </button>
                 ) : (
@@ -200,10 +200,10 @@ export default function UserProfilo() {
                             </div>
                         )}
 
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={() => { setEditingPwd(false); setPwd({ nuova: '', conferma: '' }); setErrPwd('') }}
-                                className="btn-secondary text-sm flex-1"
+                                className="btn-secondary text-sm flex-1 justify-center"
                             >
                                 Annulla
                             </button>

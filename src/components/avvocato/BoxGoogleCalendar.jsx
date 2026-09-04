@@ -150,33 +150,33 @@ export default function BoxGoogleCalendar() {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between p-4 bg-petrolio border border-white/5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0 p-4 bg-petrolio border border-white/5">
             <div className="min-w-0">
               <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Account collegato</p>
               <p className="font-body text-sm text-nebbia truncate">{stato.google_email ?? 'Account Google'}</p>
             </div>
             <button onClick={scollega} disabled={busy}
-              className="shrink-0 font-body text-xs text-red-400/80 hover:text-red-400 border border-red-500/30 hover:border-red-500/60 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-40">
+              className="shrink-0 self-start sm:self-auto font-body text-xs text-red-400/80 hover:text-red-400 border border-red-500/30 hover:border-red-500/60 px-3 py-1.5 min-h-[40px] lg:min-h-0 flex items-center justify-center gap-1.5 disabled:opacity-40">
               {busy ? <Loader2 size={12} className="animate-spin" /> : <Unlink size={12} />} Scollega
             </button>
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={12} className="text-nebbia/40" />
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Users size={12} className="text-nebbia/40 shrink-0" />
               <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Visibilità verso i colleghi</p>
             </div>
             <div className="space-y-2">
               {VISIBILITA.map(v => (
                 <button key={v.id} onClick={() => cambiaVisibilita(v.id)}
-                  className={`w-full text-left p-3 border transition-colors ${stato.visibilita === v.id
+                  className={`w-full text-left p-3 min-h-[44px] border transition-colors ${stato.visibilita === v.id
                     ? 'border-oro/40 bg-oro/5'
                     : 'border-white/8 hover:border-white/20'}`}>
                   <div className="flex items-center gap-2">
                     <span className={`w-3.5 h-3.5 rounded-full border shrink-0 ${stato.visibilita === v.id ? 'border-oro bg-oro' : 'border-white/25'}`} />
                     <span className="font-body text-sm text-nebbia">{v.label}</span>
                   </div>
-                  <p className="font-body text-xs text-nebbia/40 mt-0.5 ml-5">{v.desc}</p>
+                  <p className="font-body text-xs text-nebbia/40 mt-0.5 ml-5 break-words">{v.desc}</p>
                 </button>
               ))}
             </div>
@@ -184,18 +184,18 @@ export default function BoxGoogleCalendar() {
 
           <div className="flex items-center gap-3 flex-wrap border-t border-white/5 pt-4">
             <button onClick={() => sincronizza()} disabled={syncing}
-              className="font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-40 transition-colors">
+              className="shrink-0 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 px-3 py-1.5 min-h-[40px] lg:min-h-0 flex items-center justify-center gap-1.5 disabled:opacity-40 transition-colors">
               {syncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Sincronizza ora
             </button>
-            {syncMsg && <span className="font-body text-xs text-nebbia/40">{syncMsg}</span>}
+            {syncMsg && <span className="font-body text-xs text-nebbia/40 min-w-0">{syncMsg}</span>}
           </div>
           {countdown && (
-            <p className="font-body text-[11px] text-nebbia/40 flex items-center gap-1.5">
-              <RefreshCw size={10} className="text-nebbia/30" />
+            <p className="font-body text-xs lg:text-[11px] text-nebbia/40 flex items-start sm:items-center flex-wrap lg:flex-nowrap gap-x-1.5 gap-y-1">
+              <RefreshCw size={10} className="text-nebbia/30 shrink-0 mt-1 sm:mt-0" />
               Prossima sincronizzazione automatica con Google tra <span className="text-oro/80 tabular-nums">{countdown}</span>
             </p>
           )}
-          <p className="font-body text-[11px] text-nebbia/30">
+          <p className="font-body text-xs lg:text-[11px] text-nebbia/30">
             Appuntamenti, udienze e scadenze della tua agenda vengono copiati nel tuo Google Calendar:
             i nuovi eventi vengono inviati subito, e comunque risincronizzati automaticamente ogni 5 minuti.
           </p>

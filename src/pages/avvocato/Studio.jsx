@@ -476,6 +476,19 @@ function CollaboRow({ collabo, isTitolare, meId, onRefresh }) {
 // ─────────────────────────────────────────────────────────────
 // STORICO TRANSAZIONI
 // ─────────────────────────────────────────────────────────────
+// Badge di stato: stessa logica usata da card mobile e tabella desktop.
+function BadgeStatoPagamento({ transazione: s }) {
+    // Badge "Gratis" se importo=0 (es. trial gratuito attivato)
+    const importo = parseFloat(s.importo ?? 0)
+    if (importo === 0 && s.stato === 'completato') {
+        return <Badge label="Gratis" variant="salvia" />
+    }
+    return <Badge
+        label={s.stato === 'completato' ? 'Pagato' : s.stato === 'rimborsato' ? 'Rimborsato' : 'Fallito'}
+        variant={s.stato === 'completato' ? 'salvia' : s.stato === 'rimborsato' ? 'warning' : 'red'}
+    />
+}
+
 function StoricoTransazioni({ meId, includiSentenze = false }) {
     const [storico, setStorico] = useState([])
     const [loading, setLoading] = useState(true)
@@ -503,41 +516,56 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
             {storico.length === 0 ? (
                 <p className="font-body text-sm text-nebbia/30 italic">Nessun pagamento registrato</p>
             ) : (
-                <table className="w-full">
-                    <thead>
-                        <tr className="border-b border-white/5">
-                            {['Descrizione', 'Importo', 'Data', 'Stato'].map(h => (
-                                <th key={h} className="px-4 py-2 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
+                <>
+                    {/* Mobile — schema a card */}
+                    <div className="lg:hidden divide-y divide-white/5 border-t border-white/5">
                         {storico.map(s => (
-                            <tr key={s.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
-                                <td className="px-4 py-3 font-body text-sm text-nebbia">{s.prodotto_nome ?? '—'}</td>
-                                <td className="px-4 py-3 font-body text-sm font-medium text-oro">
-                                    {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
-                                </td>
-                                <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
-                                    {new Date(s.created_at).toLocaleDateString('it-IT')}
-                                </td>
-                                <td className="px-4 py-3">
-                                    {(() => {
-                                        // Badge "Gratis" se importo=0 (es. trial gratuito attivato)
-                                        const importo = parseFloat(s.importo ?? 0)
-                                        if (importo === 0 && s.stato === 'completato') {
-                                            return <Badge label="Gratis" variant="salvia" />
-                                        }
-                                        return <Badge
-                                            label={s.stato === 'completato' ? 'Pagato' : s.stato === 'rimborsato' ? 'Rimborsato' : 'Fallito'}
-                                            variant={s.stato === 'completato' ? 'salvia' : s.stato === 'rimborsato' ? 'warning' : 'red'}
-                                        />
-                                    })()}
-                                </td>
-                            </tr>
+                            <div key={s.id} className="py-3 space-y-2">
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="font-body text-sm text-nebbia min-w-0 break-words">{s.prodotto_nome ?? '—'}</p>
+                                    <p className="font-body text-sm font-medium text-oro shrink-0 whitespace-nowrap">
+                                        {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="font-body text-xs text-nebbia/50 whitespace-nowrap">
+                                        {new Date(s.created_at).toLocaleDateString('it-IT')}
+                                    </span>
+                                    <BadgeStatoPagamento transazione={s} />
+                                </div>
+                            </div>
                         ))}
-                    </tbody>
-                </table>
+                    </div>
+
+                    {/* Desktop — tabella invariata */}
+                    <div className="hidden lg:block overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    {['Descrizione', 'Importo', 'Data', 'Stato'].map(h => (
+                                        <th key={h} className="px-4 py-2 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {storico.map(s => (
+                                    <tr key={s.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
+                                        <td className="px-4 py-3 font-body text-sm text-nebbia">{s.prodotto_nome ?? '—'}</td>
+                                        <td className="px-4 py-3 font-body text-sm font-medium text-oro">
+                                            {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
+                                        </td>
+                                        <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
+                                            {new Date(s.created_at).toLocaleDateString('it-IT')}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <BadgeStatoPagamento transazione={s} />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
         </div>
     )
@@ -914,7 +942,7 @@ export default function AvvocatoStudio() {
 
                 {/* Stats — solo avvocato con piano */}
                 {!isUser && hasPiano && (
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-5 [&_.font-display]:text-2xl lg:[&_.font-display]:text-3xl [&>div]:p-4 lg:[&>div]:p-5">
                         <StatCard label="Accessi" value={`${postiUsati}/${postiAcquistati}`} colorClass={postiLiberi === 0 ? 'text-amber-400' : 'text-nebbia/60'} />
                         <StatCard label="Crediti AI" value={crediti.totale} colorClass={creditiAZero ? 'text-red-400' : creditiBassi ? 'text-amber-400' : 'text-salvia'} />
                         <StatCard label="Storage" value={`${storage.occupato_gb.toFixed(1)} / ${storage.gb_totali} GB`} colorClass={storagePieno ? 'text-red-400' : storageQuasiPieno ? 'text-amber-400' : 'text-salvia'} />
@@ -937,10 +965,10 @@ export default function AvvocatoStudio() {
             </div>
 
             {/* Tab bar */}
-            <div className="flex gap-0 border-b border-white/8">
+            <div className="flex gap-0 border-b border-white/8 overflow-x-auto lg:overflow-visible">
                 {tabs.map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-2 px-5 py-3 font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'}`}>
+                        className={`flex shrink-0 items-center gap-2 min-h-[44px] px-4 lg:px-5 py-3 font-body text-sm whitespace-nowrap border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'}`}>
                         {t.label}
                         {t.count != null && (
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-oro/20 text-oro' : 'bg-white/5 text-nebbia/30'}`}>

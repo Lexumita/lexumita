@@ -29,24 +29,24 @@ export function RecuperaPassword() {
 
   return (
     <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4">
-      <Link to="/" className="flex items-center gap-3 mb-10">
-        <img src={logo} alt="Lexum" className="h-20 w-auto" />
-        <span className="font-display text-3xl font-semibold tracking-wider text-oro-static">LEXUM</span>
+      <Link to="/" className="flex items-center gap-3 mb-8 sm:mb-10">
+        <img src={logo} alt="Lexum" className="h-14 sm:h-20 w-auto" />
+        <span className="font-display text-2xl sm:text-3xl font-semibold tracking-wider text-oro-static">LEXUM</span>
       </Link>
-      <div className="w-full max-w-md bg-slate border border-white/5 p-8">
+      <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         {sent ? (
           <div className="text-center">
             <CheckCircle size={36} className="text-salvia mx-auto mb-4" />
-            <h2 className="font-display text-3xl font-light text-nebbia mb-3">Email inviata</h2>
+            <h2 className="font-display text-2xl sm:text-3xl font-light text-nebbia mb-3">Email inviata</h2>
             <p className="font-body text-sm text-nebbia/50 mb-6">
               Controlla la tua email e clicca sul link per reimpostare la password.
             </p>
-            <Link to="/login" className="btn-secondary text-sm">Torna al login</Link>
+            <Link to="/login" className="btn-secondary text-sm w-full sm:w-auto justify-center">Torna al login</Link>
           </div>
         ) : (
           <>
             <p className="section-label mb-6">Recupero password</p>
-            <h1 className="font-display text-4xl font-light text-nebbia mb-3">Password dimenticata?</h1>
+            <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-3">Password dimenticata?</h1>
             <p className="font-body text-sm text-nebbia/40 mb-8">
               Inserisci la tua email e ti mandiamo un link per reimpostarla.
             </p>
@@ -68,7 +68,7 @@ export function RecuperaPassword() {
               </button>
             </form>
             <p className="font-body text-xs text-nebbia/30 text-center mt-6">
-              <Link to="/login" className="text-oro hover:text-oro/70">Torna al login</Link>
+              <Link to="/login" className="inline-flex lg:inline items-center justify-center py-3 lg:py-0 text-oro hover:text-oro/70">Torna al login</Link>
             </p>
           </>
         )}
@@ -102,21 +102,21 @@ export function ResetPassword() {
 
   return (
     <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4">
-      <Link to="/" className="flex items-center gap-3 mb-10">
+      <Link to="/" className="flex items-center gap-3 mb-8 sm:mb-10">
         <img src={logo} alt="Lexum" className="h-12 w-auto" />
-        <span className="font-display text-3xl font-semibold tracking-wider text-oro-static">LEXUM</span>
+        <span className="font-display text-2xl sm:text-3xl font-semibold tracking-wider text-oro-static">LEXUM</span>
       </Link>
-      <div className="w-full max-w-md bg-slate border border-white/5 p-8">
+      <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         {done ? (
           <div className="text-center">
             <CheckCircle size={36} className="text-salvia mx-auto mb-4" />
-            <h2 className="font-display text-3xl font-light text-nebbia mb-3">Password aggiornata</h2>
+            <h2 className="font-display text-2xl sm:text-3xl font-light text-nebbia mb-3">Password aggiornata</h2>
             <Link to="/login" className="btn-primary justify-center w-full mt-4">Vai al login</Link>
           </div>
         ) : (
           <>
             <p className="section-label mb-6">Reset password</p>
-            <h1 className="font-display text-4xl font-light text-nebbia mb-8">Nuova password</h1>
+            <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-8">Nuova password</h1>
             <form onSubmit={handleSubmit} className="space-y-5">
               {[['password', 'Nuova password'], ['conferma', 'Conferma password']].map(([k, l]) => (
                 <div key={k}>

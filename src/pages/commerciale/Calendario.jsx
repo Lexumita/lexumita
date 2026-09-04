@@ -212,13 +212,13 @@ export default function CommercialeCalendario() {
         {/* Griglia mese */}
         <div className="lg:col-span-2 bg-slate border border-white/5 p-5">
           <div className="flex items-center justify-between mb-4">
-            <button onClick={() => cambiaMese(-1)} className="p-1.5 text-nebbia/40 hover:text-oro transition-colors">
+            <button onClick={() => cambiaMese(-1)} className="p-2.5 lg:p-1.5 text-nebbia/40 hover:text-oro transition-colors">
               <ChevronLeft size={18} />
             </button>
             <h2 className="font-display text-xl font-light text-nebbia">
               {MESI[mese.getMonth()]} {mese.getFullYear()}
             </h2>
-            <button onClick={() => cambiaMese(1)} className="p-1.5 text-nebbia/40 hover:text-oro transition-colors">
+            <button onClick={() => cambiaMese(1)} className="p-2.5 lg:p-1.5 text-nebbia/40 hover:text-oro transition-colors">
               <ChevronRight size={18} />
             </button>
           </div>
@@ -340,7 +340,7 @@ export default function CommercialeCalendario() {
               <InputField label="Titolo *" value={form.titolo}
                 onChange={e => set('titolo', e.target.value)} placeholder="Es. Demo Studio Rossi" />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectField label="Tipo" value={form.tipo} onChange={e => set('tipo', e.target.value)}>
                   {TIPI.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
                 </SelectField>
@@ -349,7 +349,7 @@ export default function CommercialeCalendario() {
                 </SelectField>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Inizio *" type="datetime-local" value={form.inizio}
                   onChange={e => set('inizio', e.target.value)} />
                 <InputField label="Fine *" type="datetime-local" value={form.fine}
@@ -363,14 +363,14 @@ export default function CommercialeCalendario() {
                 Tutto il giorno
               </label>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Referente" value={form.partecipante_nome}
                   onChange={e => set('partecipante_nome', e.target.value)} placeholder="Avv. Mario Rossi" />
                 <InputField label="Email referente" type="email" value={form.partecipante_email}
                   onChange={e => set('partecipante_email', e.target.value)} placeholder="mario@studio.it" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Luogo" value={form.luogo}
                   onChange={e => set('luogo', e.target.value)} placeholder="Milano, via…" />
                 <InputField label="Link call" value={form.link_call}
@@ -381,7 +381,7 @@ export default function CommercialeCalendario() {
                 onChange={e => set('descrizione', e.target.value)} placeholder="Appunti sulla trattativa…" />
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex flex-wrap gap-3 mt-6">
               {editId && (
                 <button onClick={elimina} disabled={salvando}
                   className="px-4 py-2.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors font-body text-sm flex items-center gap-2">

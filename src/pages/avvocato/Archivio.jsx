@@ -297,7 +297,7 @@ function FormMetadatiMulti({
                     }
                     <span className="ml-2 text-nebbia/40 text-xs">({dimensioneTotaleMB} MB totali)</span>
                 </p>
-                <label className="flex items-center gap-1.5 px-3 py-1.5 border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body text-xs cursor-pointer transition-colors">
+                <label className="flex items-center justify-center lg:justify-start gap-1.5 px-3 py-1.5 min-h-[40px] lg:min-h-0 w-full sm:w-auto border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body text-xs cursor-pointer transition-colors">
                     <Plus size={11} /> Aggiungi altri
                     <input
                         type="file"
@@ -318,7 +318,7 @@ function FormMetadatiMulti({
                         <select
                             value={categoriaBatch}
                             onChange={e => setCategoriaBatch(e.target.value)}
-                            className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                            className="w-full sm:w-auto min-h-[44px] lg:min-h-0 bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
                         >
                             <option value="">Nessuna categoria</option>
                             {categorie.map(c => (
@@ -330,7 +330,7 @@ function FormMetadatiMulti({
                             <select
                                 value={sottocatBatch}
                                 onChange={e => setSottocatBatch(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                                className="w-full sm:w-auto min-h-[44px] lg:min-h-0 bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
                             >
                                 <option value="">Nessuna sottocategoria</option>
                                 {sottocatPerCat.map(s => (
@@ -371,22 +371,22 @@ function FormMetadatiMulti({
                             </div>
                             <button
                                 onClick={() => onRimuoviFile(idx)}
-                                className="text-nebbia/30 hover:text-red-400 transition-colors p-1 shrink-0"
+                                className="text-nebbia/30 hover:text-red-400 transition-colors p-2.5 lg:p-1 shrink-0"
                                 title="Rimuovi dalla coda"
                             >
                                 <X size={11} />
                             </button>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             <input
                                 value={titoli[idx] ?? ''}
                                 onChange={e => aggiornaTitolo(idx, e.target.value)}
                                 placeholder="Titolo del documento"
-                                className="flex-1 bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
+                                className="flex-1 w-full min-h-[44px] lg:min-h-0 bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50"
                             />
                             <button
                                 onClick={() => applicaTitoloDaNome(idx)}
-                                className="font-body text-[10px] text-nebbia/30 hover:text-oro px-2 py-1 transition-colors shrink-0"
+                                className="font-body text-xs lg:text-[10px] text-nebbia/30 hover:text-oro px-2 py-2.5 lg:py-1 transition-colors shrink-0 self-start sm:self-auto"
                                 title="Usa il nome del file come titolo"
                             >
                                 ↺ Nome file
@@ -400,18 +400,18 @@ function FormMetadatiMulti({
                 Categoria, soggetti, riepilogo e tag verranno suggeriti automaticamente da Lex dopo l'upload (solo per PDF e TXT).
             </p>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                 <button
                     onClick={() => onSalva(titoli, categoriaBatch || null, sottocatBatch || null)}
                     disabled={!tuttiTitoliValidi}
-                    className="flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 min-h-[44px] lg:min-h-0 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     <Check size={13} />
                     {files.length === 1 ? 'Carica documento' : `Carica ${files.length} documenti`}
                 </button>
                 <button
                     onClick={onAnnulla}
-                    className="px-4 py-2 border border-white/10 text-nebbia/40 font-body text-sm hover:text-nebbia transition-colors"
+                    className="px-4 py-2 min-h-[44px] lg:min-h-0 border border-white/10 text-nebbia/40 font-body text-sm hover:text-nebbia transition-colors"
                 >
                     Annulla
                 </button>
@@ -483,10 +483,10 @@ function PickerCategoria({ doc, categorie, sottocategorie, onAggiornata, onChiud
     }
 
     return (
-        <div className="absolute z-30 bottom-full left-0 mb-1 w-72 bg-slate border border-white/10 shadow-2xl">
+        <div className="absolute z-30 bottom-full left-0 mb-1 w-72 max-w-[80vw] lg:max-w-none bg-slate border border-white/10 shadow-2xl">
             <div className="flex items-center justify-between p-2 border-b border-white/5">
                 <p className="font-body text-xs text-nebbia/40">Assegna categoria</p>
-                <button onClick={onChiudi} className="text-nebbia/30 hover:text-nebbia">
+                <button onClick={onChiudi} className="w-10 h-10 -m-2 lg:w-auto lg:h-auto lg:m-0 flex items-center justify-center lg:block text-nebbia/30 hover:text-nebbia">
                     <X size={12} />
                 </button>
             </div>
@@ -499,7 +499,7 @@ function PickerCategoria({ doc, categorie, sottocategorie, onAggiornata, onChiud
                 <button
                     onClick={() => assegna(null, null)}
                     disabled={salvando}
-                    className="w-full text-left px-3 py-2 hover:bg-petrolio/50 transition-colors border-b border-white/5 disabled:opacity-50"
+                    className="w-full text-left px-3 py-2.5 lg:py-2 hover:bg-petrolio/50 transition-colors border-b border-white/5 disabled:opacity-50"
                 >
                     <p className="font-body text-xs text-nebbia/40 italic">Nessuna categoria</p>
                 </button>
@@ -515,7 +515,7 @@ function PickerCategoria({ doc, categorie, sottocategorie, onAggiornata, onChiud
                             <button
                                 onClick={() => assegna(cat.id, null)}
                                 disabled={salvando}
-                                className="w-full text-left px-3 py-2 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
+                                className="w-full text-left px-3 py-2.5 lg:py-2 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
                             >
                                 <div className="flex items-center gap-2">
                                     <Folder size={11} className="text-oro" />
@@ -529,7 +529,7 @@ function PickerCategoria({ doc, categorie, sottocategorie, onAggiornata, onChiud
                                             key={sub.id}
                                             onClick={() => assegna(cat.id, sub.id)}
                                             disabled={salvando}
-                                            className="w-full text-left px-3 py-1.5 pl-9 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
+                                            className="w-full text-left px-3 py-2.5 lg:py-1.5 pl-9 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
                                         >
                                             <p className="font-body text-xs text-nebbia/55">└ {sub.nome}</p>
                                         </button>
@@ -712,7 +712,7 @@ function ModalGestioneCategorie({
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-nebbia/40 hover:text-nebbia transition-colors"
+                        className="w-10 h-10 -m-2 lg:w-auto lg:h-auto lg:m-0 flex items-center justify-center lg:block text-nebbia/40 hover:text-nebbia transition-colors"
                     >
                         <X size={16} />
                     </button>
@@ -767,14 +767,14 @@ function ModalGestioneCategorie({
                                                 <button
                                                     onClick={() => rinominaCategoria(cat.id, editing.valore)}
                                                     disabled={salvando}
-                                                    className="p-1.5 text-salvia hover:bg-salvia/10 transition-colors"
+                                                    className="p-2.5 lg:p-1.5 flex items-center justify-center lg:block text-salvia hover:bg-salvia/10 transition-colors"
                                                     title="Salva"
                                                 >
                                                     <Save size={12} />
                                                 </button>
                                                 <button
                                                     onClick={() => setEditing(null)}
-                                                    className="p-1.5 text-nebbia/40 hover:text-nebbia transition-colors"
+                                                    className="p-2.5 lg:p-1.5 flex items-center justify-center lg:block text-nebbia/40 hover:text-nebbia transition-colors"
                                                     title="Annulla"
                                                 >
                                                     <X size={12} />
@@ -784,7 +784,7 @@ function ModalGestioneCategorie({
                                             <>
                                                 <button
                                                     onClick={() => setEditing({ tipo: 'cat', id: cat.id, valore: cat.nome })}
-                                                    className="p-1.5 text-nebbia/40 hover:text-oro transition-colors"
+                                                    className="p-2.5 lg:p-1.5 flex items-center justify-center lg:block text-nebbia/40 hover:text-oro transition-colors"
                                                     title="Rinomina"
                                                 >
                                                     <Edit2 size={12} />
@@ -792,7 +792,7 @@ function ModalGestioneCategorie({
                                                 <button
                                                     onClick={() => eliminaCategoria(cat)}
                                                     disabled={salvando}
-                                                    className="p-1.5 text-nebbia/40 hover:text-red-400 transition-colors"
+                                                    className="p-2.5 lg:p-1.5 flex items-center justify-center lg:block text-nebbia/40 hover:text-red-400 transition-colors"
                                                     title="Elimina"
                                                 >
                                                     <Trash2 size={12} />
@@ -833,13 +833,13 @@ function ModalGestioneCategorie({
                                                             <button
                                                                 onClick={() => rinominaSottocategoria(sub.id, editing.valore)}
                                                                 disabled={salvando}
-                                                                className="p-1 text-salvia hover:bg-salvia/10 transition-colors"
+                                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-salvia hover:bg-salvia/10 transition-colors"
                                                             >
                                                                 <Save size={11} />
                                                             </button>
                                                             <button
                                                                 onClick={() => setEditing(null)}
-                                                                className="p-1 text-nebbia/40 hover:text-nebbia transition-colors"
+                                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-nebbia/40 hover:text-nebbia transition-colors"
                                                             >
                                                                 <X size={11} />
                                                             </button>
@@ -848,14 +848,14 @@ function ModalGestioneCategorie({
                                                         <>
                                                             <button
                                                                 onClick={() => setEditing({ tipo: 'sub', id: sub.id, valore: sub.nome })}
-                                                                className="p-1 text-nebbia/30 hover:text-oro transition-colors"
+                                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-nebbia/30 hover:text-oro transition-colors"
                                                             >
                                                                 <Edit2 size={11} />
                                                             </button>
                                                             <button
                                                                 onClick={() => eliminaSottocategoria(sub)}
                                                                 disabled={salvando}
-                                                                className="p-1 text-nebbia/30 hover:text-red-400 transition-colors"
+                                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-nebbia/30 hover:text-red-400 transition-colors"
                                                             >
                                                                 <Trash2 size={11} />
                                                             </button>
@@ -883,13 +883,13 @@ function ModalGestioneCategorie({
                                             <button
                                                 onClick={() => creaSottocategoria(cat.id)}
                                                 disabled={salvando || !nuovaSubNome.trim()}
-                                                className="p-1 text-salvia hover:bg-salvia/10 transition-colors disabled:opacity-40"
+                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-salvia hover:bg-salvia/10 transition-colors disabled:opacity-40"
                                             >
                                                 <Save size={11} />
                                             </button>
                                             <button
                                                 onClick={() => { setCreandoSubFor(null); setNuovaSubNome('') }}
-                                                className="p-1 text-nebbia/40 hover:text-nebbia transition-colors"
+                                                className="p-2.5 lg:p-1 flex items-center justify-center lg:block text-nebbia/40 hover:text-nebbia transition-colors"
                                             >
                                                 <X size={11} />
                                             </button>
@@ -897,7 +897,7 @@ function ModalGestioneCategorie({
                                     ) : (
                                         <button
                                             onClick={() => { setCreandoSubFor(cat.id); setNuovaSubNome('') }}
-                                            className="flex items-center gap-1 mt-1 font-body text-[11px] text-nebbia/30 hover:text-oro transition-colors"
+                                            className="flex items-center gap-1 mt-1 font-body text-xs lg:text-[11px] min-h-[40px] lg:min-h-0 text-nebbia/30 hover:text-oro transition-colors"
                                         >
                                             <Plus size={10} /> Aggiungi sottocategoria
                                         </button>
@@ -918,18 +918,18 @@ function ModalGestioneCategorie({
                                     if (e.key === 'Escape') { setCreandoCat(false); setNuovaCatNome('') }
                                 }}
                                 placeholder="Nome categoria..."
-                                className="flex-1 bg-petrolio border border-oro/40 text-nebbia font-body text-sm px-3 py-2 outline-none"
+                                className="flex-1 min-w-0 lg:min-w-[auto] min-h-[44px] lg:min-h-0 bg-petrolio border border-oro/40 text-nebbia font-body text-sm px-3 py-2 outline-none"
                             />
                             <button
                                 onClick={creaCategoria}
                                 disabled={salvando || !nuovaCatNome.trim()}
-                                className="px-3 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
+                                className="px-3 py-2 min-h-[44px] lg:min-h-0 flex items-center justify-center lg:block bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors disabled:opacity-40"
                             >
                                 <Save size={12} />
                             </button>
                             <button
                                 onClick={() => { setCreandoCat(false); setNuovaCatNome('') }}
-                                className="p-2 text-nebbia/40 hover:text-nebbia transition-colors"
+                                className="p-2 min-h-[44px] lg:min-h-0 flex items-center justify-center lg:block text-nebbia/40 hover:text-nebbia transition-colors"
                             >
                                 <X size={12} />
                             </button>
@@ -947,7 +947,7 @@ function ModalGestioneCategorie({
                 <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-white/5 shrink-0">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors"
+                        className="px-4 py-2 min-h-[44px] lg:min-h-0 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors"
                     >
                         Chiudi
                     </button>
@@ -1119,7 +1119,7 @@ function CardDocumento({
                                 <div className="relative">
                                     <button
                                         onClick={() => setPickerCat(v => !v)}
-                                        className={`flex items-center gap-1 px-1.5 py-0.5 font-body text-[10px] uppercase tracking-wider transition-colors ${categoriaCorrente
+                                        className={`flex items-center gap-1 px-1.5 py-1.5 lg:py-0.5 font-body text-[10px] uppercase tracking-wider transition-colors ${categoriaCorrente
                                             ? 'bg-oro/15 border border-oro/40 text-oro hover:bg-oro/25'
                                             : 'border border-dashed border-white/15 text-nebbia/30 hover:border-oro/30 hover:text-oro'
                                             }`}
@@ -1189,7 +1189,7 @@ function CardDocumento({
 
                     {/* Path (mostrato in vista lista flat / ricerca) */}
                     {mostraPath && (categoriaCorrente || sottocatCorrente) && (
-                        <p className="font-body text-[10px] text-nebbia/30 mt-0.5 flex items-center gap-1">
+                        <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-0.5 flex items-center gap-1">
                             {categoriaCorrente && <span>{categoriaCorrente.nome}</span>}
                             {categoriaCorrente && sottocatCorrente && <ChevronRight size={9} />}
                             {sottocatCorrente && <span>{sottocatCorrente.nome}</span>}
@@ -1224,14 +1224,14 @@ function CardDocumento({
                             {(doc.tags ?? []).map(t => (
                                 <span
                                     key={`m-${t}`}
-                                    className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35"
+                                    className="font-body text-xs lg:text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35"
                                     dangerouslySetInnerHTML={{ __html: evidenzia(t) }}
                                 />
                             ))}
                             {(sugg?.tags ?? []).map(t => (
                                 <span
                                     key={`s-${t}`}
-                                    className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/5 border border-salvia/15 text-salvia/70"
+                                    className="font-body text-xs lg:text-[10px] px-1.5 py-0.5 bg-salvia/5 border border-salvia/15 text-salvia/70"
                                     title="Suggerito da Lex"
                                     dangerouslySetInnerHTML={{ __html: evidenzia(t) }}
                                 />
@@ -1245,7 +1245,7 @@ function CardDocumento({
                             {sugg.soggetti.slice(0, 3).map((s, i) => (
                                 <span
                                     key={i}
-                                    className="font-body text-[10px] text-nebbia/40 flex items-center gap-1"
+                                    className="font-body text-xs lg:text-[10px] text-nebbia/40 flex items-center gap-1"
                                 >
                                     {s.tipo === 'persona_giuridica' || s.tipo === 'ente_pubblico'
                                         ? <Building2 size={9} />
@@ -1257,7 +1257,7 @@ function CardDocumento({
                                 </span>
                             ))}
                             {sugg.soggetti.length > 3 && (
-                                <span className="font-body text-[10px] text-nebbia/30">
+                                <span className="font-body text-xs lg:text-[10px] text-nebbia/30">
                                     +{sugg.soggetti.length - 3} altri
                                 </span>
                             )}
@@ -1269,13 +1269,13 @@ function CardDocumento({
                         <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-white/5">
                             {/* Aggiungi a pratica */}
                             {praticaCorrente ? (
-                                <div className="flex items-center gap-1.5 px-2 py-1 bg-oro/5 border border-oro/20 text-oro font-body text-xs">
+                                <div className="flex items-center gap-1.5 px-2 py-2 lg:py-1 bg-oro/5 border border-oro/20 text-oro font-body text-xs">
                                     <FolderOpen size={10} />
                                     <span className="max-w-[160px] truncate">{praticaCorrente.titolo}</span>
                                     <button
                                         onClick={rimuoviDaPratica}
                                         disabled={salvandoPratica}
-                                        className="text-oro/50 hover:text-red-400 transition-colors ml-1"
+                                        className="text-oro/50 hover:text-red-400 transition-colors ml-1 p-2 -m-1 lg:p-0 lg:m-0"
                                         title={cfg.labelRimuovi}
                                     >
                                         <X size={10} />
@@ -1285,16 +1285,16 @@ function CardDocumento({
                                 <div className="relative">
                                     <button
                                         onClick={() => setPickerPratica(v => !v)}
-                                        className="flex items-center gap-1.5 px-2 py-1 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors font-body text-xs"
+                                        className="flex items-center gap-1.5 px-2 py-2 lg:py-1 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors font-body text-xs"
                                     >
                                         <FolderOpen size={10} />
                                         {cfg.labelAggiungi}
                                     </button>
                                     {pickerPratica && (
-                                        <div className="absolute z-20 bottom-full left-0 mb-1 w-72 bg-slate border border-white/10 shadow-2xl">
+                                        <div className="absolute z-20 bottom-full left-0 mb-1 w-72 max-w-[80vw] lg:max-w-none bg-slate border border-white/10 shadow-2xl">
                                             <div className="flex items-center justify-between p-2 border-b border-white/5">
                                                 <p className="font-body text-xs text-nebbia/40">{cfg.labelScegli}</p>
-                                                <button onClick={() => setPickerPratica(false)} className="text-nebbia/30 hover:text-nebbia">
+                                                <button onClick={() => setPickerPratica(false)} className="w-10 h-10 -m-2 lg:w-auto lg:h-auto lg:m-0 flex items-center justify-center lg:block text-nebbia/30 hover:text-nebbia">
                                                     <X size={12} />
                                                 </button>
                                             </div>
@@ -1308,7 +1308,7 @@ function CardDocumento({
                                                         key={p.id}
                                                         onClick={() => assegnaAPratica(p.id)}
                                                         disabled={salvandoPratica}
-                                                        className="w-full text-left px-3 py-2 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
+                                                        className="w-full text-left px-3 py-2.5 lg:py-2 hover:bg-petrolio/50 transition-colors disabled:opacity-50"
                                                     >
                                                         <p className="font-body text-sm text-nebbia/70 truncate">{p.titolo}</p>
                                                     </button>
@@ -1348,7 +1348,7 @@ function CardDocumento({
                 <div className="flex items-center gap-1 shrink-0">
                     <button
                         onClick={apriDocumento}
-                        className="w-7 h-7 flex items-center justify-center text-nebbia/25 hover:text-oro transition-colors"
+                        className="w-10 h-10 lg:w-7 lg:h-7 flex items-center justify-center text-nebbia/25 hover:text-oro transition-colors"
                         title={isSentenza ? "Apri sentenza" : "Anteprima"}
                     >
                         {isSentenza ? <ArrowRight size={13} /> : <Eye size={13} />}
@@ -1356,7 +1356,7 @@ function CardDocumento({
                     {!isSentenza && doc.metadati?.kind !== 'fattura' && (
                         <button
                             onClick={() => onElimina(doc)}
-                            className="w-7 h-7 flex items-center justify-center text-nebbia/25 hover:text-red-400 transition-colors"
+                            className="w-10 h-10 lg:w-7 lg:h-7 flex items-center justify-center text-nebbia/25 hover:text-red-400 transition-colors"
                             title="Elimina"
                         >
                             <Trash2 size={13} />
@@ -1380,7 +1380,7 @@ function CardDocumento({
                     <div className="flex items-center justify-between mb-3">
                         <p className="font-body text-xs text-nebbia/40">Anteprima documento</p>
                         <button onClick={() => { setAperto(false); setPdfUrl(null); setTestoFile(null) }}
-                            className="text-nebbia/25 hover:text-nebbia transition-colors">
+                            className="w-10 h-10 -m-2 lg:w-auto lg:h-auto lg:m-0 flex items-center justify-center lg:block text-nebbia/25 hover:text-nebbia transition-colors">
                             <X size={14} />
                         </button>
                     </div>
@@ -2044,10 +2044,10 @@ export default function Archivio() {
                 title="Archivio"
                 subtitle={`${documenti.length} documenti · ${documenti.filter(d => d.ocr_status === 'completed').length} indicizzati · ${quota.occupato_gb.toFixed(2)}/${quota.gb_totali} GB`}
                 action={(
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <button
                             onClick={() => setMostraModalCategorie(true)}
-                            className="flex items-center gap-1.5 text-sm border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body px-3 py-2 transition-colors"
+                            className="flex items-center gap-1.5 text-sm border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body px-3 py-2 min-h-[40px] lg:min-h-0 transition-colors"
                             title="Gestisci categorie e sottocategorie"
                         >
                             <Tags size={13} /> Categorie
@@ -2166,7 +2166,7 @@ export default function Archivio() {
                         />
                     )}
 
-                    <div className="flex items-center gap-6 px-4 py-2.5 bg-petrolio/30 border border-white/5">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-6 px-4 py-2.5 bg-petrolio/30 border border-white/5">
                         <p className="font-body text-xs text-nebbia/25 uppercase tracking-widest shrink-0">Visibilità</p>
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-oro/50" />
@@ -2184,7 +2184,7 @@ export default function Archivio() {
                             Cerca tra i documenti del tuo archivio. Usa la ricerca tradizionale per parole chiave letterali, o Lex per query in linguaggio naturale che cercano semanticamente nel contenuto e nei metadati.
                         </p>
 
-                        <div className="flex items-stretch gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch gap-2">
                             <div className="relative flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
                                 <input
@@ -2203,12 +2203,12 @@ export default function Archivio() {
                                             if (cerca.trim()) cercaTradizionale()
                                         }
                                     }}
-                                    className="w-full h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                    className="w-full h-11 sm:h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                 />
                                 {cerca && (
                                     <button
                                         onClick={() => { setCerca(''); azzeraRicerca() }}
-                                        className="absolute top-1/2 -translate-y-1/2 right-2 text-nebbia/30 hover:text-nebbia p-1"
+                                        className="absolute top-1/2 -translate-y-1/2 right-1 sm:right-2 w-9 h-9 sm:w-auto sm:h-auto sm:block flex items-center justify-center text-nebbia/30 hover:text-nebbia p-1"
                                         title="Svuota"
                                     >
                                         <X size={13} />
@@ -2219,7 +2219,7 @@ export default function Archivio() {
                             <button
                                 onClick={cercaTradizionale}
                                 disabled={cercando || cercandoLex || !cerca.trim()}
-                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                className="flex items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                 title="Cerca per parole chiave letterali (Invio)"
                             >
                                 {cercando
@@ -2231,12 +2231,12 @@ export default function Archivio() {
                             <button
                                 onClick={cercaConLex}
                                 disabled={cercando || cercandoLex || !cerca.trim()}
-                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                className="flex items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                 title="Ricerca semantica (Cmd/Ctrl+Invio)"
                             >
                                 {cercandoLex
-                                    ? <><Loader2 size={13} className="animate-spin" /> <span className="hidden md:inline">Lex sta cercando...</span></>
-                                    : <><Sparkles size={13} /> <span className="hidden md:inline">Cerca con Lex</span><span className="md:hidden">Lex</span></>
+                                    ? <><Loader2 size={13} className="animate-spin" /> <span className="sm:hidden md:inline">Lex sta cercando...</span></>
+                                    : <><Sparkles size={13} /> <span className="sm:hidden md:inline">Cerca con Lex</span><span className="hidden sm:inline md:hidden">Lex</span></>
                                 }
                             </button>
                         </div>
@@ -2264,7 +2264,7 @@ export default function Archivio() {
                                 </p>
                                 <button
                                     onClick={azzeraRicerca}
-                                    className="flex items-center gap-1 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors shrink-0"
+                                    className="flex items-center gap-1 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors shrink-0 min-h-[40px] lg:min-h-0"
                                 >
                                     <X size={11} /> Azzera
                                 </button>
@@ -2273,7 +2273,7 @@ export default function Archivio() {
                     </div>
 
                     {/* Filtri (sempre attivi) */}
-                    <div className="flex flex-wrap gap-3 items-center">
+                    <div className="flex flex-col lg:flex-row lg:flex-wrap gap-3 lg:items-center">
                         <div className="flex items-center gap-1.5 text-nebbia/30">
                             <Filter size={12} />
                             <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
@@ -2283,7 +2283,7 @@ export default function Archivio() {
                             <select
                                 value={filtroCliente}
                                 onChange={e => setFiltroCliente(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
+                                className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                             >
                                 <option value="">Tutti i clienti</option>
                                 {clienti.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
@@ -2294,7 +2294,7 @@ export default function Archivio() {
                             <select
                                 value={filtroPratica}
                                 onChange={e => setFiltroPratica(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
+                                className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                             >
                                 <option value="">{cfg.labelFiltroTutte}</option>
                                 {pratiche.map(p => <option key={p.id} value={p.id}>{p.titolo}</option>)}
@@ -2305,7 +2305,7 @@ export default function Archivio() {
                             <select
                                 value={filtroEtichetta}
                                 onChange={e => setFiltroEtichetta(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
+                                className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                             >
                                 <option value="">Tutte le etichette</option>
                                 {etichetteUtente.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
@@ -2315,7 +2315,7 @@ export default function Archivio() {
                         <select
                             value={filtroStato}
                             onChange={e => setFiltroStato(e.target.value)}
-                            className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
+                            className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                         >
                             <option value="">Tutti gli stati</option>
                             <option value="completed">Indicizzati</option>
@@ -2328,7 +2328,7 @@ export default function Archivio() {
                         <select
                             value={filtroData}
                             onChange={e => setFiltroData(e.target.value)}
-                            className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40"
+                            className="w-full lg:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                         >
                             <option value="tutti">Qualsiasi data</option>
                             <option value="7gg">Ultimi 7 giorni</option>
@@ -2337,12 +2337,12 @@ export default function Archivio() {
                         </select>
 
                         {filtroData === 'range' && (
-                            <>
+                            <div className="flex items-center gap-2 lg:contents">
                                 <input
                                     type="date"
                                     value={filtroDataDa}
                                     onChange={e => setFiltroDataDa(e.target.value)}
-                                    className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                                    className="flex-1 lg:flex-initial bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                                     title="Da"
                                 />
                                 <span className="font-body text-xs text-nebbia/30">→</span>
@@ -2350,16 +2350,16 @@ export default function Archivio() {
                                     type="date"
                                     value={filtroDataA}
                                     onChange={e => setFiltroDataA(e.target.value)}
-                                    className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                                    className="flex-1 lg:flex-initial bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                                     title="A"
                                 />
-                            </>
+                            </div>
                         )}
 
                         {filtriAttivi && (
                             <button
                                 onClick={resetFiltri}
-                                className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1"
+                                className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0 self-start lg:self-auto"
                             >
                                 <X size={11} /> Reset filtri
                             </button>
@@ -2466,14 +2466,14 @@ export default function Archivio() {
                             return (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/5">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex flex-wrap items-center gap-2 lg:gap-3">
                                             <button
                                                 onClick={tornaCatalogo}
-                                                className="flex items-center gap-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs"
+                                                className="flex items-center gap-1.5 text-nebbia/40 hover:text-oro transition-colors font-body text-xs min-h-[40px] lg:min-h-0"
                                             >
                                                 <ArrowLeft size={13} /> Tutte le categorie
                                             </button>
-                                            <span className="text-nebbia/20">·</span>
+                                            <span className="hidden lg:inline text-nebbia/20">·</span>
                                             <p className="font-display text-lg text-nebbia flex items-center gap-2">
                                                 <Folder size={14} className={categoriaCorrente ? 'text-oro' : 'text-nebbia/30'} />
                                                 {categoriaCorrente?.nome ?? 'Senza categoria'}
@@ -2493,7 +2493,7 @@ export default function Archivio() {
                                             <div key={sub.id} className="space-y-2">
                                                 <button
                                                     onClick={() => toggleSottocat(sub.id)}
-                                                    className="flex items-center gap-2 w-full text-left py-1 group"
+                                                    className="flex items-center gap-2 w-full text-left py-2.5 lg:py-1 group"
                                                 >
                                                     {collassata
                                                         ? <ChevronRight size={14} className="text-nebbia/40 group-hover:text-oro transition-colors" />
@@ -2505,7 +2505,7 @@ export default function Archivio() {
                                                     </span>
                                                 </button>
                                                 {!collassata && (
-                                                    <div className="space-y-2 pl-6">
+                                                    <div className="space-y-2 pl-3 lg:pl-6">
                                                         {ds.map(doc => (
                                                             <CardDocumento
                                                                 key={doc.id}
@@ -2539,7 +2539,7 @@ export default function Archivio() {
                                                     </span>
                                                 </p>
                                             )}
-                                            <div className={subsCat.length > 0 ? "space-y-2 pl-6" : "space-y-2"}>
+                                            <div className={subsCat.length > 0 ? "space-y-2 pl-3 lg:pl-6" : "space-y-2"}>
                                                 {docsSenzaSub.map(doc => (
                                                     <CardDocumento
                                                         key={doc.id}

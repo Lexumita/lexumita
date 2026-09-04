@@ -118,14 +118,14 @@ export default function CommercialeProvvigioni() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard label="Da richiedere" value={euro(totMaturate)} sub={`${nMaturate} vendite`} icon={Wallet} colorClass="text-oro" />
         <StatCard label="Richieste" value={euro(somma('richiesta'))} icon={Clock} colorClass="text-amber-400" />
         <StatCard label="Pagate" value={euro(somma('pagata'))} icon={CheckCircle2} colorClass="text-salvia" />
       </div>
 
       {/* Tab */}
-      <div className="flex gap-1 mb-4 border-b border-white/5">
+      <div className="flex gap-1 mb-4 border-b border-white/5 overflow-x-auto">
         {[
           { key: 'provvigioni', label: `Provvigioni (${provvigioni.length})` },
           { key: 'richieste', label: `Richieste di pagamento (${richieste.length})` },
@@ -133,7 +133,7 @@ export default function CommercialeProvvigioni() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2.5 font-body text-sm transition-colors border-b-2 -mb-px ${tab === t.key
+            className={`inline-flex items-center px-4 py-2.5 min-h-[44px] whitespace-nowrap shrink-0 font-body text-sm transition-colors border-b-2 -mb-px ${tab === t.key
               ? 'text-oro border-oro'
               : 'text-nebbia/40 border-transparent hover:text-nebbia/70'
               }`}
@@ -145,6 +145,36 @@ export default function CommercialeProvvigioni() {
 
       {tab === 'provvigioni' ? (
         <div className="bg-slate border border-white/5">
+          {/* Telefono: una card per provvigione */}
+          <div className="lg:hidden divide-y divide-white/5">
+            {provvigioni.length === 0 ? (
+              <EmptyState icon={Wallet} title="Nessuna provvigione"
+                desc="Quando un cliente registrato con il tuo codice effettua un acquisto, la provvigione compare qui automaticamente." />
+            ) : provvigioni.map(p => {
+              const s = STATO_PROVVIGIONE[p.stato] ?? STATO_PROVVIGIONE.maturata
+              return (
+                <div key={p.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-body text-sm text-nebbia truncate">{p.prodotto_nome ?? '—'}</p>
+                      <p className="font-body text-xs text-nebbia/30">{dataIt(p.created_at)}</p>
+                    </div>
+                    <p className="font-body text-sm text-oro shrink-0">{euro(p.importo)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge label={s.label} variant={s.variant} />
+                    <span className="font-body text-xs text-nebbia/40">
+                      Vendita {euro(p.importo_vendita)} ·{' '}
+                      {p.provvigione_tipo === 'percentuale' ? `${Number(p.provvigione_valore)}%` : 'fisso'}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Da lg in su: la tabella di prima, riga per riga */}
+          <div className="hidden lg:block">
           <Table
             headers={['Data', 'Prodotto', 'Vendita', 'Provvigione', 'Importo', 'Stato']}
             empty={<EmptyState icon={Wallet} title="Nessuna provvigione"
@@ -168,9 +198,43 @@ export default function CommercialeProvvigioni() {
               )
             })}
           </Table>
+          </div>
         </div>
       ) : (
         <div className="bg-slate border border-white/5">
+          {/* Telefono: una card per richiesta */}
+          <div className="lg:hidden divide-y divide-white/5">
+            {richieste.length === 0 ? (
+              <EmptyState icon={Receipt} title="Nessuna richiesta"
+                desc="Quando hai provvigioni da riscuotere, usa il pulsante “Richiedi pagamento”." />
+            ) : richieste.map(r => {
+              const s = STATO_RICHIESTA[r.stato] ?? STATO_RICHIESTA.in_attesa
+              return (
+                <div key={r.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-body text-sm text-oro">{euro(r.importo)}</p>
+                      <p className="font-body text-xs text-nebbia/30">{dataIt(r.created_at)}</p>
+                    </div>
+                    <Badge label={s.label} variant={s.variant} />
+                  </div>
+                  {r.note && (
+                    <p className="font-body text-xs text-nebbia/40">
+                      <span className="text-nebbia/25">Nota: </span>{r.note}
+                    </p>
+                  )}
+                  {r.nota_admin && (
+                    <p className="font-body text-xs text-nebbia/40">
+                      <span className="text-nebbia/25">Risposta azienda: </span>{r.nota_admin}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Da lg in su: la tabella di prima, riga per riga */}
+          <div className="hidden lg:block">
           <Table
             headers={['Data', 'Importo', 'Stato', 'Nota', 'Risposta azienda']}
             empty={<EmptyState icon={Receipt} title="Nessuna richiesta"
@@ -189,6 +253,7 @@ export default function CommercialeProvvigioni() {
               )
             })}
           </Table>
+          </div>
         </div>
       )}
 

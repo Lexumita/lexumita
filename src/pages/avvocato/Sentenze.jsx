@@ -241,7 +241,7 @@ function TabSentenze({ meId, studioId }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard label="Sentenze caricate" value={sentenze.length} colorClass="text-oro" />
         <StatCard label="Accessi totali" value={totAccessi} colorClass="text-salvia" />
       </div>
@@ -276,7 +276,45 @@ function TabSentenze({ meId, studioId }) {
           <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
         </div>
       ) : (
-        <div className="bg-slate border border-white/5 overflow-x-auto">
+        <div className="bg-slate border border-white/5">
+
+          {/* ── MOBILE: card ── */}
+          <div className="lg:hidden divide-y divide-white/5">
+            {rows.length === 0 ? (
+              <p className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                {sentenze.length === 0 ? 'Nessuna sentenza caricata' : 'Nessun risultato'}
+              </p>
+            ) : rows.map(s => {
+              const sb = STATO_BADGE[s.stato] ?? STATO_BADGE.pubblica
+              return (
+                <Link key={s.id} to={`/sentenze/${s.id}`} className="block p-4 space-y-2 active:bg-petrolio/40 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-body text-sm font-medium text-nebbia min-w-0">{s.oggetto ?? '—'}</p>
+                    <span className="shrink-0"><Badge label={sb.label} variant={sb.variant} /></span>
+                  </div>
+                  <p className="font-body text-xs text-nebbia/60">
+                    {s.organo ?? '—'}{s.sezione ? ` · ${s.sezione}` : ''}{s.anno ? ` · ${s.anno}` : ''}
+                  </p>
+                  {(s.categorie_lex ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {(s.categorie_lex ?? []).map(c => (
+                        <span key={c} className="font-body text-xs px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/40">{c}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <span className="font-body text-xs text-nebbia/40">
+                      Caricata il {new Date(s.created_at).toLocaleDateString('it-IT')}
+                    </span>
+                    <span className="font-body text-xs text-oro">{s.accessi ?? 0} accessi</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* ── DESKTOP: tabella ── */}
+          <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
@@ -327,6 +365,8 @@ function TabSentenze({ meId, studioId }) {
               })}
             </tbody>
           </table>
+          </div>
+
         </div>
       )}
     </div>
@@ -386,7 +426,7 @@ function TabGuadagni({ meId, studioId }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Guadagni totali" value={`€ ${(daCreditare + giaCreditato).toFixed(2)}`} colorClass="text-oro" />
         <StatCard label="Da liquidare" value={`€ ${daCreditare.toFixed(2)}`} colorClass="text-amber-400" />
         <StatCard label="Già liquidato" value={`€ ${giaCreditato.toFixed(2)}`} colorClass="text-salvia" />
@@ -395,14 +435,14 @@ function TabGuadagni({ meId, studioId }) {
       {daCreditare > 0 && !success && (
         <div className="bg-slate/40 border border-oro/15 p-4">
           {!showRichiesta ? (
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
               <div>
                 <p className="font-body text-sm text-nebbia">
                   Hai <span className="text-oro font-medium">€ {daCreditare.toFixed(2)}</span> disponibili
                 </p>
                 <p className="font-body text-xs text-nebbia/40 mt-0.5">Invia una richiesta di pagamento a Lexum</p>
               </div>
-              <button onClick={() => setShowRichiesta(true)} className="btn-primary text-sm ml-4">Richiedi pagamento</button>
+              <button onClick={() => setShowRichiesta(true)} className="btn-primary text-sm shrink-0 sm:ml-4">Richiedi pagamento</button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -434,7 +474,35 @@ function TabGuadagni({ meId, studioId }) {
           <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
         </div>
       ) : (
-        <div className="bg-slate border border-white/5 overflow-x-auto">
+        <div className="bg-slate border border-white/5">
+
+          {/* ── MOBILE: card ── */}
+          <div className="lg:hidden divide-y divide-white/5">
+            {compensi.length === 0 ? (
+              <p className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun compenso ancora</p>
+            ) : compensi.map(c => (
+              <div key={c.id} className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-body text-sm text-nebbia min-w-0">{c.sentenza?.oggetto ?? '—'}</p>
+                  <span className="shrink-0">
+                    <Badge label={c.stato === 'liquidato' ? 'Liquidato' : 'Da liquidare'} variant={c.stato === 'liquidato' ? 'salvia' : 'warning'} />
+                  </span>
+                </div>
+                <p className="font-body text-xs text-nebbia/60">
+                  {`${c.acquirente?.nome ?? ''} ${c.acquirente?.cognome ?? ''}`.trim() || '—'}
+                </p>
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <span className="font-body text-xs text-nebbia/40">
+                    {new Date(c.created_at).toLocaleDateString('it-IT')} · prezzo € {parseFloat(c.prezzo ?? 0).toFixed(2)}
+                  </span>
+                  <span className="font-body text-sm font-medium text-oro">€ {parseFloat(c.quota_autore ?? 0).toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── DESKTOP: tabella ── */}
+          <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
@@ -460,6 +528,8 @@ function TabGuadagni({ meId, studioId }) {
               ))}
             </tbody>
           </table>
+          </div>
+
         </div>
       )}
     </div>
@@ -492,7 +562,7 @@ export function AvvocatoSentenze() {
         title="Sentenze"
         subtitle="Carica sentenze e tieni d'occhio i tuoi guadagni"
         action={tab === 'sentenze' ? (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link to="/banca-dati?tab=sentenze" className="btn-secondary text-sm flex items-center gap-2">
               <Search size={13} /> Esplora banca dati
             </Link>
@@ -503,13 +573,13 @@ export function AvvocatoSentenze() {
         ) : null}
       />
 
-      <div className="flex gap-0 border-b border-white/8">
+      <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
         {[
           { id: 'sentenze', label: 'Le mie sentenze', icon: FileText },
           { id: 'guadagni', label: 'Guadagni', icon: Coins },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-5 py-3 min-h-[44px] font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
               }`}>
             <t.icon size={14} strokeWidth={1.5} /> {t.label}
           </button>
@@ -800,10 +870,10 @@ function FormSentenza({ sentenza, isEdit }) {
         </div>
       )}
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-start">
 
         {/* ── COLONNA SINISTRA: documento + testo estratto ── */}
-        <div className="flex-[3] min-w-0 space-y-4">
+        <div className="w-full lg:flex-[3] min-w-0 space-y-4">
           {!isEdit && (
             <>
               <div className="bg-slate border border-white/5 p-5">
@@ -899,7 +969,7 @@ function FormSentenza({ sentenza, isEdit }) {
                     value={testoIntegrale}
                     onChange={e => setTestoIntegrale(e.target.value)}
                     rows={20}
-                    className="w-full bg-petrolio/60 border border-salvia/20 text-nebbia/70 font-body text-xs px-4 py-3 outline-none focus:border-oro/40 resize-y leading-relaxed whitespace-pre-wrap"
+                    className="w-full h-64 lg:h-auto bg-petrolio/60 border border-salvia/20 text-nebbia/70 font-body text-xs px-4 py-3 outline-none focus:border-oro/40 resize-y leading-relaxed whitespace-pre-wrap"
                   />
                 </div>
               )}
@@ -908,7 +978,7 @@ function FormSentenza({ sentenza, isEdit }) {
         </div>
 
         {/* ── COLONNA DESTRA: metadati ── */}
-        <div className="flex-[2] min-w-0 space-y-4 sticky top-6">
+        <div className="w-full lg:flex-[2] min-w-0 space-y-4 lg:sticky lg:top-6">
           <div className="bg-slate border border-white/5 p-5 space-y-4">
             <p className="section-label">Metadati</p>
 
@@ -930,7 +1000,7 @@ function FormSentenza({ sentenza, isEdit }) {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Organo *</label>
                 <input value={form.organo} onChange={e => setForm(p => ({ ...p, organo: e.target.value }))}
@@ -945,7 +1015,7 @@ function FormSentenza({ sentenza, isEdit }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Numero</label>
                 <input value={form.numero} onChange={e => setForm(p => ({ ...p, numero: e.target.value }))}
@@ -1009,7 +1079,7 @@ function FormSentenza({ sentenza, isEdit }) {
             <div className="border-t border-white/5 pt-3">
               <button
                 onClick={() => setAvanzateAperte(!avanzateAperte)}
-                className="w-full flex items-center justify-between font-body text-xs text-nebbia/40 tracking-widest uppercase hover:text-nebbia transition-colors">
+                className="w-full flex items-center justify-between py-2 lg:py-0 font-body text-xs text-nebbia/40 tracking-widest uppercase hover:text-nebbia transition-colors">
                 <span>Dettagli avanzati</span>
                 {avanzateAperte ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
               </button>
@@ -1040,7 +1110,7 @@ function FormSentenza({ sentenza, isEdit }) {
                     <p className="font-body text-xs text-nebbia/25 mt-1">Una per riga, formato IT:art.NNN C.C. o IT:D.Lgs.NNN/AAAA</p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Presidente</label>
                       <input value={form.presidente} onChange={e => setForm(p => ({ ...p, presidente: e.target.value }))}
@@ -1161,7 +1231,7 @@ export function AvvocatoSentenzeDettaglio() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Accessi totali" value={accessi} colorClass="text-oro" />
         <StatCard label="Guadagno maturato" value={`€ ${guadagno.toFixed(2)}`} colorClass="text-salvia" />
         <StatCard label="Caricata il" value={new Date(s.created_at).toLocaleDateString('it-IT')} colorClass="text-nebbia/50" />
@@ -1207,7 +1277,7 @@ export function AvvocatoSentenzeDettaglio() {
         <p className="section-label mb-4">Documento</p>
         {pdfUrl ? (
           <div className="space-y-3">
-            <iframe src={pdfUrl} className="w-full rounded" style={{ height: 600 }} title={s.oggetto ?? 'Sentenza'} />
+            <iframe src={pdfUrl} className="w-full rounded h-[420px] lg:h-[600px]" title={s.oggetto ?? 'Sentenza'} />
             <a href={pdfUrl} target="_blank" rel="noreferrer" className="btn-secondary text-sm inline-flex items-center gap-2">
               <Download size={13} /> Scarica PDF
             </a>

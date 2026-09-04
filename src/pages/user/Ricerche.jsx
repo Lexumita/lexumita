@@ -590,8 +590,8 @@ export default function Ricerche() {
                             Cerca tra le tue ricerche, norme, sentenze e prassi. Usa la ricerca tradizionale per parole chiave letterali, o Lex per query in linguaggio naturale.
                         </p>
 
-                        <div className="flex items-stretch gap-2">
-                            <div className="relative flex-1">
+                        <div className="flex flex-wrap items-stretch gap-2">
+                            <div className="relative w-full sm:w-auto sm:flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
                                 <input
                                     type="text"
@@ -615,7 +615,7 @@ export default function Ricerche() {
                                             if (cerca.trim()) applicaCercaTradizionale()
                                         }
                                     }}
-                                    className="w-full h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                    className="w-full h-11 sm:h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                 />
                                 {cerca && (
                                     <button
@@ -631,7 +631,7 @@ export default function Ricerche() {
                             <button
                                 onClick={applicaCercaTradizionale}
                                 disabled={!cerca.trim() || cerca === cercaApplicata}
-                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                className="flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                 title="Cerca per parole chiave letterali (Invio)"
                             >
                                 <Search size={13} /> Cerca
@@ -640,7 +640,7 @@ export default function Ricerche() {
                             <button
                                 onClick={cercaConLexDallaBarra}
                                 disabled={cercandoLex || !cerca.trim() || rateLimitInfo.rimasti <= 0 || elementi.length > 100}
-                                className="flex items-center justify-center gap-2 px-4 h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                className="flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                 title={rateLimitInfo.rimasti <= 0
                                     ? 'Limite giornaliero raggiunto'
                                     : elementi.length > 100
@@ -693,12 +693,12 @@ export default function Ricerche() {
                     </div>
 
                     <div className="flex items-start gap-3 flex-wrap">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Filter size={12} className="text-nebbia/30" />
                             <select
                                 value={tipoAttivo}
                                 onChange={e => setTipoAttivo(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia font-body text-xs px-3 py-1.5 outline-none focus:border-oro/50"
+                                className="flex-1 sm:flex-none bg-slate border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 sm:py-1.5 outline-none focus:border-oro/50"
                             >
                                 {FILTRO_TIPI.map(t => {
                                     const count = t.id === 'tutti'
@@ -713,12 +713,12 @@ export default function Ricerche() {
                             </select>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <FolderOpen size={12} className="text-nebbia/30" />
                             <select
                                 value={praticaSelezionata}
                                 onChange={e => setPraticaSelezionata(e.target.value)}
-                                className="bg-slate border border-white/10 text-nebbia font-body text-xs px-3 py-1.5 outline-none focus:border-oro/50 max-w-[200px]"
+                                className="flex-1 sm:flex-none min-w-0 bg-slate border border-white/10 text-nebbia font-body text-xs px-3 py-2.5 sm:py-1.5 outline-none focus:border-oro/50 sm:max-w-[200px]"
                             >
                                 <option value="">Tutte le pratiche</option>
                                 {pratiche.map(p => (
@@ -734,7 +734,7 @@ export default function Ricerche() {
                                     key={e.id}
                                     type="button"
                                     onClick={() => navigate(`${basePathEtichette}/${e.id}`)}
-                                    className="flex items-center gap-2 px-3 py-1.5 font-body text-sm font-medium border transition-all hover:opacity-80"
+                                    className="flex items-center gap-2 px-3 py-2.5 sm:py-1.5 font-body text-sm font-medium border transition-all hover:opacity-80"
                                     style={{
                                         borderColor: `${e.colore}80`,
                                         color: e.colore,
@@ -748,7 +748,7 @@ export default function Ricerche() {
                             ))}
                             <button
                                 onClick={() => setMostraNuovaEtichetta(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 font-body text-sm text-oro border border-oro/30 hover:bg-oro/10 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 font-body text-sm text-oro border border-oro/30 hover:bg-oro/10 transition-colors"
                             >
                                 <Plus size={12} /> Etichetta
                             </button>
@@ -995,7 +995,7 @@ function CardElemento({
                                 dangerouslySetInnerHTML={{ __html: evidenzia(sottotitolo) }}
                             />
                         )}
-                        <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-wider">
+                        <p className="font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-wider">
                             {label}
                             {el.created_at && (
                                 <> · {new Date(el.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</>
@@ -1007,7 +1007,7 @@ function CardElemento({
                             {linkDettaglio && (
                                 <Link
                                     to={linkDettaglio}
-                                    className="text-nebbia/30 hover:text-oro p-1 transition-colors"
+                                    className="text-nebbia/30 hover:text-oro p-2 lg:p-1 transition-colors"
                                     title="Apri nella banca dati"
                                 >
                                     <ExternalLink size={12} />
@@ -1016,12 +1016,12 @@ function CardElemento({
                             {TIPI_RICERCA.includes(el.kind) && (
                                 <button
                                     onClick={onToggleApri}
-                                    className="font-body text-xs text-nebbia/30 hover:text-oro px-2 py-1 transition-colors">
+                                    className="font-body text-xs text-nebbia/30 hover:text-oro px-2 py-2.5 lg:py-1 transition-colors">
                                     {aperto ? 'Chiudi' : 'Apri'}
                                 </button>
                             )}
                             <button onClick={elimina} disabled={eliminando}
-                                className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                                className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                                 title={TIPI_RICERCA.includes(el.kind) ? 'Elimina ricerca' : 'Rimuovi tag'}>
                                 {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                             </button>
@@ -1528,7 +1528,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                         <button
                             key={chiaveElemento(el)}
                             onClick={() => setTabMobile(i)}
-                            className={`flex-1 px-3 py-2.5 font-body text-xs border-b-2 transition-colors truncate ${tabMobile === i ? 'border-salvia text-salvia' : 'border-transparent text-nebbia/40'}`}
+                            className={`flex-1 px-3 py-3 font-body text-xs border-b-2 transition-colors truncate ${tabMobile === i ? 'border-salvia text-salvia' : 'border-transparent text-nebbia/40'}`}
                         >
                             {i + 1}
                         </button>
@@ -1649,7 +1649,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                             </p>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {AZIONI_CONFRONTO.map(a => (
                                 <button
                                     key={a.id}
@@ -1662,7 +1662,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                                         <p className="font-body text-xs font-medium text-nebbia group-hover:text-salvia transition-colors leading-snug">
                                             {a.label}
                                         </p>
-                                        <p className="font-body text-[10px] text-nebbia/40 mt-0.5 leading-snug">
+                                        <p className="font-body text-xs text-nebbia/40 mt-0.5 leading-snug">
                                             {a.descr}
                                         </p>
                                     </div>
@@ -1691,7 +1691,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                         <button
                             onClick={inviaLibera}
                             disabled={cercando || !input.trim()}
-                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
+                            className="flex items-center justify-center gap-2 w-full py-3 lg:py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
                         >
                             <Sparkles size={13} /> Invia domanda libera
                         </button>

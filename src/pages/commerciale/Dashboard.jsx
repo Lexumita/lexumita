@@ -140,7 +140,7 @@ export default function CommercialeDashboard() {
       <div className={`grid gap-4 mb-6 ${linkInvito ? 'lg:grid-cols-2' : ''}`}>
         {/* Codice personale */}
         <div className="bg-slate border border-white/5 p-5 flex flex-col">
-          <div className="flex items-start justify-between gap-3 mb-1">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
             <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Il tuo codice</p>
             {profile?.codice_commerciale && (
               <button onClick={copiaCodice} className="btn-secondary flex items-center gap-2 shrink-0">
@@ -148,7 +148,7 @@ export default function CommercialeDashboard() {
               </button>
             )}
           </div>
-          <p className="font-display text-2xl font-light text-oro tracking-widest">
+          <p className="font-display text-2xl font-light text-oro tracking-widest break-all">
             {profile?.codice_commerciale ?? '— non assegnato —'}
           </p>
           <p className="font-body text-xs text-nebbia/25 mt-auto pt-2">
@@ -159,7 +159,7 @@ export default function CommercialeDashboard() {
         {/* Link d'invito — il codice arriva già compilato, niente da digitare */}
         {linkInvito && (
           <div className="bg-slate border border-oro/15 p-5 flex flex-col min-w-0">
-            <div className="flex items-start justify-between gap-3 mb-1">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
               <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Il tuo link d'invito</p>
               <button onClick={copiaLink} className="btn-secondary flex items-center gap-2 shrink-0">
                 {linkCopiato ? <><Check size={14} /> Copiato</> : <><LinkIcon size={14} /> Copia link</>}
@@ -174,7 +174,7 @@ export default function CommercialeDashboard() {
       </div>
 
       {/* Riepilogo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Da richiedere" value={euro(tot.maturata)} icon={Wallet} colorClass="text-oro" />
         <StatCard label="Richieste" value={euro(tot.richiesta)} icon={Clock} colorClass="text-amber-400" />
         <StatCard label="Pagate" value={euro(tot.pagata)} icon={CheckCircle2} colorClass="text-salvia" />

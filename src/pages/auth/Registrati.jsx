@@ -73,9 +73,9 @@ export default function Registrati() {
   if (success) {
     return (
       <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-md bg-slate border border-white/5 p-8 text-center">
+        <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8 text-center">
           <CheckCircle size={40} className="text-salvia mx-auto mb-4" />
-          <h2 className="font-display text-3xl font-light text-nebbia mb-3">Controlla la tua email</h2>
+          <h2 className="font-display text-2xl sm:text-3xl font-light text-nebbia mb-3">Controlla la tua email</h2>
           <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed">
             Abbiamo inviato un link di conferma a <span className="text-oro">{form.email}</span>.<br />
             Clicca il link per attivare il tuo account e iniziare a usare Lex AI con 3 ricerche gratuite.
@@ -117,7 +117,8 @@ export default function Registrati() {
         <button
           type="button"
           onClick={toggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-oro transition-colors"
+          aria-label={show ? 'Nascondi password' : 'Mostra password'}
+          className="absolute right-1 lg:right-3 top-1/2 -translate-y-1/2 p-3 lg:p-0 flex items-center justify-center text-nebbia/30 hover:text-oro transition-colors"
         >
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
@@ -129,19 +130,19 @@ export default function Registrati() {
   return (
     <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4 py-10">
       {/* Logo only */}
-      <Link to="/" className="mb-10 group">
+      <Link to="/" className="mb-8 sm:mb-10 group">
         <img src={logo} alt="Lexum" className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
       </Link>
 
-      <div className="w-full max-w-md bg-slate border border-white/5 p-8">
+      <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         <p className="section-label mb-6">Registrazione</p>
-        <h1 className="font-display text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
         <p className="font-body text-sm text-nebbia/40 mb-8 leading-relaxed">
           Inizia subito con 3 ricerche Lex AI gratuite. Se sei un avvocato o un commercialista, dopo la registrazione potrai verificare la tua identità professionale e accedere a tutte le funzionalità di Lexum.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {field('nome', 'Nome *', 'text', 'Mario')}
             {field('cognome', 'Cognome *', 'text', 'Rossi')}
           </div>

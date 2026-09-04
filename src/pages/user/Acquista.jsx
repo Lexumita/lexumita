@@ -199,12 +199,12 @@ export default function Acquista() {
                         <p className="font-body text-xs text-nebbia/40 mt-0.5">crediti disponibili</p>
                     </div>
 
-                    <div className="sm:col-span-3 grid grid-cols-3 gap-3">
+                    <div className="sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="bg-petrolio/40 border border-white/5 p-3">
                             <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Piano</p>
                             <p className="font-display text-2xl font-light text-oro">{crediti.piano}</p>
                             {crediti.piano_scadenza && (
-                                <p className="font-body text-[10px] text-nebbia/30 mt-0.5">
+                                <p className="font-body text-xs text-nebbia/30 mt-0.5">
                                     Scad. {new Date(crediti.piano_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
                                 </p>
                             )}
@@ -212,12 +212,12 @@ export default function Acquista() {
                         <div className="bg-petrolio/40 border border-white/5 p-3">
                             <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Acquistati</p>
                             <p className="font-display text-2xl font-light text-nebbia/80">{crediti.topup}</p>
-                            <p className="font-body text-[10px] text-nebbia/30 mt-0.5">non scadono</p>
+                            <p className="font-body text-xs text-nebbia/30 mt-0.5">non scadono</p>
                         </div>
                         <div className="bg-petrolio/40 border border-white/5 p-3">
                             <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Benvenuto</p>
                             <p className="font-display text-2xl font-light text-nebbia/80">{crediti.benvenuto}</p>
-                            <p className="font-body text-[10px] text-nebbia/30 mt-0.5">non scadono</p>
+                            <p className="font-body text-xs text-nebbia/30 mt-0.5">non scadono</p>
                         </div>
                     </div>
                 </div>
@@ -236,17 +236,17 @@ export default function Acquista() {
 
             {/* Tab navigation (solo se verificato per mostrare entrambi) */}
             {isApproved && (
-                <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full overflow-x-auto lg:w-fit lg:overflow-visible">
                     <button
                         onClick={() => setTabAttivo('crediti')}
-                        className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tabAttivo === 'crediti' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'
+                        className={`flex items-center gap-2 shrink-0 whitespace-nowrap px-4 py-3 lg:py-2 font-body text-sm transition-colors ${tabAttivo === 'crediti' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'
                             }`}
                     >
                         <Sparkles size={13} /> Pacchetti crediti
                     </button>
                     <button
                         onClick={() => setTabAttivo('abbonamenti')}
-                        className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tabAttivo === 'abbonamenti' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'
+                        className={`flex items-center gap-2 shrink-0 whitespace-nowrap px-4 py-3 lg:py-2 font-body text-sm transition-colors ${tabAttivo === 'abbonamenti' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'
                             }`}
                     >
                         <Tag size={13} /> Abbonamenti
@@ -254,7 +254,7 @@ export default function Acquista() {
                     {haPianoStudio && seatAddon.length > 0 && (
                         <button
                             onClick={() => setTabAttivo('seat')}
-                            className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tabAttivo === 'seat' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'
+                            className={`flex items-center gap-2 shrink-0 whitespace-nowrap px-4 py-3 lg:py-2 font-body text-sm transition-colors ${tabAttivo === 'seat' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'
                                 }`}
                         >
                             <CreditCard size={13} /> Posti aggiuntivi
@@ -323,7 +323,7 @@ export default function Acquista() {
                                         Da compilare: {mancanti.join(' · ')}
                                     </p>
                                 )}
-                                <Link to="/verifica" className="btn-primary text-xs">
+                                <Link to="/verifica" className="btn-primary text-xs w-full sm:w-auto justify-center">
                                     Completa il profilo <ArrowRight size={12} />
                                 </Link>
                             </div>
@@ -371,11 +371,11 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
                         <p className="font-body text-xs text-nebbia/40 mt-1">
                             {p.crediti_ai_mensili} crediti · EUR {prezzoPerCredito}/credito
                         </p>
-                        <p className="font-body text-[10px] text-nebbia/30 mt-3 italic flex-1">Non scadono mai</p>
+                        <p className="font-body text-xs text-nebbia/30 mt-3 italic flex-1">Non scadono mai</p>
                         <button
                             onClick={() => onAcquista(p.id)}
                             disabled={isLoading}
-                            className="mt-4 flex items-center justify-center gap-2 py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
+                            className="mt-4 flex items-center justify-center gap-2 py-3 lg:py-2.5 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40"
                         >
                             {isLoading
                                 ? <Loader2 size={14} className="animate-spin" />
@@ -465,7 +465,7 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
                             <button
                                 onClick={() => onAcquista(p.id)}
                                 disabled={isLoading}
-                                className={`w-full justify-center text-sm flex items-center gap-2 py-2.5 font-body disabled:opacity-40 ${isHighlight
+                                className={`w-full justify-center text-sm flex items-center gap-2 py-3 lg:py-2.5 font-body disabled:opacity-40 ${isHighlight
                                     ? 'bg-oro text-petrolio hover:bg-oro/90 transition-colors'
                                     : 'border border-oro/30 text-oro hover:bg-oro/10 transition-colors'
                                     }`}
@@ -523,7 +523,7 @@ function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati
                                 <button
                                     onClick={() => onAcquista(s.id)}
                                     disabled={isLoading}
-                                    className="mt-4 flex items-center justify-center gap-2 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40"
+                                    className="mt-4 flex items-center justify-center gap-2 py-3 lg:py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40"
                                 >
                                     {isLoading
                                         ? <Loader2 size={14} className="animate-spin" />

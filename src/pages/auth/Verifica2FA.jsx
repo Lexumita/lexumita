@@ -122,7 +122,7 @@ export default function Verifica2FA() {
     if (resetSuccess) {
         return (
             <div className="min-h-screen bg-petrolio flex items-center justify-center p-4">
-                <div className="bg-slate border border-salvia/30 w-full max-w-md p-8 space-y-5">
+                <div className="bg-slate border border-salvia/30 w-full max-w-md p-6 sm:p-8 space-y-5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-salvia/10 border border-salvia/30 flex items-center justify-center">
                             <Shield size={18} className="text-salvia" />
@@ -162,7 +162,7 @@ export default function Verifica2FA() {
         <div className="min-h-screen bg-petrolio flex items-center justify-center p-4">
             <div className="w-full max-w-md space-y-5">
 
-                <div className="bg-slate border border-white/10 p-8 space-y-5">
+                <div className="bg-slate border border-white/10 p-6 sm:p-8 space-y-5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-oro/10 border border-oro/30 flex items-center justify-center">
                             {modalita === 'totp' ? <Shield size={18} className="text-oro" /> : <KeyRound size={18} className="text-oro" />}
@@ -193,8 +193,9 @@ export default function Verifica2FA() {
                                     onChange={e => setCodice(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     onKeyDown={e => e.key === 'Enter' && handleVerificaTotp()}
                                     placeholder="123456"
+                                    autoComplete="one-time-code"
                                     autoFocus
-                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-mono text-2xl text-center tracking-[0.5em] px-4 py-4 outline-none focus:border-oro/50 placeholder:text-nebbia/20"
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-mono text-3xl sm:text-2xl text-center tracking-[0.3em] sm:tracking-[0.5em] px-3 sm:px-4 py-5 sm:py-4 outline-none focus:border-oro/50 placeholder:text-nebbia/20"
                                 />
                             </div>
 
@@ -217,7 +218,7 @@ export default function Verifica2FA() {
 
                             <button
                                 onClick={() => { setModalita('backup'); setErr(''); setCodice('') }}
-                                className="w-full font-body text-xs text-nebbia/50 hover:text-oro underline-offset-2 hover:underline"
+                                className="w-full min-h-[44px] lg:min-h-0 py-3 lg:py-0 font-body text-xs text-nebbia/50 hover:text-oro underline-offset-2 hover:underline"
                             >
                                 Ho perso il telefono — usa un codice di recupero
                             </button>
@@ -244,7 +245,7 @@ export default function Verifica2FA() {
                                     onKeyDown={e => e.key === 'Enter' && handleVerificaBackup()}
                                     placeholder="XXXX-XXXX"
                                     autoFocus
-                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-mono text-base tracking-wider px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/20"
+                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-mono text-lg sm:text-base text-center sm:text-left tracking-wider px-4 py-4 sm:py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/20"
                                 />
                             </div>
 
@@ -267,7 +268,7 @@ export default function Verifica2FA() {
 
                             <button
                                 onClick={() => { setModalita('totp'); setErr(''); setBackupCode('') }}
-                                className="w-full font-body text-xs text-nebbia/50 hover:text-oro underline-offset-2 hover:underline"
+                                className="w-full min-h-[44px] lg:min-h-0 py-3 lg:py-0 font-body text-xs text-nebbia/50 hover:text-oro underline-offset-2 hover:underline"
                             >
                                 Indietro — usa app autenticatore
                             </button>
@@ -278,7 +279,7 @@ export default function Verifica2FA() {
                 {/* Logout di emergenza */}
                 <button
                     onClick={handleLogout}
-                    className="w-full font-body text-xs text-nebbia/30 hover:text-nebbia/60 flex items-center justify-center gap-1.5"
+                    className="w-full min-h-[44px] lg:min-h-0 py-3 lg:py-0 font-body text-xs text-nebbia/30 hover:text-nebbia/60 flex items-center justify-center gap-1.5"
                 >
                     <LogOut size={12} /> Esci e torna al login
                 </button>

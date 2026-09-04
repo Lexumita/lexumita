@@ -219,7 +219,7 @@ export default function EtichettaDettaglio() {
     if (!etichetta) return null
 
     return (
-        <div className="space-y-5 px-6 pt-2 pb-6">
+        <div className="space-y-5 px-4 lg:px-6 pt-2 pb-6">
 
             <Link to={basePathRicerche} className="inline-flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                 <ArrowLeft size={11} /> Tutte le ricerche
@@ -230,7 +230,7 @@ export default function EtichettaDettaglio() {
                 <div className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: etichetta.colore || '#7FA39A' }} />
                 <p className="section-label !m-0">Etichetta</p>
-                <h1 className="font-display text-3xl font-light text-nebbia leading-none">{etichetta.nome}</h1>
+                <h1 className="font-display text-2xl sm:text-3xl font-light text-nebbia leading-tight sm:leading-none break-words min-w-0">{etichetta.nome}</h1>
                 <p className="font-body text-xs text-nebbia/30">
                     · {contenuti.length} {contenuti.length === 1 ? 'elemento' : 'elementi'} · creata il {new Date(etichetta.created_at).toLocaleDateString('it-IT')}
                 </p>
@@ -266,7 +266,7 @@ export default function EtichettaDettaglio() {
                                 <button
                                     key={tid}
                                     onClick={() => setTipoAttivo(tid)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors whitespace-nowrap ${isActive ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}
+                                    className={`flex items-center gap-2 shrink-0 px-3 py-2.5 lg:py-1.5 font-body text-xs transition-colors whitespace-nowrap ${isActive ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}
                                 >
                                     <Icon size={11} />
                                     <span>{label}</span>
@@ -363,17 +363,17 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                                 {c.dati.contenuto?.replace(/[#*_`]/g, '').slice(0, 200)}
                             </p>
                         )}
-                        <p className="font-body text-[10px] text-nebbia/25 mt-2">
+                        <p className="font-body text-xs text-nebbia/25 mt-2">
                             {new Date(c.dati.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                         <button onClick={onToggleApri}
-                            className="font-body text-xs text-nebbia/30 hover:text-oro px-2 py-1 transition-colors">
+                            className="font-body text-xs text-nebbia/30 hover:text-oro px-2 py-2.5 lg:py-1 transition-colors">
                             {aperto ? 'Chiudi' : 'Apri'}
                         </button>
                         <button onClick={onRimuovi} disabled={eliminando}
-                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                             title="Rimuovi tag">
                             {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
@@ -434,7 +434,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     <div className="flex items-center gap-1 shrink-0">
                         <ExternalLink size={11} className="text-nebbia/20 group-hover:text-oro transition-colors" />
                         <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
-                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                             title="Rimuovi tag">
                             {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
@@ -468,7 +468,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     <div className="flex items-center gap-1 shrink-0">
                         <ExternalLink size={11} className="text-nebbia/20 group-hover:text-oro transition-colors" />
                         <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
-                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                             title="Rimuovi tag">
                             {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
@@ -500,7 +500,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     <div className="flex items-center gap-1 shrink-0">
                         <ExternalLink size={11} className="text-nebbia/20 group-hover:text-salvia transition-colors" />
                         <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
-                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                             title="Rimuovi tag">
                             {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
@@ -539,7 +539,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                                 {sugg.riepilogo}
                             </p>
                         )}
-                        <p className="font-body text-[10px] text-nebbia/30">
+                        <p className="font-body text-xs text-nebbia/30">
                             Documento d'archivio · {new Date(c.dati.created_at).toLocaleDateString('it-IT')}
                             {c.dati.dimensione && ` · ${(c.dati.dimensione / 1024).toFixed(0)} KB`}
                         </p>
@@ -547,7 +547,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                     <div className="flex items-center gap-1 shrink-0">
                         <ExternalLink size={11} className="text-nebbia/20 group-hover:text-oro transition-colors" />
                         <button onClick={(e) => { e.preventDefault(); onRimuovi() }} disabled={eliminando}
-                            className="text-nebbia/25 hover:text-red-400 transition-colors p-1 disabled:opacity-40"
+                            className="text-nebbia/25 hover:text-red-400 transition-colors p-2 lg:p-1 disabled:opacity-40"
                             title="Rimuovi tag">
                             {eliminando ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
@@ -789,7 +789,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                 {(conversazione.length > 0 || cercando) && (
                     <button
                         onClick={nuovaSessione}
-                        className="font-body text-[11px] text-nebbia/30 hover:text-red-400 transition-colors shrink-0"
+                        className="font-body text-xs lg:text-[11px] text-nebbia/30 hover:text-red-400 transition-colors shrink-0 py-1"
                     >
                         Nuova sessione
                     </button>
@@ -802,13 +802,13 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                     {conversazione.map((m, i) => (
                         <div key={i} className="space-y-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <span className={`font-body text-[11px] font-medium ${m.role === 'user' ? 'text-oro/70' : 'text-salvia/70'}`}>
+                                <span className={`font-body text-xs lg:text-[11px] font-medium ${m.role === 'user' ? 'text-oro/70' : 'text-salvia/70'}`}>
                                     {m.role === 'user' ? 'Tu' : 'Lex'}
                                 </span>
                                 {m.role === 'assistant' && (
                                     <button
                                         onClick={() => salvaMessaggio(m.content)}
-                                        className="flex items-center gap-1 font-body text-[11px] text-nebbia/30 hover:text-oro transition-colors"
+                                        className="flex items-center gap-1 font-body text-xs lg:text-[11px] text-nebbia/30 hover:text-oro transition-colors py-1"
                                     >
                                         <Save size={10} /> Salva
                                     </button>
@@ -839,7 +839,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
 
                     {streamingTesto && (
                         <div className="space-y-1.5">
-                            <span className="font-body text-[11px] font-medium text-salvia/70">Lex</span>
+                            <span className="font-body text-xs lg:text-[11px] font-medium text-salvia/70">Lex</span>
                             <div className="font-body text-xs text-nebbia/80 leading-relaxed">
                                 <ReactMarkdown
                                     components={{
@@ -867,31 +867,31 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
             {!cercando && (
                 <div className="px-4 py-3 space-y-2.5">
                     {conversazione.length === 0 && contenuti.length > 0 && (
-                        <p className="font-body text-[11px] text-nebbia/30 leading-relaxed">
+                        <p className="font-body text-xs lg:text-[11px] text-nebbia/30 leading-relaxed">
                             Scegli un'azione o scrivi una domanda. Lex ragionerà sui {contenuti.length} elementi di questa etichetta.
                         </p>
                     )}
 
                     {contenuti.length === 0 ? (
-                        <p className="font-body text-[11px] text-nebbia/30 text-center py-4">
+                        <p className="font-body text-xs lg:text-[11px] text-nebbia/30 text-center py-4">
                             Aggiungi elementi all'etichetta per iniziare a chattare.
                         </p>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                 {AZIONI_ETICHETTA.map(a => (
                                     <button
                                         key={a.id}
                                         onClick={() => eseguiAzione(a.id)}
                                         disabled={cercando}
-                                        className="group flex items-start gap-1.5 p-2 bg-petrolio border border-white/5 hover:border-salvia/30 transition-colors text-left disabled:opacity-40"
+                                        className="group flex items-start gap-1.5 p-3 lg:p-2 bg-petrolio border border-white/5 hover:border-salvia/30 transition-colors text-left disabled:opacity-40"
                                     >
                                         <span className="text-sm shrink-0 mt-0.5">{a.emoji}</span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-body text-[11px] font-medium text-nebbia group-hover:text-salvia transition-colors leading-tight">
+                                            <p className="font-body text-xs lg:text-[11px] font-medium text-nebbia group-hover:text-salvia transition-colors leading-tight">
                                                 {a.label}
                                             </p>
-                                            <p className="font-body text-[10px] text-nebbia/40 mt-0.5 leading-tight">
+                                            <p className="font-body text-xs lg:text-[10px] text-nebbia/40 mt-0.5 leading-tight">
                                                 {a.descr}
                                             </p>
                                         </div>
@@ -912,7 +912,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                             />
 
                             {erroreLex && (
-                                <p className="font-body text-[11px] text-red-400 flex items-center gap-1.5">
+                                <p className="font-body text-xs lg:text-[11px] text-red-400 flex items-center gap-1.5">
                                     <AlertCircle size={10} /> {erroreLex}
                                 </p>
                             )}
@@ -920,7 +920,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                             <button
                                 onClick={inviaLibera}
                                 disabled={cercando || !input.trim()}
-                                className="flex items-center justify-center gap-1.5 w-full py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-xs hover:bg-salvia/20 transition-colors disabled:opacity-40"
+                                className="flex items-center justify-center gap-1.5 w-full py-3 lg:py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-xs hover:bg-salvia/20 transition-colors disabled:opacity-40"
                             >
                                 <Sparkles size={11} /> Invia domanda libera
                             </button>

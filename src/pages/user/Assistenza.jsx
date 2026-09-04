@@ -63,7 +63,7 @@ export function UserAssistenza() {
                 <select
                     value={statoF}
                     onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50"
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50"
                 >
                     <option value="">Tutti gli stati</option>
                     <option value="aperto">Aperto</option>
@@ -71,7 +71,7 @@ export function UserAssistenza() {
                 </select>
             </div>
 
-            <div className="bg-slate border border-white/5 overflow-x-auto">
+            <div className="bg-slate border border-white/5">
                 {loading ? (
                     <div className="py-12 flex items-center justify-center gap-2 text-nebbia/30">
                         <Loader2 size={16} className="animate-spin" />
@@ -82,6 +82,39 @@ export function UserAssistenza() {
                         {tickets.length === 0 ? 'Nessun ticket ancora. Apri il tuo primo ticket.' : 'Nessun ticket trovato.'}
                     </div>
                 ) : (
+                    <>
+                    {/* Mobile: una card per ticket */}
+                    <div className="lg:hidden divide-y divide-white/5">
+                        {rows.map(t => {
+                            const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                            const hasNew = t.stato === 'aperto' && msgs.length > 0 && msgs[0]?.autore_tipo !== 'user'
+                            return (
+                                <Link
+                                    key={t.id}
+                                    to={`/user/assistenza/${t.id}`}
+                                    className="block p-4 space-y-2 hover:bg-petrolio/40 transition-colors"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="font-body text-sm font-medium text-nebbia flex-1 min-w-0 break-words">
+                                            {t.oggetto}
+                                        </p>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {hasNew && <span className="inline-block w-1.5 h-1.5 rounded-full bg-oro" />}
+                                            <Badge label={t.stato === 'aperto' ? 'Aperto' : 'Chiuso'} variant={t.stato === 'aperto' ? 'salvia' : 'gray'} />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-nebbia/40">
+                                        <span>Aperto il {new Date(t.created_at).toLocaleDateString('it-IT')}</span>
+                                        <span className="text-nebbia/30">Aggiornato il {new Date(t.updated_at).toLocaleDateString('it-IT')}</span>
+                                    </div>
+                                    <span className="font-body text-xs text-oro">Apri →</span>
+                                </Link>
+                            )
+                        })}
+                    </div>
+
+                    {/* Desktop: tabella */}
+                    <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-white/5">
@@ -118,6 +151,8 @@ export function UserAssistenza() {
                             })}
                         </tbody>
                     </table>
+                    </div>
+                    </>
                 )}
             </div>
         </div>
@@ -194,8 +229,8 @@ export function UserAssistenzaNuovo() {
                     </div>
                 )}
 
-                <div className="flex gap-3">
-                    <button onClick={() => navigate('/user/assistenza')} className="btn-secondary text-sm flex-1">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button onClick={() => navigate('/user/assistenza')} className="btn-secondary text-sm flex-1 justify-center">
                         Annulla
                     </button>
                     <button
@@ -317,8 +352,8 @@ export function UserAssistenzaDettaglio() {
         <div className="space-y-5 max-w-3xl">
             <BackButton to="/user/assistenza" label="Assistenza" />
 
-            <div className="flex items-start justify-between gap-4">
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
                     <p className="section-label mb-2">Supporto Lexum · #{ticket.id.slice(0, 8)}</p>
                     <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
                     <p className="font-body text-xs text-nebbia/30 mt-1">
@@ -335,11 +370,11 @@ export function UserAssistenzaDettaglio() {
                     const isMio = m.autore_tipo === 'user'
                     return (
                         <div key={m.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[75%] p-3 space-y-1 ${isMio
+                            <div className={`max-w-[85%] lg:max-w-[75%] p-3 space-y-1 ${isMio
                                 ? 'bg-oro/15 border border-oro/20'
                                 : 'bg-petrolio/60 border border-white/10'
                                 }`}>
-                                <p className={`font-body text-[10px] font-medium mb-1 ${isMio ? 'text-oro/60 text-right' : 'text-nebbia/40'}`}>
+                                <p className={`font-body text-xs font-medium mb-1 ${isMio ? 'text-oro/60 text-right' : 'text-nebbia/40'}`}>
                                     {isMio ? 'Tu' : 'Admin Lexum'} · {new Date(m.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                 </p>
                                 <p className="font-body text-sm text-nebbia leading-relaxed whitespace-pre-wrap">{m.testo}</p>
@@ -370,7 +405,7 @@ export function UserAssistenzaDettaglio() {
                         <button
                             onClick={handleInvia}
                             disabled={!msg.trim() || inviando}
-                            className="btn-primary text-sm self-end px-4 py-3 shrink-0 disabled:opacity-40"
+                            className="btn-primary text-sm self-end px-4 py-4 lg:py-3 shrink-0 disabled:opacity-40"
                         >
                             {inviando ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                         </button>

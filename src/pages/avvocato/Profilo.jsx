@@ -285,7 +285,7 @@ export default function AvvocatoProfilo() {
                     dati.studio ? ['Studio', dati.studio] : null,
                     ['Verifica identità', verificato ? 'Identità verificata ✓' : 'In attesa di verifica'],
                 ].filter(Boolean).map(([l, v]) => (
-                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
+                    <div key={l} className="flex flex-wrap justify-between gap-x-3 gap-y-1 border-b border-white/5 pb-2">
                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
                         <span className={`font-body text-sm ${l === 'Verifica identità' && verificato ? 'text-salvia' : 'text-nebbia'}`}>{v}</span>
                     </div>
@@ -296,20 +296,20 @@ export default function AvvocatoProfilo() {
 
             {/* DATI PERSONALI */}
             <div className="bg-slate border border-white/5 p-6 space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                     <p className="section-label">Dati personali</p>
                     {!editingDati ? (
-                        <button onClick={() => setEditingDati(true)} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5">
+                        <button onClick={() => setEditingDati(true)} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <Edit2 size={12} /> Modifica
                         </button>
                     ) : (
-                        <button onClick={handleAnnullaDati} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5">
+                        <button onClick={handleAnnullaDati} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <X size={12} /> Annulla
                         </button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Campo label="Nome" value={dati.nome} editing={editingDati} onChange={v => setDati(d => ({ ...d, nome: v }))} />
                     <Campo label="Cognome" value={dati.cognome} editing={editingDati} onChange={v => setDati(d => ({ ...d, cognome: v }))} />
                 </div>
@@ -332,9 +332,9 @@ export default function AvvocatoProfilo() {
 
             {/* DATI PROFESSIONALI PER ATTI */}
             <div className={`bg-slate border p-6 space-y-5 ${profiloCompleto ? 'border-white/5' : 'border-amber-500/30'}`}>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Scale size={14} className="text-oro/60" />
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <Scale size={14} className="text-oro/60 shrink-0" />
                         <p className="section-label !m-0">Dati professionali per atti</p>
                         {profiloCompleto && (
                             <span className="font-body text-[10px] text-salvia border border-salvia/30 bg-salvia/5 px-2 py-0.5 uppercase tracking-wider">
@@ -343,11 +343,11 @@ export default function AvvocatoProfilo() {
                         )}
                     </div>
                     {!editingAtti ? (
-                        <button onClick={() => setEditingAtti(true)} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5">
+                        <button onClick={() => setEditingAtti(true)} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <Edit2 size={12} /> {profiloCompleto ? 'Modifica' : 'Compila'}
                         </button>
                     ) : (
-                        <button onClick={handleAnnullaAtti} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5">
+                        <button onClick={handleAnnullaAtti} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <X size={12} /> Annulla
                         </button>
                     )}
@@ -357,7 +357,7 @@ export default function AvvocatoProfilo() {
                     Questi dati vengono utilizzati per intestare correttamente gli atti legali generati dalle tue pratiche.
                 </p>
 
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Campo label="Foro di iscrizione" value={atti.foro} placeholder="Es. Foro di Milano"
                         editing={editingAtti} onChange={v => setAtti(a => ({ ...a, foro: v }))} />
                     <Campo label="Numero albo" value={atti.numero_albo} placeholder="Es. A23456"
@@ -381,8 +381,8 @@ export default function AvvocatoProfilo() {
             {pianoDati && (
                 <div className="bg-slate border border-white/5 p-5">
                     <p className="section-label mb-3">{isMembro ? 'Piano studio' : 'Abbonamento'}</p>
-                    <div className="flex items-center justify-between p-4 bg-oro/8 border border-oro/20">
-                        <div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0 p-4 bg-oro/8 border border-oro/20">
+                        <div className="min-w-0">
                             <p className="font-body text-sm font-medium text-nebbia">{pianoDati.nome}</p>
                             <p className="font-body text-xs text-nebbia/40 mt-0.5">
                                 {pianoDati.posti} {pianoDati.posti === 1 ? 'accesso' : 'accessi'}
@@ -408,15 +408,15 @@ export default function AvvocatoProfilo() {
 
             {/* PASSWORD */}
             <div className="bg-slate border border-white/5 p-6 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                     <p className="section-label">Password</p>
                     {!editingPwd ? (
-                        <button onClick={() => setEditingPwd(true)} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5">
+                        <button onClick={() => setEditingPwd(true)} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <Edit2 size={12} /> Cambia
                         </button>
                     ) : (
                         <button onClick={() => { setEditingPwd(false); setPwd({ nuova: '', conferma: '' }); setErrPwd('') }}
-                            className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5">
+                            className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5 min-h-[40px] lg:min-h-0">
                             <X size={12} /> Annulla
                         </button>
                     )}
@@ -463,7 +463,7 @@ export default function AvvocatoProfilo() {
                     <p className="section-label !m-0">Sicurezza</p>
                 </div>
 
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col-reverse sm:flex-row items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                         <p className="font-body text-sm text-nebbia mb-1">
                             Autenticazione a due fattori (2FA)
@@ -484,8 +484,8 @@ export default function AvvocatoProfilo() {
                 </div>
 
                 {mfaAttivo && codiciRestanti !== null && (
-                    <div className="bg-petrolio border border-white/5 p-4 flex items-center justify-between">
-                        <div>
+                    <div className="bg-petrolio border border-white/5 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+                        <div className="min-w-0">
                             <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Codici di recupero</p>
                             <p className="font-body text-sm text-nebbia">{codiciRestanti} su 10 disponibili</p>
                             {codiciRestanti <= 3 && (
@@ -495,7 +495,7 @@ export default function AvvocatoProfilo() {
                             )}
                         </div>
                         <button onClick={handleRigeneraCodici} disabled={rigenerando}
-                            className="font-body text-xs text-oro hover:text-oro/70 border border-oro/30 hover:border-oro/60 px-3 py-1.5 disabled:opacity-40">
+                            className="shrink-0 self-start sm:self-auto font-body text-xs text-oro hover:text-oro/70 border border-oro/30 hover:border-oro/60 px-3 py-1.5 min-h-[40px] lg:min-h-0 disabled:opacity-40">
                             {rigenerando ? 'Rigenero…' : 'Rigenera codici'}
                         </button>
                     </div>
@@ -507,7 +507,7 @@ export default function AvvocatoProfilo() {
                     </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     {!mfaAttivo ? (
                         <button onClick={() => setModal2FA(true)} className="btn-primary text-sm flex items-center gap-2">
                             <Shield size={14} /> Attiva 2FA

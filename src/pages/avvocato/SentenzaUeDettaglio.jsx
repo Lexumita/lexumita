@@ -119,7 +119,7 @@ function AggiungiAPratica({ ricerca, ricercaSalvataId, setRicercaSalvataId }) {
             </button>
 
             {aperto && (
-                <div className="absolute z-50 mt-2 w-80 bg-slate border border-white/10 shadow-2xl">
+                <div className="absolute z-50 mt-2 w-80 max-w-[calc(100vw-3rem)] bg-slate border border-white/10 shadow-2xl">
                     <div className="p-3 border-b border-white/5">
                         <div className="relative">
                             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
@@ -128,13 +128,13 @@ function AggiungiAPratica({ ricerca, ricercaSalvataId, setRicercaSalvataId }) {
                                 value={cerca}
                                 onChange={e => setCerca(e.target.value)}
                                 placeholder="Cerca pratica..."
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-8 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-10 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                             />
                             <button
                                 onClick={() => setAperto(false)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-nebbia"
+                                className="absolute right-0.5 top-1/2 -translate-y-1/2 p-2 text-nebbia/30 hover:text-nebbia"
                             >
-                                <X size={12} />
+                                <X size={14} />
                             </button>
                         </div>
                     </div>
@@ -285,9 +285,9 @@ export default function SentenzaUeDettaglio() {
             <div className="space-y-4 pb-24">
                 <button
                     onClick={() => navigate(`${prefix}`)}
-                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
+                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors py-2 -my-2"
                 >
-                    <ChevronLeft size={13} /> Torna alla banca dati
+                    <ChevronLeft size={15} /> Torna alla banca dati
                 </button>
                 <div className="bg-red-900/10 border border-red-500/20 p-6">
                     <p className="font-body text-sm text-red-400">{errore ?? 'Pronuncia non disponibile'}</p>
@@ -331,9 +331,9 @@ export default function SentenzaUeDettaglio() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
+                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors py-2 -my-2"
                 >
-                    <ChevronLeft size={13} /> Indietro
+                    <ChevronLeft size={15} /> Indietro
                 </button>
             </div>
 
@@ -346,7 +346,7 @@ export default function SentenzaUeDettaglio() {
                             <p className="font-body text-xs text-nebbia/70 leading-relaxed">
                                 Pronuncia della <strong className="text-nebbia">Corte europea dei diritti dell'uomo</strong> (Strasburgo)
                             </p>
-                            <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                            <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
                                 Fonte: HUDOC &mdash; Consiglio d'Europa. Non è un organo dell'Unione europea:
                                 giudica sulla Convenzione EDU, che vincola l'Italia tramite l'art. 117 co. 1 Cost.
                             </p>
@@ -359,7 +359,7 @@ export default function SentenzaUeDettaglio() {
                                     <> &mdash; <strong className="text-nebbia">{sentenza.organo}</strong></>
                                 )}
                             </p>
-                            <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                            <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
                                 Fonte: EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi
                             </p>
                         </>
@@ -374,26 +374,26 @@ export default function SentenzaUeDettaglio() {
                         <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-2">
                             {labelTipo(sentenza.tipo)}
                         </p>
-                        <h1 className="font-display text-2xl text-nebbia leading-tight">{titoloBreve}</h1>
+                        <h1 className="font-display text-2xl text-nebbia leading-tight break-words">{titoloBreve}</h1>
                         <div className="flex flex-wrap gap-2 mt-3">
                             {/* Il celex delle CEDU e' un codice interno: al suo posto
                                 si mostra il numero di ricorso, che e' l'identificativo
                                 con cui un avvocato cerca e cita una pronuncia di Strasburgo. */}
                             {isCedu ? (
                                 sentenza.numero_caso && (
-                                    <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
+                                    <span className="font-body text-xs text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40 break-all">
                                         Ricorso n. {sentenza.numero_caso}
                                     </span>
                                 )
                             ) : (
                                 sentenza.celex_id && (
-                                    <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
+                                    <span className="font-body text-xs text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40 break-all">
                                         CELEX {sentenza.celex_id}
                                     </span>
                                 )
                             )}
                             {sentenza.ecli && (
-                                <span className="font-body text-[11px] text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40">
+                                <span className="font-body text-xs text-nebbia/60 border border-white/10 px-2 py-0.5 bg-petrolio/40 break-all">
                                     {sentenza.ecli}
                                 </span>
                             )}
@@ -460,7 +460,7 @@ export default function SentenzaUeDettaglio() {
                     {sentenza.parti && (
                         <div className="md:col-span-2 lg:col-span-1">
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Parti</p>
-                            <p className="font-body text-sm text-nebbia/70">{sentenza.parti}</p>
+                            <p className="font-body text-sm text-nebbia/70 break-words">{sentenza.parti}</p>
                         </div>
                     )}
                 </div>
@@ -530,7 +530,7 @@ export default function SentenzaUeDettaglio() {
             {sentenza.oggetto && (
                 <div className="bg-slate border border-white/5 p-6">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Oggetto / massima</p>
-                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line">{sentenza.oggetto}</p>
+                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line break-words">{sentenza.oggetto}</p>
                 </div>
             )}
 
@@ -540,7 +540,7 @@ export default function SentenzaUeDettaglio() {
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Materia</p>
                     <div className="flex flex-wrap gap-2">
                         {materie.map((m, i) => (
-                            <span key={i} className="font-body text-xs text-nebbia/70 border border-white/10 px-2 py-1 bg-petrolio/40">{m}</span>
+                            <span key={i} className="font-body text-xs text-nebbia/70 border border-white/10 px-2 py-1 bg-petrolio/40 break-words">{m}</span>
                         ))}
                     </div>
                 </div>
@@ -552,7 +552,7 @@ export default function SentenzaUeDettaglio() {
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Norme richiamate</p>
                     <div className="flex flex-wrap gap-2">
                         {normeRichiamate.map((n, i) => (
-                            <span key={i} className="font-body text-xs text-nebbia/70 border border-white/10 px-2 py-1 bg-petrolio/40">{n}</span>
+                            <span key={i} className="font-body text-xs text-nebbia/70 border border-white/10 px-2 py-1 bg-petrolio/40 break-words">{n}</span>
                         ))}
                     </div>
                 </div>
@@ -564,7 +564,7 @@ export default function SentenzaUeDettaglio() {
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Giurisprudenza collegata</p>
                     <div className="flex flex-wrap gap-2">
                         {giurCollegata.map((g, i) => (
-                            <span key={i} className="font-body text-xs text-nebbia/60 border border-white/10 px-2 py-1 bg-petrolio/40">{g}</span>
+                            <span key={i} className="font-body text-xs text-nebbia/60 border border-white/10 px-2 py-1 bg-petrolio/40 break-words">{g}</span>
                         ))}
                     </div>
                 </div>
@@ -577,13 +577,13 @@ export default function SentenzaUeDettaglio() {
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Testo integrale</p>
                         <button
                             onClick={() => setTestoEspanso(v => !v)}
-                            className="font-body text-xs text-oro hover:text-oro/80 transition-colors"
+                            className="font-body text-xs text-oro hover:text-oro/80 transition-colors -m-2 p-2"
                         >
                             {testoEspanso ? 'Nascondi' : 'Mostra'}
                         </button>
                     </div>
                     {testoEspanso ? (
-                        <div className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line max-h-[600px] overflow-y-auto pr-2">
+                        <div className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line break-words max-h-[70vh] lg:max-h-[600px] overflow-y-auto pr-2">
                             {sentenza.testo_integrale}
                         </div>
                     ) : (
@@ -598,26 +598,26 @@ export default function SentenzaUeDettaglio() {
             <div className="bg-slate border border-white/5 p-4">
                 {isCedu ? (
                     <>
-                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed break-words">
                             <strong className="text-nebbia/60">Fonte:</strong> HUDOC &mdash; Corte europea dei diritti dell'uomo, Consiglio d'Europa.
                             {sentenza.url_originale && (
                                 <> &middot; <a href={sentenza.url_originale} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">HUDOC</a></>
                             )}
                         </p>
-                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed mt-1">
                             Fanno fede solo i testi ufficiali nelle lingue della Corte (inglese e francese) pubblicati su HUDOC.
                         </p>
                     </>
                 ) : (
                     <>
-                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed break-words">
                             <strong className="text-nebbia/60">Fonte:</strong> EUR-Lex &mdash; © Unione europea, 1998&ndash;oggi.
                             Riuso autorizzato (Decisione 2011/833/UE) con indicazione della fonte.
                             {sentenza.url_originale && (
                                 <> &middot; <a href={sentenza.url_originale} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">EUR-Lex</a></>
                             )}
                         </p>
-                        <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed mt-1">
                             Solo i testi pubblicati nell'edizione cartacea o elettronica della Gazzetta ufficiale dell'Unione europea fanno fede.
                         </p>
                     </>

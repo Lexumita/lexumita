@@ -442,7 +442,7 @@ function TabellaUtenti({ data, loading }) {
             className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
         </div>
         <select value={roleF} onChange={e => setRoleF(e.target.value)}
-          className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+          className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
           <option value="">Tutti i ruoli</option>
           <option value="avvocato">Avvocato</option>
           <option value="commercialista">Commercialista</option>
@@ -452,7 +452,7 @@ function TabellaUtenti({ data, loading }) {
           <option value="admin">Admin</option>
         </select>
         <select value={statusF} onChange={e => setStatusF(e.target.value)}
-          className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+          className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
           <option value="">Tutti gli stati</option>
           <option value="pending">In attesa</option>
           <option value="approved">Approvato</option>
@@ -472,7 +472,7 @@ function TabellaUtenti({ data, loading }) {
         </div>
       ) : (
         <div className="bg-slate border border-white/5 overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[760px] lg:min-w-0">
             <thead>
               <tr className="border-b border-white/5">
                 {['Nome', 'Email', 'Ruolo', 'Verifica', 'Registrato il', ''].map(h => (
@@ -511,7 +511,7 @@ function TabellaUtenti({ data, loading }) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link to={`/admin/utenti/${u.id}`}
-                        className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
+                        className="inline-flex items-center justify-center w-10 h-10 lg:w-7 lg:h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors">
                         <ArrowRight size={14} />
                       </Link>
                     </td>
@@ -758,10 +758,10 @@ export default function AdminUtenti() {
         <StatCard label="Da verificare" value={nVerifiche} colorClass={nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
       </div>
 
-      <div className="flex gap-0 border-b border-white/8">
+      <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'}`}>
+            className={`flex items-center gap-2 px-5 py-3 min-h-[44px] whitespace-nowrap shrink-0 font-body text-sm border-b-2 transition-colors ${tab === t.id ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'}`}>
             {t.label}
             {t.badge > 0 && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${tab === t.id ? 'bg-oro/20 text-oro' : 'bg-amber-400/15 text-amber-400'}`}>

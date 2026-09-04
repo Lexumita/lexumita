@@ -54,14 +54,14 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-petrolio flex flex-col items-center justify-center px-4">
       {/* Logo only */}
-      <Link to="/" className="mb-10 group">
+      <Link to="/" className="mb-8 sm:mb-10 group">
         <img src={logo} alt="Lexum" className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
       </Link>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-slate border border-white/5 p-8">
+      <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         <p className="section-label mb-6">Accesso</p>
-        <h1 className="font-display text-4xl font-light text-nebbia mb-8">
+        <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-8">
           Bentornato
         </h1>
 
@@ -91,7 +91,8 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPwd(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-oro cursor-pointer"
+                aria-label={showPwd ? 'Nascondi password' : 'Mostra password'}
+                className="absolute right-1 lg:right-3 top-1/2 -translate-y-1/2 p-3 lg:p-0 flex items-center justify-center text-oro cursor-pointer"
               >
                 {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>

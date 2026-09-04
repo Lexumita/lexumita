@@ -107,7 +107,7 @@ function AggiungiAPratica({ sentenza, sorgente }) {
     return (
         <div>
             <button onClick={() => setAperto(!aperto)} className="btn-secondary text-sm flex items-center gap-2">
-                <Save size={13} /> {aperto ? 'Annulla' : 'Aggiungi a pratica'}
+                <Save size={15} /> {aperto ? 'Annulla' : 'Aggiungi a pratica'}
             </button>
             {aperto && (
                 <div className="mt-3 bg-slate border border-white/10 p-4 space-y-3">
@@ -211,7 +211,7 @@ function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
                     <button
                         onClick={acquista}
                         disabled={processando}
-                        className="btn-primary text-sm flex items-center gap-2 disabled:opacity-60"
+                        className="btn-primary text-sm w-full sm:w-auto justify-center flex items-center gap-2 disabled:opacity-60"
                     >
                         {processando
                             ? <><Loader2 size={14} className="animate-spin" /> Redirect...</>
@@ -447,8 +447,8 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                         <p className="font-body text-sm text-salvia font-medium">Acquisto completato</p>
                         <p className="font-body text-xs text-salvia/70 mt-0.5">Hai ora accesso permanente a questa sentenza.</p>
                     </div>
-                    <button onClick={() => setAppenaAcquistata(false)} className="text-salvia/50 hover:text-salvia">
-                        <X size={14} />
+                    <button onClick={() => setAppenaAcquistata(false)} className="shrink-0 -m-2 p-2 text-salvia/50 hover:text-salvia">
+                        <X size={16} />
                     </button>
                 </div>
             )}
@@ -490,7 +490,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                         <p className="section-label !m-0">{gratuita ? 'Corpus Lexum' : 'Contributo avvocato'}</p>
                         {s.tipo_provvedimento && (
-                            <span className="font-body text-[10px] text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
+                            <span className="font-body text-xs text-nebbia/50 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">
                                 {labelTipoProvvedimento(s.tipo_provvedimento)}
                             </span>
                         )}
@@ -508,7 +508,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                             </span>
                         )}
                     </div>
-                    <h1 className="font-body text-xl font-medium text-nebbia leading-snug">{s.oggetto ?? 'Sentenza'}</h1>
+                    <h1 className="font-body text-xl font-medium text-nebbia leading-snug break-words">{s.oggetto ?? 'Sentenza'}</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-2">{titoloIntestazione}</p>
                     {dataVisibile && (
                         <p className="font-body text-xs text-nebbia/30 mt-1 flex items-center gap-1.5">
@@ -523,7 +523,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                 </div>
 
                 {haAccesso && (
-                    <div className="shrink-0 flex flex-col items-end gap-2">
+                    <div className="w-full lg:w-auto shrink-0 flex flex-col items-start lg:items-end gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <AggiungiAPratica sentenza={s} sorgente={fonte} />
                             <AggiungiAEtichetta
@@ -551,7 +551,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                         <Scale size={13} className="text-oro/60" />
                         <p className="section-label !m-0">Principio di diritto</p>
                     </div>
-                    <p className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line">
+                    <p className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line break-words">
                         {principioVisibile}
                     </p>
                     {!mostraTestoIntegrale && s.principio_diritto && s.principio_diritto.length > 200 && (
@@ -622,7 +622,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     </div>
                     <div className="space-y-1.5">
                         {s.norme_richiamate.map((n, i) => (
-                            <p key={i} className="font-mono text-xs text-nebbia/60 px-3 py-2 bg-petrolio/50 border-l-2 border-oro/20">
+                            <p key={i} className="font-mono text-xs text-nebbia/60 px-3 py-2 bg-petrolio/50 border-l-2 border-oro/20 break-words">
                                 {n}
                             </p>
                         ))}
@@ -636,7 +636,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     <p className="section-label mb-3">Riferimenti UE</p>
                     <div className="space-y-1.5">
                         {s.celex_correlati.map((c, i) => (
-                            <p key={i} className="font-mono text-xs text-nebbia/60 px-3 py-2 bg-petrolio/50 border-l-2 border-salvia/20">
+                            <p key={i} className="font-mono text-xs text-nebbia/60 px-3 py-2 bg-petrolio/50 border-l-2 border-salvia/20 break-words">
                                 {c}
                             </p>
                         ))}
@@ -681,8 +681,8 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                         <FileText size={13} className="text-oro/60" />
                         <p className="section-label !m-0">Testo integrale</p>
                     </div>
-                    <div className="bg-petrolio/60 border border-white/5 p-5 max-h-[600px] overflow-y-auto">
-                        <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed">
+                    <div className="bg-petrolio/60 border border-white/5 p-4 lg:p-5 max-h-[70vh] lg:max-h-[600px] overflow-y-auto">
+                        <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed break-words">
                             {s.testo_integrale}
                         </p>
                     </div>
@@ -697,15 +697,14 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                             <FileText size={13} className="text-oro/60" />
                             <p className="section-label !m-0">Documento</p>
                         </div>
-                        <a href={pdfUrl} target="_blank" rel="noreferrer" className="font-body text-xs text-nebbia/50 hover:text-oro flex items-center gap-1.5 transition-colors">
-                            <Download size={11} /> Apri in nuova scheda
+                        <a href={pdfUrl} target="_blank" rel="noreferrer" className="font-body text-xs text-nebbia/50 hover:text-oro flex items-center gap-1.5 transition-colors py-2 -my-2">
+                            <Download size={13} /> Apri in nuova scheda
                         </a>
                     </div>
                     <iframe
                         src={pdfUrl}
                         title={s.oggetto ?? 'Sentenza'}
-                        className="w-full border border-white/5"
-                        style={{ height: 700 }}
+                        className="w-full border border-white/5 h-[70vh] lg:h-[700px]"
                     />
                 </div>
             )}

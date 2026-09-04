@@ -125,7 +125,7 @@ export default function CommercialeClienti() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard label="Clienti" value={clienti.length} icon={Users} colorClass="text-nebbia" />
         <StatCard label="Acquisti" value={acquisti.length} icon={ShoppingBag} colorClass="text-salvia" />
         <StatCard label="Fatturato generato" value={euro(fatturatoTotale)} icon={Euro} colorClass="text-oro" />
@@ -144,6 +144,82 @@ export default function CommercialeClienti() {
       </div>
 
       <div className="bg-slate border border-white/5">
+        {/* Telefono: una card per cliente, con lo stesso accordion della tabella */}
+        <div className="lg:hidden divide-y divide-white/5">
+          {filtrati.length === 0 ? (
+            <EmptyState icon={Users} title="Nessun cliente"
+              desc="Quando qualcuno si registra inserendo il tuo codice, comparirà qui." />
+          ) : filtrati.map(c => {
+            const lista = acquistiPerCliente.get(c.id) ?? []
+            const isOpen = aperto === c.id
+            const ruolo = RUOLO[c.role] ?? RUOLO.user
+            const abb = statoAbbonamentoCliente(c)
+            return (
+              <div key={c.id} className="p-4 space-y-2">
+                <button
+                  onClick={() => setAperto(isOpen ? null : c.id)}
+                  className="w-full min-h-[44px] flex items-start gap-3 text-left"
+                >
+                  <span className="shrink-0 mt-0.5">
+                    {isOpen
+                      ? <ChevronDown size={16} className="text-oro" />
+                      : <ChevronRight size={16} className="text-nebbia/25" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-body text-sm text-nebbia truncate">{c.nome} {c.cognome}</span>
+                    <span className="block font-body text-xs text-nebbia/30 truncate">{c.email}</span>
+                    {c.studio && <span className="block font-body text-xs text-nebbia/25 truncate">{c.studio}</span>}
+                  </span>
+                  <span className="shrink-0 font-body text-sm text-oro">{lista.length}</span>
+                </button>
+
+                <div className="pl-7 flex flex-wrap items-center gap-2">
+                  <Badge label={ruolo.label} variant={ruolo.variant} />
+                  {c.abbonamento_tipo && (
+                    <>
+                      <span className="font-body text-xs text-nebbia/60">{c.abbonamento_tipo}</span>
+                      {abb && <Badge label={abb.label} variant={abb.variant} />}
+                    </>
+                  )}
+                  <span className="font-body text-xs text-nebbia/30">Reg. {dataIt(c.created_at)}</span>
+                </div>
+
+                {isOpen && (
+                  <div className="pl-7 pt-1">
+                    {lista.length === 0 ? (
+                      <p className="font-body text-xs text-nebbia/30 py-2">
+                        Nessun acquisto registrato per questo cliente.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Storico acquisti</p>
+                        {lista.map(a => (
+                          <div key={a.id} className="p-3 bg-petrolio/40 border border-white/5">
+                            <p className="font-body text-sm text-nebbia">{a.prodotto_nome ?? 'Prodotto'}</p>
+                            <p className="font-body text-xs text-nebbia/30">{dataIt(a.created_at)}</p>
+                            <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
+                              <span className="font-body text-xs text-nebbia/30">
+                                Importo <span className="text-nebbia/70">{euro(a.importo)}</span>
+                              </span>
+                              <span className="font-body text-xs text-nebbia/30">
+                                Provvigione <span className="text-oro">
+                                  {a.provvigione_importo != null ? euro(a.provvigione_importo) : '—'}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Da lg in su: la tabella di prima, riga per riga */}
+        <div className="hidden lg:block">
         <Table
           headers={['', 'Cliente', 'Tipo', 'Registrato', 'Abbonamento', 'Acquisti']}
           empty={<EmptyState icon={Users} title="Nessun cliente"
@@ -218,6 +294,7 @@ export default function CommercialeClienti() {
             return righe
           })}
         </Table>
+        </div>
       </div>
     </>
   )

@@ -871,8 +871,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         em: ({ children }) => <em className="italic text-nebbia/80">{children}</em>,
         ul: ({ children }) => <ul className="list-disc list-inside space-y-1 text-nebbia/70 my-2">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 text-nebbia/70 my-2">{children}</ol>,
-        li: ({ children }) => <li className="font-body text-sm">{children}</li>,
-        p: ({ children }) => <p className="font-body text-sm text-nebbia/80 leading-relaxed">{children}</p>,
+        li: ({ children }) => <li className="font-body text-sm break-words">{children}</li>,
+        p: ({ children }) => <p className="font-body text-sm text-nebbia/80 leading-relaxed break-words">{children}</p>,
         hr: () => <hr className="my-4 border-white/10" />,
         a: ({ href, children }) => {
             if (!href) return <span>{children}</span>
@@ -897,7 +897,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     href={finalHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-oro hover:text-oro/80 underline decoration-oro/30 hover:decoration-oro transition-colors"
+                    className="text-oro hover:text-oro/80 underline decoration-oro/30 hover:decoration-oro transition-colors break-words"
                 >
                     {children}
                 </a>
@@ -907,7 +907,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
     return (
         <div className="bg-slate border border-white/5">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-white/5">
                 <div className="flex items-center gap-2">
                     <Sparkles size={14} className="text-salvia" />
                     <p className="font-body text-sm font-medium text-nebbia">Lex — AI Assistant</p>
@@ -928,7 +928,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             </div>
 
             {conversazione.length > 0 && (
-                <div className="px-5 py-4 space-y-5">
+                <div className="px-4 sm:px-5 py-4 space-y-5">
                     {conversazione.map((m, i) => (
                         <div key={i} className="space-y-2">
                             <div className="flex items-center gap-2">
@@ -948,9 +948,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             </div>
 
                             {m.role === 'user' ? (
-                                <p className="font-body text-sm text-nebbia/60 leading-relaxed">{m.content}</p>
+                                <p className="font-body text-sm text-nebbia/60 leading-relaxed break-words">{m.content}</p>
                             ) : (
-                                <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2">
+                                <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2 break-words">
                                     <MarkdownMemo components={markdownComponents}>
                                         {m.content}
                                     </MarkdownMemo>
@@ -1012,7 +1012,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                                             </span>
                                                         </div>
                                                         {a.teaser && (
-                                                            <p className="font-body text-[11px] text-nebbia/40 line-clamp-2 leading-relaxed">
+                                                            <p className="font-body text-xs text-nebbia/40 line-clamp-2 leading-relaxed break-words">
                                                                 {a.teaser}
                                                             </p>
                                                         )}
@@ -1024,7 +1024,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
                                     {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025:
                                         ogni risposta è marcata come generata da un sistema di IA. */}
-                                    <p className="mt-5 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                    <p className="mt-5 pt-3 border-t border-white/5 font-body text-xs text-nebbia/35 leading-relaxed">
                                         Contenuto generato con intelligenza artificiale. Lex può commettere errori:
                                         verifica sempre le fonti citate prima dell'uso professionale.
                                     </p>
@@ -1044,7 +1044,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             )}
 
                             {streamingTesto.length > 0 && (
-                                <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2">
+                                <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2 break-words">
                                     <ReactMarkdown components={markdownComponents}>
                                         {streamingTesto}
                                     </ReactMarkdown>
@@ -1058,7 +1058,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
             {/* Salvataggio in pratica + etichetta — popover inline entrambi */}
             {conversazione.length >= 2 && !cercando && (
-                <div className="px-5 pb-3 flex flex-wrap gap-2 [&>div>button]:h-[38px]">
+                <div className="px-4 sm:px-5 pb-3 flex flex-wrap gap-2 [&>div>button]:h-[40px] lg:[&>div>button]:h-[38px]">
                     <AggiungiAPratica
                         ricerca={{
                             tipo: 'ricerca_ai',
@@ -1094,7 +1094,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             )}
 
             {/* Input area */}
-            <div className="px-5 py-4 space-y-3 border-t border-white/5">
+            <div className="px-4 sm:px-5 py-4 space-y-3 border-t border-white/5">
                 {conversazione.length === 0 && (
                     <p className="font-body text-xs text-nebbia/30">
                         Descrivi il caso legale — Lex consulterà norme, giurisprudenza e prassi.
@@ -1138,7 +1138,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={cercando || caricandoDoc}
-                        className="flex items-center gap-2 font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
+                        className="flex items-center gap-2 min-h-[40px] font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
                     >
                         {caricandoDoc
                             ? <><span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" /> Lettura del documento...</>
@@ -1152,21 +1152,21 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <FileText size={13} className="text-salvia shrink-0 mt-0.5" />
                                 <div className="min-w-0">
                                     <p className="font-body text-xs text-nebbia/80 truncate">{documento.nome}</p>
-                                    <p className="font-body text-[11px] text-nebbia/35">
+                                    <p className="font-body text-xs text-nebbia/35 break-words">
                                         {documento.n_chunk} passaggi indicizzati · non archiviato, si cancella dopo 4 ore
                                     </p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setDocumento(null)}
-                                className="text-nebbia/30 hover:text-red-400 transition-colors shrink-0"
+                                className="p-2 -m-1 text-nebbia/30 hover:text-red-400 transition-colors shrink-0"
                                 title="Rimuovi il documento"
                             >
                                 <X size={13} />
                             </button>
                         </div>
                         {documento.troncato && (
-                            <p className="font-body text-[11px] text-amber-400/80 flex items-start gap-1.5">
+                            <p className="font-body text-xs text-amber-400/80 flex items-start gap-1.5">
                                 <AlertCircle size={11} className="shrink-0 mt-0.5" />
                                 Documento molto lungo: analizzata solo la prima parte.
                             </p>
@@ -1186,7 +1186,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     </p>
                 )}
                 {errore === 'crediti_esauriti' && (
-                    <div className="flex items-center justify-between gap-3 p-3 bg-oro/5 border border-oro/20">
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-oro/5 border border-oro/20">
                         <div className="flex items-center gap-2">
                             <AlertCircle size={13} className="text-oro shrink-0" />
                             <p className="font-body text-xs text-nebbia/60">Crediti Lex esauriti.</p>
@@ -1387,7 +1387,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
         <div className="space-y-5">
             {vista === 'catalogo' && (
                 <>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                             <input
@@ -1398,7 +1398,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                                 className="w-full bg-slate border border-oro/50 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/60 placeholder:text-nebbia/25"
                             />
                         </div>
-                        <button onClick={avviaRicercaGlobale} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                        <button onClick={avviaRicercaGlobale} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                             <Search size={13} /> Cerca
                         </button>
                     </div>
@@ -1418,6 +1418,71 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                             <div className="px-4 py-3 border-b border-white/5">
                                 <p className="font-body text-xs text-nebbia/30">{totaleGlobale} risultati per "{cercaTradGlobale}"</p>
                             </div>
+
+                            {/* Mobile: card al posto della tabella */}
+                            <div className="lg:hidden divide-y divide-white/5">
+                                {normeGlobali.map(n => (
+                                    <div key={`card-${n.id}`} className="p-4 space-y-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setArticoloApertoGlobale(articoloApertoGlobale?.id === n.id ? null : n)}
+                                            className="w-full text-left space-y-1.5"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <p className="font-body text-sm text-oro font-medium break-words">
+                                                    {n.articolo}
+                                                    {dataset === 'ue' && <BadgeTipoElemento tipo={n.tipo_elemento} />}
+                                                </p>
+                                                <ChevronRight size={15} className={`text-nebbia/30 shrink-0 mt-0.5 transition-transform ${articoloApertoGlobale?.id === n.id ? 'rotate-90' : ''}`} />
+                                            </div>
+                                            <p className="font-body text-xs text-nebbia/40 break-words">
+                                                {dataset === 'ue' ? docLabel(n) : (codiciLabel[n.codice] ?? n.codice)}
+                                            </p>
+                                            {dataset === 'ue' && n.titolo_breve && (
+                                                <p className="font-body text-xs text-nebbia/30 break-words">{n.titolo_breve}</p>
+                                            )}
+                                            {n.rubrica && (
+                                                <p className="font-body text-sm font-medium text-nebbia/80 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaTradGlobale) }} />
+                                            )}
+                                            <p className="font-body text-xs text-nebbia/40 line-clamp-3 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaTradGlobale), cercaTradGlobale) }} />
+                                        </button>
+
+                                        {articoloApertoGlobale?.id === n.id && (
+                                            <div className="pt-2 space-y-3 border-t border-white/5">
+                                                <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaTradGlobale) }} />
+                                                <div className="flex flex-wrap items-center gap-2 [&>div>button]:min-h-[40px]">
+                                                    <AggiungiAPratica
+                                                        ricerca={{
+                                                            tipo: 'ricerca_manuale',
+                                                            domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''}${dataset === 'ue' ? ` (${docLabel(n)})` : ''}`,
+                                                            testo: n.testo,
+                                                            codice: dataset === 'ue' ? (n.categorie_lex?.[0] ?? null) : n.codice
+                                                        }}
+                                                        variant="compact"
+                                                    />
+                                                    <AggiungiAEtichetta
+                                                        elemento={{ tipo: 'norma', id: n.id }}
+                                                        variant="compact"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                        navigate(`${prefix}/norma/${n.id}`)
+                                                    }}
+                                                    className="w-full min-h-[40px] flex items-center justify-center gap-1.5 px-3 border border-white/10 text-nebbia/60 hover:text-oro hover:border-oro/30 transition-colors font-body text-xs"
+                                                >
+                                                    Apri pagina dedicata <ChevronRight size={13} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop: tabella identica a prima (niente overflow: dentro le righe ci sono popover assoluti) */}
+                            <div className="hidden lg:block">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/5">
@@ -1493,6 +1558,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     )}
 
@@ -1521,13 +1587,13 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
             {vista === 'codice' && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> {dataset === 'ue' ? 'Tutte le categorie' : 'Tutti i codici'}
                         </button>
                         <p className="font-display text-xl text-nebbia">{labelSelezionato}</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                             <input
@@ -1539,7 +1605,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                             />
                         </div>
                         <button onClick={avviaRicercaTrad}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                             <Search size={13} /> Cerca
                         </button>
                     </div>
@@ -1547,6 +1613,77 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                     {cercaTrad && <p className="font-body text-xs text-nebbia/30">{totaleNorme} risultati per "{cercaTrad}"</p>}
 
                     <div className="bg-slate border border-white/5">
+                        {/* Mobile: card al posto della tabella */}
+                        <div className="lg:hidden divide-y divide-white/5">
+                            {loadingNorme ? (
+                                <div className="px-4 py-20 text-center">
+                                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full inline-block" />
+                                </div>
+                            ) : norme.length === 0 ? (
+                                <div className="px-4 py-20 text-center">
+                                    <p className="font-body text-sm text-nebbia/30">Nessun articolo trovato</p>
+                                </div>
+                            ) : norme.map(n => (
+                                <div key={`card-${n.id}`} className="p-4 space-y-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setArticoloAperto(articoloAperto?.id === n.id ? null : n)}
+                                        className="w-full text-left space-y-1.5"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <p className="font-body text-sm text-oro font-medium break-words">
+                                                {n.articolo}
+                                                {dataset === 'ue' && <BadgeTipoElemento tipo={n.tipo_elemento} />}
+                                            </p>
+                                            <ChevronRight size={15} className={`text-nebbia/30 shrink-0 mt-0.5 transition-transform ${articoloAperto?.id === n.id ? 'rotate-90' : ''}`} />
+                                        </div>
+                                        {dataset === 'ue' && docLabel(n) && (
+                                            <p className="font-body text-xs text-nebbia/30 break-words">{docLabel(n)}</p>
+                                        )}
+                                        {n.rubrica && (
+                                            <p className="font-body text-sm font-medium text-nebbia/80 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaTrad) }} />
+                                        )}
+                                        {cercaTrad && (
+                                            <p className="font-body text-xs text-nebbia/40 line-clamp-3 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaTrad), cercaTrad) }} />
+                                        )}
+                                    </button>
+
+                                    {articoloAperto?.id === n.id && (
+                                        <div className="pt-2 space-y-3 border-t border-white/5">
+                                            <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaTrad) }} />
+                                            <div className="flex flex-wrap items-center gap-2 [&>div>button]:min-h-[40px]">
+                                                <AggiungiAPratica
+                                                    ricerca={{
+                                                        tipo: 'ricerca_manuale',
+                                                        domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''}${dataset === 'ue' ? ` (${docLabel(n)})` : ''}`,
+                                                        testo: n.testo,
+                                                        codice: dataset === 'ue' ? (n.categorie_lex?.[0] ?? null) : n.codice
+                                                    }}
+                                                    variant="compact"
+                                                />
+                                                <AggiungiAEtichetta
+                                                    elemento={{ tipo: 'norma', id: n.id }}
+                                                    variant="compact"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                    navigate(`${prefix}/norma/${n.id}`)
+                                                }}
+                                                className="w-full min-h-[40px] flex items-center justify-center gap-1.5 px-3 border border-white/10 text-nebbia/60 hover:text-oro hover:border-oro/30 transition-colors font-body text-xs"
+                                            >
+                                                Apri pagina dedicata <ChevronRight size={13} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop: tabella identica a prima (niente overflow: dentro le righe ci sono popover assoluti) */}
+                        <div className="hidden lg:block">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/5">
@@ -1622,6 +1759,7 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                         {pagine > 1 && (
                             <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
                                 <p className="font-body text-xs text-nebbia/30">
@@ -1629,9 +1767,9 @@ function TabNormativa({ datasetFonte, crediti, setCrediti, refreshNoOp, messaggi
                                 </p>
                                 <div className="flex gap-2">
                                     <button onClick={() => setPagina(p => Math.max(0, p - 1))} disabled={pagina === 0}
-                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
                                     <button onClick={() => setPagina(p => Math.min(pagine - 1, p + 1))} disabled={pagina >= pagine - 1}
-                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
                                 </div>
                             </div>
                         )}
@@ -1773,13 +1911,13 @@ function TabGiurisprudenzaEuropea() {
         <div className="space-y-5">
 
             {/* Due corti, due schede: non vanno mai confuse */}
-            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-fit overflow-x-auto">
                 <button onClick={() => cambiaCorte('cgue')}
-                    className={`px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cgue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cgue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
                     Corte di giustizia UE
                 </button>
                 <button onClick={() => cambiaCorte('cedu')}
-                    className={`px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cedu' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 px-4 py-1.5 font-body text-xs transition-colors ${corte === 'cedu' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
                     Corte EDU
                 </button>
             </div>
@@ -1787,7 +1925,7 @@ function TabGiurisprudenzaEuropea() {
             {/* Nota istituzionale: la differenza che conta per un avvocato italiano */}
             <div className="bg-petrolio/40 border border-white/5 px-4 py-2.5 flex items-start gap-2.5">
                 <Scale size={12} className="text-salvia shrink-0 mt-0.5" />
-                <p className="font-body text-[11px] text-nebbia/50 leading-relaxed">
+                <p className="font-body text-xs text-nebbia/50 leading-relaxed">
                     {corte === 'cedu' ? (
                         <>
                             <strong className="text-nebbia/75">Corte europea dei diritti dell'uomo</strong> (Strasburgo, Consiglio d'Europa).
@@ -1819,7 +1957,7 @@ function TabGiurisprudenzaEuropea() {
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="font-body text-sm font-medium text-nebbia group-hover:text-oro transition-colors leading-snug">{tp.l}</p>
-                                        <p className="font-body text-[11px] text-nebbia/35 mt-1 leading-snug">{tp.d}</p>
+                                        <p className="font-body text-xs text-nebbia/35 mt-1 leading-snug break-words">{tp.d}</p>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="font-body text-xs text-oro/70">{Number(contaTipoCedu(tp.v)).toLocaleString('it-IT')}</p>
@@ -1829,7 +1967,7 @@ function TabGiurisprudenzaEuropea() {
                             </button>
                         ))}
                         <div className="md:col-span-2 px-1">
-                            <p className="font-body text-[11px] text-nebbia/30">
+                            <p className="font-body text-xs text-nebbia/30">
                                 {Number(totaleCedu).toLocaleString('it-IT')} pronunce complessive, dal 1955 a oggi. Fonte: HUDOC — Consiglio d'Europa.
                                 La maggior parte è in inglese e francese: sono le lingue ufficiali della Corte.
                             </p>
@@ -1857,13 +1995,13 @@ function TabGiurisprudenzaEuropea() {
             {vista === 'lista' && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> {corte === 'cedu' ? 'Tutte le tipologie' : 'Tutti gli organi'}
                         </button>
                         <p className="font-display text-lg text-nebbia text-right">{titoloLista}</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                             <input
@@ -1874,7 +2012,7 @@ function TabGiurisprudenzaEuropea() {
                                 className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
                         </div>
                         <button onClick={() => { setPagina(0); setCerca(input) }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                             <Search size={13} /> Cerca
                         </button>
                         {cerca && (
@@ -1950,11 +2088,11 @@ function TabGiurisprudenzaEuropea() {
                             </p>
                             <div className="flex gap-2">
                                 <button disabled={pagina === 0} onClick={() => { setPagina(p => p - 1); setAperta(null) }}
-                                    className="px-3 py-1.5 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
+                                    className="px-3 py-1.5 min-h-[40px] lg:min-h-0 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
                                     Precedente
                                 </button>
                                 <button disabled={pagina >= pagine - 1} onClick={() => { setPagina(p => p + 1); setAperta(null) }}
-                                    className="px-3 py-1.5 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
+                                    className="px-3 py-1.5 min-h-[40px] lg:min-h-0 border border-white/10 text-nebbia/60 font-body text-xs disabled:opacity-30 hover:border-oro/30 hover:text-oro transition-colors">
                                     Successiva
                                 </button>
                             </div>
@@ -1974,13 +2112,13 @@ function TabUE({ crediti, setCrediti, messaggiConversazione, setMessaggiConversa
 
     return (
         <div className="space-y-5">
-            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-fit overflow-x-auto">
                 <button onClick={() => setSezione('norme')}
-                    className={`px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'norme' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'norme' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
                     Normativa
                 </button>
                 <button onClick={() => setSezione('giurisprudenza')}
-                    className={`px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 px-4 py-1.5 font-body text-xs transition-colors ${sezione === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia border border-transparent'}`}>
                     Giurisprudenza
                 </button>
             </div>
@@ -2231,7 +2369,7 @@ function TabLeggiDecreti() {
         <div className="space-y-5">
 
             {/* Barra ricerca globale — sempre visibile */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                     <input
@@ -2242,7 +2380,7 @@ function TabLeggiDecreti() {
                         className="w-full bg-slate border border-oro/50 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/60 placeholder:text-nebbia/25"
                     />
                 </div>
-                <button onClick={avviaRicercaGlobale} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                <button onClick={avviaRicercaGlobale} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                     <Search size={13} /> Cerca
                 </button>
             </div>
@@ -2263,10 +2401,70 @@ function TabLeggiDecreti() {
                         <p className="font-body text-xs text-nebbia/30">Risultati per "{cercaGlobale}" (max 50)</p>
                         <button
                             onClick={() => { setRisultatiGlobali([]); setCercaGlobale(''); setInputGlobale('') }}
-                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                             <X size={11} /> Pulisci
                         </button>
                     </div>
+                    {/* Mobile: card al posto della tabella */}
+                    <div className="lg:hidden divide-y divide-white/5">
+                        {risultatiGlobali.map(n => (
+                            <div key={`card-${n.id}`} className="p-4 space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setArticoloApertoGlobale(articoloApertoGlobale?.id === n.id ? null : n)}
+                                    className="w-full text-left space-y-1.5"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="font-body text-sm text-oro font-medium break-words">
+                                            {n.articolo}
+                                            <BadgeTipoElemento tipo={n.tipo_elemento} />
+                                        </p>
+                                        <ChevronRight size={15} className={`text-nebbia/30 shrink-0 mt-0.5 transition-transform ${articoloApertoGlobale?.id === n.id ? 'rotate-90' : ''}`} />
+                                    </div>
+                                    <p className="font-body text-xs text-nebbia/40 break-words">{attoLabel(n)}</p>
+                                    {n.titolo_doc && <p className="font-body text-xs text-nebbia/30 break-words">{n.titolo_doc}</p>}
+                                    {n.rubrica && (
+                                        <p className="font-body text-sm font-medium text-nebbia/80 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaGlobale) }} />
+                                    )}
+                                    <p className="font-body text-xs text-nebbia/40 line-clamp-3 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaGlobale), cercaGlobale) }} />
+                                </button>
+
+                                {articoloApertoGlobale?.id === n.id && (
+                                    <div className="pt-2 space-y-3 border-t border-white/5">
+                                        <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaGlobale) }} />
+                                        <div className="flex flex-wrap items-center gap-2 [&>div>button]:min-h-[40px]">
+                                            <AggiungiAPratica
+                                                ricerca={{
+                                                    tipo: 'ricerca_manuale',
+                                                    domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''} (${attoLabel(n)})`,
+                                                    testo: n.testo,
+                                                    codice: null
+                                                }}
+                                                variant="compact"
+                                            />
+                                            <AggiungiAEtichetta
+                                                elemento={{ tipo: 'norma_archivio', id: n.id }}
+                                                variant="compact"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                navigate(`${prefix}/norma/${n.id}`)
+                                            }}
+                                            className="w-full min-h-[40px] flex items-center justify-center gap-1.5 px-3 border border-white/10 text-nebbia/60 hover:text-oro hover:border-oro/30 transition-colors font-body text-xs"
+                                        >
+                                            Apri pagina dedicata <ChevronRight size={13} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop: tabella identica a prima (niente overflow: dentro le righe ci sono popover assoluti) */}
+                    <div className="hidden lg:block">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-white/5">
@@ -2336,6 +2534,7 @@ function TabLeggiDecreti() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
 
@@ -2372,14 +2571,14 @@ function TabLeggiDecreti() {
             {vista === 'tipo' && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> Tutti i tipi di atto
                         </button>
                         <p className="font-display text-xl text-nebbia">{tipoAttoSelezionato}</p>
                     </div>
 
                     <div className="bg-slate border border-white/5 p-4 space-y-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <div className="relative flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                                 <input
@@ -2391,7 +2590,7 @@ function TabLeggiDecreti() {
                                 />
                             </div>
                             <button onClick={() => { setPaginaAtti(0); setCercaAtti(inputCercaAtti) }}
-                                className="flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                                className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                                 <Search size={13} /> Cerca
                             </button>
                         </div>
@@ -2402,7 +2601,7 @@ function TabLeggiDecreti() {
                                 <span className="font-body text-xs uppercase tracking-widest">Filtri</span>
                             </div>
                             <select value={filtroAnno} onChange={e => { setPaginaAtti(0); setFiltroAnno(e.target.value) }}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 <option value="">Tutti gli anni</option>
                                 {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
@@ -2411,7 +2610,7 @@ function TabLeggiDecreti() {
                                     setFiltroAnno(''); setCercaAtti(''); setInputCercaAtti('')
                                     setPaginaAtti(0)
                                 }}
-                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                                     <X size={11} /> Reset
                                 </button>
                             )}
@@ -2429,6 +2628,29 @@ function TabLeggiDecreti() {
                     ) : (
                         <>
                             <div className="bg-slate border border-white/5">
+                                {/* Mobile: card al posto della tabella */}
+                                <div className="lg:hidden divide-y divide-white/5">
+                                    {atti.map((a, idx) => (
+                                        <button
+                                            key={`card-${a.tipo_atto}-${a.numero_atto}-${a.anno_atto}-${idx}`}
+                                            type="button"
+                                            onClick={() => apriAtto(a)}
+                                            className="w-full text-left p-4 space-y-1.5 hover:bg-petrolio/40 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <p className="font-body text-sm text-oro font-medium break-words">
+                                                    {a.numero_atto && a.anno_atto ? `${a.numero_atto}/${a.anno_atto}` : (a.numero_atto ?? a.anno_atto ?? '—')}
+                                                </p>
+                                                <ChevronRight size={15} className="text-nebbia/30 shrink-0 mt-0.5" />
+                                            </div>
+                                            <p className="font-body text-sm text-nebbia/70 leading-snug break-words">
+                                                {a.titolo_doc ?? <span className="text-nebbia/30 italic">senza titolo</span>}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="hidden lg:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-white/5">
@@ -2455,6 +2677,7 @@ function TabLeggiDecreti() {
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between bg-slate border border-white/5 px-4 py-3">
@@ -2463,9 +2686,9 @@ function TabLeggiDecreti() {
                                 </p>
                                 <div className="flex gap-2">
                                     <button onClick={() => setPaginaAtti(p => Math.max(0, p - 1))} disabled={paginaAtti === 0}
-                                        className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
                                     <button onClick={() => setPaginaAtti(p => p + 1)} disabled={atti.length < PER_PAGINA_ATTI}
-                                        className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
                                 </div>
                             </div>
                         </>
@@ -2478,7 +2701,7 @@ function TabLeggiDecreti() {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-3 flex-wrap">
-                            <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                            <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                                 <ChevronLeft size={13} /> Tutti i tipi
                             </button>
                             <span className="text-nebbia/20">/</span>
@@ -2492,7 +2715,7 @@ function TabLeggiDecreti() {
                         <p className="font-body text-sm text-nebbia/50 leading-relaxed -mt-2">{attoSelezionato.titolo_doc}</p>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                             <input
@@ -2504,7 +2727,7 @@ function TabLeggiDecreti() {
                             />
                         </div>
                         <button onClick={() => { setPaginaArt(0); setCercaArt(inputCercaArt) }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                             <Search size={13} /> Cerca
                         </button>
                     </div>
@@ -2512,6 +2735,74 @@ function TabLeggiDecreti() {
                     {cercaArt && <p className="font-body text-xs text-nebbia/30">Risultati per "{cercaArt}"</p>}
 
                     <div className="bg-slate border border-white/5">
+                        {/* Mobile: card al posto della tabella */}
+                        <div className="lg:hidden divide-y divide-white/5">
+                            {loadingArticoli ? (
+                                <div className="px-4 py-20 text-center">
+                                    <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full inline-block" />
+                                </div>
+                            ) : articoli.length === 0 ? (
+                                <div className="px-4 py-20 text-center">
+                                    <p className="font-body text-sm text-nebbia/30">Nessun articolo trovato</p>
+                                </div>
+                            ) : articoli.map(n => (
+                                <div key={`card-${n.id}`} className="p-4 space-y-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setArticoloAperto(articoloAperto?.id === n.id ? null : n)}
+                                        className="w-full text-left space-y-1.5"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <p className="font-body text-sm text-oro font-medium break-words">
+                                                {n.articolo}
+                                                <BadgeTipoElemento tipo={n.tipo_elemento} />
+                                            </p>
+                                            <ChevronRight size={15} className={`text-nebbia/30 shrink-0 mt-0.5 transition-transform ${articoloAperto?.id === n.id ? 'rotate-90' : ''}`} />
+                                        </div>
+                                        {n.rubrica && (
+                                            <p className="font-body text-sm font-medium text-nebbia/80 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.rubrica, cercaArt) }} />
+                                        )}
+                                        {cercaArt && (
+                                            <p className="font-body text-xs text-nebbia/40 line-clamp-3 break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(evidenziaTesto(n.testo ?? '', cercaArt), cercaArt) }} />
+                                        )}
+                                    </button>
+
+                                    {articoloAperto?.id === n.id && (
+                                        <div className="pt-2 space-y-3 border-t border-white/5">
+                                            <p className="font-body text-sm text-nebbia/70 whitespace-pre-line leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: evidenziaParola(n.testo ?? '', cercaArt) }} />
+                                            <div className="flex flex-wrap items-center gap-2 [&>div>button]:min-h-[40px]">
+                                                <AggiungiAPratica
+                                                    ricerca={{
+                                                        tipo: 'ricerca_manuale',
+                                                        domanda: `${n.articolo}${n.rubrica ? ` — ${n.rubrica}` : ''} (${attoLabel(n)})`,
+                                                        testo: n.testo,
+                                                        codice: null
+                                                    }}
+                                                    variant="compact"
+                                                />
+                                                <AggiungiAEtichetta
+                                                    elemento={{ tipo: 'norma_archivio', id: n.id }}
+                                                    variant="compact"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
+                                                    navigate(`${prefix}/norma/${n.id}`)
+                                                }}
+                                                className="w-full min-h-[40px] flex items-center justify-center gap-1.5 px-3 border border-white/10 text-nebbia/60 hover:text-oro hover:border-oro/30 transition-colors font-body text-xs"
+                                            >
+                                                Apri pagina dedicata <ChevronRight size={13} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop: tabella identica a prima (niente overflow: dentro le righe ci sono popover assoluti) */}
+                        <div className="hidden lg:block">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/5">
@@ -2584,6 +2875,7 @@ function TabLeggiDecreti() {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                         {(articoli.length >= PER_PAGINA_ART || paginaArt > 0) && (
                             <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
                                 <p className="font-body text-xs text-nebbia/30">
@@ -2591,9 +2883,9 @@ function TabLeggiDecreti() {
                                 </p>
                                 <div className="flex gap-2">
                                     <button onClick={() => setPaginaArt(p => Math.max(0, p - 1))} disabled={paginaArt === 0}
-                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
                                     <button onClick={() => setPaginaArt(p => p + 1)} disabled={articoli.length < PER_PAGINA_ART}
-                                        className="px-3 py-1.5 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                        className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-slate border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
                                 </div>
                             </div>
                         )}
@@ -3141,13 +3433,13 @@ function TabSentenze() {
 
             {/* ── SUB-TAB SWITCHER ────────────────────────────────────── */}
             {(vista === 'catalogo' || vista === 'catalogo_fonte') && (
-                <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+                <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-fit overflow-x-auto">
                     <button onClick={() => cambiaSubTab('categoria')}
-                        className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'categoria' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                        className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'categoria' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                         <Scale size={12} /> Per categoria
                     </button>
                     <button onClick={() => cambiaSubTab('fonte')}
-                        className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'fonte' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                        className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${subTab === 'fonte' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                         <Landmark size={12} /> Per fonte
                     </button>
                 </div>
@@ -3214,14 +3506,14 @@ function TabSentenze() {
             {vista === 'categoria' && categoriaSelezionata && (
                 <>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> Tutte le categorie
                         </button>
                         <p className="font-display text-xl text-nebbia">{categoriaSelezionata.label}</p>
                     </div>
 
                     <div className="bg-slate border border-white/5 p-4 space-y-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <div className="relative flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                                 <input
@@ -3232,7 +3524,7 @@ function TabSentenze() {
                                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                 />
                             </div>
-                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            <button onClick={avviaRicerca} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                                 <Search size={13} /> Cerca
                             </button>
                         </div>
@@ -3244,19 +3536,19 @@ function TabSentenze() {
                             </div>
 
                             <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 <option value="">Tutti gli anni</option>
                                 {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
 
                             <select value={filtroOrgano} onChange={e => setFiltroOrgano(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 <option value="">Tutte le corti</option>
                                 {organiDisponibili.map(o => <option key={o} value={o}>{o}</option>)}
                             </select>
 
                             <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                             </select>
 
@@ -3267,7 +3559,7 @@ function TabSentenze() {
                                     { v: 'pagamento', l: 'A pagamento' },
                                 ].map(f => (
                                     <button key={f.v} onClick={() => setFiltroFonte(f.v)}
-                                        className={`px-3 py-1 font-body text-xs transition-colors ${filtroFonte === f.v ? 'bg-oro/10 text-oro' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                                        className={`px-3 py-1 min-h-[40px] lg:min-h-0 font-body text-xs transition-colors ${filtroFonte === f.v ? 'bg-oro/10 text-oro' : 'text-nebbia/40 hover:text-nebbia'}`}>
                                         {f.l}
                                     </button>
                                 ))}
@@ -3278,7 +3570,7 @@ function TabSentenze() {
                                     setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
                                     setRicerca(''); setRicercaAttiva('')
                                 }}
-                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                                     <X size={11} /> Reset
                                 </button>
                             )}
@@ -3304,7 +3596,7 @@ function TabSentenze() {
             {vista === 'sotto_fonte_grid' && macroFonteSelezionata && (
                 <>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> Tutte le fonti
                         </button>
                         <p className="font-display text-xl text-nebbia">{macroFonteSelezionata.label}</p>
@@ -3313,7 +3605,7 @@ function TabSentenze() {
                         Seleziona un tribunale per consultarne le sentenze.
                     </p>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {macroFonteSelezionata.sotto
                             .filter(s => (conteggiSottoFonte[s.v] ?? 0) > 0)
                             .sort((a, b) => a.l.localeCompare(b.l, 'it'))
@@ -3336,7 +3628,7 @@ function TabSentenze() {
             {vista === 'fonte' && macroFonteSelezionata && (
                 <>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> {macroFonteSelezionata.richiedeSottoSelezione ? 'Tutti i tribunali' : 'Tutte le fonti'}
                         </button>
                         <p className="font-display text-xl text-nebbia">
@@ -3347,7 +3639,7 @@ function TabSentenze() {
                     </div>
 
                     <div className="bg-slate border border-white/5 p-4 space-y-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <div className="relative flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                                 <input
@@ -3358,7 +3650,7 @@ function TabSentenze() {
                                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                 />
                             </div>
-                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            <button onClick={avviaRicerca} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                                 <Search size={13} /> Cerca
                             </button>
                         </div>
@@ -3371,7 +3663,7 @@ function TabSentenze() {
 
                             {macroFonteSelezionata.sotto.length > 1 && !macroFonteSelezionata.richiedeSottoSelezione && (
                                 <select value={filtroSottoFonte} onChange={e => setFiltroSottoFonte(e.target.value)}
-                                    className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40 max-w-xs">
+                                    className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40 sm:max-w-xs">
                                     <option value="">Tutte le sezioni / sedi</option>
                                     {macroFonteSelezionata.sotto
                                         .map(s => ({ ...s, n: conteggiSottoFonte[s.v] ?? 0 }))
@@ -3386,13 +3678,13 @@ function TabSentenze() {
                             )}
 
                             <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 <option value="">Tutti gli anni</option>
                                 {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
 
                             <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                             </select>
 
@@ -3401,7 +3693,7 @@ function TabSentenze() {
                                     setFiltroSottoFonte(''); setFiltroAnno(''); setFiltroTipo('')
                                     setRicerca(''); setRicercaAttiva('')
                                 }}
-                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                                     <X size={11} /> Reset
                                 </button>
                             )}
@@ -3460,8 +3752,8 @@ function BloccoRisultati({
                             onClick={() => navigate(targetPath)}
                             className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
                         >
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
+                            <div className="flex flex-col lg:flex-row items-start justify-between gap-3 lg:gap-4">
+                                <div className="flex-1 min-w-0 w-full">
                                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                                         <span className="font-body text-xs text-nebbia/60">{titolo}</span>
                                         {s.tipo_provvedimento && (
@@ -3475,16 +3767,16 @@ function BloccoRisultati({
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '\u2014'}</h3>
+                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug break-words">{s.oggetto ?? '\u2014'}</h3>
                                     {s.principio_diritto && (
-                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
+                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2 break-words">{s.principio_diritto}</p>
                                     )}
                                     {!isGratuita && s.autore && (
                                         <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
                                     )}
                                 </div>
 
-                                <div className="shrink-0 flex flex-col items-end gap-2">
+                                <div className="shrink-0 flex flex-row lg:flex-col items-start lg:items-end gap-2">
                                     {isGratuita ? (
                                         <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
                                             Gratuita
@@ -3509,9 +3801,9 @@ function BloccoRisultati({
                     </p>
                     <div className="flex gap-2">
                         <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
-                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">{'\u2190'} Prev</button>
+                            className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">{'\u2190'} Prev</button>
                         <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * perPagina >= totale}
-                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next {'\u2192'}</button>
+                            className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next {'\u2192'}</button>
                     </div>
                 </div>
             )}
@@ -3689,7 +3981,7 @@ function TabTributario() {
                     <p className="font-body text-xs text-nebbia/70 leading-relaxed">
                         Sentenze delle <strong className="text-nebbia">Corti di Giustizia Tributaria</strong> (CGT 1° e 2° grado).
                     </p>
-                    <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                    <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
                         Fonte: MEF — Banca Dati Giurisprudenza Tributaria · Licenza CC BY-NC 3.0 IT
                     </p>
                 </div>
@@ -3742,7 +4034,7 @@ function TabTributario() {
             {vista === 'grado' && (
                 <>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                        <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                             <ChevronLeft size={13} /> Primo / Secondo grado
                         </button>
                         <p className="font-display text-xl text-nebbia">
@@ -3751,7 +4043,7 @@ function TabTributario() {
                     </div>
 
                     <div className="bg-slate border border-white/5 p-4 space-y-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <div className="relative flex-1">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                                 <input
@@ -3762,7 +4054,7 @@ function TabTributario() {
                                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                 />
                             </div>
-                            <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                            <button onClick={avviaRicerca} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                                 <Search size={13} /> Cerca
                             </button>
                         </div>
@@ -3774,21 +4066,21 @@ function TabTributario() {
                             </div>
 
                             <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                 <option value="">Tutti gli anni</option>
                                 {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
 
                             {autoritaDisponibili.length > 0 && (
                                 <select value={filtroAutorita} onChange={e => setFiltroAutorita(e.target.value)}
-                                    className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                                    className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                                     <option value="">Tutte le sedi</option>
                                     {autoritaDisponibili.map(a => <option key={a} value={a}>{a}</option>)}
                                 </select>
                             )}
 
                             <select value={filtroEsito} onChange={e => setFiltroEsito(e.target.value)}
-                                className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40 max-w-xs">
+                                className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40 sm:max-w-xs">
                                 {ESITI_FILTRO.map(e => <option key={e.v} value={e.v}>{e.l}</option>)}
                             </select>
 
@@ -3797,7 +4089,7 @@ function TabTributario() {
                                     setFiltroAnno(''); setFiltroAutorita(''); setFiltroEsito('')
                                     setRicerca(''); setRicercaAttiva('')
                                 }}
-                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                                    className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                                     <X size={11} /> Reset
                                 </button>
                             )}
@@ -3827,8 +4119,8 @@ function TabTributario() {
                                             onClick={() => navigate(targetPath)}
                                             className="w-full text-left bg-slate border border-white/5 hover:border-salvia/20 p-5 transition-all"
                                         >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1 min-w-0">
+                                            <div className="flex flex-col lg:flex-row items-start justify-between gap-3 lg:gap-4">
+                                                <div className="flex-1 min-w-0 w-full">
                                                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                                                         <span className="font-body text-xs text-nebbia/60">{titolo}</span>
                                                         {s.tipo_provvedimento && (
@@ -3847,9 +4139,9 @@ function TabTributario() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{s.oggetto ?? '—'}</h3>
+                                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug break-words">{s.oggetto ?? '—'}</h3>
                                                     {s.principio_diritto && (
-                                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{s.principio_diritto}</p>
+                                                        <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2 break-words">{s.principio_diritto}</p>
                                                     )}
                                                 </div>
                                                 <div className="shrink-0">
@@ -3870,9 +4162,9 @@ function TabTributario() {
                                     </p>
                                     <div className="flex gap-2">
                                         <button onClick={() => setPaginaSentenze(p => Math.max(0, p - 1))} disabled={paginaSentenze === 0}
-                                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                            className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
                                         <button onClick={() => setPaginaSentenze(p => p + 1)} disabled={(paginaSentenze + 1) * PER_PAGINA >= totaleSentenze}
-                                            className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                            className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
                                     </div>
                                 </div>
                             )}
@@ -4041,14 +4333,14 @@ function TabPrassi() {
     return (
         <div className="space-y-5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-                <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+                <button onClick={tornaAlCatalogo} className="flex items-center gap-1.5 min-h-[40px] lg:min-h-0 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
                     <ChevronLeft size={13} /> Tutti gli enti
                 </button>
                 <p className="font-body text-lg font-medium text-nebbia">{enteSelezionato.label}</p>
             </div>
 
             <div className="bg-slate border border-white/5 p-4 space-y-3">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                     <div className="relative flex-1">
                         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
                         <input
@@ -4059,7 +4351,7 @@ function TabPrassi() {
                             className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                         />
                     </div>
-                    <button onClick={avviaRicerca} className="flex items-center gap-2 px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
+                    <button onClick={avviaRicerca} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors">
                         <Search size={13} /> Cerca
                     </button>
                 </div>
@@ -4071,14 +4363,14 @@ function TabPrassi() {
                     </div>
 
                     <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
-                        className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                        className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                         <option value="">Tutti gli anni</option>
                         {anniOpzioni.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
 
                     {categorieArr.length > 0 && (
                         <select value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}
-                            className="bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                            className="w-full sm:w-auto bg-petrolio border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2 sm:py-1.5 outline-none focus:border-oro/40">
                             <option value="">Tutte le categorie</option>
                             {categorieArr.map(c => (
                                 <option key={c} value={c}>{mappaCategorie[c] ?? c}</option>
@@ -4091,7 +4383,7 @@ function TabPrassi() {
                             setFiltroAnno(''); setFiltroCategoria('')
                             setRicerca(''); setRicercaAttiva('')
                         }}
-                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
                             <X size={11} /> Reset
                         </button>
                     )}
@@ -4118,8 +4410,8 @@ function TabPrassi() {
                                     onClick={() => navigate(`${window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'}/prassi/${p.id}`)}
                                     className="w-full text-left bg-slate border border-white/5 hover:border-salvia/20 p-5 transition-all"
                                 >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col lg:flex-row items-start justify-between gap-3 lg:gap-4">
+                                        <div className="flex-1 min-w-0 w-full">
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                                                 {riferimento && (
                                                     <span className="font-body text-xs text-nebbia/60">{riferimento}</span>
@@ -4130,7 +4422,7 @@ function TabPrassi() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug">{p.oggetto ?? '—'}</h3>
+                                            <h3 className="font-body text-sm font-medium text-nebbia mb-1.5 leading-snug break-words">{p.oggetto ?? '—'}</h3>
                                             {p.sintesi && (
                                                 <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2">{p.sintesi}</p>
                                             )}
@@ -4147,7 +4439,7 @@ function TabPrassi() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="shrink-0 flex flex-col items-end gap-2">
+                                        <div className="shrink-0 flex flex-row lg:flex-col items-start lg:items-end gap-2">
                                             <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
                                                 Gratuita
                                             </span>
@@ -4165,9 +4457,9 @@ function TabPrassi() {
                             </p>
                             <div className="flex gap-2">
                                 <button onClick={() => setPaginaPrassi(p => Math.max(0, p - 1))} disabled={paginaPrassi === 0}
-                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
+                                    className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">← Prev</button>
                                 <button onClick={() => setPaginaPrassi(p => p + 1)} disabled={(paginaPrassi + 1) * PER_PAGINA_PRASSI >= totalePrassi}
-                                    className="px-3 py-1.5 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
+                                    className="px-3 py-1.5 min-h-[40px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors disabled:opacity-30">Next →</button>
                             </div>
                         </div>
                     )}
@@ -4185,13 +4477,13 @@ function TabItalianaConSottoTab({ crediti, setCrediti, messaggiConversazione, se
 
     return (
         <div className="space-y-5">
-            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-fit">
+            <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-fit overflow-x-auto">
                 <button onClick={() => setSottoTab('codici')}
-                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'codici' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'codici' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                     <BookOpen size={12} /> Principali Codici
                 </button>
                 <button onClick={() => setSottoTab('leggi_decreti')}
-                    className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'leggi_decreti' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${sottoTab === 'leggi_decreti' ? 'bg-salvia/10 text-salvia border border-salvia/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                     <FileText size={12} /> Leggi e decreti
                 </button>
             </div>
@@ -4248,25 +4540,25 @@ export function BancaDati() {
             <div className="!mt-10 pt-6 border-t border-white/5 space-y-5">
                 <div className="flex items-center gap-3 flex-wrap">
                     <p className="section-label !m-0">Sfoglia</p>
-                    <div className="flex gap-1 bg-slate border border-white/5 p-1">
+                    <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-auto overflow-x-auto">
                         <button onClick={() => setTabAttivo('italiana')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'italiana' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'italiana' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <Flag size={12} /> Italiana
                         </button>
                         <button onClick={() => setTabAttivo('ue')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'ue' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <Globe size={12} /> UE
                         </button>
                         <button onClick={() => setTabAttivo('giurisprudenza')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'giurisprudenza' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <Landmark size={12} /> Giurisprudenza
                         </button>
                         <button onClick={() => setTabAttivo('tributario')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'tributario' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'tributario' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <Scale size={12} /> Tributario
                         </button>
                         <button onClick={() => setTabAttivo('prassi')}
-                            className={`flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'prassi' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                            className={`shrink-0 whitespace-nowrap min-h-[44px] lg:min-h-0 flex items-center gap-2 px-3 py-1.5 font-body text-xs transition-colors ${tabAttivo === 'prassi' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                             <ScrollText size={12} /> Prassi
                         </button>
                     </div>

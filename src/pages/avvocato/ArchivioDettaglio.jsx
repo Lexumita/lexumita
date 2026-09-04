@@ -200,7 +200,7 @@ export default function ArchivioDettaglio() {
             <div className="flex items-start justify-between flex-wrap gap-3">
                 <div>
                     <p className="section-label mb-2">Documento</p>
-                    <h1 className="font-display text-3xl font-light text-nebbia">{doc.titolo}</h1>
+                    <h1 className="font-display text-2xl lg:text-3xl font-light text-nebbia break-words">{doc.titolo}</h1>
                     <p className="font-body text-xs text-nebbia/30 mt-1">
                         {new Date(doc.created_at).toLocaleDateString('it-IT')} · {formatSize(doc.dimensione)}
                     </p>
@@ -213,7 +213,7 @@ export default function ArchivioDettaglio() {
 
             {/* Banner verifica */}
             {doc.ocr_status === 'completed' && !doc.verificato && (
-                <div className="flex items-start justify-between gap-4 p-4 bg-amber-900/10 border border-amber-500/25">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-start justify-between gap-4 p-4 bg-amber-900/10 border border-amber-500/25">
                     <div className="flex items-start gap-3">
                         <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
                         <div>
@@ -226,7 +226,7 @@ export default function ArchivioDettaglio() {
                     <button
                         onClick={verificaDocumento}
                         disabled={verificando}
-                        className="flex items-center gap-2 px-4 py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 shrink-0"
+                        className="flex items-center justify-center lg:justify-start gap-2 px-4 min-h-[44px] py-2 lg:min-h-0 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 shrink-0"
                     >
                         {verificando
                             ? <span className="animate-spin w-4 h-4 border-2 border-salvia border-t-transparent rounded-full" />
@@ -246,7 +246,7 @@ export default function ArchivioDettaglio() {
                             <p className="section-label">Originale</p>
                             <button
                                 onClick={() => setMostraPdf(!mostraPdf)}
-                                className="text-nebbia/25 hover:text-nebbia transition-colors"
+                                className="w-10 h-10 -m-2 lg:w-auto lg:h-auto lg:m-0 flex items-center justify-center lg:block text-nebbia/25 hover:text-nebbia transition-colors"
                             >
                                 {mostraPdf ? <EyeOff size={13} /> : <Eye size={13} />}
                             </button>
@@ -279,7 +279,7 @@ export default function ArchivioDettaglio() {
                                 href={pdfUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 mt-3 font-body text-xs text-nebbia/30 hover:text-oro transition-colors"
+                                className="flex items-center gap-2 mt-3 font-body text-xs text-nebbia/30 hover:text-oro transition-colors min-h-[40px] lg:min-h-0"
                             >
                                 <Download size={11} /> Apri in nuova scheda
                             </a>
@@ -290,13 +290,13 @@ export default function ArchivioDettaglio() {
                 {/* ── COLONNA 2: Testo estratto (6/12) ── */}
                 <div className="lg:col-span-6">
                     <div className="bg-slate border border-white/5 p-4 h-full flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
                             <p className="section-label">Testo estratto</p>
                             <div className="flex items-center gap-2">
                                 {doc.testo_estratto && (
                                     <button
                                         onClick={scaricaTesto}
-                                        className="font-body text-xs text-nebbia/25 hover:text-nebbia transition-colors flex items-center gap-1"
+                                        className="font-body text-xs text-nebbia/25 hover:text-nebbia transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0"
                                     >
                                         <Download size={11} /> .txt
                                     </button>
@@ -304,7 +304,7 @@ export default function ArchivioDettaglio() {
                                 {!editTesto ? (
                                     <button
                                         onClick={() => setEditTesto(true)}
-                                        className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors flex items-center gap-1"
+                                        className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0"
                                     >
                                         <Edit2 size={11} /> Modifica
                                     </button>
@@ -313,7 +313,7 @@ export default function ArchivioDettaglio() {
                                         <button
                                             onClick={salvaTesto}
                                             disabled={salvandoTesto}
-                                            className="font-body text-xs text-salvia flex items-center gap-1 disabled:opacity-40"
+                                            className="font-body text-xs text-salvia flex items-center gap-1 disabled:opacity-40 min-h-[40px] lg:min-h-0"
                                         >
                                             {salvandoTesto
                                                 ? <span className="animate-spin w-3 h-3 border border-salvia border-t-transparent rounded-full" />
@@ -322,7 +322,7 @@ export default function ArchivioDettaglio() {
                                         </button>
                                         <button
                                             onClick={() => { setEditTesto(false); setTestoEdit(doc.testo_estratto ?? '') }}
-                                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors"
+                                            className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center min-h-[40px] min-w-[40px] justify-center lg:min-h-0 lg:min-w-0 lg:block"
                                         >
                                             <X size={11} />
                                         </button>
@@ -364,7 +364,7 @@ export default function ArchivioDettaglio() {
                                 <button
                                     onClick={salvaTesto}
                                     disabled={salvandoTesto}
-                                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 w-fit"
+                                    className="mt-3 flex items-center gap-2 px-4 py-2 min-h-[44px] lg:min-h-0 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 w-full sm:w-fit justify-center sm:justify-start"
                                 >
                                     {salvandoTesto
                                         ? <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" />
@@ -398,12 +398,12 @@ export default function ArchivioDettaglio() {
                 {/* ── COLONNA 3: Metadati (3/12) ── */}
                 <div className="lg:col-span-3">
                     <div className="bg-slate border border-white/5 p-4 space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                             <p className="section-label">Metadati</p>
                             {!editMode ? (
                                 <button
                                     onClick={() => setEditMode(true)}
-                                    className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors flex items-center gap-1"
+                                    className="font-body text-xs text-nebbia/25 hover:text-oro transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0"
                                 >
                                     <Edit2 size={11} /> Modifica
                                 </button>
@@ -412,7 +412,7 @@ export default function ArchivioDettaglio() {
                                     <button
                                         onClick={salvaMetadati}
                                         disabled={salvandoMeta}
-                                        className="font-body text-xs text-salvia flex items-center gap-1 disabled:opacity-40"
+                                        className="font-body text-xs text-salvia flex items-center gap-1 disabled:opacity-40 min-h-[40px] lg:min-h-0"
                                     >
                                         {salvandoMeta
                                             ? <span className="animate-spin w-3 h-3 border border-salvia border-t-transparent rounded-full" />
@@ -421,7 +421,7 @@ export default function ArchivioDettaglio() {
                                     </button>
                                     <button
                                         onClick={() => setEditMode(false)}
-                                        className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors"
+                                        className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center min-h-[40px] min-w-[40px] justify-center lg:min-h-0 lg:min-w-0 lg:block"
                                     >
                                         <X size={11} />
                                     </button>
@@ -534,7 +534,7 @@ export default function ArchivioDettaglio() {
                                 {(doc.tags ?? []).length > 0 && (
                                     <div className="flex flex-wrap gap-1 pt-1">
                                         {doc.tags.map(t => (
-                                            <span key={t} className="flex items-center gap-1 font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
+                                            <span key={t} className="flex items-center gap-1 font-body text-xs lg:text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
                                                 <Tag size={8} />{t}
                                             </span>
                                         ))}

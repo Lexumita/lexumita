@@ -111,7 +111,7 @@ export default function CommercialeProfilo() {
         <div className="bg-slate border border-white/5 p-5 lg:col-span-2">
           <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Codice commerciale</p>
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="font-display text-3xl font-light text-oro tracking-widest">
+            <p className="font-display text-3xl font-light text-oro tracking-widest break-all min-w-0">
               {profile.codice_commerciale ?? '— non assegnato —'}
             </p>
             {profile.codice_commerciale && (
@@ -142,7 +142,7 @@ export default function CommercialeProfilo() {
           )}
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputField label="Nome *" value={form.nome}
                 onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
               <InputField label="Cognome *" value={form.cognome}
@@ -173,7 +173,7 @@ export default function CommercialeProfilo() {
               onChange={e => setForm(f => ({ ...f, iban: e.target.value }))}
               placeholder="IT60 X054 2811 1010 0000 0123 456" />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputField label="Partita IVA" value={form.partita_iva}
                 onChange={e => setForm(f => ({ ...f, partita_iva: e.target.value }))}
                 placeholder="Se fatturi le provvigioni" />

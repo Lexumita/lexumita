@@ -114,7 +114,7 @@ function AggiungiAPratica({ ricerca, ricercaSalvataId, setRicercaSalvataId, vari
             </button>
 
             {aperto && (
-                <div className="absolute z-50 mt-2 w-80 bg-slate border border-white/10 shadow-2xl">
+                <div className="absolute z-50 mt-2 w-80 max-w-[calc(100vw-3rem)] bg-slate border border-white/10 shadow-2xl">
                     <div className="p-3 border-b border-white/5">
                         <div className="relative">
                             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
@@ -123,13 +123,13 @@ function AggiungiAPratica({ ricerca, ricercaSalvataId, setRicercaSalvataId, vari
                                 value={cerca}
                                 onChange={e => setCerca(e.target.value)}
                                 placeholder="Cerca pratica..."
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-8 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-8 pr-10 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                             />
                             <button
                                 onClick={() => setAperto(false)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-nebbia/30 hover:text-nebbia"
+                                className="absolute right-0.5 top-1/2 -translate-y-1/2 p-2 text-nebbia/30 hover:text-nebbia"
                             >
-                                <X size={12} />
+                                <X size={14} />
                             </button>
                         </div>
                     </div>
@@ -281,9 +281,9 @@ export default function SentenzaTributariaDettaglio() {
             <div className="space-y-4 pb-24">
                 <button
                     onClick={() => navigate(`${prefix}`)}
-                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
+                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors py-2 -my-2"
                 >
-                    <ChevronLeft size={13} /> Torna alla banca dati
+                    <ChevronLeft size={15} /> Torna alla banca dati
                 </button>
                 <div className="bg-red-900/10 border border-red-500/20 p-6">
                     <p className="font-body text-sm text-red-400">
@@ -319,9 +319,9 @@ export default function SentenzaTributariaDettaglio() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors"
+                    className="flex items-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors py-2 -my-2"
                 >
-                    <ChevronLeft size={13} /> Indietro
+                    <ChevronLeft size={15} /> Indietro
                 </button>
             </div>
 
@@ -335,7 +335,7 @@ export default function SentenzaTributariaDettaglio() {
                             <> &mdash; <strong className="text-nebbia">{labelGrado(sentenza.grado_commissione)}</strong></>
                         )}
                     </p>
-                    <p className="font-body text-[11px] text-nebbia/40 mt-1 leading-relaxed">
+                    <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
                         Fonte: MEF &mdash; Banca Dati Giurisprudenza Tributaria &middot; Licenza CC BY-NC 3.0 IT
                     </p>
                 </div>
@@ -348,7 +348,7 @@ export default function SentenzaTributariaDettaglio() {
                         <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-2">
                             {labelTipoProvvedimento(sentenza.tipo_provvedimento) ?? 'Sentenza'}
                         </p>
-                        <h1 className="font-display text-2xl text-nebbia leading-tight">{titoloBreve}</h1>
+                        <h1 className="font-display text-2xl text-nebbia leading-tight break-words">{titoloBreve}</h1>
                         {sentenza.oggetto && (
                             <p className="font-body text-sm text-nebbia/60 mt-3 leading-relaxed">
                                 {sentenza.oggetto}
@@ -454,7 +454,7 @@ export default function SentenzaTributariaDettaglio() {
             {sentenza.oggetto && (
                 <div className="bg-slate border border-white/5 p-6">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Oggetto della controversia</p>
-                    <p className="font-body text-sm text-nebbia/80 leading-relaxed">{sentenza.oggetto}</p>
+                    <p className="font-body text-sm text-nebbia/80 leading-relaxed break-words">{sentenza.oggetto}</p>
                 </div>
             )}
 
@@ -473,12 +473,12 @@ export default function SentenzaTributariaDettaglio() {
                             Principio di diritto / Motivazione
                         </p>
                         {focus === 'principio' && (
-                            <span className="font-body text-[10px] text-oro border border-oro/40 px-2 py-0.5 bg-oro/10 uppercase tracking-wider">
+                            <span className="font-body text-xs text-oro border border-oro/40 px-2 py-0.5 bg-oro/10 uppercase tracking-wider">
                                 Sezione di interesse
                             </span>
                         )}
                     </div>
-                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line">
+                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line break-words">
                         {sentenza.principio_diritto}
                     </p>
                 </div>
@@ -503,7 +503,7 @@ export default function SentenzaTributariaDettaglio() {
             {sentenza.abstract_sentenza && (
                 <div className="bg-slate border border-white/5 p-6">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-3">Abstract</p>
-                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line">
+                    <p className="font-body text-sm text-nebbia/80 leading-relaxed whitespace-pre-line break-words">
                         {sentenza.abstract_sentenza}
                     </p>
                 </div>
@@ -516,13 +516,13 @@ export default function SentenzaTributariaDettaglio() {
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Testo completo</p>
                         <button
                             onClick={() => setTestoEspanso(v => !v)}
-                            className="font-body text-xs text-oro hover:text-oro/80 transition-colors"
+                            className="font-body text-xs text-oro hover:text-oro/80 transition-colors -m-2 p-2"
                         >
                             {testoEspanso ? 'Nascondi' : 'Mostra'}
                         </button>
                     </div>
                     {testoEspanso && (
-                        <div className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line max-h-[600px] overflow-y-auto pr-2">
+                        <div className="font-body text-sm text-nebbia/75 leading-relaxed whitespace-pre-line break-words max-h-[70vh] lg:max-h-[600px] overflow-y-auto pr-2">
                             {sentenza.testo_completo}
                         </div>
                     )}
@@ -541,7 +541,7 @@ export default function SentenzaTributariaDettaglio() {
                     {sentenza.spese_giudizio_desc && (
                         <p className="font-body text-sm text-nebbia/70 leading-relaxed">{sentenza.spese_giudizio_desc}</p>
                     )}
-                    <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                         {sentenza.importo_spese_parte != null && (
                             <div>
                                 <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Spese parte</p>
@@ -576,18 +576,18 @@ export default function SentenzaTributariaDettaglio() {
 
             {/* Attribuzione finale (richiesta dalla licenza CC BY-NC) */}
             <div className="bg-slate border border-white/5 p-4">
-                <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">
+                <p className="font-body text-xs text-nebbia/40 leading-relaxed break-words">
                     <strong className="text-nebbia/60">Fonte:</strong> Ministero dell'Economia e delle Finanze &mdash;
                     Banca Dati Giurisprudenza Tributaria
                     {sentenza.fonte_url && (
-                        <> &middot; <a href={sentenza.fonte_url} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">{sentenza.fonte_url}</a></>
+                        <> &middot; <a href={sentenza.fonte_url} target="_blank" rel="noopener noreferrer" className="text-oro hover:underline break-all">{sentenza.fonte_url}</a></>
                     )}
                 </p>
-                <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1">
+                <p className="font-body text-xs text-nebbia/40 leading-relaxed mt-1">
                     Licenza: <a href="https://creativecommons.org/licenses/by-nc/3.0/it/" target="_blank" rel="noopener noreferrer" className="text-oro hover:underline">CC BY-NC 3.0 IT</a>
                 </p>
                 {sentenza.attribuzione_testo && (
-                    <p className="font-body text-[11px] text-nebbia/40 leading-relaxed mt-1 italic">
+                    <p className="font-body text-xs text-nebbia/40 leading-relaxed mt-1 italic">
                         {sentenza.attribuzione_testo}
                     </p>
                 )}
