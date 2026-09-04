@@ -47,7 +47,7 @@ export default function ClienteLayout({ children }) {
       {open && <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setOpen(false)} />}
 
       <aside className={`
-        fixed top-0 left-0 h-full z-50 flex flex-col
+        fixed top-0 left-0 h-full z-50 flex flex-col pt-safe-0
         w-56 bg-slate border-r border-white/5
         transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -59,7 +59,7 @@ export default function ClienteLayout({ children }) {
 
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
           {NAV.map(({ path, label, icon: Icon }) => (
-            <NavLink key={path} to={path} end={path === '/portale'}
+            <NavLink key={path} to={path} end={path === '/portale'} onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 font-body text-sm transition-colors ${isActive ? 'bg-oro/10 text-oro border-r-2 border-oro' : 'text-nebbia/50 hover:text-nebbia hover:bg-white/5'
                 }`
@@ -98,15 +98,15 @@ export default function ClienteLayout({ children }) {
         </header>
 
         {/* Header mobile */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-slate">
-          <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia"><Menu size={20} /></button>
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 pt-safe border-b border-white/5 bg-slate">
+          <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia p-2 -m-2"><Menu size={20} /></button>
           <img src={logo} alt="Lexum" className="h-10 w-auto" />
           <div className="ml-auto">
             <CampanellaNotifiche />
           </div>
         </div>
 
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
     </div>
   )

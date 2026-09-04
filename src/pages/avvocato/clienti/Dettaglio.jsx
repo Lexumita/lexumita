@@ -613,7 +613,7 @@ function TabNoteInterne({ clienteId }) {
                                                         <Clock size={11} className="text-nebbia/25" />
                                                         <span className="font-body text-xs text-nebbia/30">{n.autore?.nome} {n.autore?.cognome} · {new Date(n.created_at).toLocaleString('it-IT')}</span>
                                                     </div>
-                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => { setEditingId(n.id); setEditVal(n.testo) }} className="text-nebbia/30 hover:text-oro p-1 transition-colors"><Edit2 size={12} /></button>
                                                         <button onClick={() => eliminaNota(n.id)} className="text-nebbia/30 hover:text-red-400 p-1 transition-colors"><Trash2 size={12} /></button>
                                                     </div>

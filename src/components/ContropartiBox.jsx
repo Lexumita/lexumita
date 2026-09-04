@@ -410,14 +410,14 @@ function CardControparte({ c, onModifica, onElimina }) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={() => onModifica(c)} title="Modifica"
-                        className="w-6 h-6 flex items-center justify-center text-nebbia/30 hover:text-oro hover:bg-oro/10 transition-colors">
-                        <Edit2 size={11} />
+                        className="w-10 h-10 flex items-center justify-center text-nebbia/50 hover:text-oro hover:bg-oro/10 transition-colors">
+                        <Edit2 size={15} />
                     </button>
                     <button onClick={() => onElimina(c)} title="Elimina"
-                        className="w-6 h-6 flex items-center justify-center text-nebbia/30 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                        <Trash2 size={11} />
+                        className="w-10 h-10 flex items-center justify-center text-nebbia/50 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                        <Trash2 size={15} />
                     </button>
                 </div>
             </div>

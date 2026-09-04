@@ -208,20 +208,20 @@ export default function BoxTerminiPratica({ praticaId }) {
 
                                     {/* Azioni */}
                                     {isAttivo && (
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                        <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
                                             <button
                                                 onClick={() => marcaCompiuto(t.id)}
                                                 title="Segna come compiuto"
-                                                className="p-1.5 hover:bg-salvia/10 border border-transparent hover:border-salvia/30 transition-colors"
+                                                className="p-2.5 hover:bg-salvia/10 border border-transparent hover:border-salvia/30 transition-colors"
                                             >
-                                                <Check size={13} className="text-salvia" />
+                                                <Check size={16} className="text-salvia" />
                                             </button>
                                             <button
                                                 onClick={() => annullaTermine(t.id)}
                                                 title="Elimina termine"
-                                                className="p-1.5 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-colors"
+                                                className="p-2.5 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-colors"
                                             >
-                                                <Trash2 size={13} className="text-nebbia/40 hover:text-red-400" />
+                                                <Trash2 size={16} className="text-nebbia/40 hover:text-red-400" />
                                             </button>
                                         </div>
                                     )}

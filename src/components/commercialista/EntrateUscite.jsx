@@ -339,7 +339,7 @@ function SezioneMovimenti({ titolo, tipo, movimenti, onNuovo, onModifica, onElim
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                             <span className={`font-display text-sm ${accent}`}>€ {fmtEUR(m.importo)}</span>
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => onModifica(m)} title="Modifica"
                                     className="w-6 h-6 flex items-center justify-center text-nebbia/30 hover:text-oro transition-colors">
                                     <Edit2 size={12} />

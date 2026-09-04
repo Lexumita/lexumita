@@ -131,7 +131,7 @@ export default function AvvocatoLayout({ children }) {
       )}
 
       <aside className={`
-        fixed top-0 left-0 h-full z-50 flex flex-col
+        fixed top-0 left-0 h-full z-50 flex flex-col pt-safe-0
         w-52 bg-slate border-r border-white/5
         transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -273,11 +273,11 @@ export default function AvvocatoLayout({ children }) {
         </header>
 
         {/* Header mobile */}
-        <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-slate">
-          <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia"><Menu size={20} /></button>
+        <div className="lg:hidden flex items-center gap-2 px-4 py-3 pt-safe border-b border-white/5 bg-slate">
+          <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia p-2 -m-2"><Menu size={20} /></button>
           <img src={logo} alt="Lexum" className="h-10 w-auto" />
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {/* Campanella notifiche mobile */}
             <CampanellaNotifiche />
 
@@ -300,7 +300,7 @@ export default function AvvocatoLayout({ children }) {
             {haStorage && (
               <Link to="/studio?tab=acquista"
                 title={`${storage.occupato_gb.toFixed(1)}/${storage.gb_totali} GB`}
-                className={`flex items-center gap-1 px-2 py-1 ${storagePieno
+                className={`hidden sm:flex items-center gap-1 px-2 py-1.5 ${storagePieno
                   ? 'bg-red-500/10 border border-red-500/30'
                   : storageQuasiPieno
                     ? 'bg-amber-500/10 border border-amber-500/30'
@@ -320,7 +320,7 @@ export default function AvvocatoLayout({ children }) {
             {haLimiteClienti && (
               <Link to="/studio?tab=acquista"
                 title={`${clienti.conteggio}/${clienti.limite_totale} clienti`}
-                className={`flex items-center gap-1 px-2 py-1 ${clientiPieno
+                className={`hidden sm:flex items-center gap-1 px-2 py-1.5 ${clientiPieno
                   ? 'bg-red-500/10 border border-red-500/30'
                   : clientiCritico
                     ? 'bg-red-500/5 border border-red-500/20'
@@ -348,7 +348,7 @@ export default function AvvocatoLayout({ children }) {
           </div>
         </div>
 
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
     </div>
   )

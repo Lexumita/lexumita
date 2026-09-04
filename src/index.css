@@ -179,3 +179,43 @@
 .animate-pulse-once {
   animation: pulse-once 2s ease-in-out 1;
 }
+/* ─────────────────────────────────────────────────────────────
+   MOBILE / APP (Capacitor) — Fase 0
+   Aggiunte per l'uso da telefono: area di sicurezza (notch) e
+   dimensione minima dei campi per evitare lo zoom automatico iOS.
+   ───────────────────────────────────────────────────────────── */
+
+@layer base {
+  /* iOS ingrandisce la pagina se un campo ha testo sotto i 16px.
+     Solo su schermi piccoli: sul desktop resta la resa attuale. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Area di sicurezza (notch/barra di stato). Richiede viewport-fit=cover. */
+  .pt-safe {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem) !important;
+  }
+
+  .pt-safe-0 {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem) !important;
+  }
+
+  /* Dimensione minima per un bersaglio toccabile col dito */
+  .tap-target {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

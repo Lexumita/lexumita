@@ -658,7 +658,7 @@ export function AdminAssistenzaDettaglio() {
                 {isMio && (
                   <button
                     onClick={() => eliminaMessaggio(msg.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity self-center text-nebbia/30 hover:text-red-400 p-1"
+                    className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity self-center text-nebbia/30 hover:text-red-400 p-1"
                     title="Elimina messaggio"
                   >
                     <Trash2 size={13} />

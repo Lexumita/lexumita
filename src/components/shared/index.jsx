@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom'
 /* ── PageHeader ─────────────────────────────────────────────── */
 export function PageHeader({ label, title, subtitle, action }) {
   return (
-    <div className="flex items-end justify-between mb-6">
-      <div>
+    <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+      <div className="min-w-0">
         {label && <p className="section-label mb-2">{label}</p>}
-        <h1 className="font-display text-4xl font-light text-nebbia">{title}</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia">{title}</h1>
         {subtitle && <p className="font-body text-sm text-nebbia/40 mt-1">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}

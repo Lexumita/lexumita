@@ -81,13 +81,13 @@ export default function CampanellaNotifiche() {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-96 max-h-[32rem] bg-slate border border-white/10 shadow-2xl z-50 flex flex-col">
+                <div className="absolute right-0 mt-2 w-[min(24rem,calc(100vw-2rem))] max-h-[70vh] sm:max-h-[32rem] bg-slate border border-white/10 shadow-2xl z-50 flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
                         <div>
                             <p className="font-display text-base text-nebbia">Notifiche</p>
                             {nonLette > 0 && (
-                                <p className="font-body text-[11px] text-nebbia/40 mt-0.5">
+                                <p className="font-body text-xs text-nebbia/40 mt-0.5">
                                     {nonLette} non {nonLette === 1 ? 'letta' : 'lette'}
                                 </p>
                             )}
@@ -134,14 +134,14 @@ export default function CampanellaNotifiche() {
                                                 {n.descrizione && (
                                                     <p className="font-body text-xs text-nebbia/40 mt-0.5 line-clamp-2">{n.descrizione}</p>
                                                 )}
-                                                <p className="font-body text-[10px] text-nebbia/30 mt-1">{tempoRelativo(n.created_at)}</p>
+                                                <p className="font-body text-xs text-nebbia/30 mt-1">{tempoRelativo(n.created_at)}</p>
                                             </div>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); elimina(n.id) }}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/5 shrink-0"
+                                                className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 hover:bg-white/5 shrink-0"
                                                 aria-label="Elimina notifica"
                                             >
-                                                <X size={12} className="text-nebbia/40" />
+                                                <X size={14} className="text-nebbia/40" />
                                             </button>
                                         </div>
                                     </div>
