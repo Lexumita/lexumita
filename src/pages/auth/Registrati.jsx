@@ -146,11 +146,18 @@ export default function Registrati() {
 
   return (
     <div className="min-h-screen bg-petrolio">
-      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+      {/* Logo centrato, sopra entrambe le sezioni */}
+      <div className="flex justify-center px-4 pt-8 lg:pt-10 pb-6 lg:pb-8">
+        <Link to="/" className="group">
+          <img src={logo} alt="Lexum" className="h-16 lg:h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2">
 
         {/* SINISTRA — Lex AI al lavoro. Nascosta su telefono: in registrazione
             da mobile il form deve essere subito raggiungibile. */}
-        <div className="hidden lg:flex flex-col justify-center relative overflow-hidden px-10 xl:px-16 py-12 border-r border-white/5">
+        <div className="hidden lg:flex flex-col relative overflow-hidden px-10 xl:px-16 pb-12 border-r border-white/5">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-1/3 left-1/4 w-[420px] h-[420px] bg-oro/[0.05] rounded-full blur-3xl" />
             <div className="absolute bottom-1/4 right-1/4 w-[340px] h-[340px] bg-salvia/[0.05] rounded-full blur-3xl" />
@@ -176,11 +183,7 @@ export default function Registrati() {
         </div>
 
         {/* DESTRA — form di registrazione */}
-        <div className="flex flex-col items-center justify-center px-4 py-10">
-          <Link to="/" className="mb-8 sm:mb-10 group">
-            <img src={logo} alt="Lexum" className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" />
-          </Link>
-
+        <div className="flex flex-col items-center px-4 pb-10">
           <div className="w-full max-w-md bg-slate border border-white/5 p-6 sm:p-8">
         <p className="section-label mb-6">Registrazione</p>
         <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
@@ -263,7 +266,7 @@ export default function Registrati() {
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25 tracking-wider"
             />
             <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
-              Se un nostro consulente ti ha seguito, inserisci qui il codice che ti ha fornito.
+              Inserisci il codice del consulente che ti ha seguito.
             </p>
           </div>
 
