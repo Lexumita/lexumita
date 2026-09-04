@@ -130,7 +130,7 @@ function TabPanoramica({ fatture, clienti }) {
     return (
         <div className="space-y-5">
             {/* KPI principali */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-slate border border-white/5 p-5">
                     <div className="flex items-center gap-2 mb-2">
                         <TrendingUp size={13} className="text-oro/60" />
@@ -174,7 +174,7 @@ function TabPanoramica({ fatture, clienti }) {
 
             {/* Grafico ultimi 12 mesi */}
             <div className="bg-slate border border-white/5 p-5">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                     <div>
                         <p className="section-label mb-1">Ultimi 12 mesi</p>
                         <p className="font-body text-xs text-nebbia/40">Emesso vs incassato per mese</p>
@@ -191,7 +191,8 @@ function TabPanoramica({ fatture, clienti }) {
                     </div>
                 </div>
 
-                <div className="flex items-end gap-2 h-44">
+                <div className="overflow-x-auto lg:overflow-x-visible">
+                    <div className="flex items-end gap-2 h-44 min-w-[560px] lg:min-w-0">
                     {meseDati.map(m => (
                         <div key={m.key} className="flex-1 flex flex-col items-center gap-1.5">
                             <div className="w-full flex items-end gap-1 h-36">
@@ -210,10 +211,12 @@ function TabPanoramica({ fatture, clienti }) {
                                     />
                                 </div>
                             </div>
-                            <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-wider">{m.label}</p>
+                            <p className="font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-wider">{m.label}</p>
                         </div>
                     ))}
+                    </div>
                 </div>
+                <p className="lg:hidden font-body text-xs text-nebbia/30 mt-2">Scorri in orizzontale per vedere tutti i 12 mesi</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -459,7 +462,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) cercaConLex()
                                 else if (e.key === 'Enter') { e.preventDefault(); cercaTradizionale() }
                             }}
-                            className="w-full h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                            className="w-full h-11 lg:h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                         />
                         {cerca && (
                             <button
@@ -474,7 +477,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                     <button
                         onClick={cercaTradizionale}
                         disabled={cercando || cercandoLex || !cerca.trim()}
-                        className="flex items-center justify-center gap-2 px-4 h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="flex items-center justify-center gap-2 px-4 h-11 lg:h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {cercando
                             ? <Loader2 size={13} className="animate-spin" />
@@ -485,7 +488,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                     <button
                         onClick={cercaConLex}
                         disabled={cercando || cercandoLex || !cerca.trim()}
-                        className="flex items-center justify-center gap-2 px-4 h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="flex items-center justify-center gap-2 px-4 h-11 lg:h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {cercandoLex
                             ? <><Loader2 size={13} className="animate-spin" /> <span className="hidden md:inline">Lex sta cercando...</span></>
@@ -504,7 +507,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                     <div className="bg-petrolio/40 border border-salvia/15 p-3">
                         <div className="flex items-center gap-2 mb-1">
                             <Sparkles size={11} className="text-salvia" />
-                            <p className="font-body text-[10px] font-medium text-salvia uppercase tracking-widest">Analisi Lex</p>
+                            <p className="font-body text-xs lg:text-[10px] font-medium text-salvia uppercase tracking-widest">Analisi Lex</p>
                         </div>
                         <p className="font-body text-xs text-nebbia/55 leading-relaxed">{ragionamentoLex}</p>
                     </div>
@@ -533,7 +536,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                 </div>
 
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                    className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40">
                     <option value="">Tutti gli stati</option>
                     <option value="in_attesa">In attesa</option>
                     <option value="pagata">Pagate</option>
@@ -543,7 +546,7 @@ function TabFatture({ fatture, clienti, onReload }) {
 
                 {clienti.length > 0 && (
                     <select value={clienteF} onChange={e => setClienteF(e.target.value)}
-                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40">
                         <option value="">Tutti i clienti</option>
                         {clienti.map(c => <option key={c.id} value={c.id}>{nomeCliente(c)}</option>)}
                     </select>
@@ -551,7 +554,7 @@ function TabFatture({ fatture, clienti, onReload }) {
 
                 {anniDisp.length > 0 && (
                     <select value={annoF} onChange={e => setAnnoF(e.target.value)}
-                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 lg:py-1.5 outline-none focus:border-oro/40">
                         <option value="">Tutti gli anni</option>
                         {anniDisp.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
@@ -559,11 +562,11 @@ function TabFatture({ fatture, clienti, onReload }) {
 
                 <div className="flex items-center gap-1">
                     <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                         title="Da" />
                     <span className="font-body text-xs text-nebbia/30">→</span>
                     <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                         title="A" />
                 </div>
 
@@ -575,8 +578,83 @@ function TabFatture({ fatture, clienti, onReload }) {
                 )}
             </div>
 
-            {/* Tabella */}
-            <div className="bg-slate border border-white/5 overflow-x-auto">
+            {/* Lista fatture */}
+            <div className="bg-slate border border-white/5">
+
+                {/* Mobile: lista di card */}
+                <div className="lg:hidden divide-y divide-white/5">
+                    {rows.length === 0 ? (
+                        <div className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                            {fatture.length === 0 ? 'Nessuna fattura ancora. Crea la prima.' : 'Nessuna fattura trovata'}
+                        </div>
+                    ) : rows.map(f => {
+                        const stato = statoEffettivo(f)
+                        const sc = STATO_CONFIG[stato] ?? STATO_CONFIG.in_attesa
+                        const sc_scaduta = stato === 'scaduta'
+                        const scadenzaTesto = f.stato === 'pagata' && f.data_pagamento
+                            ? `Pagata ${new Date(f.data_pagamento).toLocaleDateString('it-IT')}`
+                            : f.stato === 'pagata'
+                                ? 'Pagata'
+                                : f.data_scadenza
+                                    ? `Scade ${new Date(f.data_scadenza).toLocaleDateString('it-IT')}`
+                                    : 'Nessuna scadenza'
+                        return (
+                            <div key={f.id} className={`p-4 space-y-3 ${sc_scaduta ? 'bg-red-900/5' : ''}`}>
+                                <Link to={`/fatturazione/${f.id}`} className="block space-y-2">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="font-body text-sm font-medium text-oro">{f.numero ?? '—'}</span>
+                                        <span className="shrink-0"><Badge label={sc.label} variant={sc.variant} /></span>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        {f.cliente?.tipo_soggetto === 'persona_giuridica'
+                                            ? <Building2 size={12} className="text-nebbia/30 shrink-0" />
+                                            : <User size={12} className="text-nebbia/30 shrink-0" />
+                                        }
+                                        <span className="font-body text-sm text-nebbia truncate">{nomeCliente(f.cliente)}</span>
+                                    </div>
+
+                                    {f.pratica?.titolo && (
+                                        <p className="font-body text-xs text-nebbia/50 truncate">{f.pratica.titolo}</p>
+                                    )}
+
+                                    <p className="font-display text-2xl font-light text-oro">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</p>
+
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs">
+                                        <span className="text-nebbia/40">
+                                            Emessa {f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}
+                                        </span>
+                                        <span className={f.stato === 'pagata' ? 'text-salvia' : sc_scaduta ? 'text-red-400' : 'text-nebbia/50'}>
+                                            {scadenzaTesto}
+                                        </span>
+                                    </div>
+                                </Link>
+
+                                <div className="flex items-stretch gap-2">
+                                    <Link
+                                        to={`/fatturazione/${f.id}`}
+                                        className="flex-1 h-10 inline-flex items-center justify-center gap-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors"
+                                    >
+                                        Apri <ArrowRight size={15} />
+                                    </Link>
+                                    {f.stato !== 'pagata' && (
+                                        <button
+                                            onClick={() => setEliminando(f)}
+                                            title="Elimina fattura"
+                                            aria-label="Elimina fattura"
+                                            className="h-10 w-12 shrink-0 inline-flex items-center justify-center border border-white/10 text-nebbia/40 hover:text-red-400 hover:border-red-400/40 transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+
+                {/* Desktop: tabella invariata */}
+                <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-white/5">
@@ -650,6 +728,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                         })}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             {/* Modal eliminazione centralizzato (usa edge function elimina-fattura) */}
@@ -700,7 +779,7 @@ function TabScadenzario({ fatture }) {
 
         return (
             <div className={`border ${colorVariant[variant]} p-5 space-y-3`}>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className={`section-label !m-0 ${textColor[variant]} !text-current`}>{titolo}</p>
                     <div className="flex items-center gap-3">
                         <span className="font-body text-xs text-nebbia/40">{lista.length} {lista.length === 1 ? 'fattura' : 'fatture'}</span>
@@ -713,7 +792,7 @@ function TabScadenzario({ fatture }) {
                         <Link
                             key={f.id}
                             to={`/fatturazione/${f.id}`}
-                            className="flex items-center justify-between gap-3 p-3 bg-petrolio/40 border border-white/5 hover:border-oro/30 transition-colors"
+                            className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3 p-3 bg-petrolio/40 border border-white/5 hover:border-oro/30 transition-colors"
                         >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                 <Calendar size={13} className={`shrink-0 ${textColor[variant]}`} />
@@ -724,7 +803,7 @@ function TabScadenzario({ fatture }) {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
                                 <span className={`font-body text-xs ${textColor[variant]}`}>
                                     {f.giorni < 0 ? `${Math.abs(f.giorni)}g fa` : f.giorni === 0 ? 'Oggi' : `tra ${f.giorni}g`}
                                 </span>

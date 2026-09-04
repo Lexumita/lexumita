@@ -65,7 +65,7 @@ function ModalEliminaCliente({ cliente, onClose, onEliminato }) {
     if (risultato) {
         const totale = Object.values(risultato.conteggi ?? {}).reduce((a, n) => a + n, 0)
         return (
-            <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                 <div className="bg-slate border border-salvia/30 w-full max-w-md p-6 space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-salvia/10 border border-salvia/30 flex items-center justify-center">
@@ -98,7 +98,7 @@ function ModalEliminaCliente({ cliente, onClose, onEliminato }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto">
             <div className="bg-slate border border-red-500/30 w-full max-w-md">
                 <div className="flex items-center justify-between p-5 border-b border-white/8">
                     <div className="flex items-center gap-2">
@@ -141,13 +141,13 @@ function ModalEliminaCliente({ cliente, onClose, onEliminato }) {
                         </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col-reverse sm:flex-row gap-2">
                         <button onClick={onClose} disabled={inviando}
-                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+                            className="w-full sm:w-auto font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
                             Annulla
                         </button>
                         <button onClick={elimina} disabled={!matchEsatto || inviando}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500/15 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            className="w-full sm:w-auto sm:flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/15 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                             {inviando
                                 ? <span className="animate-spin w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full" />
                                 : <><Trash2 size={14} /> Elimina definitivamente</>
@@ -319,7 +319,7 @@ export function AvvocatoClienti() {
                     Cerca clienti per nome o email. Oppure fai a Lex domande sui clienti e chiedi info su di essi. Lex non ha accesso alle note interne dei clienti.
                 </p>
 
-                <div className="flex items-stretch gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2">
                     <div className="relative flex-1">
                         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30 pointer-events-none" />
                         <input
@@ -334,7 +334,7 @@ export function AvvocatoClienti() {
                                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) cercaConLex()
                                 else if (e.key === 'Enter') { e.preventDefault(); cercaTradizionale() }
                             }}
-                            className="w-full h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
+                            className="w-full h-11 sm:h-[38px] bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-9 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                         />
                         {search && (
                             <button
@@ -349,7 +349,7 @@ export function AvvocatoClienti() {
                     <button
                         onClick={cercaTradizionale}
                         disabled={cercando || cercandoLex || !search.trim()}
-                        className="flex items-center justify-center gap-2 px-4 h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="flex items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {cercando
                             ? <Loader2 size={13} className="animate-spin" />
@@ -360,11 +360,11 @@ export function AvvocatoClienti() {
                     <button
                         onClick={cercaConLex}
                         disabled={cercando || cercandoLex || !search.trim()}
-                        className="flex items-center justify-center gap-2 px-4 h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="flex items-center justify-center gap-2 px-4 h-11 sm:h-[38px] bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {cercandoLex
-                            ? <><Loader2 size={13} className="animate-spin" /> <span className="hidden md:inline">Lex sta pensando...</span></>
-                            : <><Sparkles size={13} /> <span className="hidden md:inline">Chiedi a Lex</span><span className="md:hidden">Lex</span></>
+                            ? <><Loader2 size={13} className="animate-spin" /> <span className="sm:hidden md:inline">Lex sta pensando...</span></>
+                            : <><Sparkles size={13} /> <span className="sm:hidden md:inline">Chiedi a Lex</span><span className="hidden sm:inline md:hidden">Lex</span></>
                         }
                     </button>
                 </div>
@@ -401,23 +401,23 @@ export function AvvocatoClienti() {
             </div>
 
             {/* ─── FILTRI tradizionali ─────────────────────────────── */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
                 <select value={tipoF} onChange={e => setTipoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 sm:py-1.5 outline-none focus:border-oro/40">
                     <option value="">Tutti i tipi</option>
                     <option value="persona_fisica">Persone fisiche</option>
                     <option value="persona_giuridica">Persone giuridiche</option>
                 </select>
                 {isStudio && collaboratori.length > 0 && (
                     <select value={avvF} onChange={e => setAvvF(e.target.value)}
-                        className="bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-1.5 outline-none focus:border-oro/40">
+                        className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia/60 font-body text-xs px-3 py-2.5 sm:py-1.5 outline-none focus:border-oro/40">
                         <option value="">Tutti gli avvocati</option>
                         {collaboratori.map(c => <option key={c.id} value={c.id}>{c.nome} {c.cognome}</option>)}
                     </select>
                 )}
                 {(avvF || tipoF) && (
                     <button onClick={() => { setAvvF(''); setTipoF('') }}
-                        className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1">
+                        className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center justify-center sm:justify-start gap-1 py-2.5 sm:py-0">
                         <X size={11} /> Reset filtri
                     </button>
                 )}
@@ -433,7 +433,64 @@ export function AvvocatoClienti() {
                     <AlertCircle size={14} /> {errore}
                 </div>
             ) : (
-                <div className="bg-slate border border-white/5 overflow-x-auto">
+                <div className="bg-slate border border-white/5">
+
+                    {/* Mobile: lista di card */}
+                    <div className="lg:hidden divide-y divide-white/5">
+                        {rows.length === 0 ? (
+                            <div className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                                {clienti.length === 0 ? "Nessun cliente. Crea il primo." : "Nessun cliente con questi filtri."}
+                            </div>
+                        ) : rows.map(c => {
+                            const avv = collaboratori.find(col => col.id === c.avvocato_id)
+                            return (
+                                <div key={c.id} className="relative">
+                                    <Link
+                                        to={`/clienti/${c.id}`}
+                                        className="block p-4 pr-14 space-y-2 active:bg-petrolio/40 transition-colors"
+                                    >
+                                        <div className="flex items-start gap-2">
+                                            {c.tipo_soggetto === 'persona_giuridica'
+                                                ? <Building2 size={14} className="text-nebbia/30 shrink-0 mt-0.5" />
+                                                : <User size={14} className="text-nebbia/30 shrink-0 mt-0.5" />
+                                            }
+                                            <span className="font-body text-sm font-medium text-nebbia break-words">
+                                                {nomeCliente(c)}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-0.5 pl-6">
+                                            <p className="font-body text-xs text-nebbia/60 break-all">{c.email}</p>
+                                            <p className="font-body text-xs text-nebbia/40">{c.telefono ?? '—'}</p>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2 pl-6">
+                                            {isStudio && (
+                                                <span className="font-body text-xs text-nebbia/60 bg-petrolio/60 border border-white/5 px-2 py-0.5">
+                                                    {avv ? `${avv.nome} ${avv.cognome}` : 'Tu'}
+                                                </span>
+                                            )}
+                                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">
+                                                {new Date(c.created_at).toLocaleDateString('it-IT')}
+                                            </span>
+                                        </div>
+                                    </Link>
+
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); setClienteDaEliminare(c) }}
+                                        title="Elimina cliente"
+                                        aria-label="Elimina cliente"
+                                        className="absolute top-3 right-3 inline-flex items-center justify-center w-10 h-10 text-nebbia/30 hover:text-red-400 active:bg-red-500/10 transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* Desktop: tabella invariata */}
+                    <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-white/5">
@@ -491,6 +548,7 @@ export function AvvocatoClienti() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
 

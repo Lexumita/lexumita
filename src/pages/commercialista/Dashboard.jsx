@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, StatCard } from '@/components/shared'
+import { PageHeader } from '@/components/shared'
 import {
   Users, CreditCard, Wallet, AlertCircle, Calendar,
   FileText, ChevronRight, MapPin, Video, Phone,
@@ -40,6 +40,24 @@ function nomeCliente(c) {
 }
 
 const MESI_ABBR = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
+
+/* Copia locale di StatCard: identica da sm: in su (desktop invariato),
+   ma su telefono l'importo scende a text-2xl e va a capo invece di uscire
+   dalla cella a 2 colonne. */
+function KpiCard({ label, value, sub, colorClass = 'text-oro', icon: Icon }) {
+  return (
+    <div className="bg-slate border border-white/5 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`font-display text-2xl sm:text-3xl font-semibold break-words ${colorClass}`}>{value}</p>
+          <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mt-1">{label}</p>
+          {sub && <p className="font-body text-xs text-nebbia/25 mt-0.5">{sub}</p>}
+        </div>
+        {Icon && <Icon size={18} className="text-nebbia/15 mt-1 shrink-0" />}
+      </div>
+    </div>
+  )
+}
 
 export default function CommercialistaDashboard() {
   const { profile } = useAuth()
@@ -141,18 +159,18 @@ export default function CommercialistaDashboard() {
       <PageHeader label="Commercialista" title="Dashboard" subtitle="Il quadro del tuo studio" />
 
       {/* KPI studio */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {STATS.map(s => <StatCard key={s.label} {...s} />)}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        {STATS.map(s => <KpiCard key={s.label} {...s} />)}
       </div>
 
       {/* Alert fatture scadute */}
       {!loading && fatt.scadute > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-red-900/10 border border-red-500/20">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4 bg-red-900/10 border border-red-500/20">
           <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <p className="font-body text-sm text-red-400">
+          <p className="font-body text-sm text-red-400 min-w-0">
             {fatt.scadute} {fatt.scadute === 1 ? 'fattura scaduta' : 'fatture scadute'} da incassare
           </p>
-          <Link to="/fatturazione" className="font-body text-xs text-red-400 border border-red-500/30 px-3 py-1.5 hover:bg-red-400/10 transition-colors ml-auto whitespace-nowrap">
+          <Link to="/fatturazione" className="font-body text-xs text-red-400 border border-red-500/30 px-3 py-2.5 lg:py-1.5 hover:bg-red-400/10 transition-colors ml-auto whitespace-nowrap">
             Gestisci →
           </Link>
         </div>
@@ -160,12 +178,12 @@ export default function CommercialistaDashboard() {
 
       {/* Prossime scadenze fiscali (cuore del banco di lavoro) */}
       <div className="bg-slate border border-white/5">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <CalendarClock size={14} className="text-oro/60" />
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-white/5">
+          <div className="flex items-center gap-2 min-w-0">
+            <CalendarClock size={14} className="text-oro/60 shrink-0" />
             <p className="section-label">Prossime scadenze fiscali</p>
           </div>
-          <Link to="/banco-lavoro" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1">
+          <Link to="/banco-lavoro" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap">
             Banco di lavoro <ChevronRight size={11} />
           </Link>
         </div>
@@ -183,20 +201,20 @@ export default function CommercialistaDashboard() {
               const d = new Date(s.data_scadenza)
               return (
                 <Link key={s.id} to={`/banco-lavoro/${s.mandato_id}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-petrolio/40 transition-colors">
+                  className="flex flex-wrap lg:flex-nowrap items-start lg:items-center gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-petrolio/40 transition-colors">
                   <div className={`w-8 h-8 flex items-center justify-center border shrink-0 ${scaduta ? 'bg-red-900/10 border-red-500/25' : urgente ? 'bg-amber-900/10 border-amber-500/25' : 'bg-oro/5 border-oro/20'}`}>
                     {scaduta ? <AlertTriangle size={13} className="text-red-400" /> : <Clock size={13} className={urgente ? 'text-amber-400' : 'text-oro/70'} />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-body text-sm text-nebbia truncate">{s.titolo}</p>
-                      {tipoCfg && <span className={`font-body text-[10px] px-1.5 py-0.5 border uppercase tracking-wider ${tipoCfg.cls}`}>{tipoCfg.label}</span>}
+                      <p className="font-body text-sm text-nebbia truncate min-w-0">{s.titolo}</p>
+                      {tipoCfg && <span className={`font-body text-xs lg:text-[10px] px-1.5 py-0.5 border uppercase tracking-wider whitespace-nowrap ${tipoCfg.cls}`}>{tipoCfg.label}</span>}
                     </div>
                     <p className="font-body text-xs text-nebbia/40 truncate">
                       {nomeCliente(s.cliente)}{s.mandato?.titolo ? ` · ${s.mandato.titolo}` : ''}
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="w-full pl-11 flex items-center gap-2 lg:block lg:w-auto lg:pl-0 lg:text-right shrink-0">
                     <p className="font-body text-xs text-nebbia/60">{d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     <p className={`font-body text-xs ${scaduta ? 'text-red-400' : urgente ? 'text-amber-400' : 'text-nebbia/35'}`}>
                       {scaduta ? `scaduta da ${Math.abs(gg)} gg` : gg === 0 ? 'oggi' : `tra ${gg} gg`}
@@ -213,9 +231,9 @@ export default function CommercialistaDashboard() {
 
         {/* Prossimi appuntamenti */}
         <div className="bg-slate border border-white/5">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-white/5">
             <p className="section-label">Prossimi appuntamenti (7 giorni)</p>
-            <Link to="/calendario" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1">
+            <Link to="/calendario" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap">
               Calendario <ChevronRight size={11} />
             </Link>
           </div>
@@ -229,7 +247,7 @@ export default function CommercialistaDashboard() {
                 const Icon = TIPO_APP_ICON[a.tipo] ?? Calendar
                 const d = new Date(a.data_ora_inizio)
                 return (
-                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-0">
+                  <div key={a.id} className="flex flex-wrap lg:flex-nowrap items-start lg:items-center gap-x-3 gap-y-1.5 px-4 py-3 border-b border-white/5 last:border-0">
                     <div className="w-8 h-8 bg-oro/5 border border-oro/20 flex items-center justify-center shrink-0">
                       <Icon size={13} className="text-oro/70" />
                     </div>
@@ -237,7 +255,7 @@ export default function CommercialistaDashboard() {
                       <p className="font-body text-sm text-nebbia truncate">{a.titolo}</p>
                       <p className="font-body text-xs text-nebbia/40 truncate">{nomeCliente(a.cliente)}</p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="w-full pl-11 flex items-center gap-2 lg:block lg:w-auto lg:pl-0 lg:text-right shrink-0">
                       <p className="font-body text-xs text-nebbia/60">{d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                       <p className="font-body text-xs text-nebbia/35">{d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
@@ -250,9 +268,9 @@ export default function CommercialistaDashboard() {
 
         {/* Fatturazione ultimi 6 mesi */}
         <div className="bg-slate border border-white/5">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-white/5">
             <p className="section-label">Studio — fatturazione ultimi 6 mesi</p>
-            <Link to="/fatturazione" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1">
+            <Link to="/fatturazione" className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap">
               Fatturazione <ChevronRight size={11} />
             </Link>
           </div>

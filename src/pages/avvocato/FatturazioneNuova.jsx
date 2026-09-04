@@ -435,7 +435,7 @@ export default function AvvocatoFatturazioneNuova() {
                     {/* Step 2: Date */}
                     <div className="bg-slate border border-white/5 p-5 space-y-4">
                         <p className="section-label">Date</p>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Data emissione *</label>
                                 <input
@@ -507,9 +507,9 @@ export default function AvvocatoFatturazioneNuova() {
                                             className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                                         />
 
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                             <div>
-                                                <label className="block font-body text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Quantita</label>
+                                                <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Quantita</label>
                                                 <input
                                                     type="number"
                                                     min="0.01"
@@ -520,7 +520,7 @@ export default function AvvocatoFatturazioneNuova() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block font-body text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Prezzo unit. (EUR)</label>
+                                                <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Prezzo unit. (EUR)</label>
                                                 <input
                                                     type="number"
                                                     min="0"
@@ -532,7 +532,7 @@ export default function AvvocatoFatturazioneNuova() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block font-body text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Totale riga</label>
+                                                <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Totale riga</label>
                                                 <div className="bg-slate border border-white/5 px-3 py-2 font-body text-sm text-oro">
                                                     EUR {fmtEUR(tot)}
                                                 </div>
@@ -548,7 +548,7 @@ export default function AvvocatoFatturazioneNuova() {
                     <div className="bg-slate border border-white/5 p-5 space-y-4">
                         <p className="section-label">Parametri fiscali</p>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">IVA %</label>
                                 <input
@@ -682,21 +682,21 @@ export default function AvvocatoFatturazioneNuova() {
                     )}
 
                     {/* Azioni */}
-                    <div className="flex flex-wrap gap-3 sticky bottom-4 bg-petrolio/95 backdrop-blur-sm border border-white/10 p-4 shadow-2xl">
+                    <div className="flex flex-col lg:flex-row lg:flex-wrap gap-3 sticky bottom-4 bg-petrolio/95 backdrop-blur-sm border border-white/10 p-4 pb-safe shadow-2xl">
                         <button
                             onClick={() => navigate('/fatturazione')}
                             disabled={salvando !== null}
-                            className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40"
+                            className="w-full lg:w-auto text-center font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40"
                         >
                             Annulla
                         </button>
 
-                        <div className="flex-1" />
+                        <div className="hidden lg:block flex-1" />
 
                         <button
                             onClick={() => salva(false)}
                             disabled={salvando !== null}
-                            className="flex items-center gap-2 px-4 py-2.5 border border-white/15 text-nebbia/80 hover:border-oro/30 hover:text-oro transition-colors font-body text-sm disabled:opacity-40"
+                            className="w-full lg:w-auto justify-center flex items-center gap-2 px-4 py-2.5 border border-white/15 text-nebbia/80 hover:border-oro/30 hover:text-oro transition-colors font-body text-sm disabled:opacity-40"
                         >
                             {salvando === 'bozza'
                                 ? <><Loader2 size={14} className="animate-spin" /> Salvando...</>
@@ -707,7 +707,7 @@ export default function AvvocatoFatturazioneNuova() {
                         <button
                             onClick={() => salva(true)}
                             disabled={salvando !== null}
-                            className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40"
+                            className="btn-primary text-sm w-full lg:w-auto justify-center flex items-center gap-2 disabled:opacity-40"
                         >
                             {salvando === 'pdf'
                                 ? <><Loader2 size={14} className="animate-spin" /> Generando PDF...</>

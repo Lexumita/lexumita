@@ -95,13 +95,13 @@ export default function BancoLavoro() {
                 </div>
 
                 <select value={statoF} onChange={e => setStatoF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
                     <option value="">Tutti gli stati</option>
                     {Object.entries(STATI).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
 
                 <select value={clienteF} onChange={e => setClienteF(e.target.value)}
-                    className="bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 max-w-56">
+                    className="w-full sm:w-auto bg-slate border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 sm:max-w-56">
                     <option value="">Tutti i clienti</option>
                     {clienti.map(c => <option key={c.id} value={c.id}>{nomeCliente(c)}</option>)}
                 </select>
@@ -133,7 +133,38 @@ export default function BancoLavoro() {
                     </button>
                 </div>
             ) : (
-                <div className="bg-slate border border-white/5 overflow-x-auto">
+                <div className="bg-slate border border-white/5">
+
+                    {/* Mobile: lista di card */}
+                    <div className="lg:hidden divide-y divide-white/5">
+                        {rows.length === 0 ? (
+                            <p className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun mandato con questi filtri</p>
+                        ) : rows.map(m => {
+                            const st = STATI[m.stato] ?? STATI.attivo
+                            return (
+                                <Link key={m.id} to={`/banco-lavoro/${m.id}`}
+                                    className="block p-4 space-y-2 active:bg-petrolio/40 transition-colors">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="font-body text-sm font-medium text-nebbia leading-snug">{m.titolo}</p>
+                                        <span className={`font-body text-xs px-2 py-0.5 border uppercase tracking-wider shrink-0 ${st.cls}`}>
+                                            {st.label}
+                                        </span>
+                                    </div>
+                                    <p className="font-body text-sm text-nebbia/60">{nomeCliente(m.cliente)}</p>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-body text-xs text-nebbia/40">
+                                        <span>{m.tipo ?? '—'}</span>
+                                        <span className="text-nebbia/20">·</span>
+                                        <span>{m.anno_riferimento ?? '—'}</span>
+                                        <span className="text-nebbia/20">·</span>
+                                        <span>{new Date(m.created_at).toLocaleDateString('it-IT')}</span>
+                                    </div>
+                                </Link>
+                            )
+                        })}
+                    </div>
+
+                    {/* Desktop: tabella invariata */}
+                    <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-white/5">
@@ -169,6 +200,8 @@ export default function BancoLavoro() {
                             })}
                         </tbody>
                     </table>
+                    </div>
+
                 </div>
             )}
 

@@ -121,9 +121,9 @@ function SelettoreRange({ preset, onPresetChange, customStart, customEnd, onCust
     <div className="relative" ref={ref}>
       <button
         onClick={() => setAperto(v => !v)}
-        className="flex items-center gap-2 px-3 py-2 bg-petrolio/60 border border-white/10 text-nebbia/70 font-body text-xs hover:border-oro/30 hover:text-nebbia transition-colors"
+        className="flex items-center gap-2 px-3 py-2.5 lg:py-2 bg-petrolio/60 border border-white/10 text-nebbia/70 font-body text-xs hover:border-oro/30 hover:text-nebbia transition-colors"
       >
-        <Calendar size={11} className="text-oro/60" />
+        <Calendar size={11} className="text-oro/60 shrink-0" />
         <span>{label}</span>
         <ChevronDown size={10} className={`text-nebbia/40 transition-transform ${aperto ? 'rotate-180' : ''}`} />
       </button>
@@ -137,7 +137,7 @@ function SelettoreRange({ preset, onPresetChange, customStart, customEnd, onCust
                 onPresetChange(o.value)
                 if (o.value !== 'personalizzato') setAperto(false)
               }}
-              className={`w-full text-left px-3 py-2 font-body text-xs hover:bg-petrolio/60 transition-colors flex items-center justify-between ${preset === o.value ? 'text-oro' : 'text-nebbia/70'
+              className={`w-full text-left px-3 py-2.5 lg:py-2 font-body text-xs hover:bg-petrolio/60 transition-colors flex items-center justify-between ${preset === o.value ? 'text-oro' : 'text-nebbia/70'
                 }`}
             >
               {o.label}
@@ -148,26 +148,26 @@ function SelettoreRange({ preset, onPresetChange, customStart, customEnd, onCust
           {preset === 'personalizzato' && (
             <div className="border-t border-white/10 p-3 space-y-2">
               <div>
-                <label className="block font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da</label>
+                <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da</label>
                 <input
                   type="date"
                   value={customStart || ''}
                   onChange={e => onCustomChange('start', e.target.value)}
-                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                 />
               </div>
               <div>
-                <label className="block font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">A</label>
+                <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">A</label>
                 <input
                   type="date"
                   value={customEnd || ''}
                   onChange={e => onCustomChange('end', e.target.value)}
-                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40"
+                  className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-2.5 lg:py-1.5 outline-none focus:border-oro/40"
                 />
               </div>
               <button
                 onClick={() => setAperto(false)}
-                className="w-full px-3 py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
+                className="w-full px-3 py-2.5 lg:py-1.5 bg-oro/10 border border-oro/30 text-oro font-body text-xs hover:bg-oro/20 transition-colors"
               >
                 Applica
               </button>
@@ -203,9 +203,9 @@ function BoxContatore({ icon: Icon, label, value, sublabel, accent = 'nebbia', l
           <ArrowRight size={12} className="text-nebbia/20 group-hover:text-oro transition-colors" />
         )}
       </div>
-      <p className={`font-display text-2xl font-light leading-none mb-1 ${accentClasses[accent]}`}>{value}</p>
-      <p className="font-body text-[11px] text-nebbia/40 uppercase tracking-widest">{label}</p>
-      {sublabel && <p className="font-body text-[10px] text-nebbia/30 mt-1">{sublabel}</p>}
+      <p className={`font-display text-2xl font-light leading-none mb-1 break-words ${accentClasses[accent]}`}>{value}</p>
+      <p className="font-body text-xs lg:text-[11px] text-nebbia/40 uppercase tracking-widest">{label}</p>
+      {sublabel && <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-1 break-words">{sublabel}</p>}
     </div>
   )
   return link ? <Link to={link} className="block h-full">{content}</Link> : content
@@ -217,16 +217,16 @@ function BoxContatore({ icon: Icon, label, value, sublabel, accent = 'nebbia', l
 function SectionCard({ title, icon: Icon, count, link, linkLabel, children, empty }) {
   return (
     <div className="bg-slate border border-white/5 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon size={13} className="text-nebbia/40" />}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 border-b border-white/5">
+        <div className="flex items-center gap-2 min-w-0">
+          {Icon && <Icon size={13} className="text-nebbia/40 shrink-0" />}
           <h3 className="font-body text-xs font-medium text-nebbia/60 tracking-widest uppercase">{title}</h3>
           {count !== undefined && count > 0 && (
-            <span className="font-body text-[10px] text-nebbia/30">({count})</span>
+            <span className="font-body text-xs lg:text-[10px] text-nebbia/30">({count})</span>
           )}
         </div>
         {link && (
-          <Link to={link} className="font-body text-[10px] text-nebbia/30 hover:text-oro transition-colors flex items-center gap-1">
+          <Link to={link} className="font-body text-xs lg:text-[10px] text-nebbia/30 hover:text-oro transition-colors flex items-center gap-1 shrink-0">
             {linkLabel ?? 'Vedi tutti'} <ArrowRight size={9} />
           </Link>
         )}
@@ -243,14 +243,14 @@ function SectionCard({ title, icon: Icon, count, link, linkLabel, children, empt
 function EventoItem({ icon: Icon, titolo, sottotitolo, badge, link, accent = 'oro' }) {
   const iconColor = accent === 'red' ? 'text-red-400' : accent === 'salvia' ? 'text-salvia' : 'text-oro'
   const content = (
-    <div className="flex items-center gap-3 px-2.5 py-2 hover:bg-petrolio/40 transition-colors group">
+    <div className="flex items-center gap-3 px-2.5 py-3 lg:py-2 hover:bg-petrolio/40 transition-colors group">
       <Icon size={12} className={`${iconColor} shrink-0`} />
       <div className="flex-1 min-w-0">
         <p className="font-body text-xs text-nebbia/85 truncate group-hover:text-oro transition-colors">{titolo}</p>
-        {sottotitolo && <p className="font-body text-[11px] text-nebbia/40 truncate">{sottotitolo}</p>}
+        {sottotitolo && <p className="font-body text-xs lg:text-[11px] text-nebbia/40 truncate">{sottotitolo}</p>}
       </div>
       {badge && (
-        <span className={`font-body text-[10px] px-2 py-0.5 border ${badge.color} shrink-0`}>
+        <span className={`font-body text-xs lg:text-[10px] px-2 py-0.5 border whitespace-nowrap ${badge.color} shrink-0`}>
           {badge.label}
         </span>
       )}
@@ -522,11 +522,11 @@ export default function AvvocatoDashboard() {
   return (
     <div className="space-y-5">
       {/* ─── HEADER + range selector ───────────────────── */}
-      <div className="bg-slate border border-white/5 px-6 py-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex-1 min-w-0">
+      <div className="bg-slate border border-white/5 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
+          <div className="flex-1 min-w-0 basis-full sm:basis-0">
             <p className="font-body text-xs text-oro/60 tracking-widest uppercase mb-1">Dashboard</p>
-            <h1 className="font-display text-2xl font-light text-nebbia mb-2">
+            <h1 className="font-display text-xl sm:text-2xl font-light text-nebbia mb-2 break-words">
               {orarioGiorno}, {profile?.nome ?? ''}.
             </h1>
             <p className="font-body text-sm text-nebbia/55 leading-relaxed">{sommario}</p>
@@ -546,18 +546,18 @@ export default function AvvocatoDashboard() {
 
       {/* ─── Banner trial scaduto ───────────────────────── */}
       {showTrialFeedback && (
-        <div className="bg-slate border border-oro/25 p-5 relative overflow-hidden">
+        <div className="bg-slate border border-oro/25 p-4 sm:p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-oro/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none" />
           <div className="relative flex items-start justify-between gap-4 flex-wrap">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <p className="font-body text-sm font-medium text-oro">La tua prova gratuita e scaduta</p>
               <p className="font-body text-xs text-nebbia/50 leading-relaxed max-w-lg">
                 Scegli un piano per continuare a lavorare con le tue pratiche, clienti e documenti.
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
               <button onClick={() => setShowTrialFeedback(false)}
-                className="font-body text-xs text-nebbia/30 hover:text-nebbia transition-colors">
+                className="font-body text-xs text-nebbia/30 hover:text-nebbia transition-colors py-2.5">
                 Dopo
               </button>
               <Link to="/studio?tab=acquista"
@@ -645,18 +645,18 @@ export default function AvvocatoDashboard() {
             link="/pagamenti"
           >
             {/* Hero stat: incassato + da incassare nel range */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="bg-salvia/5 border border-salvia/15 px-3 py-2.5">
-                <p className="font-body text-[10px] text-salvia/60 uppercase tracking-widest mb-1 flex items-center gap-1">
-                  <TrendingUp size={9} /> Incassato
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+              <div className="bg-salvia/5 border border-salvia/15 px-3 py-2.5 min-w-0">
+                <p className="font-body text-xs lg:text-[10px] text-salvia/60 uppercase tracking-widest mb-1 flex items-center gap-1">
+                  <TrendingUp size={9} className="shrink-0" /> Incassato
                 </p>
-                <p className="font-body text-base text-salvia">EUR {fmtEUR(periodo.incassato)}</p>
-                <p className="font-body text-[10px] text-nebbia/30 mt-0.5 truncate">{range.label}</p>
+                <p className="font-body text-base text-salvia break-words">EUR {fmtEUR(periodo.incassato)}</p>
+                <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-0.5 truncate">{range.label}</p>
               </div>
-              <div className="bg-petrolio/40 border border-white/5 px-3 py-2.5">
-                <p className="font-body text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da incassare</p>
-                <p className="font-body text-base text-nebbia/85">EUR {fmtEUR(periodo.da_incassare)}</p>
-                <p className="font-body text-[10px] text-nebbia/30 mt-0.5 truncate">Totale debito attivo</p>
+              <div className="bg-petrolio/40 border border-white/5 px-3 py-2.5 min-w-0">
+                <p className="font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da incassare</p>
+                <p className="font-body text-base text-nebbia/85 break-words">EUR {fmtEUR(periodo.da_incassare)}</p>
+                <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-0.5 truncate">Totale debito attivo</p>
               </div>
             </div>
 
@@ -790,21 +790,21 @@ export default function AvvocatoDashboard() {
                     className="block bg-petrolio/40 border border-white/5 p-3 hover:border-oro/25 transition-colors group"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="font-body text-xs font-medium text-nebbia/85 leading-snug group-hover:text-oro transition-colors line-clamp-2">
+                      <p className="min-w-0 font-body text-xs font-medium text-nebbia/85 leading-snug group-hover:text-oro transition-colors line-clamp-2">
                         {p.titolo}
                       </p>
                       {badge && (
-                        <span className={`font-body text-[10px] px-2 py-0.5 border ${badge.color} shrink-0`}>
+                        <span className={`font-body text-xs lg:text-[10px] px-2 py-0.5 border whitespace-nowrap ${badge.color} shrink-0`}>
                           {badge.label}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-nebbia/40">
-                      <IconCli size={10} />
-                      <p className="font-body text-[11px] truncate">{nomeCliente(cli)}</p>
+                    <div className="flex items-center gap-1.5 text-nebbia/40 min-w-0">
+                      <IconCli size={10} className="shrink-0" />
+                      <p className="font-body text-xs lg:text-[11px] truncate">{nomeCliente(cli)}</p>
                     </div>
                     {p.tipo && (
-                      <p className="font-body text-[10px] text-nebbia/30 mt-1 uppercase tracking-widest">{p.tipo}</p>
+                      <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-1 uppercase tracking-widest break-words">{p.tipo}</p>
                     )}
                   </Link>
                 )

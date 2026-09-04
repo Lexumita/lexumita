@@ -82,12 +82,12 @@ function fmtEUR(n) {
 // ─────────────────────────────────────────────────────────────
 function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
     return (
-        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-fit">
+        <div className="flex flex-wrap gap-1 bg-petrolio border border-white/10 p-1 w-full sm:w-fit">
             <button
                 type="button"
                 onClick={() => !disabled && onChange('persona_fisica')}
                 disabled={disabled}
-                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_fisica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 font-body text-sm transition-colors ${value === 'persona_fisica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -97,7 +97,7 @@ function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
                 type="button"
                 onClick={() => !disabled && onChange('persona_giuridica')}
                 disabled={disabled}
-                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_giuridica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 font-body text-sm transition-colors ${value === 'persona_giuridica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -220,7 +220,7 @@ function ModalCambiaPasswordCliente({ cliente, onClose, onSuccess }) {
                         Stai cambiando la password di <span className="text-nebbia font-medium">{nomeCliente(cliente)}</span>.
                     </p>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button
                             onClick={() => setModo('genera')}
                             className={`flex flex-col items-start gap-1 p-3 border text-left transition-colors ${modo === 'genera'
@@ -437,7 +437,7 @@ function TabDocumenti({ clienteId }) {
             <DocumentiPortale clienteId={clienteId} />
 
             {/* Archivio documentale interno (indicizzato, collegato alle pratiche) */}
-            <div className="flex justify-between items-center pt-2">
+            <div className="flex flex-wrap gap-3 justify-between items-center pt-2">
                 <p className="font-body text-sm text-nebbia/40">
                     {documenti.length} {documenti.length === 1 ? 'documento in archivio' : 'documenti in archivio'}
                     {documenti.length > 0 && (
@@ -465,59 +465,102 @@ function TabDocumenti({ clienteId }) {
                     desc="Carica i documenti nell'archivio per collegarli a questo cliente"
                 />
             ) : (
-                <div className="bg-slate border border-white/5 overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b border-white/5">
-                                {['Documento', 'Pratica', 'Dimensione', 'Stato', 'Caricato il', ''].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {documenti.map(doc => {
-                                const sc = STATUS_OCR[doc.ocr_status] ?? STATUS_OCR.pending
-                                const pratica = pratiche.find(p => p.id === doc.pratica_id)
-                                return (
-                                    <tr key={doc.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <FileText size={14} className="text-oro/60 shrink-0" />
-                                                <span className="font-body text-sm text-nebbia truncate max-w-xs">{doc.titolo}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 font-body text-xs text-nebbia/40 truncate max-w-[160px]">
-                                            {pratica?.titolo ?? '—'}
-                                        </td>
-                                        <td className="px-4 py-3 font-body text-xs text-nebbia/40">{formatSize(doc.dimensione)}</td>
-                                        <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
-                                        <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
-                                            {new Date(doc.created_at).toLocaleDateString('it-IT')}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-1 justify-end">
-                                                <button
-                                                    onClick={() => apriAnteprima(doc)}
-                                                    className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
-                                                    title="Apri anteprima"
-                                                >
-                                                    <Eye size={13} />
-                                                </button>
-                                                <Link
-                                                    to={`/archivio?cliente_id=${clienteId}`}
-                                                    className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
-                                                    title="Apri in archivio"
-                                                >
-                                                    <ExternalLink size={13} />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                <>
+                    {/* Mobile: lista di card */}
+                    <div className="lg:hidden bg-slate border border-white/5 divide-y divide-white/5">
+                        {documenti.map(doc => {
+                            const sc = STATUS_OCR[doc.ocr_status] ?? STATUS_OCR.pending
+                            const pratica = pratiche.find(p => p.id === doc.pratica_id)
+                            return (
+                                <div key={doc.id} className="p-4 space-y-3">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                        <FileText size={15} className="text-oro/60 shrink-0 mt-0.5" />
+                                        <p className="font-body text-sm text-nebbia leading-snug break-words min-w-0">{doc.titolo}</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge label={sc.label} variant={sc.variant} />
+                                        <span className="font-body text-xs text-nebbia/40">{formatSize(doc.dimensione)}</span>
+                                        <span className="font-body text-xs text-nebbia/20">·</span>
+                                        <span className="font-body text-xs text-nebbia/40">{new Date(doc.created_at).toLocaleDateString('it-IT')}</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-nebbia/30 uppercase tracking-widest">Pratica</p>
+                                        <p className="font-body text-xs text-nebbia/60 mt-1 break-words">{pratica?.titolo ?? '—'}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                        <button
+                                            onClick={() => apriAnteprima(doc)}
+                                            className="flex items-center justify-center gap-2 min-h-[44px] px-3 py-2.5 border border-white/10 text-nebbia/60 font-body text-sm hover:text-oro hover:border-oro/30 transition-colors"
+                                        >
+                                            <Eye size={15} /> Anteprima
+                                        </button>
+                                        <Link
+                                            to={`/archivio?cliente_id=${clienteId}`}
+                                            className="flex items-center justify-center gap-2 min-h-[44px] px-3 py-2.5 border border-white/10 text-nebbia/60 font-body text-sm hover:text-oro hover:border-oro/30 transition-colors"
+                                        >
+                                            <ExternalLink size={15} /> Archivio
+                                        </Link>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* Desktop: tabella invariata */}
+                    <div className="hidden lg:block bg-slate border border-white/5 overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    {['Documento', 'Pratica', 'Dimensione', 'Stato', 'Caricato il', ''].map(h => (
+                                        <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {documenti.map(doc => {
+                                    const sc = STATUS_OCR[doc.ocr_status] ?? STATUS_OCR.pending
+                                    const pratica = pratiche.find(p => p.id === doc.pratica_id)
+                                    return (
+                                        <tr key={doc.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <FileText size={14} className="text-oro/60 shrink-0" />
+                                                    <span className="font-body text-sm text-nebbia truncate max-w-xs">{doc.titolo}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 font-body text-xs text-nebbia/40 truncate max-w-[160px]">
+                                                {pratica?.titolo ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 font-body text-xs text-nebbia/40">{formatSize(doc.dimensione)}</td>
+                                            <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
+                                            <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
+                                                {new Date(doc.created_at).toLocaleDateString('it-IT')}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-1 justify-end">
+                                                    <button
+                                                        onClick={() => apriAnteprima(doc)}
+                                                        className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
+                                                        title="Apri anteprima"
+                                                    >
+                                                        <Eye size={13} />
+                                                    </button>
+                                                    <Link
+                                                        to={`/archivio?cliente_id=${clienteId}`}
+                                                        className="inline-flex items-center justify-center w-7 h-7 text-nebbia/20 hover:text-oro hover:bg-oro/10 transition-colors"
+                                                        title="Apri in archivio"
+                                                    >
+                                                        <ExternalLink size={13} />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
         </div>
     )
@@ -614,8 +657,8 @@ function TabNoteInterne({ clienteId }) {
                                                         <span className="font-body text-xs text-nebbia/30">{n.autore?.nome} {n.autore?.cognome} · {new Date(n.created_at).toLocaleString('it-IT')}</span>
                                                     </div>
                                                     <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => { setEditingId(n.id); setEditVal(n.testo) }} className="text-nebbia/30 hover:text-oro p-1 transition-colors"><Edit2 size={12} /></button>
-                                                        <button onClick={() => eliminaNota(n.id)} className="text-nebbia/30 hover:text-red-400 p-1 transition-colors"><Trash2 size={12} /></button>
+                                                        <button onClick={() => { setEditingId(n.id); setEditVal(n.testo) }} className="text-nebbia/30 hover:text-oro p-2.5 lg:p-1 transition-colors"><Edit2 size={12} /></button>
+                                                        <button onClick={() => eliminaNota(n.id)} className="text-nebbia/30 hover:text-red-400 p-2.5 lg:p-1 transition-colors"><Trash2 size={12} /></button>
                                                     </div>
                                                 </div>
                                             </>
@@ -695,7 +738,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data *</label>
                             <input
@@ -813,7 +856,7 @@ function TabPagamenti({ clienteId, avvocatoId }) {
     return (
         <div className="space-y-4">
             {fatture.length > 0 && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-slate border border-white/5 p-4">
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Da incassare</p>
                         <p className="font-display text-2xl font-semibold text-oro">EUR {fmtEUR(totaleAperto)}</p>
@@ -832,37 +875,80 @@ function TabPagamenti({ clienteId, avvocatoId }) {
             {loading ? <div className="flex items-center justify-center py-12"><span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" /></div>
                 : fatture.length === 0 ? <EmptyState icon={CreditCard} title="Nessuna fattura" desc="Vai alla pagina Pagamenti per emettere fatture" />
                     : (
-                        <div className="bg-slate border border-white/5 overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-white/5">
-                                        {['Numero', 'Importo', 'Descrizione', 'Emessa il', 'Scadenza', 'Stato', ''].map(h => (
-                                            <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {fatture.map(fatt => {
-                                        const sc = STATI_FATTURA[fatt.stato] ?? STATI_FATTURA.in_attesa
-                                        return (
-                                            <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
-                                                <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                                                <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</td>
-                                                <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
-                                                <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
-                                                <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>
-                                                <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
-                                                <td className="px-4 py-3 text-right">
-                                                    {['in_attesa', 'scaduta'].includes(fatt.stato) && (
-                                                        <button onClick={() => apriPagamento(fatt)} className="font-body text-xs text-salvia hover:text-salvia/70 transition-colors whitespace-nowrap">Segna pagata</button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                        <>
+                            {/* Mobile: lista di card */}
+                            <div className="lg:hidden bg-slate border border-white/5 divide-y divide-white/5">
+                                {fatture.map(fatt => {
+                                    const sc = STATI_FATTURA[fatt.stato] ?? STATI_FATTURA.in_attesa
+                                    return (
+                                        <div key={fatt.id} className="p-4 space-y-3">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-xs text-nebbia/30 uppercase tracking-widest">Fattura</p>
+                                                    <p className="font-body text-sm font-medium text-nebbia/70 mt-1 break-words">{fatt.numero}</p>
+                                                </div>
+                                                <div className="shrink-0"><Badge label={sc.label} variant={sc.variant} /></div>
+                                            </div>
+                                            <p className="font-display text-2xl font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</p>
+                                            {fatt.descrizione && (
+                                                <p className="font-body text-xs text-nebbia/50 leading-relaxed break-words">{fatt.descrizione}</p>
+                                            )}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <p className="text-xs text-nebbia/30 uppercase tracking-widest">Emessa il</p>
+                                                    <p className="font-body text-xs text-nebbia/60 mt-1">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-nebbia/30 uppercase tracking-widest">Scadenza</p>
+                                                    <p className="font-body text-xs text-nebbia/60 mt-1">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</p>
+                                                </div>
+                                            </div>
+                                            {['in_attesa', 'scaduta'].includes(fatt.stato) && (
+                                                <button
+                                                    onClick={() => apriPagamento(fatt)}
+                                                    className="flex items-center justify-center gap-2 w-full min-h-[44px] px-3 py-2.5 bg-salvia/5 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/10 transition-colors"
+                                                >
+                                                    <Check size={15} /> Segna pagata
+                                                </button>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Desktop: tabella invariata */}
+                            <div className="hidden lg:block bg-slate border border-white/5 overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-white/5">
+                                            {['Numero', 'Importo', 'Descrizione', 'Emessa il', 'Scadenza', 'Stato', ''].map(h => (
+                                                <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {fatture.map(fatt => {
+                                            const sc = STATI_FATTURA[fatt.stato] ?? STATI_FATTURA.in_attesa
+                                            return (
+                                                <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
+                                                    <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
+                                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</td>
+                                                    <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
+                                                    <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
+                                                    <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>
+                                                    <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        {['in_attesa', 'scaduta'].includes(fatt.stato) && (
+                                                            <button onClick={() => apriPagamento(fatt)} className="font-body text-xs text-salvia hover:text-salvia/70 transition-colors whitespace-nowrap">Segna pagata</button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
                     )}
 
             {fatturaPagamento && (
@@ -943,7 +1029,7 @@ function TabComunicazioni({ clienteId }) {
     if (ticketAperto) {
         return (
             <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
                     <div className="flex items-center gap-3">
                         <button onClick={() => { setTicketAperto(null); setMessaggi([]) }} className="text-nebbia/40 hover:text-nebbia transition-colors">
                             <ArrowRight size={16} className="rotate-180" />
@@ -959,7 +1045,7 @@ function TabComunicazioni({ clienteId }) {
                         )}
                     </div>
                 </div>
-                <div className="bg-slate border border-white/5 flex flex-col" style={{ height: 420 }}>
+                <div className="bg-slate border border-white/5 flex flex-col h-[70vh] lg:h-[420px]">
                     <div className="flex-1 overflow-y-auto p-5 space-y-3">
                         {messaggi.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full gap-2">
@@ -970,9 +1056,9 @@ function TabComunicazioni({ clienteId }) {
                             const isMio = msg.autore_id === meId
                             return (
                                 <div key={msg.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-sm px-4 py-2.5 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio border border-white/10'}`}>
+                                    <div className={`max-w-[85%] lg:max-w-sm px-4 py-2.5 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio border border-white/10'}`}>
                                         <p className="font-body text-sm text-nebbia leading-relaxed">{msg.testo}</p>
-                                        <p className={`font-body text-[10px] mt-1 ${isMio ? 'text-oro/50 text-right' : 'text-nebbia/30'}`}>
+                                        <p className={`font-body text-xs mt-1 ${isMio ? 'text-oro/50 text-right' : 'text-nebbia/30'}`}>
                                             {new Date(msg.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
@@ -1001,7 +1087,7 @@ function TabComunicazioni({ clienteId }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
                 <p className="font-body text-sm text-nebbia/40">{tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'}</p>
                 <button onClick={() => setShowForm(v => !v)} className="btn-primary text-sm flex items-center gap-2">
                     <Plus size={14} />{showForm ? 'Annulla' : 'Nuovo ticket'}
@@ -1116,9 +1202,9 @@ function PannelloPratica({ pratica, onClose }) {
                     ['Stato', sc.label],
                     ...(pratica.esito ? [['Esito', pratica.esito.charAt(0).toUpperCase() + pratica.esito.slice(1)]] : []),
                 ].map(([l, v]) => (
-                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                        <span className="font-body text-sm text-nebbia">{v}</span>
+                    <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                        <span className="font-body text-sm text-nebbia text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                     </div>
                 ))}
             </div>
@@ -1486,7 +1572,7 @@ export default function AvvocatoClientiDettaglio() {
                         {isPF ? <User size={11} /> : <Building2 size={11} />}
                         {isPF ? 'Cliente · Persona fisica' : 'Cliente · Persona giuridica'}
                     </p>
-                    <h1 className="font-display text-4xl font-light text-nebbia">{nomeCliente(cliente)}</h1>
+                    <h1 className="font-display text-3xl lg:text-4xl font-light text-nebbia break-words">{nomeCliente(cliente)}</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-1">{cliente.email} · {cliente.telefono ?? '—'}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -1515,7 +1601,7 @@ export default function AvvocatoClientiDettaglio() {
             <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
                 {tabsVisibili.map(({ id: tid, label, icon: Icon }) => (
                     <button key={tid} onClick={() => { setTab(tid); setPraticaSelezionata(null) }}
-                        className={`flex items-center gap-2 px-4 py-3 font-body text-sm whitespace-nowrap border-b-2 transition-colors ${tab === tid ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
+                        className={`flex shrink-0 items-center gap-2 px-4 py-3 min-h-[44px] font-body text-sm whitespace-nowrap border-b-2 transition-colors ${tab === tid ? 'border-oro text-oro' : 'border-transparent text-nebbia/40 hover:text-nebbia'
                             } ${tid === 'note_interne' ? 'text-amber-400/70 hover:text-amber-400' : ''}`}>
                         <Icon size={14} strokeWidth={1.5} />{label}
                         {tid === 'note_interne' && <Lock size={11} className="opacity-50" />}
@@ -1548,12 +1634,12 @@ export default function AvvocatoClientiDettaglio() {
 
                                 {formIsPF ? (
                                     <>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputField label="Nome" {...fc('nome')} />
                                             <InputField label="Cognome" {...fc('cognome')} />
                                         </div>
                                         <InputField label="Codice fiscale" {...fc('cf')} />
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data nascita</label>
                                                 <input type="date" {...fc('data_nascita')}
@@ -1565,18 +1651,18 @@ export default function AvvocatoClientiDettaglio() {
                                 ) : (
                                     <>
                                         <InputField label="Ragione sociale" {...fc('ragione_sociale')} />
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <InputField label="Partita IVA" {...fc('partita_iva')} />
                                             <InputField label="Codice fiscale" {...fc('cf')} />
                                         </div>
                                         <InputField label="Sede legale" {...fc('sede_legale')} />
                                         <div className="border-t border-white/8 pt-3 space-y-3">
                                             <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Rappresentante legale</p>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <InputField label="Nome" {...fc('rappr_nome')} />
                                                 <InputField label="Cognome" {...fc('rappr_cognome')} />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <InputField label="CF rappresentante" {...fc('rappr_cf')} />
                                                 <InputField label="Carica" placeholder="Es. Amministratore Unico" {...fc('rappr_carica')} />
                                             </div>
@@ -1607,7 +1693,7 @@ export default function AvvocatoClientiDettaglio() {
                                 <div className="border-t border-white/8 pt-3 space-y-3">
                                     <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Contatti</p>
                                     <InputField label="Email" type="email" {...fc('email')} />
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <InputField label="Telefono" {...fc('telefono')} />
                                         <InputField label="PEC" {...fc('pec')} />
                                     </div>
@@ -1616,8 +1702,8 @@ export default function AvvocatoClientiDettaglio() {
                                 <div className="border-t border-white/8 pt-3 space-y-3">
                                     <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Indirizzo</p>
                                     <InputField label="Indirizzo" placeholder="Via Roma 1" {...fc('indirizzo')} />
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="col-span-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="sm:col-span-2">
                                             <InputField label="Comune" {...fc('comune')} />
                                         </div>
                                         <InputField label="Provincia" placeholder="MI" {...fc('provincia')} />
@@ -1635,9 +1721,9 @@ export default function AvvocatoClientiDettaglio() {
                                     ['Data nascita', cliente.data_nascita ? new Date(cliente.data_nascita).toLocaleDateString('it-IT') : '—'],
                                     ['Luogo nascita', cliente.luogo_nascita || '—'],
                                 ].map(([l, v]) => (
-                                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                        <span className="font-body text-sm text-nebbia">{v}</span>
+                                    <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                                        <span className="font-body text-sm text-nebbia text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                                     </div>
                                 )) : [
                                     ['Ragione sociale', cliente.ragione_sociale || '—'],
@@ -1645,9 +1731,9 @@ export default function AvvocatoClientiDettaglio() {
                                     ['Codice fiscale', cliente.cf || '—'],
                                     ['Sede legale', cliente.sede_legale || '—'],
                                 ].map(([l, v]) => (
-                                    <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                        <span className="font-body text-sm text-nebbia">{v}</span>
+                                    <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                                        <span className="font-body text-sm text-nebbia text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                                     </div>
                                 ))}
 
@@ -1659,9 +1745,9 @@ export default function AvvocatoClientiDettaglio() {
                                             ['Codice fiscale', cliente.rappr_cf || '—'],
                                             ['Carica', cliente.rappr_carica || '—'],
                                         ].map(([l, v]) => (
-                                            <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                                <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                                <span className="font-body text-sm text-nebbia/70">{v}</span>
+                                            <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                                <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                                                <span className="font-body text-sm text-nebbia/70 text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1674,9 +1760,9 @@ export default function AvvocatoClientiDettaglio() {
                                         ['Telefono', cliente.telefono || '—'],
                                         ['PEC', cliente.pec || '—'],
                                     ].map(([l, v]) => (
-                                        <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                            <span className="font-body text-sm text-nebbia/70">{v}</span>
+                                        <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                                            <span className="font-body text-sm text-nebbia/70 text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -1689,16 +1775,16 @@ export default function AvvocatoClientiDettaglio() {
                                         ['Provincia', cliente.provincia || '—'],
                                         ['CAP', cliente.cap || '—'],
                                     ].map(([l, v]) => (
-                                        <div key={l} className="flex justify-between border-b border-white/5 pb-2">
-                                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                            <span className="font-body text-sm text-nebbia/70">{v}</span>
+                                        <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
+                                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
+                                            <span className="font-body text-sm text-nebbia/70 text-right break-words min-w-0 lg:text-left lg:break-normal lg:min-w-min">{v}</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 {isStudio && (
                                     <div className="border-t border-white/5 pt-3 mt-3">
-                                        <div className="flex justify-between border-b border-white/5 pb-2">
+                                        <div className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
                                             <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Avvocato assegnato</span>
                                             <span className="font-body text-sm text-nebbia">{nomeAvvocato}</span>
                                         </div>
@@ -1713,8 +1799,8 @@ export default function AvvocatoClientiDettaglio() {
 
             {tab === 'mandati' && isCommercialista && <GestioneMandati clienteId={id} />}
             {tab === 'pratiche' && isAvvocato && (
-                <div className="flex gap-4 min-h-[500px]">
-                    <div className={`flex flex-col gap-2 ${praticaSelezionata ? 'w-[20%] shrink-0' : 'flex-1'}`}>
+                <div className="flex flex-col lg:flex-row gap-4 lg:min-h-[500px]">
+                    <div className={`flex-col gap-2 ${praticaSelezionata ? 'hidden lg:flex lg:w-[20%] lg:shrink-0' : 'flex flex-1'}`}>
                         <div className="flex justify-end mb-1">
                             <Link to={`/pratiche/nuova?cliente_id=${id}`} className="btn-primary text-sm flex items-center gap-2"><Plus size={14} />Nuova pratica</Link>
                         </div>
@@ -1726,7 +1812,7 @@ export default function AvvocatoClientiDettaglio() {
                             return (
                                 <button key={p.id} onClick={() => setPraticaSelezionata(sel ? null : p)}
                                     className={`w-full text-left p-4 border transition-all ${sel ? 'bg-oro/8 border-oro/30' : 'bg-slate border-white/5 hover:border-oro/20'}`}>
-                                    <div className="flex items-center justify-between gap-4">
+                                    <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 lg:gap-4">
                                         <div className="min-w-0 flex-1">
                                             <p className="font-body text-sm font-medium text-nebbia truncate">{p.titolo}</p>
                                             <p className="font-body text-xs text-nebbia/40 mt-0.5">{p.tipo}</p>
@@ -1746,7 +1832,13 @@ export default function AvvocatoClientiDettaglio() {
                         })}
                     </div>
                     {praticaSelezionata && (
-                        <div className="w-[80%] bg-slate border border-white/5 p-5 overflow-y-auto">
+                        <div className="w-full lg:w-[80%] bg-slate border border-white/5 p-5 lg:overflow-y-auto">
+                            <button
+                                onClick={() => setPraticaSelezionata(null)}
+                                className="lg:hidden flex items-center gap-2 w-full min-h-[44px] px-3 py-2.5 mb-4 border border-white/10 text-nebbia/60 font-body text-sm hover:text-nebbia hover:border-oro/30 transition-colors"
+                            >
+                                <ArrowRight size={15} className="rotate-180" /> Torna all'elenco
+                            </button>
                             <PannelloPratica pratica={praticaSelezionata} onClose={() => setPraticaSelezionata(null)} />
                         </div>
                     )}

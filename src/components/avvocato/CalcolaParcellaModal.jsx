@@ -125,17 +125,17 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
   const nessunDato = gruppiDisponibili.length === 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-petrolio/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-petrolio/80 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-slate border border-white/10 w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-2">
-            <Scale size={15} className="text-oro" />
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-white/5 shrink-0">
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 min-w-0">
+            <Scale size={15} className="text-oro shrink-0" />
             <p className="font-body text-sm font-medium text-nebbia">Calcola parcella — parametri forensi</p>
             <span className="font-body text-xs text-nebbia/30">DM 55/2014 · {VERSIONI.find(v => v.id === versione)?.label}</span>
           </div>
-          <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia transition-colors"><X size={16} /></button>
+          <button onClick={onClose} className="shrink-0 p-2 -mr-2 text-nebbia/40 hover:text-nebbia transition-colors"><X size={16} /></button>
         </div>
 
         {nessunDato ? (
@@ -147,7 +147,7 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
         ) : (
           <>
             {/* Body scroll */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
 
               {/* Competenza + scaglione */}
               <div className="space-y-4">
@@ -175,7 +175,7 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                       <input type="number" min="0" step="100" placeholder="Es. 15000"
                         value={valoreCausa} onChange={e => onValoreCausa(e.target.value)}
                         className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-                      <p className="font-body text-[11px] text-nebbia/30 mt-1">Imposta automaticamente lo scaglione.</p>
+                      <p className="font-body text-xs sm:text-[11px] text-nebbia/30 mt-1">Imposta automaticamente lo scaglione.</p>
                     </div>
                     <div>
                       <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Scaglione di valore</label>
@@ -188,12 +188,12 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                 )}
 
                 {!isPenale && (
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="font-body text-[11px] text-nebbia/30 self-center mr-1">Valore indeterminabile:</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-1.5">
+                    <span className="w-full sm:w-auto font-body text-xs sm:text-[11px] text-nebbia/30 sm:self-center sm:mr-1">Valore indeterminabile:</span>
                     {INDETERMINABILE.map(o => (
                       <button key={o.id} type="button"
                         onClick={() => { setScaglioneId(o.scaglione); setValoreCausa('') }}
-                        className="font-body text-[11px] px-2 py-1 border border-white/10 text-nebbia/50 hover:border-oro/40 hover:text-oro transition-colors">
+                        className="font-body text-xs sm:text-[11px] min-h-[40px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-1 border border-white/10 text-nebbia/50 hover:border-oro/40 hover:text-oro transition-colors">
                         {o.label.replace('Indeterminabile — ', '')}
                       </button>
                     ))}
@@ -209,23 +209,25 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                     const disp = disponibili.includes(f.id)
                     const cfg = fasi[f.id] ?? { incluso: false, livello: 'medio' }
                     return (
-                      <div key={f.id} className={`flex items-center gap-3 p-2.5 border ${cfg.incluso && disp ? 'border-oro/20 bg-oro/5' : 'border-white/5'} ${!disp ? 'opacity-40' : ''}`}>
-                        <input type="checkbox" disabled={!disp} checked={cfg.incluso && disp}
-                          onChange={e => setFasi(prev => ({ ...prev, [f.id]: { ...prev[f.id], incluso: e.target.checked } }))}
-                          className="w-4 h-4 accent-oro shrink-0" />
-                        <span className="font-body text-sm text-nebbia flex-1">{f.label}</span>
+                      <div key={f.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2.5 border ${cfg.incluso && disp ? 'border-oro/20 bg-oro/5' : 'border-white/5'} ${!disp ? 'opacity-40' : ''}`}>
+                        <label className="flex items-center gap-3 sm:flex-1 min-w-0 cursor-pointer py-1 sm:py-0">
+                          <input type="checkbox" disabled={!disp} checked={cfg.incluso && disp}
+                            onChange={e => setFasi(prev => ({ ...prev, [f.id]: { ...prev[f.id], incluso: e.target.checked } }))}
+                            className="w-4 h-4 accent-oro shrink-0" />
+                          <span className="font-body text-sm text-nebbia sm:flex-1">{f.label}</span>
+                        </label>
                         {disp ? (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 sm:gap-1 shrink-0">
                             {LIVELLI.map(l => (
                               <button key={l.id} type="button"
                                 onClick={() => setFasi(prev => ({ ...prev, [f.id]: { ...prev[f.id], incluso: true, livello: l.id } }))}
-                                className={`font-body text-[11px] px-2 py-1 border transition-colors ${cfg.livello === l.id ? 'border-oro/50 bg-oro/10 text-oro' : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}>
+                                className={`font-body text-xs sm:text-[11px] flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-2 py-2 sm:py-1 border transition-colors ${cfg.livello === l.id ? 'border-oro/50 bg-oro/10 text-oro' : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}>
                                 {l.label}
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <span className="font-body text-[11px] text-nebbia/25">non prevista</span>
+                          <span className="font-body text-xs sm:text-[11px] text-nebbia/25 shrink-0">non prevista</span>
                         )}
                       </div>
                     )
@@ -242,26 +244,26 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                       const st = aumenti[a.id] ?? { attivo: false }
                       return (
                         <div key={a.id} className="space-y-1">
-                          <label className="flex items-start gap-2 cursor-pointer">
-                            <input type="checkbox" checked={!!st.attivo} onChange={() => toggleAumento(a)} className="w-3.5 h-3.5 accent-oro mt-0.5 shrink-0" />
+                          <label className="flex items-start gap-2.5 sm:gap-2 cursor-pointer py-1.5 sm:py-0">
+                            <input type="checkbox" checked={!!st.attivo} onChange={() => toggleAumento(a)} className="w-4 h-4 accent-oro mt-0.5 shrink-0" />
                             <span className="font-body text-xs text-nebbia/80 leading-snug">{a.label}
                               <span className="text-nebbia/30"> · {a.riferimento}</span></span>
                           </label>
                           {st.attivo && a.tipo === 'parti' && (
                             <div className="pl-6 flex items-center gap-2">
-                              <span className="font-body text-[11px] text-nebbia/40">Numero parti</span>
+                              <span className="font-body text-xs sm:text-[11px] text-nebbia/40">Numero parti</span>
                               <input type="number" min="2" max="30" value={st.nParti ?? 2}
                                 onChange={e => setNParti(a, e.target.value)}
-                                className="w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-1 outline-none focus:border-oro/50" />
-                              <span className="font-body text-[11px] text-oro/70">+{pctAumentoParti(st.nParti ?? 2)}%</span>
+                                className="w-20 sm:w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-2 sm:py-1 outline-none focus:border-oro/50" />
+                              <span className="font-body text-xs sm:text-[11px] text-oro/70">+{pctAumentoParti(st.nParti ?? 2)}%</span>
                             </div>
                           )}
                           {st.attivo && a.tipo !== 'parti' && (
                             <div className="pl-6 flex items-center gap-2">
                               <input type="number" min="0" max={a.pct} value={st.pct ?? a.pct}
                                 onChange={e => setPctAumento(a, e.target.value)}
-                                className="w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-1 outline-none focus:border-oro/50" />
-                              <span className="font-body text-[11px] text-nebbia/40">% (max {a.pct})</span>
+                                className="w-20 sm:w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-2 sm:py-1 outline-none focus:border-oro/50" />
+                              <span className="font-body text-xs sm:text-[11px] text-nebbia/40">% (max {a.pct})</span>
                             </div>
                           )}
                         </div>
@@ -276,8 +278,8 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                       const st = riduzioni[r.id] ?? { attivo: false }
                       return (
                         <div key={r.id} className="space-y-1">
-                          <label className="flex items-start gap-2 cursor-pointer">
-                            <input type="checkbox" checked={!!st.attivo} onChange={() => toggleRiduzione(r)} className="w-3.5 h-3.5 accent-oro mt-0.5 shrink-0" />
+                          <label className="flex items-start gap-2.5 sm:gap-2 cursor-pointer py-1.5 sm:py-0">
+                            <input type="checkbox" checked={!!st.attivo} onChange={() => toggleRiduzione(r)} className="w-4 h-4 accent-oro mt-0.5 shrink-0" />
                             <span className="font-body text-xs text-nebbia/80 leading-snug">{r.label}
                               <span className="text-nebbia/30"> · {r.riferimento}</span></span>
                           </label>
@@ -285,8 +287,8 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                             <div className="pl-6 flex items-center gap-2">
                               <input type="number" min="0" max={r.pct} value={st.pct ?? r.pct}
                                 onChange={e => setPctRiduzione(r, e.target.value)}
-                                className="w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-1 outline-none focus:border-oro/50" />
-                              <span className="font-body text-[11px] text-nebbia/40">% (max {r.pct})</span>
+                                className="w-20 sm:w-16 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-2 py-2 sm:py-1 outline-none focus:border-oro/50" />
+                              <span className="font-body text-xs sm:text-[11px] text-nebbia/40">% (max {r.pct})</span>
                             </div>
                           )}
                         </div>
@@ -297,12 +299,12 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
               </div>
 
               {/* Opzioni parcella */}
-              <div className="border-t border-white/5 pt-4 flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="border-t border-white/5 pt-4 flex flex-wrap gap-x-4 gap-y-1 sm:gap-4">
+                <label className="flex items-center gap-2 cursor-pointer py-1.5 sm:py-0">
                   <input type="checkbox" checked={includiSpeseGenerali} onChange={e => setIncludiSpeseGenerali(e.target.checked)} className="w-4 h-4 accent-oro" />
                   <span className="font-body text-xs text-nebbia/80">Spese generali forfettarie 15%</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer py-1.5 sm:py-0">
                   <input type="checkbox" checked={applicaRitenuta} onChange={e => setApplicaRitenuta(e.target.checked)} className="w-4 h-4 accent-oro" />
                   <span className="font-body text-xs text-nebbia/80">Anteprima con ritenuta 20%</span>
                 </label>
@@ -311,27 +313,27 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
               {/* Disclaimer */}
               <div className="bg-petrolio/40 border border-white/5 p-3 flex items-start gap-2">
                 <Info size={13} className="text-salvia/70 shrink-0 mt-0.5" />
-                <p className="font-body text-[11px] text-nebbia/50 leading-relaxed">{DISCLAIMER}</p>
+                <p className="font-body text-xs sm:text-[11px] text-nebbia/50 leading-relaxed">{DISCLAIMER}</p>
               </div>
             </div>
 
             {/* Riepilogo + azioni */}
-            <div className="border-t border-white/10 px-5 py-4 shrink-0 space-y-3">
+            <div className="border-t border-white/10 px-4 sm:px-5 py-4 shrink-0 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div>
-                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Compenso</p>
+                  <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Compenso</p>
                   <p className="font-body text-sm text-nebbia">€ {fmtEUR(rp?.compenso)}</p>
                 </div>
                 <div>
-                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Imponibile</p>
+                  <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Imponibile</p>
                   <p className="font-body text-sm text-nebbia">€ {fmtEUR(rp?.imponibile)}</p>
                 </div>
                 <div>
-                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Tot. fattura</p>
+                  <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Tot. fattura</p>
                   <p className="font-body text-sm font-semibold text-oro">€ {fmtEUR(rp?.totaleLordo)}</p>
                 </div>
                 <div>
-                  <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{applicaRitenuta ? 'Netto' : 'Righe'}</p>
+                  <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">{applicaRitenuta ? 'Netto' : 'Righe'}</p>
                   <p className="font-body text-sm text-salvia">{applicaRitenuta ? `€ ${fmtEUR(rp?.totaleNetto)}` : (risultato.righe?.length ?? 0)}</p>
                 </div>
               </div>
@@ -340,15 +342,15 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
                 <p className="font-body text-xs text-amber-400/80 flex items-center gap-1.5"><AlertTriangle size={12} /> {risultato.errore}</p>
               )}
 
-              <div className="flex flex-wrap gap-2 justify-end">
-                <button onClick={onClose} className="px-4 py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors">Annulla</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:flex-wrap gap-2 sm:justify-end">
+                <button onClick={onClose} className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-white/10 text-nebbia/50 font-body text-xs hover:text-nebbia transition-colors">Annulla</button>
                 <button onClick={() => inserisci('aggiungi')} disabled={!risultato.ok}
-                  className="flex items-center gap-1.5 px-4 py-2 border border-oro/30 text-oro font-body text-xs hover:bg-oro/10 transition-colors disabled:opacity-40">
-                  <Plus size={12} /> Aggiungi alle righe
+                  className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-1.5 px-4 py-3 sm:py-2 border border-oro/30 text-oro font-body text-xs hover:bg-oro/10 transition-colors disabled:opacity-40">
+                  <Plus size={14} /> Aggiungi alle righe
                 </button>
                 <button onClick={() => inserisci('sostituisci')} disabled={!risultato.ok}
-                  className="btn-primary text-xs flex items-center gap-1.5 disabled:opacity-40">
-                  <Replace size={12} /> Inserisci nella fattura
+                  className="btn-primary w-full sm:w-auto text-xs flex items-center justify-center sm:justify-start gap-1.5 disabled:opacity-40">
+                  <Replace size={14} /> Inserisci nella fattura
                 </button>
               </div>
             </div>

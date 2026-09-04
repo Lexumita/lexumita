@@ -42,6 +42,23 @@ const STATO_CONFIG = {
 
 const STATI_MANDATO = ['attivo', 'sospeso', 'concluso', 'archiviato']
 
+// --- Solo presentazione (mobile) ---------------------------------------------
+// Su telefono i widget sono raggruppati in schede: si evita una pagina
+// lunghissima. Da lg: in su le schede spariscono e tutto resta impilato.
+const GRUPPI = [
+    { id: 'anagrafica', label: 'Anagrafica' },
+    { id: 'scadenze', label: 'Scadenze' },
+    { id: 'cassa', label: 'Cassa' },
+    { id: 'documenti', label: 'Documenti' },
+    { id: 'lex', label: 'Lex' },
+]
+
+// I box figli hanno altezza fissa + scroll interno: su mobile diventano ad
+// altezza naturale (scorre la pagina, niente scroll dentro scroll).
+// Da lg: in su l'altezza fissa e lo scroll interno tornano identici a prima.
+const SBLOCCA_440 = '[&>div]:h-auto lg:[&>div]:h-[440px] [&>div>.overflow-y-auto]:overflow-y-visible lg:[&>div>.overflow-y-auto]:overflow-y-auto'
+const SBLOCCA_560 = '[&>div]:h-auto lg:[&>div]:h-[560px] [&>div>.overflow-y-auto]:overflow-y-visible lg:[&>div>.overflow-y-auto]:overflow-y-auto'
+
 export default function MandatoDettaglio() {
     const { id } = useParams()
 
@@ -52,6 +69,10 @@ export default function MandatoDettaglio() {
 
     const [cambiandoStato, setCambiandoStato] = useState(false)
     const [menuStato, setMenuStato] = useState(false)
+
+    // Scheda aperta su mobile (sola presentazione: da lg: in su è ignorata).
+    const [gruppo, setGruppo] = useState('anagrafica')
+    const vis = (id) => (gruppo === id ? 'block lg:block' : 'hidden lg:block')
 
     // Quando Entrate/Uscite salva o elimina un movimento, incrementa →
     // Report, Liquidità e Budget si ricaricano senza refresh della pagina.
@@ -140,22 +161,22 @@ export default function MandatoDettaglio() {
             {/* Header mandato */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 mb-2">
                         <span className="section-label">
                             <FolderOpen size={11} className="inline" /> Mandato
                         </span>
                         {mandato.tipo && (
-                            <span className="font-body text-[10px] px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/50 uppercase tracking-wider">
+                            <span className="font-body text-xs lg:text-[10px] px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/50 uppercase tracking-wider">
                                 {mandato.tipo}
                             </span>
                         )}
                         {mandato.anno_riferimento && (
-                            <span className="font-body text-[10px] px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/50 uppercase tracking-wider">
+                            <span className="font-body text-xs lg:text-[10px] px-2 py-0.5 bg-petrolio border border-white/10 text-nebbia/50 uppercase tracking-wider">
                                 {mandato.anno_riferimento}
                             </span>
                         )}
                     </div>
-                    <h1 className="font-display text-3xl text-nebbia leading-tight">{mandato.titolo}</h1>
+                    <h1 className="font-display text-2xl lg:text-3xl text-nebbia leading-tight break-words">{mandato.titolo}</h1>
                 </div>
 
                 {/* Badge stato + cambio stato */}
@@ -186,14 +207,28 @@ export default function MandatoDettaglio() {
                 </div>
             </div>
 
+            {/* Schede (solo mobile) */}
+            <div className="lg:hidden -mx-4 px-4 overflow-x-auto">
+                <div className="flex gap-1 min-w-max">
+                    {GRUPPI.map(g => (
+                        <button key={g.id} type="button" onClick={() => setGruppo(g.id)}
+                            className={`px-3 py-2.5 border font-body text-xs uppercase tracking-widest transition-colors ${gruppo === g.id
+                                ? 'bg-oro/10 border-oro/40 text-oro'
+                                : 'bg-slate border-white/5 text-nebbia/40'}`}>
+                            {g.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* RIGA 1 — Anagrafica + Scadenze */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Anagrafica */}
-                <div className="bg-slate border border-white/5 flex flex-col h-[440px]">
+                <div className={`bg-slate border border-white/5 flex-col h-auto lg:h-[440px] ${gruppo === 'anagrafica' ? 'flex lg:flex' : 'hidden lg:flex'}`}>
                     <div className="px-5 py-3 border-b border-white/5 shrink-0">
                         <p className="section-label">Anagrafica</p>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                    <div className="flex-1 overflow-y-visible lg:overflow-y-auto p-5 space-y-5">
                         {/* Cliente */}
                         {cliente ? (
                             <Link to={`/clienti/${cliente.id}`}
@@ -267,78 +302,92 @@ export default function MandatoDettaglio() {
                 </div>
 
                 {/* Scadenze */}
-                <BoxScadenzeMandato
-                    mandatoId={mandato.id}
-                    clienteId={mandato.cliente_id}
-                    studioId={mandato.studio_id}
-                    anno={mandato.anno_riferimento}
-                    regime={cliente?.regime_contabile ?? null}
-                />
+                <div className={`${vis('scadenze')} ${SBLOCCA_440}`}>
+                    <BoxScadenzeMandato
+                        mandatoId={mandato.id}
+                        clienteId={mandato.cliente_id}
+                        studioId={mandato.studio_id}
+                        anno={mandato.anno_riferimento}
+                        regime={cliente?.regime_contabile ?? null}
+                    />
+                </div>
             </div>
 
             {/* RIGA 2 — Entrate e uscite (cassa) */}
-            <EntrateUscite
-                clienteId={mandato.cliente_id}
-                mandatoId={mandato.id}
-                anno={mandato.anno_riferimento}
-                onMovimentiChange={() => setRefreshMovimenti(k => k + 1)}
-                refreshTrigger={refreshMovimenti}
-            />
-
-            {/* RIGA 2b — Documenti del mandato + estrazione OCR movimenti */}
-            <BoxDocumentiMandato
-                mandatoId={mandato.id}
-                clienteId={mandato.cliente_id}
-                onMovimentoChange={() => setRefreshMovimenti(k => k + 1)}
-                refreshTrigger={refreshDocumenti}
-            />
-
-            {/* RIGA 3 — Conto economico */}
-            <ReportConto
-                clienteId={mandato.cliente_id}
-                mandatoId={mandato.id}
-                anno={mandato.anno_riferimento}
-                refreshTrigger={refreshMovimenti}
-            />
-
-            {/* RIGA 4 — Liquidità + Budget */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                <PianificazioneLiquidita
+            <div className={vis('cassa')}>
+                <EntrateUscite
                     clienteId={mandato.cliente_id}
                     mandatoId={mandato.id}
+                    anno={mandato.anno_riferimento}
+                    onMovimentiChange={() => setRefreshMovimenti(k => k + 1)}
                     refreshTrigger={refreshMovimenti}
                 />
-                <BudgetScostamenti
+            </div>
+
+            {/* RIGA 2b — Documenti del mandato + estrazione OCR movimenti */}
+            <div className={vis('documenti')}>
+                <BoxDocumentiMandato
+                    mandatoId={mandato.id}
+                    clienteId={mandato.cliente_id}
+                    onMovimentoChange={() => setRefreshMovimenti(k => k + 1)}
+                    refreshTrigger={refreshDocumenti}
+                />
+            </div>
+
+            {/* RIGHE 3-6 — Conto economico, liquidità, budget, personale, contabilità */}
+            <div className={`space-y-6 ${vis('cassa')}`}>
+                {/* RIGA 3 — Conto economico */}
+                <ReportConto
                     clienteId={mandato.cliente_id}
                     mandatoId={mandato.id}
                     anno={mandato.anno_riferimento}
                     refreshTrigger={refreshMovimenti}
                 />
+
+                {/* RIGA 4 — Liquidità + Budget */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                    <PianificazioneLiquidita
+                        clienteId={mandato.cliente_id}
+                        mandatoId={mandato.id}
+                        refreshTrigger={refreshMovimenti}
+                    />
+                    <BudgetScostamenti
+                        clienteId={mandato.cliente_id}
+                        mandatoId={mandato.id}
+                        anno={mandato.anno_riferimento}
+                        refreshTrigger={refreshMovimenti}
+                    />
+                </div>
+
+                {/* RIGA 5 — Dipendenti e costo del personale */}
+                {mandato.cliente_id && (
+                    <div className="bg-slate border border-white/5 p-4 lg:p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Users size={15} className="text-oro/60" />
+                            <h2 className="font-display text-lg text-nebbia">Dipendenti e costo del personale</h2>
+                        </div>
+                        <GestioneDipendenti clienteId={mandato.cliente_id} anno={mandato.anno_riferimento} />
+                    </div>
+                )}
+
+                {/* RIGA 6 — Contabilità in partita doppia */}
+                <Contabilita clienteId={mandato.cliente_id} mandatoId={mandato.id} />
             </div>
 
-            {/* RIGA 5 — Dipendenti e costo del personale */}
-            {mandato.cliente_id && (
-                <div className="bg-slate border border-white/5 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Users size={15} className="text-oro/60" />
-                        <h2 className="font-display text-lg text-nebbia">Dipendenti e costo del personale</h2>
-                    </div>
-                    <GestioneDipendenti clienteId={mandato.cliente_id} anno={mandato.anno_riferimento} />
+            {/* RIGHE 7-8 — Assistente Lex del mandato + ricerche salvate */}
+            <div className={`space-y-6 ${vis('lex')}`}>
+                {/* RIGA 7 — Assistente Lex del mandato */}
+                <ChatMandato
+                    mandatoId={mandato.id}
+                    onRicercaSalvata={() => setRefreshRicerche(k => k + 1)}
+                    onDocumentoSalvato={() => setRefreshDocumenti(k => k + 1)}
+                />
+
+                {/* RIGA 8 — Ricerche */}
+                <div className={SBLOCCA_560}>
+                    <BoxRicercheMandato mandatoId={mandato.id} refreshTrigger={refreshRicerche} />
                 </div>
-            )}
-
-            {/* RIGA 6 — Contabilità in partita doppia */}
-            <Contabilita clienteId={mandato.cliente_id} mandatoId={mandato.id} />
-
-            {/* RIGA 7 — Assistente Lex del mandato */}
-            <ChatMandato
-                mandatoId={mandato.id}
-                onRicercaSalvata={() => setRefreshRicerche(k => k + 1)}
-                onDocumentoSalvato={() => setRefreshDocumenti(k => k + 1)}
-            />
-
-            {/* RIGA 8 — Ricerche */}
-            <BoxRicercheMandato mandatoId={mandato.id} refreshTrigger={refreshRicerche} />
+            </div>
         </div>
     )
 }

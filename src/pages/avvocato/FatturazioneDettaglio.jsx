@@ -79,8 +79,8 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
 
     return (
         <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate border border-white/10 w-full max-w-md">
-                <div className="flex items-center justify-between p-5 border-b border-white/8">
+            <div className="bg-slate border border-white/10 w-full max-w-md max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
                     <div className="flex items-center gap-2">
                         <Wallet size={16} className="text-salvia" />
                         <h2 className="font-display text-lg text-nebbia">Registra pagamento</h2>
@@ -90,7 +90,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                     </button>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
                     <div className="bg-petrolio/40 border border-white/5 p-3 space-y-1">
                         <p className="font-body text-xs text-nebbia/40">
                             Fattura <span className="text-nebbia/70">{fattura.numero}</span>
@@ -100,7 +100,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data *</label>
                             <input
@@ -211,8 +211,8 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
 
     return (
         <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate border border-red-500/30 w-full max-w-md">
-                <div className="flex items-center justify-between p-5 border-b border-white/8">
+            <div className="bg-slate border border-red-500/30 w-full max-w-md max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
                     <div className="flex items-center gap-2">
                         <Trash2 size={16} className="text-red-400" />
                         <h2 className="font-display text-lg text-nebbia">Elimina fattura</h2>
@@ -222,7 +222,7 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
                     </button>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-5 overflow-y-auto flex-1">
                     <div className="bg-red-900/15 border border-red-500/30 p-4">
                         <p className="font-body text-sm text-red-400 leading-relaxed mb-2">
                             <span className="font-semibold">Operazione irreversibile.</span>
@@ -298,15 +298,15 @@ function ModalScollegaPratica({ fattura, onClose, onSuccess }) {
 
     return (
         <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate border border-white/10 w-full max-w-md">
-                <div className="flex items-center justify-between p-5 border-b border-white/8">
+            <div className="bg-slate border border-white/10 w-full max-w-md max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
                     <h2 className="font-display text-lg text-nebbia">Scollega pratica</h2>
                     <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
                         <X size={18} />
                     </button>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-5 overflow-y-auto flex-1">
                     <p className="font-body text-sm text-nebbia/70 leading-relaxed">
                         Vuoi scollegare la fattura <span className="text-oro">{fattura.numero}</span> dalla
                         pratica <span className="text-oro">"{fattura.pratica?.titolo}"</span>?
@@ -412,7 +412,7 @@ function ModalCollegaPratica({ fattura, onClose, onSuccess }) {
 
     return (
         <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate border border-white/10 w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div className="bg-slate border border-white/10 w-full max-w-lg max-h-[90vh] lg:max-h-[85vh] flex flex-col">
                 <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
                     <h2 className="font-display text-lg text-nebbia">Collega a una pratica</h2>
                     <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
@@ -687,7 +687,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                     </>
                 )}
 
-                <div className="flex-1" />
+                <div className="hidden lg:block flex-1" />
 
                 {fattura.stato !== 'annullata' && fattura.stato !== 'pagata' && (
                     <button
@@ -773,6 +773,26 @@ export default function AvvocatoFatturazioneDettaglio() {
                         <div className="p-5 pb-3">
                             <p className="section-label">Prestazioni</p>
                         </div>
+                        {/* Mobile: lista di card */}
+                        <div className="lg:hidden divide-y divide-white/5 border-t border-white/5">
+                            {righe.map(r => (
+                                <div key={r.id} className="p-4 space-y-2">
+                                    <p className="font-body text-sm text-nebbia leading-relaxed">{r.descrizione}</p>
+                                    <div className="flex items-end justify-between gap-3">
+                                        <p className="font-body text-xs text-nebbia/40">
+                                            {Number(r.quantita).toFixed(2)} x EUR {fmtEUR(r.prezzo_unitario)}
+                                        </p>
+                                        <p className="font-display text-base text-oro whitespace-nowrap">EUR {fmtEUR(r.totale)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            {righe.length === 0 && (
+                                <p className="px-4 py-8 text-center font-body text-sm text-nebbia/30">Nessuna riga</p>
+                            )}
+                        </div>
+
+                        {/* Desktop: tabella invariata */}
+                        <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/5 bg-petrolio/40">
@@ -795,6 +815,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     {/* Pagamenti */}
@@ -816,8 +837,8 @@ export default function AvvocatoFatturazioneDettaglio() {
                         ) : (
                             <div className="space-y-2">
                                 {pagamenti.map(p => (
-                                    <div key={p.id} className="flex items-center justify-between gap-3 p-3 bg-petrolio/40 border border-white/5">
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <div key={p.id} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3 p-3 bg-petrolio/40 border border-white/5">
+                                        <div className="flex items-start lg:items-center gap-3 min-w-0 flex-1">
                                             <Check size={13} className="text-salvia shrink-0" />
                                             <div className="min-w-0">
                                                 <p className="font-body text-sm text-nebbia">
@@ -830,7 +851,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                                                 {p.note && <p className="font-body text-xs text-nebbia/40 mt-0.5 italic">{p.note}</p>}
                                             </div>
                                         </div>
-                                        <p className="font-body text-sm font-semibold text-salvia whitespace-nowrap">EUR {fmtEUR(p.importo)}</p>
+                                        <p className="font-display text-base lg:font-body lg:text-sm font-semibold text-salvia whitespace-nowrap self-end lg:self-auto">EUR {fmtEUR(p.importo)}</p>
                                     </div>
                                 ))}
                             </div>

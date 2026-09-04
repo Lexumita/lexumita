@@ -12,26 +12,26 @@ import { useAuth } from '@/context/AuthContext'
 // ─────────────────────────────────────────────────────────────
 function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
     return (
-        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-fit">
+        <div className="flex gap-1 bg-petrolio border border-white/10 p-1 w-full sm:w-fit">
             <button
                 type="button"
                 onClick={() => !disabled && onChange('persona_fisica')}
                 disabled={disabled}
-                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_fisica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2.5 sm:py-2 font-body text-xs sm:text-sm transition-colors ${value === 'persona_fisica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-                <User size={13} /> Persona fisica
+                <User size={13} className="shrink-0" /> Persona fisica
             </button>
             <button
                 type="button"
                 onClick={() => !disabled && onChange('persona_giuridica')}
                 disabled={disabled}
-                className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${value === 'persona_giuridica'
+                className={`flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2.5 sm:py-2 font-body text-xs sm:text-sm transition-colors ${value === 'persona_giuridica'
                     ? 'bg-oro/10 text-oro border border-oro/30'
                     : 'text-nebbia/40 hover:text-nebbia'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-                <Building2 size={13} /> Persona giuridica
+                <Building2 size={13} className="shrink-0" /> Persona giuridica
             </button>
         </div>
     )
@@ -289,7 +289,7 @@ export default function AvvocatoClientiNuovo() {
     if (success) return (
         <div className="space-y-5 max-w-2xl">
             <BackButton to="/clienti" label="Tutti i clienti" />
-            <div className="bg-slate border border-white/5 p-10 flex flex-col items-center text-center gap-4">
+            <div className="bg-slate border border-white/5 p-6 sm:p-10 flex flex-col items-center text-center gap-4">
                 <CheckCircle size={40} className="text-salvia" />
                 <h2 className="font-display text-2xl text-nebbia">Cliente creato</h2>
                 {form.attiva_portale ? (
@@ -314,7 +314,7 @@ export default function AvvocatoClientiNuovo() {
             <BannerContatoreClienti clienti={clienti} limiteRaggiunto={limiteRaggiunto} />
 
             <form onSubmit={handleSubmit}>
-                <div className="bg-slate border border-white/5 p-6 space-y-5">
+                <div className="bg-slate border border-white/5 p-4 sm:p-6 space-y-5">
 
                     {/* Tipo soggetto */}
                     <div>
@@ -326,12 +326,12 @@ export default function AvvocatoClientiNuovo() {
                     {tipo === 'persona_fisica' ? (
                         <>
                             <p className="section-label">Dati anagrafici</p>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <InputField label="Nome *" placeholder="Anna" {...f('nome')} />
                                 <InputField label="Cognome *" placeholder="Rossi" {...f('cognome')} />
                             </div>
                             <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501Z" {...f('cf')} />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <InputField label="Data di nascita" type="date" {...f('data_nascita')} />
                                 <InputField label="Luogo di nascita" placeholder="Milano" {...f('luogo_nascita')} />
                             </div>
@@ -340,7 +340,7 @@ export default function AvvocatoClientiNuovo() {
                         <>
                             <p className="section-label">Dati societa</p>
                             <InputField label="Ragione sociale *" placeholder="Alfa Srl" {...f('ragione_sociale')} />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <InputField label="Partita IVA" placeholder="12345678901" {...f('partita_iva')} />
                                 <InputField label="Codice fiscale" placeholder="se diverso da P.IVA" {...f('cf')} />
                             </div>
@@ -351,11 +351,11 @@ export default function AvvocatoClientiNuovo() {
                                     Rappresentante legale{' '}
                                     <span className="text-nebbia/25 normal-case tracking-normal">— opzionale</span>
                                 </p>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <InputField label="Nome" placeholder="Mario" {...f('rappr_nome')} />
                                     <InputField label="Cognome" placeholder="Bianchi" {...f('rappr_cognome')} />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <InputField label="Codice fiscale" placeholder="CF rappresentante" {...f('rappr_cf')} />
                                     <InputField label="Carica" placeholder="Es. Amministratore Unico" {...f('rappr_carica')} />
                                 </div>
@@ -390,7 +390,7 @@ export default function AvvocatoClientiNuovo() {
                     <div className="border-t border-white/8 pt-5 space-y-4">
                         <p className="section-label">Contatti</p>
                         <InputField label="Email *" type="email" placeholder="email@esempio.it" {...f('email')} />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <InputField label="Telefono" placeholder="+39 333 000 1111" {...f('telefono')} />
                             <InputField label="PEC" placeholder="cliente@pec.it" {...f('pec')} />
                         </div>
@@ -404,7 +404,7 @@ export default function AvvocatoClientiNuovo() {
                             placeholder="Via, numero civico"
                             {...f('indirizzo')}
                         />
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <InputField label="Comune" placeholder="Milano" {...f('comune')} />
                             <InputField label="Provincia" placeholder="MI" {...f('provincia')} />
                             <InputField label="CAP" placeholder="20100" {...f('cap')} />
@@ -485,7 +485,7 @@ export default function AvvocatoClientiNuovo() {
                                 </label>
                                 <div className="flex items-start gap-2 px-3 py-2 bg-oro/5 border border-oro/15">
                                     <AlertCircle size={11} className="text-oro/70 mt-0.5 shrink-0" />
-                                    <p className="font-body text-[11px] text-nebbia/55 leading-relaxed">
+                                    <p className="font-body text-xs text-nebbia/55 leading-relaxed">
                                         La password non viene mai inviata via email da Lexum. Comunicala al cliente con il canale che preferisci (telefono, whatsapp, di persona).
                                     </p>
                                 </div>
@@ -500,18 +500,18 @@ export default function AvvocatoClientiNuovo() {
                         </div>
                     )}
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <button
                             type="button"
                             onClick={() => navigate('/clienti')}
-                            className="btn-secondary text-sm flex-1"
+                            className="btn-secondary text-sm w-full sm:w-auto sm:flex-1 justify-center sm:justify-start"
                         >
                             Annulla
                         </button>
                         <button
                             type="submit"
                             disabled={loading || limiteRaggiunto}
-                            className="btn-primary text-sm flex-1 justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="btn-primary text-sm w-full sm:w-auto sm:flex-1 justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                             title={limiteRaggiunto ? 'Limite clienti raggiunto - acquista un add-on per continuare' : undefined}
                         >
                             {loading
