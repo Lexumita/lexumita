@@ -435,6 +435,11 @@ function TabStorico() {
 
 // ─── TAB INVIA EMAIL ────────────────────────────────────────
 
+const APP_URL = 'https://www.lexum.it'
+const REPLY_TO = 'info@lexum.it'
+const ALIAS_QUESTIONARIO = 'lexum-questionario'
+const CODICE_QUESTIONARIO = 'feedback_uso_2026'
+
 function TabInvia() {
     // Templates
     const [templates, setTemplates] = useState([])
@@ -459,8 +464,15 @@ function TabInvia() {
     // Selezione destinatari
     const [selezionati, setSelezionati] = useState(new Set())
 
-    // Reply-to opzionale
+    // Reply-to opzionale.
+    // Se resta vuoto usiamo REPLY_TO: le mail dicono "risponda a questa email",
+    // e senza questo la risposta finirebbe al mittente di sistema, che nessuno legge.
     const [replyTo, setReplyTo] = useState('')
+
+    // Stream Postmark. Promozionale di default: queste mail sono inviti e
+    // riattivazioni, non conferme. Tenere separate le reputazioni evita che
+    // una segnalazione spam sul marketing affossi le conferme di pagamento.
+    const [messageStream, setMessageStream] = useState('broadcast')
 
     // Tipo logico per il log
     const [tipoLog, setTipoLog] = useState('newsletter')
@@ -566,6 +578,21 @@ function TabInvia() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
 
+            // Il questionario ha un collegamento PERSONALE per ogni destinatario:
+            // e' cio' che permette di sapere chi ha risposto. Generarne uno nuovo
+            // invalida il precedente della stessa persona.
+            const collegamenti = {}
+            if (templateAlias === ALIAS_QUESTIONARIO) {
+                const { data: inviti, error: errInviti } = await supabase.rpc(
+                    'questionario_crea_inviti',
+                    { p_codice: CODICE_QUESTIONARIO, p_user_ids: utentiDaInviare.map(u => u.id) }
+                )
+                if (errInviti) throw new Error('Collegamenti questionario: ' + errInviti.message)
+                for (const r of inviti ?? []) {
+                    collegamenti[r.user_id] = `${APP_URL}/questionario/${r.token}`
+                }
+            }
+
             // Invio sequenziale a piccoli batch per non saturare
             const BATCH = 5
             for (let i = 0; i < utentiDaInviare.length; i += BATCH) {
@@ -589,11 +616,18 @@ function TabInvia() {
                                         ragione_sociale: u.ragione_sociale ?? '',
                                         display_nome: u.display_nome,
                                         email: u.email,
+                                        // Senza app_url i collegamenti dentro i template
+                                        // restano vuoti: il pulsante non porta da nessuna parte.
+                                        app_url: APP_URL,
+                                        ...(collegamenti[u.id]
+                                            ? { link_questionario: collegamenti[u.id] }
+                                            : {}),
                                     },
                                     tipo: tipoLog || 'manuale',
                                     origine: 'invia-email-admin',
                                     toUserId: u.id,
-                                    replyTo: replyTo || undefined,
+                                    replyTo: replyTo || REPLY_TO,
+                                    messageStream,
                                 }),
                             }
                         )
@@ -651,6 +685,29 @@ function TabInvia() {
                             <div className="bg-petrolio/40 border border-white/5 p-3 space-y-1">
                                 <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Oggetto</p>
                                 <p className="font-body text-sm text-nebbia">{templateScelto.subject}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Tipo di invio</label>
+                            <select value={messageStream} onChange={e => setMessageStream(e.target.value)}
+                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
+                                <option value="broadcast">Promozionale &mdash; inviti, riattivazione, newsletter</option>
+                                <option value="outbound">Transazionale &mdash; conferme, ricevute, avvisi di servizio</option>
+                            </select>
+                            <p className="font-body text-xs text-nebbia/30 mt-1.5 leading-relaxed">
+                                Tiene separate le reputazioni: una segnalazione spam su una mail
+                                promozionale non deve trascinare gi&ugrave; le conferme di pagamento.
+                            </p>
+                        </div>
+
+                        {templateAlias === ALIAS_QUESTIONARIO && (
+                            <div className="bg-oro/[0.06] border border-oro/25 p-3">
+                                <p className="font-body text-xs text-oro/90 leading-relaxed">
+                                    Per ogni destinatario verr&agrave; generato un <strong>collegamento personale</strong>,
+                                    che serve a sapere chi ha risposto. Chi aveva gi&agrave; un collegamento
+                                    ne riceve uno nuovo, e il vecchio smette di valere.
+                                </p>
                             </div>
                         )}
                     </>
