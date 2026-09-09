@@ -2,7 +2,8 @@
 //
 // Pannello admin con due tab:
 //   - Storico: legge mail_log con filtri e dettaglio modale
-//   - Invia email: composer con selezione template Postmark + filtri destinatari + invio batch
+//   - Invia email: template Postmark + destinatari (tabella sempre caricata,
+//     con ricerca sul posto) oppure indirizzi liberi non in piattaforma
 
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -440,50 +441,68 @@ const REPLY_TO = 'info@lexum.it'
 const ALIAS_QUESTIONARIO = 'lexum-questionario'
 const CODICE_QUESTIONARIO = 'feedback_uso_2026'
 
+const RUOLI = ['user', 'avvocato', 'commercialista', 'commerciale', 'cliente', 'admin']
+
+// Riconosce un indirizzo e, se c'e', il nome che lo accompagna sulla stessa riga.
+// Accetta: "mario@x.it", "mario@x.it, Mario Rossi", "Mario Rossi <mario@x.it>"
+const RE_EMAIL = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+
+function leggiIndirizziLiberi(testo) {
+  const buoni = [], scartati = []
+  const visti = new Set()
+  for (const riga of (testo || '').split(/[\n;]+/)) {
+    const r = riga.trim()
+    if (!r) continue
+    const m = r.match(RE_EMAIL)
+    if (!m) { scartati.push(r); continue }
+    const email = m[0].toLowerCase()
+    if (visti.has(email)) continue
+    visti.add(email)
+    // Il nome e' cio' che resta togliendo l'indirizzo e la punteggiatura di contorno
+    const nome = r.replace(m[0], '').replace(/[<>,"]/g, '').trim()
+    buoni.push({ email, nome })
+  }
+  return { buoni, scartati }
+}
+
 function TabInvia() {
-    // Templates
+    // Template
     const [templates, setTemplates] = useState([])
     const [templateAlias, setTemplateAlias] = useState('')
     const [loadingTemplates, setLoadingTemplates] = useState(true)
-
-    // Filtri destinatari
-    const [filtroRole, setFiltroRole] = useState('')
-    const [filtroAbbonamento, setFiltroAbbonamento] = useState('')
-    const [filtroProdotto, setFiltroProdotto] = useState('')
-    const [soloEmailVerificate, setSoloEmailVerificate] = useState(true)
-    const [search, setSearch] = useState('')
-
-    // Prodotti per dropdown
-    const [prodotti, setProdotti] = useState([])
-
-    // Risultato filtri (lista utenti)
-    const [utenti, setUtenti] = useState([])
-    const [caricandoUtenti, setCaricandoUtenti] = useState(false)
-    const [erroreUtenti, setErroreUtenti] = useState(null)
-
-    // Selezione destinatari
-    const [selezionati, setSelezionati] = useState(new Set())
-
-    // Reply-to opzionale.
-    // Se resta vuoto usiamo REPLY_TO: le mail dicono "risponda a questa email",
-    // e senza questo la risposta finirebbe al mittente di sistema, che nessuno legge.
-    const [replyTo, setReplyTo] = useState('')
 
     // Stream Postmark. Promozionale di default: queste mail sono inviti e
     // riattivazioni, non conferme. Tenere separate le reputazioni evita che
     // una segnalazione spam sul marketing affossi le conferme di pagamento.
     const [messageStream, setMessageStream] = useState('broadcast')
 
-    // Tipo logico per il log
-    const [tipoLog, setTipoLog] = useState('newsletter')
+    // Da dove arrivano i destinatari
+    const [modo, setModo] = useState('utenti')   // 'utenti' | 'liberi'
 
-    // Invio
+    // ── Utenti della piattaforma: caricati UNA VOLTA all'apertura ──────────
+    const [utenti, setUtenti] = useState([])
+    const [caricandoUtenti, setCaricandoUtenti] = useState(true)
+    const [erroreUtenti, setErroreUtenti] = useState(null)
+    const [selezionati, setSelezionati] = useState(new Set())
+
+    // Filtri, tutti applicati sul posto: nessuna nuova chiamata al server
+    const [cerca, setCerca] = useState('')
+    const [filtroRuolo, setFiltroRuolo] = useState('')
+    const [filtroUso, setFiltroUso] = useState('')          // '' | 'si' | 'no'
+    const [nascondiProva, setNascondiProva] = useState(true)
+
+    // ── Indirizzi liberi ───────────────────────────────────────────────────
+    const [testoLiberi, setTestoLiberi] = useState('')
+    const [nomeRipiego, setNomeRipiego] = useState('')
+
+    const [replyTo, setReplyTo] = useState('')
+    const [tipoLog, setTipoLog] = useState('newsletter')
     const [inviando, setInviando] = useState(false)
+    const [progresso, setProgresso] = useState(null)
     const [risultatoInvio, setRisultatoInvio] = useState(null)
     const [erroreInvio, setErroreInvio] = useState(null)
 
-    useEffect(() => { caricaTemplates() }, [])
-    useEffect(() => { caricaProdotti() }, [])
+    useEffect(() => { caricaTemplates(); caricaUtenti() }, [])
 
     async function caricaTemplates() {
         setLoadingTemplates(true)
@@ -491,13 +510,7 @@ function TabInvia() {
             const { data: { session } } = await supabase.auth.getSession()
             const res = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-postmark-templates`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
+                { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } }
             )
             const json = await res.json()
             if (!json.ok) throw new Error(json.error)
@@ -509,71 +522,71 @@ function TabInvia() {
         }
     }
 
-    async function caricaProdotti() {
-        const { data } = await supabase
-            .from('prodotti')
-            .select('id, nome, tipo')
-            .order('nome')
-        setProdotti(data ?? [])
-    }
-
+    // Una chiamata sola, all'apertura. Prima bisognava premere "carica
+    // destinatari" a ogni cambio di filtro, e i filtri erano lato server.
     async function caricaUtenti() {
-        setCaricandoUtenti(true); setErroreUtenti(null); setSelezionati(new Set())
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const res = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-utenti-filtrati`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        role: filtroRole || null,
-                        abbonamento: filtroAbbonamento || null,
-                        prodottoId: filtroProdotto || null,
-                        soloEmailVerificate,
-                        search,
-                    }),
-                }
-            )
-            const json = await res.json()
-            if (!json.ok) throw new Error(json.error)
-            setUtenti(json.utenti ?? [])
-        } catch (e) {
-            setErroreUtenti(e.message)
-        } finally {
-            setCaricandoUtenti(false)
-        }
+        setCaricandoUtenti(true); setErroreUtenti(null)
+        const { data, error } = await supabase.rpc('utenti_per_invio')
+        if (error) setErroreUtenti(error.message)
+        setUtenti(data ?? [])
+        setCaricandoUtenti(false)
     }
 
-    function toggleSelezione(id) {
+    const visibili = useMemo(() => {
+        const q = cerca.trim().toLowerCase()
+        return utenti.filter(u => {
+            if (nascondiProva && u.e_di_prova) return false
+            if (filtroRuolo && u.role !== filtroRuolo) return false
+            if (filtroUso === 'si' && !u.ha_usato) return false
+            if (filtroUso === 'no' && u.ha_usato) return false
+            if (!q) return true
+            return `${u.nome ?? ''} ${u.cognome ?? ''} ${u.email}`.toLowerCase().includes(q)
+        })
+    }, [utenti, cerca, filtroRuolo, filtroUso, nascondiProva])
+
+    // Selezionare "tutti" deve significare tutti i VISIBILI, non tutti quelli
+    // caricati: altrimenti un filtro stretto nasconde destinatari gia' scelti.
+    const tuttiVisibiliScelti = visibili.length > 0 && visibili.every(u => selezionati.has(u.id))
+    function commutaTutti() {
         setSelezionati(prev => {
-            const nuovo = new Set(prev)
-            if (nuovo.has(id)) nuovo.delete(id)
-            else nuovo.add(id)
-            return nuovo
+            const n = new Set(prev)
+            if (tuttiVisibiliScelti) visibili.forEach(u => n.delete(u.id))
+            else visibili.forEach(u => n.add(u.id))
+            return n
         })
     }
-
-    function selezionaTutti() {
-        if (selezionati.size === utenti.length) {
-            setSelezionati(new Set())
-        } else {
-            setSelezionati(new Set(utenti.map(u => u.id)))
-        }
+    function commutaUno(id) {
+        setSelezionati(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
     }
 
+    const liberi = useMemo(() => leggiIndirizziLiberi(testoLiberi), [testoLiberi])
+    const templateScelto = templates.find(t => t.alias === templateAlias)
+    const eQuestionario = templateAlias === ALIAS_QUESTIONARIO
+
+    // Il questionario ha un collegamento personale legato a un ACCOUNT: per un
+    // indirizzo che non esiste in piattaforma non e' possibile generarlo.
+    const bloccoQuestionarioLiberi = eQuestionario && modo === 'liberi'
+
+    const quanti = modo === 'utenti' ? selezionati.size : liberi.buoni.length
+    const senzaNome = modo === 'liberi' && !nomeRipiego.trim()
+        && liberi.buoni.some(x => !x.nome)
+
     async function invia() {
-        if (!templateAlias) { setErroreInvio('Seleziona un template'); return }
-        if (selezionati.size === 0) { setErroreInvio('Seleziona almeno un destinatario'); return }
-        const utentiDaInviare = utenti.filter(u => selezionati.has(u.id))
-        if (!confirm(`Inviare email a ${utentiDaInviare.length} ${utentiDaInviare.length === 1 ? 'destinatario' : 'destinatari'}?`)) return
+        if (!templateAlias) { setErroreInvio('Scegli un template'); return }
+        if (bloccoQuestionarioLiberi) { setErroreInvio('Il questionario non si può inviare a indirizzi liberi'); return }
+        if (quanti === 0) { setErroreInvio('Non c\'è nessun destinatario'); return }
+
+        const destinatari = modo === 'utenti'
+            ? utenti.filter(u => selezionati.has(u.id)).map(u => ({
+                id: u.id, email: u.email, nome: u.nome ?? '', cognome: u.cognome ?? '' }))
+            : liberi.buoni.map(x => ({
+                id: null, email: x.email, nome: x.nome || nomeRipiego.trim(), cognome: '' }))
+
+        if (!confirm(`Inviare "${templateScelto?.name ?? templateAlias}" a ${destinatari.length} ${destinatari.length === 1 ? 'destinatario' : 'destinatari'}?`)) return
 
         setInviando(true); setErroreInvio(null); setRisultatoInvio(null)
-        let inviateOk = 0, inviateKo = 0
-        const errori = []
+        setProgresso({ fatti: 0, su: destinatari.length })
+        let ok = 0, ko = 0; const errori = []
 
         try {
             const { data: { session } } = await supabase.auth.getSession()
@@ -582,22 +595,19 @@ function TabInvia() {
             // e' cio' che permette di sapere chi ha risposto. Generarne uno nuovo
             // invalida il precedente della stessa persona.
             const collegamenti = {}
-            if (templateAlias === ALIAS_QUESTIONARIO) {
+            if (eQuestionario) {
                 const { data: inviti, error: errInviti } = await supabase.rpc(
                     'questionario_crea_inviti',
-                    { p_codice: CODICE_QUESTIONARIO, p_user_ids: utentiDaInviare.map(u => u.id) }
+                    { p_codice: CODICE_QUESTIONARIO, p_user_ids: destinatari.map(d => d.id) }
                 )
                 if (errInviti) throw new Error('Collegamenti questionario: ' + errInviti.message)
-                for (const r of inviti ?? []) {
-                    collegamenti[r.user_id] = `${APP_URL}/questionario/${r.token}`
-                }
+                for (const r of inviti ?? []) collegamenti[r.user_id] = `${APP_URL}/questionario/${r.token}`
             }
 
-            // Invio sequenziale a piccoli batch per non saturare
             const BATCH = 5
-            for (let i = 0; i < utentiDaInviare.length; i += BATCH) {
-                const batch = utentiDaInviare.slice(i, i + BATCH)
-                await Promise.all(batch.map(async u => {
+            for (let i = 0; i < destinatari.length; i += BATCH) {
+                const gruppo = destinatari.slice(i, i + BATCH)
+                await Promise.all(gruppo.map(async d => {
                     try {
                         const res = await fetch(
                             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-mail`,
@@ -608,57 +618,46 @@ function TabInvia() {
                                     'Content-Type': 'application/json',
                                 },
                                 body: JSON.stringify({
-                                    to: u.email,
+                                    to: d.email,
                                     templateAlias,
                                     templateModel: {
-                                        nome: u.nome ?? '',
-                                        cognome: u.cognome ?? '',
-                                        ragione_sociale: u.ragione_sociale ?? '',
-                                        display_nome: u.display_nome,
-                                        email: u.email,
+                                        nome: d.nome, cognome: d.cognome, email: d.email,
                                         // Senza app_url i collegamenti dentro i template
                                         // restano vuoti: il pulsante non porta da nessuna parte.
                                         app_url: APP_URL,
-                                        ...(collegamenti[u.id]
-                                            ? { link_questionario: collegamenti[u.id] }
-                                            : {}),
+                                        ...(d.id && collegamenti[d.id]
+                                            ? { link_questionario: collegamenti[d.id] } : {}),
                                     },
                                     tipo: tipoLog || 'manuale',
-                                    origine: 'invia-email-admin',
-                                    toUserId: u.id,
+                                    origine: modo === 'liberi' ? 'invio-libero-admin' : 'invia-email-admin',
+                                    toUserId: d.id,
                                     replyTo: replyTo || REPLY_TO,
                                     messageStream,
                                 }),
                             }
                         )
                         const json = await res.json()
-                        if (json.ok && json.inviati > 0) inviateOk++
-                        else { inviateKo++; errori.push(`${u.email}: ${json.error ?? 'errore sconosciuto'}`) }
-                    } catch (e) {
-                        inviateKo++
-                        errori.push(`${u.email}: ${e.message}`)
-                    }
+                        if (json.ok && json.inviati > 0) ok++
+                        else { ko++; errori.push(`${d.email}: ${json.error ?? 'errore sconosciuto'}`) }
+                    } catch (e) { ko++; errori.push(`${d.email}: ${e.message}`) }
                 }))
+                setProgresso({ fatti: Math.min(i + BATCH, destinatari.length), su: destinatari.length })
             }
 
-            setRisultatoInvio({ ok: inviateOk, ko: inviateKo, errori: errori.slice(0, 10) })
-            if (inviateOk > 0 && inviateKo === 0) {
-                // Reset selezione dopo invio totalmente riuscito
-                setSelezionati(new Set())
-            }
+            setRisultatoInvio({ ok, ko, errori: errori.slice(0, 10) })
+            if (ok > 0 && ko === 0) { setSelezionati(new Set()); setTestoLiberi('') }
         } catch (e) {
             setErroreInvio(e.message)
-        } finally {
-            setInviando(false)
-        }
+        } finally { setInviando(false); setProgresso(null) }
     }
 
-    const templateScelto = templates.find(t => t.alias === templateAlias)
-    const filtriAttivi = filtroRole || filtroAbbonamento || filtroProdotto || search || !soloEmailVerificate
+    const Etichetta = ({ children }) => (
+        <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">{children}</label>
+    )
 
     return (
         <div className="space-y-6">
-            {/* Step 1 — Template */}
+            {/* ── 1. Template e tipo di invio ─────────────────────────────── */}
             <div className="bg-slate border border-white/5 p-5 space-y-3">
                 <div className="flex items-center gap-2">
                     <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">1</span>
@@ -666,227 +665,264 @@ function TabInvia() {
                 </div>
                 {loadingTemplates ? (
                     <div className="flex items-center gap-2 text-nebbia/40 font-body text-sm">
-                        <Loader2 size={13} className="animate-spin" /> Caricamento template Postmark...
+                        <Loader2 size={13} className="animate-spin" /> Caricamento template Postmark…
                     </div>
-                ) : templates.length === 0 ? (
-                    <p className="font-body text-sm text-nebbia/40">
-                        Nessun template trovato su Postmark. Creane uno dalla dashboard Postmark.
-                    </p>
                 ) : (
                     <>
                         <select value={templateAlias} onChange={e => setTemplateAlias(e.target.value)}
                             className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
                             <option value="">— Seleziona un template —</option>
-                            {templates.map(t => (
-                                <option key={t.alias} value={t.alias}>{t.name} ({t.alias})</option>
-                            ))}
+                            {templates.map(t => <option key={t.alias} value={t.alias}>{t.name} ({t.alias})</option>)}
                         </select>
                         {templateScelto && (
-                            <div className="bg-petrolio/40 border border-white/5 p-3 space-y-1">
-                                <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Oggetto</p>
+                            <div className="bg-petrolio/40 border border-white/5 p-3">
+                                <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Oggetto</p>
                                 <p className="font-body text-sm text-nebbia">{templateScelto.subject}</p>
                             </div>
                         )}
-
                         <div>
-                            <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Tipo di invio</label>
+                            <Etichetta>Tipo di invio</Etichetta>
                             <select value={messageStream} onChange={e => setMessageStream(e.target.value)}
                                 className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
-                                <option value="broadcast">Promozionale &mdash; inviti, riattivazione, newsletter</option>
-                                <option value="outbound">Transazionale &mdash; conferme, ricevute, avvisi di servizio</option>
+                                <option value="broadcast">Promozionale — inviti, riattivazione, newsletter</option>
+                                <option value="outbound">Transazionale — conferme, ricevute, avvisi di servizio</option>
                             </select>
                             <p className="font-body text-xs text-nebbia/30 mt-1.5 leading-relaxed">
                                 Tiene separate le reputazioni: una segnalazione spam su una mail
                                 promozionale non deve trascinare gi&ugrave; le conferme di pagamento.
                             </p>
                         </div>
+                    </>
+                )}
+            </div>
 
-                        {templateAlias === ALIAS_QUESTIONARIO && (
-                            <div className="bg-oro/[0.06] border border-oro/25 p-3">
-                                <p className="font-body text-xs text-oro/90 leading-relaxed">
-                                    Per ogni destinatario verr&agrave; generato un <strong>collegamento personale</strong>,
-                                    che serve a sapere chi ha risposto. Chi aveva gi&agrave; un collegamento
-                                    ne riceve uno nuovo, e il vecchio smette di valere.
+            {/* ── 2. Destinatari ──────────────────────────────────────────── */}
+            <div className="bg-slate border border-white/5 p-5 space-y-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">2</span>
+                        <p className="section-label">Destinatari</p>
+                    </div>
+                    <div className="flex gap-1">
+                        {[['utenti', 'Utenti della piattaforma'], ['liberi', 'Indirizzi liberi']].map(([id, l]) => (
+                            <button key={id} onClick={() => setModo(id)}
+                                className={`px-3.5 py-1.5 font-body text-xs border transition-colors ${
+                                    modo === id ? 'border-oro/45 bg-oro/10 text-oro'
+                                                : 'border-white/8 text-nebbia/45 hover:text-nebbia'}`}>{l}</button>
+                        ))}
+                    </div>
+                </div>
+
+                {modo === 'utenti' ? (
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+                            <div className="lg:col-span-2 relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/25" />
+                                <input value={cerca} onChange={e => setCerca(e.target.value)}
+                                    placeholder="Cerca nome, cognome o email…"
+                                    className="w-full bg-petrolio border border-white/10 pl-9 pr-3 py-2 font-body text-sm text-nebbia placeholder:text-nebbia/25 outline-none focus:border-oro/50" />
+                            </div>
+                            <select value={filtroRuolo} onChange={e => setFiltroRuolo(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
+                                <option value="">Tutti i ruoli</option>
+                                {RUOLI.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                            <select value={filtroUso} onChange={e => setFiltroUso(e.target.value)}
+                                className="bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
+                                <option value="">Ha usato Lexum: indifferente</option>
+                                <option value="si">Ha usato Lexum</option>
+                                <option value="no">Non l&apos;ha mai usato</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <label className="flex items-center gap-2 font-body text-xs text-nebbia/45 cursor-pointer">
+                                <input type="checkbox" checked={nascondiProva} className="accent-oro"
+                                    onChange={e => setNascondiProva(e.target.checked)} />
+                                Nascondi gli account di prova e interni
+                            </label>
+                            <p className="font-body text-xs text-nebbia/35">
+                                {visibili.length} in elenco · <span className="text-oro">{selezionati.size} selezionati</span>
+                            </p>
+                        </div>
+
+                        {erroreUtenti && (
+                            <p className="font-body text-xs text-red-400">{erroreUtenti}</p>
+                        )}
+
+                        <div className="border border-white/8 max-h-[26rem] overflow-y-auto">
+                            <table className="w-full">
+                                <thead className="sticky top-0 bg-slate">
+                                    <tr className="border-b border-white/8">
+                                        <th className="w-10 px-3 py-2">
+                                            <input type="checkbox" className="accent-oro" checked={tuttiVisibiliScelti}
+                                                onChange={commutaTutti} title="Seleziona tutti i visibili" />
+                                        </th>
+                                        {['Nome', 'Cognome', 'Email', 'Ruolo', 'Uso'].map(h => (
+                                            <th key={h} className="px-3 py-2 text-left font-body text-[10px] text-nebbia/30 tracking-widest uppercase">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {caricandoUtenti ? (
+                                        <tr><td colSpan={6} className="px-3 py-10 text-center">
+                                            <Loader2 size={16} className="animate-spin inline text-oro" />
+                                        </td></tr>
+                                    ) : visibili.length === 0 ? (
+                                        <tr><td colSpan={6} className="px-3 py-10 text-center font-body text-sm text-nebbia/30">
+                                            Nessun utente con questi filtri
+                                        </td></tr>
+                                    ) : visibili.map(u => (
+                                        <tr key={u.id} onClick={() => commutaUno(u.id)}
+                                            className={`border-b border-white/[0.03] cursor-pointer transition-colors ${
+                                                selezionati.has(u.id) ? 'bg-oro/[0.07]' : 'hover:bg-white/[0.02]'}`}>
+                                            <td className="px-3 py-2">
+                                                <input type="checkbox" className="accent-oro" checked={selezionati.has(u.id)}
+                                                    onChange={() => commutaUno(u.id)} onClick={e => e.stopPropagation()} />
+                                            </td>
+                                            <td className="px-3 py-2 font-body text-sm text-nebbia">{u.nome || '—'}</td>
+                                            <td className="px-3 py-2 font-body text-sm text-nebbia">{u.cognome || '—'}</td>
+                                            <td className="px-3 py-2 font-body text-xs text-nebbia/55">{u.email}</td>
+                                            <td className="px-3 py-2 font-body text-xs text-nebbia/35">{u.role}</td>
+                                            <td className="px-3 py-2 font-body text-[11px]">
+                                                {u.ha_usato ? <span className="text-salvia">ha usato</span>
+                                                            : <span className="text-nebbia/25">mai</span>}
+                                                {u.e_di_prova && <span className="text-amber-400 ml-2">prova</span>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            Un indirizzo per riga. Se vuoi personalizzare il saluto puoi scrivere
+                            anche il nome: <code className="text-nebbia/60">mario@studio.it, Mario Rossi</code>
+                        </p>
+                        <textarea value={testoLiberi} onChange={e => setTestoLiberi(e.target.value)} rows={8}
+                            placeholder={'mario@studio.it, Mario Rossi\nlaura@avvocati.it\n…'}
+                            className="w-full bg-petrolio border border-white/10 px-3 py-2.5 font-mono text-xs text-nebbia placeholder:text-nebbia/20 outline-none focus:border-oro/50 resize-y" />
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <div>
+                                <Etichetta>Nome da usare quando manca</Etichetta>
+                                <input value={nomeRipiego} onChange={e => setNomeRipiego(e.target.value)}
+                                    placeholder="es. Avvocato"
+                                    className="w-full bg-petrolio border border-white/10 px-3 py-2 font-body text-sm text-nebbia placeholder:text-nebbia/25 outline-none focus:border-oro/50" />
+                            </div>
+                            <div className="flex items-end">
+                                <p className="font-body text-xs text-nebbia/40">
+                                    <span className="text-oro">{liberi.buoni.length}</span> indirizzi validi
+                                    {liberi.scartati.length > 0 && (
+                                        <span className="text-amber-400"> · {liberi.scartati.length} righe non riconosciute</span>
+                                    )}
                                 </p>
                             </div>
+                        </div>
+                        {liberi.scartati.length > 0 && (
+                            <div className="p-2.5 bg-amber-900/10 border border-amber-500/20">
+                                <p className="font-body text-[11px] text-amber-200/80">
+                                    Righe saltate: {liberi.scartati.slice(0, 5).join(' · ')}
+                                    {liberi.scartati.length > 5 && ` … e altre ${liberi.scartati.length - 5}`}
+                                </p>
+                            </div>
+                        )}
+                        {senzaNome && (
+                            <p className="font-body text-[11px] text-amber-400">
+                                Alcuni indirizzi non hanno un nome e il campo di ripiego &egrave; vuoto:
+                                in quelle mail il saluto rester&agrave; monco.
+                            </p>
                         )}
                     </>
                 )}
             </div>
 
-            {/* Step 2 — Filtri destinatari */}
+            {/* ── 3. Invio ────────────────────────────────────────────────── */}
             <div className="bg-slate border border-white/5 p-5 space-y-4">
                 <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">2</span>
-                    <p className="section-label">Filtra destinatari</p>
+                    <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">3</span>
+                    <p className="section-label">Invia</p>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid sm:grid-cols-2 gap-3">
                     <div>
-                        <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Ruolo</label>
-                        <select value={filtroRole} onChange={e => setFiltroRole(e.target.value)}
-                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
-                            <option value="">Tutti</option>
-                            <option value="avvocato">Avvocati</option>
-                            <option value="cliente">Clienti</option>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
+                        <Etichetta>Rispondi a</Etichetta>
+                        <input value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder={REPLY_TO}
+                            className="w-full bg-petrolio border border-white/10 px-3 py-2 font-body text-sm text-nebbia placeholder:text-nebbia/25 outline-none focus:border-oro/50" />
                     </div>
-
                     <div>
-                        <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Abbonamento</label>
-                        <select value={filtroAbbonamento} onChange={e => setFiltroAbbonamento(e.target.value)}
-                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
-                            <option value="">Qualsiasi</option>
-                            <option value="attivo">Attivo</option>
-                            <option value="scaduto">Scaduto</option>
-                            <option value="mai_avuto">Mai avuto</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Prodotto acquistato</label>
-                        <select value={filtroProdotto} onChange={e => setFiltroProdotto(e.target.value)}
-                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50">
-                            <option value="">Qualsiasi</option>
-                            {prodotti.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Cerca per nome/email</label>
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="..."
-                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
+                        <Etichetta>Etichetta per il registro</Etichetta>
+                        <input value={tipoLog} onChange={e => setTipoLog(e.target.value)}
+                            className="w-full bg-petrolio border border-white/10 px-3 py-2 font-body text-sm text-nebbia outline-none focus:border-oro/50" />
                     </div>
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={soloEmailVerificate} onChange={e => setSoloEmailVerificate(e.target.checked)}
-                        className="accent-oro" />
-                    <span className="font-body text-sm text-nebbia/60">Solo email verificate (raccomandato)</span>
-                </label>
-
-                <div className="flex items-center gap-2">
-                    <button onClick={caricaUtenti} disabled={caricandoUtenti}
-                        className="flex items-center gap-2 px-4 py-2 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40">
-                        {caricandoUtenti
-                            ? <><Loader2 size={13} className="animate-spin" /> Caricamento...</>
-                            : <><Users size={13} /> Carica destinatari</>
-                        }
-                    </button>
-                    {erroreUtenti && (
-                        <span className="font-body text-xs text-red-400 flex items-center gap-1">
-                            <AlertCircle size={11} /> {erroreUtenti}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* Step 3 — Lista destinatari + selezione */}
-            {utenti.length > 0 && (
-                <div className="bg-slate border border-white/5 p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">3</span>
-                            <p className="section-label">Seleziona destinatari</p>
-                        </div>
-                        <p className="font-body text-xs text-nebbia/40">
-                            <strong className="text-oro">{selezionati.size}</strong> di {utenti.length} selezionati
+                {bloccoQuestionarioLiberi && (
+                    <div className="p-3 bg-red-900/10 border border-red-500/25">
+                        <p className="font-body text-xs text-red-300 leading-relaxed">
+                            Il questionario <strong>non si pu&ograve; inviare a indirizzi liberi</strong>: ogni
+                            collegamento &egrave; personale e legato a un account, ed &egrave; quello che
+                            permette di sapere chi ha risposto. Per invitare qualcuno che non &egrave; in
+                            piattaforma bisogna prima registrarlo.
                         </p>
                     </div>
+                )}
 
-                    <button onClick={selezionaTutti}
-                        className="font-body text-xs text-oro hover:text-oro/70 transition-colors">
-                        {selezionati.size === utenti.length ? 'Deseleziona tutti' : 'Seleziona tutti'}
-                    </button>
-
-                    <div className="bg-petrolio/40 border border-white/5 max-h-96 overflow-y-auto">
-                        {utenti.map(u => {
-                            const sel = selezionati.has(u.id)
-                            return (
-                                <button key={u.id} onClick={() => toggleSelezione(u.id)}
-                                    className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/5 last:border-0 hover:bg-petrolio transition-colors ${sel ? 'bg-oro/5' : ''}`}>
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${sel ? 'bg-oro border-oro' : 'border-white/20'}`}>
-                                            {sel && <Check size={10} className="text-petrolio" strokeWidth={3} />}
-                                        </div>
-                                        <div className="text-left min-w-0">
-                                            <p className="font-body text-sm text-nebbia truncate">{u.display_nome}</p>
-                                            <p className="font-body text-xs text-nebbia/40 truncate">{u.email}</p>
-                                        </div>
-                                    </div>
-                                    <span className="font-body text-[10px] px-1.5 py-0.5 bg-white/5 border border-white/10 text-nebbia/50 uppercase tracking-wider shrink-0">
-                                        {u.role}
-                                    </span>
-                                </button>
-                            )
-                        })}
+                {eQuestionario && modo === 'utenti' && (
+                    <div className="p-3 bg-oro/[0.06] border border-oro/25">
+                        <p className="font-body text-xs text-oro/90 leading-relaxed">
+                            Per ogni destinatario verr&agrave; generato un <strong>collegamento personale</strong>.
+                            Chi ne aveva gi&agrave; uno ne riceve uno nuovo, e il vecchio smette di valere.
+                        </p>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Step 4 — Opzioni invio + invio */}
-            {utenti.length > 0 && (
-                <div className="bg-slate border border-white/5 p-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 flex items-center justify-center bg-oro/10 border border-oro/30 text-oro font-body text-xs">4</span>
-                        <p className="section-label">Opzioni e invio</p>
+                {erroreInvio && (
+                    <div className="p-3 bg-red-900/10 border border-red-500/25">
+                        <p className="font-body text-xs text-red-300">{erroreInvio}</p>
                     </div>
+                )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Tipo (per il log)</label>
-                            <input value={tipoLog} onChange={e => setTipoLog(e.target.value)}
-                                placeholder="es. newsletter, promo_estate"
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-                            <p className="font-body text-xs text-nebbia/30 mt-1">Etichetta libera per ritrovare questo invio nello storico</p>
-                        </div>
-                        <div>
-                            <label className="block font-body text-xs text-nebbia/40 uppercase tracking-widest mb-1">Reply-To (opzionale)</label>
-                            <input type="email" value={replyTo} onChange={e => setReplyTo(e.target.value)}
-                                placeholder="info@lexum.it"
-                                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-                            <p className="font-body text-xs text-nebbia/30 mt-1">Le risposte arriveranno a questo indirizzo</p>
+                {progresso && (
+                    <div>
+                        <p className="font-body text-xs text-nebbia/50 mb-2">
+                            Invio in corso: {progresso.fatti} di {progresso.su}
+                        </p>
+                        <div className="h-1 bg-white/5">
+                            <div className="h-full bg-oro transition-all"
+                                 style={{ width: `${(progresso.fatti / Math.max(1, progresso.su)) * 100}%` }} />
                         </div>
                     </div>
+                )}
 
-                    {erroreInvio && (
-                        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
-                            <AlertCircle size={13} /> {erroreInvio}
-                        </div>
-                    )}
+                {risultatoInvio && (
+                    <div className={`p-3 border ${risultatoInvio.ko === 0
+                        ? 'bg-salvia/10 border-salvia/25' : 'bg-amber-900/10 border-amber-500/25'}`}>
+                        <p className="font-body text-sm text-nebbia">
+                            Inviate {risultatoInvio.ok}{risultatoInvio.ko > 0 && `, fallite ${risultatoInvio.ko}`}
+                        </p>
+                        {risultatoInvio.errori.length > 0 && (
+                            <ul className="mt-2 space-y-0.5">
+                                {risultatoInvio.errori.map((e, i) => (
+                                    <li key={i} className="font-body text-[11px] text-amber-300/80">{e}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
 
-                    {risultatoInvio && (
-                        <div className={`p-4 border ${risultatoInvio.ko === 0 ? 'bg-salvia/5 border-salvia/30' : 'bg-amber-900/10 border-amber-500/30'}`}>
-                            <p className={`font-body text-sm font-medium ${risultatoInvio.ko === 0 ? 'text-salvia' : 'text-amber-400'}`}>
-                                Inviati: {risultatoInvio.ok} · Falliti: {risultatoInvio.ko}
-                            </p>
-                            {risultatoInvio.errori.length > 0 && (
-                                <ul className="mt-2 space-y-0.5">
-                                    {risultatoInvio.errori.map((e, i) => (
-                                        <li key={i} className="font-body text-xs text-red-400/70">{e}</li>
-                                    ))}
-                                </ul>
-                            )}
-                            <p className="font-body text-xs text-nebbia/40 mt-2">
-                                Vai allo storico per vedere lo stato di consegna in tempo reale.
-                            </p>
-                        </div>
-                    )}
-
-                    <button onClick={invia} disabled={inviando || !templateAlias || selezionati.size === 0}
-                        className="flex items-center justify-center gap-2 px-5 py-3 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                        {inviando
-                            ? <><Loader2 size={14} className="animate-spin" /> Invio in corso...</>
-                            : <><Send size={14} /> Invia a {selezionati.size} destinatari</>
-                        }
-                    </button>
-                </div>
-            )}
+                <button onClick={invia}
+                    disabled={inviando || !templateAlias || quanti === 0 || bloccoQuestionarioLiberi}
+                    className="flex items-center gap-2 px-6 py-3 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 disabled:opacity-35 transition-colors">
+                    {inviando ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                    {inviando ? 'Invio in corso…' : `Invia a ${quanti} ${quanti === 1 ? 'destinatario' : 'destinatari'}`}
+                </button>
+            </div>
         </div>
     )
 }
+
 
 // ─── PAGINA PRINCIPALE ─────────────────────────────────────
 
