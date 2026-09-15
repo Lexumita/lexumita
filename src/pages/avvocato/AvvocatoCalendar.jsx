@@ -164,7 +164,7 @@ export default function AvvocatoCalendar() {
       .select(`
         id, titolo, tipo, stato, data_ora_inizio, data_ora_fine,
         note_cliente, note_interne, link_videocall,
-        avvocato_id, pratica_id,
+        avvocato_id, pratica_id, mandato_id,
         cliente:cliente_id(id, nome, cognome),
         avvocato:avvocato_id(id, nome, cognome),
         pratica:pratica_id(id, titolo)
@@ -565,8 +565,16 @@ export default function AvvocatoCalendar() {
                         {e.link_videocall && <a href={e.link_videocall} target="_blank" rel="noreferrer" className="font-body text-xs text-oro hover:underline block truncate">{e.link_videocall}</a>}
                         {isScad && (
                           <p className="font-body text-[10px] text-amber-400/80 italic">
-                            Questa scadenza è stata generata automaticamente. Per modificarla o segnarla come compiuta, vai sulla scheda pratica.
+                            Questa scadenza è stata generata automaticamente. Per modificarla o segnarla come compiuta, vai {e.pratica ? 'sulla scheda pratica' : e.mandato_id ? 'sul mandato' : 'nella sezione Fisco'}.
                           </p>
+                        )}
+                        {isScad && !e.pratica && (
+                          <Link
+                            to={e.mandato_id ? `/banco-lavoro/${e.mandato_id}` : '/fisco'}
+                            className="block w-full text-center font-body text-xs py-2 border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                          >
+                            {e.mandato_id ? 'Apri il mandato →' : 'Apri in Fisco →'}
+                          </Link>
                         )}
                         {e.stato === 'programmato' && !isScad && e.tipo !== 'udienza' && (
                           <div className="flex gap-2">

@@ -1036,51 +1036,32 @@ interface CreditiInfo {
   crediti_usati?: number
 }
 
-async function verificaCrediti(userId: string): Promise<CreditiInfo> {
-  const { data } = await supabase
-    .from('crediti_ai')
-    .select('id, crediti_totali, crediti_usati, periodo_fine, tipo')
-    .eq('user_id', userId)
-
-  if (!data || data.length === 0) return { disponibili: false, crediti_rimasti: 0 }
-
-  const now = new Date()
-  let totaleRimasti = 0
-  let primaRigaUsabile: any = null
-
-  const ordinePriorita: Record<string, number> = { piano: 1, benvenuto: 2, topup: 3 }
-  const dataOrdinata = [...data].sort((a, b) =>
-    (ordinePriorita[a.tipo] ?? 99) - (ordinePriorita[b.tipo] ?? 99)
-  )
-
-  for (const row of dataOrdinata) {
-    const residui = row.crediti_totali - row.crediti_usati
-    const scaduto = row.periodo_fine && new Date(row.periodo_fine) < now
-    if (residui > 0 && !scaduto) {
-      totaleRimasti += residui
-      if (!primaRigaUsabile) primaRigaUsabile = row
-    }
+// Prima: lettura del saldo all'inizio e scalo alla fine con `usati letti + 1`.
+// Due richieste parallele scalavano una volta sola (visto sul Lead il 12/09).
+// Ora la prenotazione e' un UPDATE condizionato nel DB (prenota_credito_ai),
+// con lo stesso ordine di consumo di prima: piano, benvenuto, ricariche.
+async function prenotaCredito(userId: string): Promise<CreditiInfo> {
+  const { data, error } = await supabase.rpc('prenota_credito_ai', { p_user_id: userId })
+  if (error) {
+    console.log(JSON.stringify({ evento: 'prenota_credito_error', user_id: userId, errore: error.message }))
+    return { disponibili: false, crediti_rimasti: 0 }
   }
-
-  if (totaleRimasti <= 0 || !primaRigaUsabile) return { disponibili: false, crediti_rimasti: 0 }
-
+  const r = Array.isArray(data) ? data[0] : data
+  if (!r?.row_id) return { disponibili: false, crediti_rimasti: 0 }
+  // crediti_rimasti = saldo PRIMA della prenotazione: l'evento done sottrae 1.
   return {
     disponibili: true,
-    crediti_rimasti: totaleRimasti,
-    crediti_row_id: primaRigaUsabile.id,
-    crediti_usati: primaRigaUsabile.crediti_usati,
+    crediti_rimasti: (r.rimasti_dopo ?? 0) + 1,
+    crediti_row_id: r.row_id,
+    crediti_usati: r.usati_prima,
   }
 }
 
-async function scalaCredito(
-  userId: string, rowId: string | undefined, creditiUsatiAttuali: number | undefined
-): Promise<void> {
-  if (!rowId || creditiUsatiAttuali === undefined) return
-  await supabase
-    .from('crediti_ai')
-    .update({ crediti_usati: creditiUsatiAttuali + 1 })
-    .eq('id', rowId)
-    .eq('user_id', userId)
+async function restituisciCredito(rowId: string, requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('restituisci_credito_ai', { p_row_id: rowId })
+  console.log(JSON.stringify(error
+    ? { evento: 'restituisci_credito_error', request_id: requestId, errore: error.message }
+    : { evento: 'credito_restituito', request_id: requestId }))
 }
 
 // ─── COSTRUZIONE CONTESTO PER IL PROMPT ──────────────────────────
@@ -1320,6 +1301,8 @@ Deno.serve(async (req) => {
   let parentLogId: string | null = null
   let conversazioneId: string | null = null
   let creditoScalato = false
+  // Credito prenotato all'inizio (atomico): se il documento non arriva torna indietro.
+  let creditoPrenotatoRowId: string | null = null
 
   function jsonError(status: number, msg: string, extra: any = {}) {
     return new Response(
@@ -1367,7 +1350,7 @@ Deno.serve(async (req) => {
       .single()
     studioId = profilo?.studio_id ?? profilo?.titolare_id ?? userId
 
-    const creditiInfo = await verificaCrediti(userId)
+    const creditiInfo = await prenotaCredito(userId)
     if (!creditiInfo.disponibili) {
       await logLexCall({
         user_id: userId, studio_id: studioId, request_id: requestId, parent_log_id: parentLogId,
@@ -1378,6 +1361,7 @@ Deno.serve(async (req) => {
       })
       return jsonError(402, 'Crediti esauriti', { crediti_esauriti: true })
     }
+    creditoPrenotatoRowId = creditiInfo.crediti_row_id ?? null
 
     console.log(JSON.stringify({
       evento: 'genera_documento_start',
@@ -1616,7 +1600,7 @@ Procedi.`
             testoFinaleDocumento = depseudo(testoFinaleDocumento, mappaPseudo)
           }
 
-          await scalaCredito(userId!, creditiInfo.crediti_row_id, creditiInfo.crediti_usati)
+          // Il credito era gia' prenotato all'inizio: qui diventa definitivo.
           creditoScalato = true
 
           await logLexCall({
@@ -1659,6 +1643,10 @@ Procedi.`
             metadati: { pratica_id: praticaId, tipo_documento: tipoCodice }
           })
 
+          if (!creditoScalato && creditoPrenotatoRowId) {
+            await restituisciCredito(creditoPrenotatoRowId, requestId)
+            creditoPrenotatoRowId = null
+          }
           inviaEvento('error', { error: err.message })
           controller.close()
         }
@@ -1687,6 +1675,10 @@ Procedi.`
       durata_ms: Date.now() - startTime, esito: 'error', errore: err.message,
       metadati: { pratica_id: praticaId, tipo_documento: tipoCodice }
     })
+
+    if (!creditoScalato && creditoPrenotatoRowId) {
+      await restituisciCredito(creditoPrenotatoRowId, requestId)
+    }
 
     return jsonError(500, err.message)
   }

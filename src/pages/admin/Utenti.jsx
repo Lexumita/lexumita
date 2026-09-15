@@ -429,7 +429,7 @@ function TabellaUtenti({ data, loading }) {
     if (statusF && u.verification_status !== statusF) return false
     if (search) {
       const q = search.toLowerCase()
-      return `${u.nome} ${u.cognome} ${u.email} ${u.studio ?? ''}`.toLowerCase().includes(q)
+      return `${u.nome} ${u.cognome} ${u.email} ${u.telefono ?? ''} ${u.studio ?? ''}`.toLowerCase().includes(q)
     }
     return true
   })
@@ -439,7 +439,7 @@ function TabellaUtenti({ data, loading }) {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-          <input placeholder="Cerca nome, email, studio..." value={search} onChange={e => setSearch(e.target.value)}
+          <input placeholder="Cerca nome, email, telefono, studio..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
         </div>
         <select value={roleF} onChange={e => setRoleF(e.target.value)}
@@ -473,10 +473,10 @@ function TabellaUtenti({ data, loading }) {
         </div>
       ) : (
         <div className="bg-slate border border-white/5 overflow-x-auto">
-          <table className="w-full min-w-[760px] lg:min-w-0">
+          <table className="w-full min-w-[880px] lg:min-w-0">
             <thead>
               <tr className="border-b border-white/5">
-                {['Nome', 'Email', 'Ruolo', 'Verifica', 'Registrato il', ''].map(h => (
+                {['Nome', 'Email', 'Telefono', 'Ruolo', 'Verifica', 'Registrato il', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -484,7 +484,7 @@ function TabellaUtenti({ data, loading }) {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun utente trovato</td>
+                  <td colSpan={7} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">Nessun utente trovato</td>
                 </tr>
               ) : rows.map(u => {
                 const rb = ROLE_BADGE[u.role] ?? ROLE_BADGE.user
@@ -500,6 +500,11 @@ function TabellaUtenti({ data, loading }) {
                       )}
                     </td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">{u.email}</td>
+                    <td className="px-4 py-3 font-body text-sm whitespace-nowrap">
+                      {u.telefono
+                        ? <a href={`tel:${u.telefono.replace(/\s/g, '')}`} className="text-nebbia/60 hover:text-oro transition-colors">{u.telefono}</a>
+                        : <span className="text-nebbia/20">—</span>}
+                    </td>
                     <td className="px-4 py-3"><Badge label={rb.label} variant={rb.variant} /></td>
                     <td className="px-4 py-3">
                       {u.verification_status === 'pending' && <span className="font-body text-xs px-2 py-0.5 bg-amber-400/10 border border-amber-400/25 text-amber-400">In attesa</span>}
@@ -716,7 +721,7 @@ export default function AdminUtenti() {
     setLoading(true)
     const { data } = await supabase
       .from('profiles')
-      .select('id, nome, cognome, email, role, studio, verification_status, tipo_richiesta, created_at, codice_commerciale')
+      .select('id, nome, cognome, email, telefono, role, studio, verification_status, tipo_richiesta, created_at, codice_commerciale')
       .order('created_at', { ascending: false })
     setUtenti(data ?? [])
     setLoading(false)

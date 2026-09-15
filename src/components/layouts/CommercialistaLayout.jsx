@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Users, CreditCard, Headphones, User, Calendar, Archive,
   Building2, LogOut, Menu, ChevronRight, Library, Search, Sparkles,
-  Plus, HardDrive, AlertTriangle, Briefcase
+  Plus, HardDrive, AlertTriangle, Briefcase, Landmark
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 
@@ -20,6 +20,7 @@ const NAV = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/clienti', label: 'Clienti', icon: Users },
   { path: '/banco-lavoro', label: 'Banco di lavoro', icon: Briefcase },
+  { path: '/fisco', label: 'Fisco', icon: Landmark },
   { path: '/calendario', label: 'Calendario', icon: Calendar },
   { path: '/banca-dati', label: 'Banca dati', icon: Library },
   { path: '/ricerche', label: 'Ricerche', icon: Search },

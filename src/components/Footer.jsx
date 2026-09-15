@@ -29,6 +29,7 @@ export default function Footer() {
                 { to: '/', label: 'Home' },
                 { to: '/per-avvocati', label: 'Per Studi Legali' },
                 { to: '/#lexai', label: 'Lex AI' },
+                { to: '/novita', label: 'Novità' },
                 { to: '/contatti', label: 'Contatti' },
               ].map(({ to, label }) => (
                 <li key={to}>

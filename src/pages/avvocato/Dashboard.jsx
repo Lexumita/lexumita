@@ -407,21 +407,21 @@ export default function AvvocatoDashboard() {
     // OGGI
     const { data: appOggi } = await supabase
       .from('appuntamenti')
-      .select('id, titolo, data_inizio, tipo, pratica_id, pratica:pratica_id(titolo)')
+      .select('id, titolo, data_ora_inizio, tipo, pratica_id, pratica:pratica_id(titolo)')
       .eq('avvocato_id', profile.id)
-      .gte('data_inizio', inizioGiorno.toISOString())
-      .lte('data_inizio', fineGiorno.toISOString())
-      .order('data_inizio')
+      .gte('data_ora_inizio', inizioGiorno.toISOString())
+      .lte('data_ora_inizio', fineGiorno.toISOString())
+      .order('data_ora_inizio')
 
     // SETTIMANA
     const domani = new Date(oggi); domani.setDate(domani.getDate() + 1); domani.setHours(0, 0, 0, 0)
     const { data: appSettimana } = await supabase
       .from('appuntamenti')
-      .select('id, titolo, data_inizio, tipo, pratica_id, pratica:pratica_id(titolo)')
+      .select('id, titolo, data_ora_inizio, tipo, pratica_id, pratica:pratica_id(titolo)')
       .eq('avvocato_id', profile.id)
-      .gte('data_inizio', domani.toISOString())
-      .lte('data_inizio', fra7gg.toISOString())
-      .order('data_inizio')
+      .gte('data_ora_inizio', domani.toISOString())
+      .lte('data_ora_inizio', fra7gg.toISOString())
+      .order('data_ora_inizio')
       .limit(8)
 
     // PRATICHE ATTENZIONE
@@ -491,7 +491,7 @@ export default function AvvocatoDashboard() {
   const sommario = useMemo(() => {
     const udienze = eventiOggi.filter(e => e.tipo === 'udienza').length
     const termini = eventiOggi.filter(e => e.tipo === 'scadenza').length
-    const appuntamenti = eventiOggi.filter(e => e.tipo === 'appuntamento' || e.tipo === 'chiamata').length
+    const appuntamenti = eventiOggi.filter(e => ['presenza', 'videocall', 'telefonico'].includes(e.tipo)).length
 
     const parti = []
     if (udienze > 0) parti.push(plural(udienze, 'udienza', 'udienze'))
@@ -619,7 +619,7 @@ export default function AvvocatoDashboard() {
             {eventiOggi.length > 0 && (
               <div className="space-y-0.5">
                 {eventiOggi.map(e => {
-                  const ora = new Date(e.data_inizio).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+                  const ora = new Date(e.data_ora_inizio).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
                   const tipoIcon = e.tipo === 'udienza' ? Scale : e.tipo === 'scadenza' ? AlertTriangle : Calendar
                   const accent = e.tipo === 'scadenza' ? 'red' : e.tipo === 'udienza' ? 'oro' : 'salvia'
                   return (
@@ -715,7 +715,7 @@ export default function AvvocatoDashboard() {
             {eventiSettimana.length > 0 && (
               <div className="space-y-0.5">
                 {eventiSettimana.map(e => {
-                  const gg = giorniDa(e.data_inizio)
+                  const gg = giorniDa(e.data_ora_inizio)
                   const tipoIcon = e.tipo === 'udienza' ? Scale : e.tipo === 'scadenza' ? AlertTriangle : Calendar
                   const accent = e.tipo === 'scadenza' ? 'red' : e.tipo === 'udienza' ? 'oro' : 'salvia'
                   return (

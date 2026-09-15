@@ -77,6 +77,12 @@ import AvvocatoCalendar from './pages/avvocato/AvvocatoCalendar'
 import { BancaDati } from './pages/avvocato/BancaDati'
 import Archivio from '@/pages/avvocato/Archivio'
 import ArchivioDettaglio from '@/pages/avvocato/ArchivioDettaglio'
+import Fisco from '@/pages/fisco/Fisco'
+
+// ── Novità (blog della vetrina, scritto dall'admin) ──
+import Novita from './pages/Novita'
+import NovitaArticolo from './pages/NovitaArticolo'
+import AdminNovita from './pages/admin/Novita'
 import SentenzaDettaglio from './pages/avvocato/SentenzaDettaglio'
 import PrassiDettaglio from './pages/avvocato/PrassiDettaglio'
 import SentenzaTributariaDettaglio from './pages/avvocato/SentenzaTributariaDettaglio'
@@ -183,6 +189,8 @@ export default function App() {
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
               <Route path="/per-commercialisti" element={<VetrinaLayout><PerCommercialisti /></VetrinaLayout>} />
+              <Route path="/novita" element={<VetrinaLayout><Novita /></VetrinaLayout>} />
+              <Route path="/novita/:slug" element={<VetrinaLayout><NovitaArticolo /></VetrinaLayout>} />
               <Route path="/lex-ai" element={<Navigate to="/" replace />} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
@@ -216,6 +224,7 @@ export default function App() {
               <Route path="/admin/prodotti" element={<Adm><AdminProdotti /></Adm>} />
               <Route path="/admin/prodotti/nuovo" element={<Adm><AdminProdottiForm /></Adm>} />
               <Route path="/admin/prodotti/:id" element={<Adm><AdminProdottiForm /></Adm>} />
+              <Route path="/admin/novita" element={<Adm><AdminNovita /></Adm>} />
               <Route path="/admin/sentenze" element={<Adm><AdminSentenze /></Adm>} />
               <Route path="/admin/sentenze/:id" element={<Adm><AdminSentenzeDettaglio /></Adm>} />
               <Route path="/admin/pagamenti" element={<Adm><AdminPagamenti /></Adm>} />
@@ -265,6 +274,7 @@ export default function App() {
               <Route path="/assistenza/:id" element={<Pro><AvvocatoAssistenzaDettaglio /></Pro>} />
               <Route path="/archivio" element={<Pro><Archivio /></Pro>} />
               <Route path="/archivio/:id" element={<Pro><ArchivioDettaglio /></Pro>} />
+              <Route path="/fisco" element={<Pro><Fisco /></Pro>} />
               <Route path="/profilo" element={<Pro><AvvocatoProfilo /></Pro>} />
               <Route path="/banca-dati/eur-lex/:id" element={<BancaDatiSharedAvv><SentenzaUeDettaglio /></BancaDatiSharedAvv>} />
 

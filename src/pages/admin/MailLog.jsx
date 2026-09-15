@@ -28,6 +28,7 @@ const STATO_CONFIG = {
     opened: { label: 'Aperta', variant: 'salvia', icon: Eye },
     bounced: { label: 'Rimbalzata', variant: 'red', icon: AlertTriangle },
     spam: { label: 'Spam', variant: 'red', icon: XCircle },
+    unsubscribed: { label: 'Disiscritto', variant: 'gray', icon: X },
     failed: { label: 'Fallita', variant: 'red', icon: XCircle },
 }
 
@@ -250,7 +251,7 @@ function TabStorico() {
         const tutti = statsData ?? []
         setStats({
             totali: tutti.length,
-            inviate: tutti.filter(s => ['sent', 'delivered', 'opened'].includes(s.stato)).length,
+            inviate: tutti.filter(s => ['sent', 'delivered', 'opened', 'unsubscribed'].includes(s.stato)).length,
             fallite: tutti.filter(s => ['bounced', 'spam', 'failed'].includes(s.stato)).length,
             aperte: tutti.filter(s => s.stato === 'opened').length,
         })

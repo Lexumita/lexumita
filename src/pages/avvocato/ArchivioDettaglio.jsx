@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import MandaAFisco from '@/components/fisco/MandaAFisco'
 
 // Config bifronte per ruolo (stesso principio di AggiungiAPratica.jsx):
 // avvocato → pratiche (pratica_id), commercialista → mandati (mandato_id)
@@ -208,6 +209,7 @@ export default function ArchivioDettaglio() {
                 <div className="flex items-center gap-2 flex-wrap">
                     <Badge label={sc.label} variant={sc.variant} />
                     {doc.verificato && <Badge label="Verificato" variant="salvia" />}
+                    <MandaAFisco doc={doc} />
                 </div>
             </div>
 

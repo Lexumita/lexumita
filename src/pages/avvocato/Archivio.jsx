@@ -10,6 +10,7 @@ import {
     ChevronRight, ChevronDown, Edit2, Save, Tags, Receipt,
 } from 'lucide-react'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
+import MandaAFisco from '@/components/fisco/MandaAFisco'
 import { supabase } from '@/lib/supabase'
 import { escapeHtml } from '@/lib/escapeHtml'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
@@ -1318,6 +1319,9 @@ function CardDocumento({
                                     )}
                                 </div>
                             )}
+
+                            {/* Manda a Fisco: stesso file, niente nuovo caricamento */}
+                            <MandaAFisco doc={doc} onInviato={onAggiornata} />
 
                             {/* Etichette assegnate (display) */}
                             {etichetteAssegnate.map(e => (

@@ -8,12 +8,13 @@ import {
     CreditCard, StickyNote, User, FolderOpen, ArrowRight, Sparkles,
     Edit2, Check, X, Calendar, Clock, AlertCircle, Trash2, Building2,
     ExternalLink, Eye, Upload, KeyRound, Mail, Eye as EyeIcon, EyeOff,
-    Copy, RefreshCw, CheckCircle, ShieldOff, Wallet
+    Copy, RefreshCw, CheckCircle, ShieldOff, Wallet, Landmark
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import GestioneMandati from '@/components/commercialista/GestioneMandati'
 import DocumentiPortale from '@/components/shared/DocumentiPortale'
+import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -42,6 +43,7 @@ const TABS = [
     { id: 'panoramica', label: 'Panoramica', icon: User },
     { id: 'pratiche', label: 'Pratiche', icon: FolderOpen },
     { id: 'documenti', label: 'Documenti', icon: FileText },
+    { id: 'fisco', label: 'Fisco', icon: Landmark },
     { id: 'comunicazioni', label: 'Comunicazioni', icon: MessageSquare },
     { id: 'note_interne', label: 'Note interne', icon: Lock },
     { id: 'pagamenti', label: 'Pagamenti', icon: CreditCard },
@@ -1846,6 +1848,7 @@ export default function AvvocatoClientiDettaglio() {
             )}
 
             {tab === 'documenti' && <TabDocumenti clienteId={id} />}
+            {tab === 'fisco' && <TabFiscoCliente clienteId={id} />}
             {tab === 'comunicazioni' && <TabComunicazioni clienteId={id} />}
             {tab === 'note_interne' && <TabNoteInterne clienteId={id} />}
             {tab === 'pagamenti' && <TabPagamenti clienteId={id} avvocatoId={avvocatoId} />}
