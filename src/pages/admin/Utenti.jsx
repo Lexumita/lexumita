@@ -8,6 +8,7 @@ import {
   UserPlus, X, Copy, Check, ShieldAlert
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { caricaContatoriAdmin, riquadriPerRuolo, descriviStati } from '@/lib/contatoriAdmin'
 import UtentiQuestionari from './UtentiQuestionari'
 
 const ROLE_BADGE = {
@@ -712,33 +713,45 @@ function TabVerifiche({ data, loading, onDecision }) {
 export default function AdminUtenti() {
   const [utenti, setUtenti] = useState([])
   const [loading, setLoading] = useState(true)
+  const [contatori, setContatori] = useState(null)
+  const [erroreContatori, setErroreContatori] = useState('')
   const [tab, setTab] = useState('tutti')
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => { carica() }, [])
 
-  async function carica() {
-    setLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, nome, cognome, email, telefono, role, studio, verification_status, tipo_richiesta, created_at, codice_commerciale')
-      .order('created_at', { ascending: false })
+  // Elenco e contatori si caricano insieme. I contatori vengono dal DB
+  // (admin_contatori), la stessa fonte della Dashboard: i numeri coincidono.
+  // `silenzioso`: senza spinner, per i ricaricamenti dopo una decisione.
+  async function carica(silenzioso = false) {
+    if (!silenzioso) setLoading(true)
+    const [{ data }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, nome, cognome, email, telefono, role, studio, verification_status, tipo_richiesta, created_at, codice_commerciale')
+        .order('created_at', { ascending: false }),
+      caricaContatori(),
+    ])
     setUtenti(data ?? [])
     setLoading(false)
   }
 
-  function handleDecision(userId, tipo) {
-    setUtenti(prev => prev.map(u =>
-      u.id === userId ? { ...u, verification_status: tipo, role: tipo === 'approved' ? 'avvocato' : u.role } : u
-    ))
+  async function caricaContatori() {
+    try {
+      setContatori(await caricaContatoriAdmin())
+      setErroreContatori('')
+    } catch {
+      setErroreContatori('Impossibile caricare i contatori. Ricarica la pagina.')
+    }
   }
 
-  const nTotale = utenti.length
-  const nAvvocati = utenti.filter(u => u.role === 'avvocato').length
-  const nClienti = utenti.filter(u => u.role === 'cliente').length
-  const nUser = utenti.filter(u => u.role === 'user').length
-  const nCommerciali = utenti.filter(u => u.role === 'commerciale').length
-  const nVerifiche = utenti.filter(u => u.verification_status === 'pending').length
+  // Dopo approva/rifiuta si rilegge tutto dal DB: ruolo e stato li decide il server
+  function handleDecision() {
+    carica(true)
+  }
+
+  const conta = n => (contatori ? n : '—')
+  const nVerifiche = contatori?.verifiche_pendenti ?? 0
 
   const TABS = [
     { id: 'tutti', label: 'Tutti', badge: null },
@@ -756,13 +769,20 @@ export default function AdminUtenti() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Totale" value={nTotale} colorClass="text-nebbia" />
-        <StatCard label="Avvocati" value={nAvvocati} colorClass="text-oro" />
-        <StatCard label="Clienti" value={nClienti} colorClass="text-salvia" />
-        <StatCard label="User" value={nUser} colorClass="text-nebbia/40" />
-        <StatCard label="Commerciali" value={nCommerciali} colorClass={nCommerciali > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
-        <StatCard label="Da verificare" value={nVerifiche} colorClass={nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
+      {erroreContatori && (
+        <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+          <AlertCircle size={14} /> {erroreContatori}
+        </div>
+      )}
+
+      {/* Un riquadro per ogni ruolo: la somma fa il Totale */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Totale" value={conta(contatori?.totale)} colorClass="text-nebbia" />
+        {riquadriPerRuolo(contatori).map(r => (
+          <StatCard key={r.id} label={r.label} value={conta(r.n)} colorClass={r.colorClass}
+            sub={descriviStati(contatori?.professionisti?.[r.id])} />
+        ))}
+        <StatCard label="Da verificare" value={conta(nVerifiche)} colorClass={nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30'} />
       </div>
 
       <div className="flex gap-0 border-b border-white/8 overflow-x-auto">
