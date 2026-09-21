@@ -5,7 +5,7 @@
 //   - Invia email: template Postmark + destinatari (tabella sempre caricata,
 //     con ricerca sul posto) oppure indirizzi liberi non in piattaforma
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Badge } from '@/components/shared'
 import {
@@ -18,6 +18,9 @@ import {
 import { supabase } from '@/lib/supabase'
 
 const PAGE_SIZE = 30
+
+// La card dei totali segue il periodo scelto nei filtri, come l'elenco
+const ETICHETTA_TOTALI = { '7gg': 'Totali (7gg)', '30gg': 'Totali (30gg)', '90gg': 'Totali (90gg)', tutti: 'Totali' }
 
 // ─── HELPERS ────────────────────────────────────────────────
 
@@ -194,11 +197,14 @@ function TabStorico() {
     const [originiDisponibili, setOriginiDisponibili] = useState([])
 
     const [selezionata, setSelezionata] = useState(null)
-    const [stats, setStats] = useState({ totali: 0, inviate: 0, fallite: 0, aperte: 0 })
+    const [stats, setStats] = useState(null)
+    // I filtri cambiano più in fretta delle risposte: vale solo l'ultima
+    const ultimaLista = useRef(0)
+    const ultimoRiepilogo = useRef(0)
 
     useEffect(() => { setPagina(0) }, [filtroSearch, filtroTipo, filtroStato, filtroOrigine, filtroData])
     useEffect(() => { carica() }, [pagina, filtroSearch, filtroTipo, filtroStato, filtroOrigine, filtroData])
-    useEffect(() => { caricaMetadati() }, [])
+    useEffect(() => { caricaRiepilogo() }, [filtroSearch, filtroTipo, filtroStato, filtroOrigine, filtroData])
 
     function calcolaDataMin() {
         const ora = new Date()
@@ -209,6 +215,7 @@ function TabStorico() {
     }
 
     async function carica() {
+        const richiesta = ++ultimaLista.current
         setLoading(true); setErrore(null)
         try {
             let q = supabase.from('mail_log')
@@ -227,34 +234,34 @@ function TabStorico() {
             }
 
             const { data, count, error } = await q
+            if (richiesta !== ultimaLista.current) return
             if (error) throw new Error(error.message)
             setMails(data ?? [])
             setTotale(count ?? 0)
         } catch (e) {
-            setErrore(e.message)
+            if (richiesta === ultimaLista.current) setErrore(e.message)
         } finally {
-            setLoading(false)
+            if (richiesta === ultimaLista.current) setLoading(false)
         }
     }
 
-    async function caricaMetadati() {
-        const [{ data: tipi }, { data: origini }] = await Promise.all([
-            supabase.from('mail_log').select('tipo').not('tipo', 'is', null),
-            supabase.from('mail_log').select('origine').not('origine', 'is', null),
-        ])
-        setTipiDisponibili([...new Set((tipi ?? []).map(t => t.tipo))].sort())
-        setOriginiDisponibili([...new Set((origini ?? []).map(o => o.origine))].sort())
-
-        const dataMin = new Date(Date.now() - 30 * 86400000).toISOString()
-        const { data: statsData } = await supabase.from('mail_log')
-            .select('stato').gte('created_at', dataMin)
-        const tutti = statsData ?? []
-        setStats({
-            totali: tutti.length,
-            inviate: tutti.filter(s => ['sent', 'delivered', 'opened', 'unsubscribed'].includes(s.stato)).length,
-            fallite: tutti.filter(s => ['bounced', 'spam', 'failed'].includes(s.stato)).length,
-            aperte: tutti.filter(s => s.stato === 'opened').length,
+    // Contatori e menu dei filtri li calcola il DB (mail_log_riepilogo), con gli
+    // stessi filtri dell'elenco. Prima si contavano nel browser le righe
+    // scaricate, e il server ne consegna al massimo 1000: la card si fermava lì.
+    async function caricaRiepilogo() {
+        const richiesta = ++ultimoRiepilogo.current
+        const { data, error } = await supabase.rpc('mail_log_riepilogo', {
+            p_da: calcolaDataMin(),
+            p_tipo: filtroTipo || null,
+            p_stato: filtroStato || null,
+            p_origine: filtroOrigine || null,
+            p_cerca: filtroSearch.trim() || null,
         })
+        if (richiesta !== ultimoRiepilogo.current) return
+        if (error) { setStats(null); return }
+        setStats(data)
+        setTipiDisponibili(data?.tipi ?? [])
+        setOriginiDisponibili(data?.origini ?? [])
     }
 
     function resetFiltri() {
@@ -267,7 +274,7 @@ function TabStorico() {
     return (
         <div className="space-y-4">
             <div className="flex justify-end">
-                <button onClick={() => { carica(); caricaMetadati() }}
+                <button onClick={() => { carica(); caricaRiepilogo() }}
                     className="flex items-center gap-1.5 text-sm border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body px-3 py-2 transition-colors">
                     <RefreshCw size={13} /> Aggiorna
                 </button>
@@ -275,20 +282,20 @@ function TabStorico() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate border border-white/5 p-4">
-                    <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Totali (30gg)</p>
-                    <p className="font-display text-2xl font-light text-nebbia">{stats.totali}</p>
+                    <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">{ETICHETTA_TOTALI[filtroData] ?? 'Totali'}</p>
+                    <p className="font-display text-2xl font-light text-nebbia">{stats ? stats.totali : '—'}</p>
                 </div>
                 <div className="bg-slate border border-white/5 p-4">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Inviate</p>
-                    <p className="font-display text-2xl font-light text-salvia">{stats.inviate}</p>
+                    <p className="font-display text-2xl font-light text-salvia">{stats ? stats.inviate : '—'}</p>
                 </div>
                 <div className="bg-slate border border-white/5 p-4">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Aperte</p>
-                    <p className="font-display text-2xl font-light text-oro">{stats.aperte}</p>
+                    <p className="font-display text-2xl font-light text-oro">{stats ? stats.aperte : '—'}</p>
                 </div>
                 <div className="bg-slate border border-white/5 p-4">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Fallite</p>
-                    <p className="font-display text-2xl font-light text-red-400">{stats.fallite}</p>
+                    <p className="font-display text-2xl font-light text-red-400">{stats ? stats.fallite : '—'}</p>
                 </div>
             </div>
 
