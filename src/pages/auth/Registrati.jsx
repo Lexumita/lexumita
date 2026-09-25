@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import { ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react'
 import LexAnimatedDemo from '@/components/LexAnimatedDemo'
+import { PREFISSI, staccaPrefisso, componiTelefono, erroreTelefono } from '@/lib/telefono'
 
 // Professioni dichiarabili in registrazione. I valori corrispondono al vincolo
 // profiles_professione_check sul database.
@@ -27,7 +28,7 @@ export default function Registrati() {
   const [searchParams] = useSearchParams()
   const refIniziale = (searchParams.get('ref') ?? '').trim().toUpperCase()
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', telefono: '', professione: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', prefisso: '+39', telefono: '', professione: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -41,9 +42,8 @@ export default function Registrati() {
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Email non valida'
     // Il telefono è facoltativo: si valida SOLO se compilato, altrimenti un
     // campo opzionale bloccherebbe la registrazione di chi lo lascia vuoto.
-    if (form.telefono.trim() && !/^[+\d][\d\s./-]{6,19}$/.test(form.telefono.trim())) {
-      e.telefono = 'Numero non valido'
-    }
+    const errTel = erroreTelefono(form.prefisso, form.telefono)
+    if (errTel) e.telefono = errTel
     if (!form.professione) e.professione = 'Campo obbligatorio'
     if (form.password.length < 8) e.password = 'Minimo 8 caratteri'
     if (form.password !== form.conferma) e.conferma = 'Le password non coincidono'
@@ -64,7 +64,7 @@ export default function Registrati() {
           data: {
             nome: form.nome.trim(),
             cognome: form.cognome.trim(),
-            telefono: form.telefono.trim() || null,
+            telefono: componiTelefono(form.prefisso, form.telefono),
             professione: form.professione,
             studio: form.studio.trim() || null,
             // Codice del commerciale che ha portato il cliente (opzionale).
@@ -204,15 +204,33 @@ export default function Registrati() {
               Telefono
               <span className="ml-2 text-nebbia/25 normal-case tracking-normal">— opzionale</span>
             </label>
-            <input
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="Es. +39 333 1234567"
-              value={form.telefono}
-              onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
-              className={`w-full bg-petrolio border ${errors.telefono ? 'border-red-500/60' : 'border-white/10'} text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25`}
-            />
+            <div className="flex gap-2">
+              <select
+                aria-label="Prefisso"
+                value={form.prefisso}
+                onChange={e => setForm(f => ({ ...f, prefisso: e.target.value }))}
+                className={`w-[6.5rem] shrink-0 bg-petrolio border ${errors.telefono ? 'border-red-500/60' : 'border-white/10'} text-nebbia font-body text-sm px-2 py-3 outline-none focus:border-oro/50 transition-colors`}
+              >
+                {PREFISSI.map(p => <option key={p.v} value={p.v} title={p.paese}>{p.l}</option>)}
+              </select>
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="333 1234567"
+                value={form.telefono}
+                onChange={e => {
+                  // Se arriva anche il prefisso (scritto o dal completamento
+                  // automatico) va nella tendina, e nel campo resta il numero.
+                  const v = e.target.value
+                  const staccato = staccaPrefisso(v)
+                  setForm(f => staccato
+                    ? { ...f, prefisso: staccato.prefisso, telefono: staccato.numero }
+                    : { ...f, telefono: v })
+                }}
+                className={`flex-1 min-w-0 bg-petrolio border ${errors.telefono ? 'border-red-500/60' : 'border-white/10'} text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25`}
+              />
+            </div>
             {errors.telefono
               ? <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors.telefono}</p>
               : <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">

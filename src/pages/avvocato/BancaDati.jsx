@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { escapeHtml } from '@/lib/escapeHtml'
+import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
@@ -726,7 +727,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 if (errBody.crediti_esauriti) {
                     setErrore('crediti_esauriti')
                 } else {
-                    setErrore(errBody.error ?? `Errore ${res.status}`)
+                    setErrore(sanitizzaErrore(errBody.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
                 }
                 setConversazione(conversazione)
                 setCercando(false)
@@ -788,7 +789,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             }
 
                             if (eventoCorrente === 'error') {
-                                setErrore(data.error ?? 'Errore nello streaming')
+                                setErrore(sanitizzaErrore(data.error) ?? 'La risposta si è interrotta. Riprova tra qualche istante.')
                             }
                         } catch (e) {
                             // ignore malformed
@@ -835,7 +836,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             if (e.name === 'AbortError') {
                 setConversazione(conversazione)
             } else {
-                setErrore(e.message)
+                setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
                 setConversazione(conversazione)
             }
         } finally {
@@ -1212,6 +1213,17 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                         : <><Sparkles size={13} /> {conversazione.length > 0 ? 'Continua conversazione' : 'Cerca con Lex'}</>
                     }
                 </button>
+
+                {/* Avvertenze in fondo al riquadro (24/09/2026): la conversazione resta
+                    solo se la si salva, e Lex puo' sbagliare. */}
+                <div className="pt-1 space-y-0.5 text-center">
+                    <p className="font-body text-xs text-nebbia/35 leading-relaxed">
+                        Salva questa conversazione con un'etichetta per non perderla: puoi tenere in memoria solo ciò che salvi.
+                    </p>
+                    <p className="font-body text-xs text-nebbia/35 leading-relaxed">
+                        Lex è un'AI e potrebbe commettere errori.
+                    </p>
+                </div>
             </div>
         </div>
     )
