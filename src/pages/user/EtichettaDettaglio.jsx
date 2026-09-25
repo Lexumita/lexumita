@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { useAuth } from '@/context/AuthContext'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import {
@@ -708,13 +709,17 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
-                throw new Error(err.error ?? `Errore ${res.status}`)
+                if (res.status === 402 || err.crediti_esauriti) {
+                    throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
+                }
+                throw new Error(sanitizzaErrore(err.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
             }
 
             const reader = res.body.getReader()
             const decoder = new TextDecoder()
             let buffer = ''
             let testoAccumulato = ''
+            let erroreStream = null   // messaggio dell'evento 'error' del server, se arriva
 
             while (true) {
                 const { value, done } = await reader.read()
@@ -725,24 +730,39 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
 
                 for (const line of lines) {
                     if (!line.trim() || !line.startsWith('data: ')) continue
+                    let payload
                     try {
-                        const payload = JSON.parse(line.slice(6).trim())
-                        if (payload.text) {
-                            testoAccumulato += payload.text
-                            setStreamingTesto(testoAccumulato)
-                        }
+                        payload = JSON.parse(line.slice(6).trim())
                     } catch {
-                        // ignora
+                        continue   // riga non JSON: si ignora
+                    }
+                    // Evento d'errore del server (Lex o Lead): prima veniva ignorato
+                    // e restava una risposta vuota.
+                    if (payload.error) {
+                        erroreStream = sanitizzaErrore(payload.error) ?? 'La risposta si è interrotta. Riprova tra qualche istante.'
+                        continue
+                    }
+                    if (payload.text) {
+                        testoAccumulato += payload.text
+                        setStreamingTesto(testoAccumulato)
                     }
                 }
             }
 
+            // Nessun testo: niente bolla vuota, l'utente legge perche'.
+            if (!testoAccumulato.trim()) {
+                throw new Error(erroreStream ?? 'La risposta non è stata generata. Riprova tra qualche istante.')
+            }
+
             setConversazione([...nuovaConv, { role: 'assistant', content: testoAccumulato, azione }])
             setStreamingTesto('')
+            // Interrotta a meta': il testo arrivato resta, l'errore si vede.
+            if (erroreStream) setErroreLex(erroreStream)
         } catch (e) {
             if (e.name !== 'AbortError') {
-                setErroreLex(e.message)
+                setErroreLex(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
                 setConversazione(conversazione)
+                setStreamingTesto('')
             }
         } finally {
             setCercando(false)
@@ -832,6 +852,11 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                                     >
                                         {m.content}
                                     </ReactMarkdown>
+                                    {/* Trasparenza AI: art. 50 AI Act, art. 13 L. 132/2025 */}
+                                    <p className="mt-3 pt-2 border-t border-white/5 font-body text-xs lg:text-[11px] text-nebbia/35 leading-relaxed">
+                                        Contenuto generato con intelligenza artificiale. Lex può commettere errori:
+                                        verifica sempre le fonti citate prima dell'uso professionale.
+                                    </p>
                                 </div>
                             )}
                         </div>

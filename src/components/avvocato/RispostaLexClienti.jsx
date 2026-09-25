@@ -163,6 +163,14 @@ export default function RispostaLexClienti({ risposta, clientiMenzionati, client
                     </div>
                 </div>
             )}
+
+            {/* Trasparenza AI: art. 50 AI Act, art. 13 L. 132/2025 */}
+            {typingDone && (
+                <p className="pt-2 border-t border-white/5 font-body text-xs lg:text-[11px] text-nebbia/35 leading-relaxed">
+                    Contenuto generato con intelligenza artificiale. Lex può commettere errori:
+                    verifica sempre i dati prima dell'uso professionale.
+                </p>
+            )}
         </div>
     )
 }

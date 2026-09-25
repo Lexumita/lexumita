@@ -16,6 +16,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Sparkles, Send, Loader2, Save, AlertCircle, Check, FileText, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import ReactMarkdown from 'react-markdown'
 
 const SUGGERIMENTI = [
@@ -80,11 +81,11 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                 if (res.status === 402 || json.crediti_esauriti) {
                     throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
                 }
-                throw new Error(json.error ?? 'Risposta non disponibile')
+                throw new Error(sanitizzaErrore(json.error) ?? 'Risposta non disponibile')
             }
             setMessaggi(m => [...m, { role: 'assistant', content: json.risposta }])
         } catch (e) {
-            setErrore(e.message)
+            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
         } finally {
             setLoading(false)
         }
@@ -119,7 +120,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                 if (res.status === 402 || json.crediti_esauriti) {
                     throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
                 }
-                throw new Error(json.error ?? `Errore del generatore (${res.status})`)
+                throw new Error(sanitizzaErrore(json.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
             }
 
             // Reader SSE (stesso pattern di ChatPratica)
@@ -150,7 +151,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                         tipoNomeFinale = data.tipo_nome ?? tipo.nome
                         tipoCodiceFinale = data.tipo_documento ?? tipo.codice
                     }
-                    else if (eventName === 'error') throw new Error(data.error ?? 'Errore nella generazione')
+                    else if (eventName === 'error') throw new Error(sanitizzaErrore(data.error) ?? 'Errore nella generazione')
                 }
             }
 
@@ -158,7 +159,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
             setMessaggi(m => [...m, { role: 'assistant', content: documentoFinale, documento: true, tipo_nome: tipoNomeFinale, tipo_codice: tipoCodiceFinale }])
             setTipoDocSel('')
         } catch (e) {
-            setErrore(e.message)
+            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
         } finally {
             setLoading(false)
             setStatoGenerazione('')
@@ -187,7 +188,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
             setMessaggi(m => m.map((x, i) => i === idx ? { ...x, pdf_salvato: true, pdf_url: data.url ?? null } : x))
             onDocumentoSalvato?.()
         } catch (e) {
-            setErrore(e.message)
+            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
         } finally {
             setSalvandoPdfIdx(null)
         }
@@ -214,7 +215,7 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
             setMessaggi(m => m.map((x, i) => i === idx ? { ...x, salvata: true } : x))
             onRicercaSalvata?.()
         } catch (e) {
-            setErrore(e.message)
+            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
         } finally {
             setSalvandoIdx(null)
         }

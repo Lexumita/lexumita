@@ -41,8 +41,28 @@ const supabase = createClient(
 
 const ENDPOINT_NOME = 'lex_genera_documento'
 const MODEL_AGENT = 'claude-sonnet-5'
-const MAX_TOKENS_AGENT = 8000
+// Il tetto vale per ogni giro dell'agent e comprende anche il ragionamento:
+// Sonnet 5 ragiona da solo, e con 8.000 un atto lungo poteva uscire troncato.
+// Stesso tetto del Synthesizer; si paga solo quello che il modello scrive
+// davvero (25/09/2026).
+const MAX_TOKENS_AGENT = 14000
 const MAX_ITERAZIONI_AGENT = 6
+
+// ─── MESSAGGI D'ERRORE PER L'UTENTE ────────────────────────────
+// Regola white-label (25/09/2026): all'utente mai il nome del fornitore AI ne'
+// un testo tecnico ("stop_reason inatteso", "Anthropic error 529"). Il
+// dettaglio vero resta nei log (console + lex_logs).
+const MSG_TROPPE_RICHIESTE = 'Troppe richieste in questo momento. Riprova tra qualche secondo.'
+const MSG_SERVIZIO_NON_DISPONIBILE = 'Il servizio è temporaneamente non disponibile. Riprova tra poco.'
+const MSG_GENERAZIONE_NON_RIUSCITA = 'La generazione del documento non è riuscita per un problema temporaneo.'
+
+function messaggioGenerazione(err: any, rimborsato: boolean): string {
+  const status = Number(err?.status ?? 0)
+  const base = status === 429 ? MSG_TROPPE_RICHIESTE
+    : status >= 500 ? MSG_SERVIZIO_NON_DISPONIBILE
+    : MSG_GENERAZIONE_NON_RIUSCITA
+  return rimborsato ? `${base} Il credito non è stato scalato: puoi riprovare.` : base
+}
 const EMBED_MODEL = 'text-embedding-3-small'  // 1536 dim, allineato al corpus
 
 // ═══════════════════════════════════════════════════════════════
@@ -1454,7 +1474,9 @@ Procedi.`
 
             if (!resp.ok) {
               const errText = await resp.text()
-              throw new Error(`Anthropic error ${resp.status}: ${errText.slice(0, 300)}`)
+              const errModello: any = new Error(`Anthropic error ${resp.status}: ${errText.slice(0, 300)}`)
+              errModello.status = resp.status
+              throw errModello
             }
 
             const reader = resp.body!.getReader()
@@ -1643,11 +1665,12 @@ Procedi.`
             metadati: { pratica_id: praticaId, tipo_documento: tipoCodice }
           })
 
-          if (!creditoScalato && creditoPrenotatoRowId) {
+          const rimborsato = !creditoScalato && !!creditoPrenotatoRowId
+          if (rimborsato && creditoPrenotatoRowId) {
             await restituisciCredito(creditoPrenotatoRowId, requestId)
             creditoPrenotatoRowId = null
           }
-          inviaEvento('error', { error: err.message })
+          inviaEvento('error', { error: messaggioGenerazione(err, rimborsato) })
           controller.close()
         }
       }
@@ -1676,10 +1699,11 @@ Procedi.`
       metadati: { pratica_id: praticaId, tipo_documento: tipoCodice }
     })
 
-    if (!creditoScalato && creditoPrenotatoRowId) {
+    const rimborsato = !creditoScalato && !!creditoPrenotatoRowId
+    if (rimborsato && creditoPrenotatoRowId) {
       await restituisciCredito(creditoPrenotatoRowId, requestId)
     }
 
-    return jsonError(500, err.message)
+    return jsonError(500, messaggioGenerazione(err, rimborsato))
   }
 })

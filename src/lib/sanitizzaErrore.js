@@ -18,7 +18,7 @@ const FORNITORE =
 const RETE = /failed to fetch|networkerror|network error|load failed|err_network|err_internet_disconnected/i
 
 const TECNICO =
-    /unexpected (?:end|token)|\bjson\b|is not a function|cannot read propert|is not defined|\bundefined\b|typeerror|syntaxerror|referenceerror|statement timeout|internal server error|bad gateway|gateway time-?out|worker_limit|econnreset/i
+    /unexpected (?:end|token)|\bjson\b|is not a function|cannot read propert|is not defined|\bundefined\b|typeerror|syntaxerror|referenceerror|statement timeout|internal server error|bad gateway|gateway time-?out|worker_limit|econnreset|edge function returned|non-2xx|failed to send a request to the edge function|relay error/i
 
 const MSG = {
     rate: 'Troppe richieste in questo momento. Riprova tra qualche secondo.',

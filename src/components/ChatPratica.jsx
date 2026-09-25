@@ -17,6 +17,7 @@
 
 import { useState, useEffect, useRef, cloneElement, isValidElement, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
+import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import ReactMarkdown from 'react-markdown'
 import {
     Sparkles, Send, Save, Plus, AlertCircle, X, CheckCircle,
@@ -464,7 +465,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
             setPdfUrl(url)
             setMarkdownAnteprima(markdownDaRendere)
         } catch (err) {
-            setErrorePdf(err.message)
+            setErrorePdf(sanitizzaErrore(err) ?? 'Anteprima non disponibile. Riprova tra qualche istante.')
         } finally {
             setGenerandoPdf(false)
         }
@@ -502,7 +503,7 @@ function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
             setSalvato({ url: data.url, nome_file: data.nome_file })
             if (onDocumentoSalvato) onDocumentoSalvato()
         } catch (err) {
-            setErrore(err.message)
+            setErrore(sanitizzaErrore(err) ?? 'Salvataggio non riuscito. Riprova tra qualche istante.')
         } finally {
             setSalvando(false)
         }
@@ -816,7 +817,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             if (!response.ok) {
                 const errBody = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
                 if (errBody.crediti_esauriti) setErrore('crediti_esauriti')
-                else setErrore(errBody.error ?? `Errore ${response.status}`)
+                else setErrore(sanitizzaErrore(errBody.error) ?? `Il servizio non ha risposto (codice ${response.status}). Riprova tra qualche istante.`)
                 setConversazione(conversazione)
                 setInviando(false)
                 return
@@ -828,6 +829,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             let testoAccumulato = ''
             let creditiRimasti = null
             let eventoCorrente = null   // FUORI dal while: deve persistere tra le reader.read()
+            let erroreStream = null     // messaggio dell'evento 'error', se arriva
 
             // Variabili per riconoscere il tipo di risposta finale
             let documentoMarkdown = null
@@ -878,11 +880,23 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                             }
 
                             if (eventoCorrente === 'error') {
-                                setErrore(data.error ?? 'Errore nello streaming')
+                                erroreStream = sanitizzaErrore(data.error) ?? 'La risposta si è interrotta. Riprova tra qualche istante.'
+                                setErrore(erroreStream)
                             }
                         } catch { /* ignore */ }
                     }
                 }
+            }
+
+            // Niente testo e niente documento: nessuna bolla vuota. Se il server
+            // ha mandato un errore e' gia' a schermo, altrimenti lo diciamo qui.
+            if (!documentoMarkdown && !testoAccumulato.trim()) {
+                if (!erroreStream) setErrore('La risposta non è stata generata. Riprova tra qualche istante.')
+                setConversazione(conversazione)
+                setStreamingTesto('')
+                setStatoGenerazione('')
+                setIsDocumentoStreaming(false)
+                return
             }
 
             // Costruzione messaggio finale: documento o chat normale
@@ -917,7 +931,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             if (err.name === 'AbortError') {
                 setConversazione(conversazione)
             } else {
-                setErrore(err.message)
+                setErrore(sanitizzaErrore(err) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
                 setConversazione(conversazione)
             }
             setStreamingTesto('')
@@ -955,7 +969,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             setTitoloSalva('')
             setTimeout(() => setSalvataConferma(false), 4000)
         } catch (err) {
-            setErrore(err.message)
+            setErrore(sanitizzaErrore(err) ?? 'Salvataggio non riuscito. Riprova tra qualche istante.')
         } finally {
             setSalvando(false)
         }

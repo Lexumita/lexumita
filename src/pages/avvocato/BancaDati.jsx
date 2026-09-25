@@ -15,7 +15,7 @@ import {
     Search, Sparkles, ChevronRight, ChevronLeft,
     BookOpen, AlertCircle, ArrowRight, X, Save,
     FileText, Plus, Eye, Flag, Globe, Clock,
-    Scale, Filter, Landmark, Calendar, Building2, ScrollText
+    Scale, Filter, Landmark, Calendar, Building2, ScrollText, FileDown, Loader2
 } from 'lucide-react'
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -621,6 +621,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     const [faseCorrente, setFaseCorrente] = useState(null)
     const [streamingTesto, setStreamingTesto] = useState('')
     const [meta, setMeta] = useState(null)
+    // PDF di una risposta: quale sta preparando, e l'eventuale avviso sotto il pulsante
+    const [pdf, setPdf] = useState({ indice: null, lavoro: false, messaggio: '' })
 
     const [clientConversationId, setClientConversationId] = useState(() => crypto.randomUUID())
 
@@ -846,6 +848,22 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         }
     }
 
+    // PDF di una risposta (25/09/2026): il testo di Lex impaginato cosi' com'e',
+    // con titolo, punti fermi e sintesi scritti da Sonnet. Nessun credito.
+    // Il modulo (pdfmake + caratteri) si carica solo qui, al click.
+    async function scaricaPdf(indice) {
+        if (pdf.lavoro) return
+        setPdf({ indice, lavoro: true, messaggio: '' })
+        try {
+            const { scaricaPdfRisposta } = await import('@/lib/pdf/pdfRisposta')
+            const domandaDellaRisposta = conversazione.slice(0, indice).reverse().find((m) => m.role === 'user')?.content ?? ''
+            const { avviso } = await scaricaPdfRisposta({ domanda: domandaDellaRisposta, risposta: conversazione[indice].content })
+            setPdf({ indice, lavoro: false, messaggio: avviso ?? '' })
+        } catch (e) {
+            setPdf({ indice, lavoro: false, messaggio: sanitizzaErrore(e) ?? 'Non sono riuscito a creare il PDF. Riprova tra qualche istante.' })
+        }
+    }
+
     function nuovaSessione() {
         if (abortControllerRef.current) abortControllerRef.current.abort()
         setConversazione([])
@@ -1020,6 +1038,23 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                                     </button>
                                                 ))}
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {m.content && !m.interrotta && m.tipo_risposta !== 'rigettata' && m.tipo_risposta !== 'messaggio_standard' && (
+                                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                                            <button
+                                                onClick={() => scaricaPdf(i)}
+                                                disabled={pdf.lavoro || cercando}
+                                                className="flex items-center gap-1.5 font-body text-xs text-nebbia/50 hover:text-oro border border-white/10 hover:border-oro/40 px-3 py-1.5 transition-colors disabled:opacity-40"
+                                            >
+                                                {pdf.lavoro && pdf.indice === i
+                                                    ? <><Loader2 size={12} className="animate-spin" /> Preparo il PDF…</>
+                                                    : <><FileDown size={12} /> Scarica PDF</>}
+                                            </button>
+                                            {!pdf.lavoro && pdf.indice === i && pdf.messaggio && (
+                                                <span className="font-body text-xs text-nebbia/40">{pdf.messaggio}</span>
+                                            )}
                                         </div>
                                     )}
 
