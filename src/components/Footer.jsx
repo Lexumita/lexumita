@@ -72,13 +72,17 @@ export default function Footer() {
               Mosaico Experiences SA · CHE-365.261.725 · Via Cantonale 1, 6900 Lugano
             </p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-6 gap-y-2">
             <Link to="/privacy" className="font-body text-xs text-nebbia/20 hover:text-nebbia/40 transition-colors">
               Privacy Policy
             </Link>
             <Link to="/termini" className="font-body text-xs text-nebbia/20 hover:text-nebbia/40 transition-colors">
               Termini di servizio
             </Link>
+            {/* La piattaforma gemella per la Svizzera: solo un collegamento, niente hreflang (prodotti diversi). */}
+            <a href="https://www.lexum.ch" target="_blank" rel="noopener" className="font-body text-xs text-nebbia/20 hover:text-nebbia/40 transition-colors">
+              Lexum Svizzera · lexum.ch
+            </a>
           </div>
         </div>
       </div>

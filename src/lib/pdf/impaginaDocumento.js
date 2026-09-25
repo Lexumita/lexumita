@@ -80,7 +80,8 @@ const filetto = (margine) => ({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: LARGH
 
 function riquadro(contenuto, bordo, margine = [0, 0, 0, 14]) {
     return {
-        table: { widths: ['*'], body: [[{ stack: contenuto }]] },
+        // Una riga sola che non si spezza: il riquadro resta intero su una pagina.
+        table: { widths: ['*'], body: [[{ stack: contenuto }]], dontBreakRows: true },
         layout: {
             fillColor: () => C.riquadro,
             hLineColor: () => C.cornice, vLineColor: (i) => (i === 0 ? bordo : C.cornice),
