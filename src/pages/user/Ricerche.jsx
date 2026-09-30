@@ -13,6 +13,7 @@ import {
     BookOpen, Landmark, ScrollText, ExternalLink,
 } from 'lucide-react'
 import AggiungiAPratica from '@/components/AggiungiAPratica'
+import PacchettoLampo from '@/components/PacchettoLampo'
 
 const PALETTE = [
     '#C9A45C', '#7FA39A', '#8B7BB8', '#D49B6F',
@@ -1397,6 +1398,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
     const [azioneCorrente, setAzioneCorrente] = useState('libera')
     const [streamingTesto, setStreamingTesto] = useState('')
     const [erroreLex, setErroreLex] = useState('')
+    const [lampoAperto, setLampoAperto] = useState(false)   // Pacchetto Lampo (30/09/2026)
     const [mostraModaleSalva, setMostraModaleSalva] = useState(false)
     const [contenutoSalva, setContenutoSalva] = useState('')
     const abortControllerRef = useRef(null)
@@ -1453,6 +1455,7 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
                 if (res.status === 402 || err.crediti_esauriti) {
+                    setLampoAperto(true)
                     throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
                 }
                 throw new Error(sanitizzaErrore(err.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
@@ -1739,6 +1742,8 @@ function PannelloConfronto({ elementi, etichette, pratiche, basePathBancaDati, o
                     }}
                 />
             )}
+
+            <PacchettoLampo aperto={lampoAperto} onChiudi={() => setLampoAperto(false)} />
         </div>
     )
 }

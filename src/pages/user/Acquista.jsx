@@ -53,6 +53,19 @@ export default function Acquista() {
         }
     }, [profile?.id])
 
+    // Al ritorno da Stripe i crediti li accredita il webhook, spesso qualche secondo DOPO il
+    // ritorno: senza questo controllo il saldo restava quello vecchio (30/09/2026).
+    useEffect(() => {
+        if (!isSuccess || !profile?.id) return
+        let volte = 0
+        const timer = setInterval(() => {
+            volte += 1
+            caricaCrediti()
+            if (volte >= 10) clearInterval(timer)
+        }, 3000)
+        return () => clearInterval(timer)
+    }, [isSuccess, profile?.id])
+
     async function caricaCrediti() {
         setLoadingCrediti(true)
         const now = new Date().toISOString()

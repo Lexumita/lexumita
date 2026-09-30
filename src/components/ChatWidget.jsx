@@ -81,7 +81,7 @@ export default function ChatWidget() {
                         <div className="flex items-center gap-2 px-3 py-2 bg-oro/5 border border-oro/20">
                             <Sparkles size={12} className="text-oro shrink-0" />
                             <p className="font-body text-xs text-oro/80 leading-relaxed">
-                                Registrandoti ricevi <span className="font-medium">3 ricerche gratuite</span> con Lex AI
+                                Registrandoti la <span className="font-medium">prima ricerca</span> con Lex AI è gratuita
                             </p>
                         </div>
 

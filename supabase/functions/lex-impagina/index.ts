@@ -22,7 +22,7 @@ const supabase = createClient(
 )
 
 const ENDPOINT_NOME = 'lex_impagina'
-const MODELLO = 'claude-sonnet-5'
+const MODELLO = 'claude-sonnet-5-5'
 // Il tetto comprende il ragionamento; con effort low l'uscita misurata e' ~850 token.
 const MAX_TOKENS = 6000
 const LIMITE_GIORNALIERO = 40
@@ -184,9 +184,10 @@ Deno.serve(async (req) => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', 'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!, 'anthropic-version': '2023-06-01' },
+      headers: { 'content-type': 'application/json', 'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'server-side-fallback-2026-07-01' },
       body: JSON.stringify({
         model: MODELLO,
+        fallbacks: 'default',
         max_tokens: MAX_TOKENS,
         output_config: { effort: 'low' },
         system: PROMPT,
@@ -199,6 +200,7 @@ Deno.serve(async (req) => {
       throw e
     }
 
+    if (d.stop_reason === 'refusal') throw new Error(`rifiuto del modello (categoria ${d.stop_details?.category ?? 'n/d'})`)
     const grezzo = (d.content ?? []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
     // Il modello a volte chiude il JSON in un blocco di codice: si legge fra la prima { e l'ultima }.
     const editoriale = normalizza(JSON.parse(grezzo.slice(grezzo.indexOf('{'), grezzo.lastIndexOf('}') + 1)), sezioni.length)

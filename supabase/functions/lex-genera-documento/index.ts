@@ -40,7 +40,7 @@ const supabase = createClient(
 // ─── COSTANTI ────────────────────────────────────────────────────
 
 const ENDPOINT_NOME = 'lex_genera_documento'
-const MODEL_AGENT = 'claude-sonnet-5'
+const MODEL_AGENT = 'claude-sonnet-5-5'
 // Il tetto vale per ogni giro dell'agent e comprende anche il ragionamento:
 // Sonnet 5 ragiona da solo, e con 8.000 un atto lungo poteva uscire troncato.
 // Stesso tetto del Synthesizer; si paga solo quello che il modello scrive
@@ -55,10 +55,13 @@ const MAX_ITERAZIONI_AGENT = 6
 const MSG_TROPPE_RICHIESTE = 'Troppe richieste in questo momento. Riprova tra qualche secondo.'
 const MSG_SERVIZIO_NON_DISPONIBILE = 'Il servizio è temporaneamente non disponibile. Riprova tra poco.'
 const MSG_GENERAZIONE_NON_RIUSCITA = 'La generazione del documento non è riuscita per un problema temporaneo.'
+// Rifiuto del modello (stop_reason 'refusal'): riprovare uguale non serve.
+const MSG_RICHIESTA_NON_ELABORABILE = 'Questa richiesta non può essere elaborata così come è formulata. Prova a riformularla.'
 
 function messaggioGenerazione(err: any, rimborsato: boolean): string {
   const status = Number(err?.status ?? 0)
-  const base = status === 429 ? MSG_TROPPE_RICHIESTE
+  const base = err?.rifiuto ? MSG_RICHIESTA_NON_ELABORABILE
+    : status === 429 ? MSG_TROPPE_RICHIESTE
     : status >= 500 ? MSG_SERVIZIO_NON_DISPONIBILE
     : MSG_GENERAZIONE_NON_RIUSCITA
   return rimborsato ? `${base} Il credito non è stato scalato: puoi riprovare.` : base
@@ -1454,16 +1457,18 @@ Procedi.`
           // system prompt), quindi gli unici text_delta sono quelli del documento.
           // Ritorna stop_reason + i content block ricostruiti (text + tool_use)
           // da rimettere nello storico messaggi per l'iterazione successiva.
-          async function eseguiTurnoStreaming(): Promise<{ stopReason: string; blocks: any[] }> {
+          async function eseguiTurnoStreaming(): Promise<{ stopReason: string; blocks: any[]; categoriaRifiuto: string | null }> {
             const resp = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
                 'anthropic-version': '2023-06-01',
+                'anthropic-beta': 'server-side-fallback-2026-07-01',
               },
               body: JSON.stringify({
                 model: MODEL_AGENT,
+                fallbacks: 'default',
                 max_tokens: MAX_TOKENS_AGENT,
                 stream: true,
                 system: systemPrompt,
@@ -1484,6 +1489,7 @@ Procedi.`
             let buffer = ''
             const blocks: any[] = []     // indicizzati per content_block index
             let stopReason = ''
+            let categoriaRifiuto: string | null = null
 
             while (true) {
               const { value, done } = await reader.read()
@@ -1503,57 +1509,73 @@ Procedi.`
                 if (ev.type === 'message_start') {
                   tokenInputTotale += ev.message?.usage?.input_tokens ?? 0
                 } else if (ev.type === 'content_block_start') {
+                  // Sonnet 5.5: i blocchi di ragionamento (thinking, con la firma) e il
+                  // segnaposto del ripiego (fallback) si tengono COSI' COME ARRIVANO.
+                  // Prima diventavano text vuoti e sparivano dallo storico: il turno
+                  // successivo ripartiva senza il ragionamento gia' fatto.
                   const cb = ev.content_block ?? {}
                   blocks[ev.index] = cb.type === 'tool_use'
                     ? { type: 'tool_use', id: cb.id, name: cb.name, _json: '' }
-                    : { type: 'text', text: '' }
+                    : { ...cb }
                 } else if (ev.type === 'content_block_delta') {
                   const b = blocks[ev.index]
                   if (!b) continue
                   if (ev.delta?.type === 'text_delta') {
-                    b.text += ev.delta.text   // storico: resta pseudonimizzato (il modello vede solo placeholder)
+                    b.text = (b.text ?? '') + ev.delta.text   // storico: resta pseudonimizzato (il modello vede solo placeholder)
                     const testoChunk = mappaPseudo.length > 0 ? dePseudo.push(ev.delta.text) : ev.delta.text
                     if (testoChunk) inviaEvento('chunk', { text: testoChunk })   // streaming reale, nomi ripristinati
                   } else if (ev.delta?.type === 'input_json_delta') {
                     b._json += ev.delta.partial_json ?? ''
+                  } else if (ev.delta?.type === 'thinking_delta') {
+                    b.thinking = (b.thinking ?? '') + (ev.delta.thinking ?? '')
+                  } else if (ev.delta?.type === 'signature_delta') {
+                    b.signature = (b.signature ?? '') + (ev.delta.signature ?? '')
                   }
                 } else if (ev.type === 'message_delta') {
                   if (ev.delta?.stop_reason) stopReason = ev.delta.stop_reason
+                  if (ev.delta?.stop_details?.category) categoriaRifiuto = ev.delta.stop_details.category
                   tokenOutputTotale += ev.usage?.output_tokens ?? 0
                 }
               }
             }
 
-            // Ricostruisce i block per lo storico: parse del JSON dei tool_use
+            // Ricostruisce i block per lo storico: parse del JSON dei tool_use,
+            // gli altri (text, thinking, fallback) restano come sono arrivati.
             const blocksPuliti = blocks.filter(Boolean).map((b: any) => {
               if (b.type === 'tool_use') {
                 let input: any = {}
                 try { input = b._json ? JSON.parse(b._json) : {} } catch { /* json parziale */ }
                 return { type: 'tool_use', id: b.id, name: b.name, input }
               }
-              return { type: 'text', text: b.text }
+              return b
             })
 
-            return { stopReason, blocks: blocksPuliti }
+            return { stopReason, blocks: blocksPuliti, categoriaRifiuto }
           }
 
           while (iterazione < MAX_ITERAZIONI_AGENT && !documentoCompletato) {
             iterazione++
 
-            const { stopReason, blocks } = await eseguiTurnoStreaming()
+            const { stopReason, blocks, categoriaRifiuto } = await eseguiTurnoStreaming()
             // Fix 400 "messages: text content blocks must be non-empty": se il
             // modello va dritto al tool senza scrivere, il turno contiene un text
             // block vuoto che, rimesso nello storico, farebbe rifiutare la richiesta
             // successiva. Si scartano i text block vuoti dallo storico assistant
             // (i tool_use restano -> il turno non e' mai privo di contenuto).
-            const blocksStorico = blocks.filter(
-              (b: any) => b.type !== 'text' || (typeof b.text === 'string' && b.text.trim().length > 0)
+            // Ripiego a meta' turno (fallback lato server): del tratto declinato si
+            // rimanda solo il testo; ragionamento e tool_use prima del segnaposto
+            // no, e nemmeno il segnaposto. I tool si eseguono da QUESTO elenco:
+            // un tool_result senza il suo tool_use nello storico sarebbe un 400.
+            const confine = blocks.map((b: any) => b.type).lastIndexOf('fallback')
+            const blocksStorico = blocks.filter((b: any, i: number) =>
+              (confine < 0 || i > confine || b.type === 'text') &&
+              (b.type !== 'text' || (typeof b.text === 'string' && b.text.trim().length > 0))
             )
             messaggi.push({ role: 'assistant', content: blocksStorico })
 
             if (stopReason === 'tool_use') {
               const toolResults: any[] = []
-              for (const block of blocks) {
+              for (const block of blocksStorico) {
                 if (block.type !== 'tool_use') continue
 
                 if (block.name === 'cerca_in_corpus') {
@@ -1603,6 +1625,12 @@ Procedi.`
               } else {
                 throw new Error('Generazione terminata senza documento (testo finale vuoto)')
               }
+            } else if (stopReason === 'refusal') {
+              // Il modello ha declinato e il ripiego non copre questa categoria:
+              // il testo gia' uscito non vale come documento, il credito torna.
+              const errRifiuto: any = new Error(`rifiuto del modello (categoria ${categoriaRifiuto ?? 'n/d'})`)
+              errRifiuto.rifiuto = true
+              throw errRifiuto
             } else {
               throw new Error(`stop_reason inatteso: ${stopReason}`)
             }

@@ -11,11 +11,14 @@ import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import { rottaSentenza } from '@/lib/rotte'
+import PacchettoLampo, {
+    salvaRicercaInSospeso, prendiRicercaInSospeso, leggiEsitoLampo, leggiSaldoCrediti,
+} from '@/components/PacchettoLampo'
 import {
     Search, Sparkles, ChevronRight, ChevronLeft,
     BookOpen, AlertCircle, ArrowRight, X, Save,
     FileText, Plus, Eye, Flag, Globe, Clock,
-    Scale, Filter, Landmark, Calendar, Building2, ScrollText, FileDown, Loader2
+    Scale, Filter, Landmark, Calendar, Building2, ScrollText, FileDown, Loader2, Zap
 } from 'lucide-react'
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -631,6 +634,48 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
     const abortControllerRef = useRef(null)
 
+    // ── Pacchetto Lampo (30/09/2026): popup quando i crediti finiscono, invito dopo
+    // l'ultima ricerca, ritorno dal pagamento con la conversazione ripristinata ──
+    const [lampo, setLampo] = useState({ aperto: false, motivo: 'esauriti' })
+    const [ultimaUsata, setUltimaUsata] = useState(false)
+    const [ritornoLampo, setRitornoLampo] = useState(null)   // 'attesa' | 'arrivati' | 'lento' | 'annullato'
+
+    // Al ritorno da Stripe si ritrova la ricerca lasciata per pagare.
+    useEffect(() => {
+        const esito = leggiEsitoLampo()
+        if (!esito) return
+        const sospesa = prendiRicercaInSospeso()
+        if (sospesa) {
+            if (Array.isArray(sospesa.conversazione)) setConversazione(sospesa.conversazione)
+            if (Array.isArray(sospesa.messaggi) && onAggiornaMessaggi) onAggiornaMessaggi(sospesa.messaggi)
+            if (sospesa.clientConversationId) setClientConversationId(sospesa.clientConversationId)
+            if (sospesa.domanda) setDomanda(sospesa.domanda)
+        }
+        setRitornoLampo(esito === 'ok' ? 'attesa' : 'annullato')
+    }, [])
+
+    // Dopo il pagamento i crediti li accredita il webhook di Stripe, di solito in pochi
+    // secondi: si controlla il saldo ogni 2 s per mezzo minuto.
+    useEffect(() => {
+        if (ritornoLampo !== 'attesa') return
+        let volte = 0
+        let fermo = false
+        const timer = setInterval(async () => {
+            volte += 1
+            const saldo = await leggiSaldoCrediti().catch(() => 0)
+            if (fermo) return
+            if (saldo > 0) {
+                setCrediti(saldo)
+                setRitornoLampo('arrivati')
+                clearInterval(timer)
+            } else if (volte >= 15) {
+                setRitornoLampo('lento')
+                clearInterval(timer)
+            }
+        }, 2000)
+        return () => { fermo = true; clearInterval(timer) }
+    }, [ritornoLampo])
+
     // ── Documento allegato (effimero: non entra nell'archivio, scade in 4 ore) ──
     const [documento, setDocumento] = useState(null)   // { id, nome, n_chunk, troncato, scadenza }
     const [caricandoDoc, setCaricandoDoc] = useState(false)
@@ -685,7 +730,14 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     async function cerca(domandaInput, opzioni = {}) {
         const domandaCorrente = domandaInput ?? domanda
         if (!domandaCorrente.trim()) return
-        if (crediti !== null && crediti <= 0) { setErrore('Crediti Lex esauriti.'); return }
+        if (crediti !== null && crediti <= 0) {
+            // Si propone il Pacchetto Lampo; la domanda resta nella casella per quando si riparte.
+            if (domandaInput && !domanda.trim()) setDomanda(domandaCorrente)
+            setLampo({ aperto: true, motivo: 'esauriti' })
+            return
+        }
+        setRitornoLampo(null)
+        setUltimaUsata(false)
 
         if (!opzioni.tipoRichiesta || opzioni.tipoRichiesta === 'query_iniziale') {
             setDomanda('')
@@ -728,6 +780,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 const errBody = await res.json().catch(() => ({ error: 'Errore sconosciuto' }))
                 if (errBody.crediti_esauriti) {
                     setErrore('crediti_esauriti')
+                    setCrediti(0)
+                    setDomanda(domandaCorrente)   // la domanda torna nella casella per quando si riparte
+                    setLampo({ aperto: true, motivo: 'esauriti' })
                 } else {
                     setErrore(sanitizzaErrore(errBody.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
                 }
@@ -787,7 +842,10 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 }
                                 metaFinale = data.meta
                                 tipoRisposta = data.tipo_risposta
-                                if (data.crediti_rimasti !== undefined) setCrediti(data.crediti_rimasti)
+                                if (data.crediti_rimasti !== undefined) {
+                                    setCrediti(data.crediti_rimasti)
+                                    if (data.crediti_rimasti === 0) setUltimaUsata(true)
+                                }
                             }
 
                             if (eventoCorrente === 'error') {
@@ -1227,15 +1285,51 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             <AlertCircle size={13} className="text-oro shrink-0" />
                             <p className="font-body text-xs text-nebbia/60">Crediti Lex esauriti.</p>
                         </div>
-                        <a
-                            href="/studio?tab=acquista"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap"
+                        <button
+                            onClick={() => setLampo({ aperto: true, motivo: 'esauriti' })}
+                            className="flex items-center gap-1.5 min-h-[36px] font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap"
                         >
-                            Acquista crediti →
-                        </a>
+                            <Zap size={12} /> Continua con il Pacchetto Lampo
+                        </button>
                     </div>
+                )}
+                {ultimaUsata && !errore && !cercando && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-oro/5 border border-oro/20">
+                        <p className="font-body text-xs text-nebbia/60">
+                            Hai usato l'ultima ricerca disponibile. Per continuare c'è il Pacchetto Lampo.
+                        </p>
+                        <button
+                            onClick={() => setLampo({ aperto: true, motivo: 'ultimo' })}
+                            className="flex items-center gap-1.5 min-h-[36px] font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors whitespace-nowrap"
+                        >
+                            <Zap size={12} /> Continua la ricerca
+                        </button>
+                    </div>
+                )}
+                {ritornoLampo === 'attesa' && (
+                    <div className="flex items-center gap-2 p-3 bg-salvia/5 border border-salvia/20">
+                        <Loader2 size={13} className="animate-spin text-salvia shrink-0" />
+                        <p className="font-body text-xs text-nebbia/70">Pagamento ricevuto: sto aggiungendo le tue ricerche...</p>
+                    </div>
+                )}
+                {ritornoLampo === 'arrivati' && (
+                    <div className="flex items-center gap-2 p-3 bg-salvia/10 border border-salvia/25">
+                        <Sparkles size={13} className="text-salvia shrink-0" />
+                        <p className="font-body text-xs text-salvia">
+                            Fatto: hai {crediti} {crediti === 1 ? 'ricerca' : 'ricerche'}. Premi il pulsante qui sotto per continuare.
+                        </p>
+                    </div>
+                )}
+                {ritornoLampo === 'lento' && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-400/5 border border-amber-400/20">
+                        <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                        <p className="font-body text-xs text-nebbia/70">
+                            Il pagamento è andato a buon fine ma le ricerche non sono ancora arrivate. Ricarica la pagina tra un minuto.
+                        </p>
+                    </div>
+                )}
+                {ritornoLampo === 'annullato' && (
+                    <p className="font-body text-xs text-nebbia/40">Pagamento annullato: nessun addebito.</p>
                 )}
 
                 <button
@@ -1260,6 +1354,18 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     </p>
                 </div>
             </div>
+
+            <PacchettoLampo
+                aperto={lampo.aperto}
+                motivo={lampo.motivo}
+                onChiudi={() => setLampo(l => ({ ...l, aperto: false }))}
+                primaDiPagare={() => salvaRicercaInSospeso({
+                    domanda,
+                    conversazione,
+                    messaggi: messaggi ?? [],
+                    clientConversationId,
+                })}
+            />
         </div>
     )
 }

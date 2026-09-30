@@ -10,6 +10,7 @@ import {
     FolderOpen, Save, Check, Plus
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import PacchettoLampo from '@/components/PacchettoLampo'
 
 import { FileText } from 'lucide-react'  // ← aggiungilo all'import generale lucide-react in alto
 
@@ -645,6 +646,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
     const [azioneCorrente, setAzioneCorrente] = useState('libera')
     const [streamingTesto, setStreamingTesto] = useState('')
     const [erroreLex, setErroreLex] = useState('')
+    const [lampoAperto, setLampoAperto] = useState(false)   // Pacchetto Lampo (30/09/2026)
     const [mostraModaleSalva, setMostraModaleSalva] = useState(false)
     const [contenutoSalva, setContenutoSalva] = useState('')
     const abortControllerRef = useRef(null)
@@ -710,6 +712,7 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
                 if (res.status === 402 || err.crediti_esauriti) {
+                    setLampoAperto(true)
                     throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
                 }
                 throw new Error(sanitizzaErrore(err.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
@@ -967,6 +970,8 @@ function ChatEtichetta({ etichetta, contenuti, pratiche, etichetteUtente, onSint
                     }}
                 />
             )}
+
+            <PacchettoLampo aperto={lampoAperto} onChiudi={() => setLampoAperto(false)} />
         </div>
     )
 }
