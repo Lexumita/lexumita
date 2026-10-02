@@ -40,7 +40,7 @@ export default function TerminiServizio() {
           <p className="font-body text-xs text-salvia/60 tracking-[0.3em] uppercase">Informativa legale</p>
           <h1 className="font-display text-5xl font-light text-nebbia">Termini di Servizio</h1>
           <p className="font-body text-sm text-nebbia/40">
-            Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Ultimo aggiornamento: 2 ottobre 2026
           </p>
           <div className="bg-slate border border-oro/15 p-4 flex items-start gap-3">
             <AlertCircle size={14} className="text-oro shrink-0 mt-0.5" />
@@ -133,21 +133,23 @@ export default function TerminiServizio() {
               La fattura viene emessa automaticamente al momento del pagamento.
             </p>
           </Sub>
-          <Sub title="4.3 Rinnovo automatico">
+          <Sub title="4.3 Durata e rinnovo">
             <p>
-              Gli abbonamenti si rinnovano automaticamente alla scadenza salvo disdetta
-              comunicata almeno 7 giorni prima della data di rinnovo.
-              La disdetta può essere effettuata dalla sezione Studio della piattaforma
-              o inviando comunicazione a info@lexum.it.
+              Ogni piano dura il periodo scelto al momento dell'acquisto e si paga in un'unica
+              soluzione: non si rinnova automaticamente e non comporta addebiti successivi.
+              Per continuare a usare il servizio dopo la scadenza occorre acquistare un nuovo
+              periodo dalla sezione Studio della piattaforma. A titolo di cortesia, prima della
+              scadenza Lexum invia un promemoria all'indirizzo email dell'account.
             </p>
           </Sub>
-          <Sub title="4.4 Mancato pagamento">
+          <Sub title="4.4 Scadenza del piano">
             <p>
-              In caso di mancato pagamento alla scadenza, l'account entra in un periodo
-              di grazia di 3 giorni durante i quali il servizio rimane accessibile.
-              Trascorso tale periodo senza regolarizzazione, l'accesso viene sospeso.
-              I dati vengono conservati per 30 giorni dalla sospensione, trascorsi i quali
-              possono essere eliminati definitivamente.
+              Alla scadenza, se non è stato acquistato un nuovo periodo, le funzionalità
+              riservate agli abbonati non sono più disponibili: l'account resta accessibile
+              e i documenti già caricati in archivio restano consultabili in sola lettura.
+              Lexum può concedere, a propria discrezione, un periodo di grazia durante il
+              quale il servizio resta accessibile. I dati vengono conservati per 30 giorni
+              dalla scadenza, trascorsi i quali possono essere eliminati definitivamente.
             </p>
           </Sub>
           <Sub title="4.5 Rimborsi">
@@ -336,9 +338,10 @@ export default function TerminiServizio() {
         <Section title="11. Sospensione e risoluzione del contratto">
           <Sub title="11.1 Risoluzione da parte dell'Utente">
             <p>
-              L'Utente può recedere dal contratto in qualsiasi momento disattivando
-              l'abbonamento dalla sezione Studio della piattaforma.
-              Il recesso ha effetto alla fine del periodo di abbonamento già pagato.
+              L'Utente può recedere dal contratto in qualsiasi momento. Poiché i piani non
+              si rinnovano automaticamente, è sufficiente non acquistare un nuovo periodo:
+              il servizio a pagamento termina alla scadenza del periodo già pagato, senza
+              ulteriori addebiti. Per la chiusura dell'account l'Utente può scrivere a info@lexum.it.
             </p>
           </Sub>
           <Sub title="11.2 Sospensione da parte di Lexum">
@@ -348,7 +351,6 @@ export default function TerminiServizio() {
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Violazione dei presenti Termini</li>
-              <li>Mancato pagamento oltre il periodo di grazia</li>
               <li>Uso fraudolento o abusivo della piattaforma</li>
               <li>Richiesta dell'autorità giudiziaria competente</li>
             </ul>

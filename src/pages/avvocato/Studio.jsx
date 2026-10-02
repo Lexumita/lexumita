@@ -825,7 +825,7 @@ export default function AvvocatoStudio() {
                             tone="red"
                             icon={AlertTriangle}
                             titolo={`Periodo di grazia — ${giorni} ${giorni === 1 ? 'giorno' : 'giorni'} rimanenti`}
-                            descrizione="Hai 7 giorni dalla scadenza per rinnovare prima che l'archivio passi in sola lettura."
+                            descrizione="Il servizio resta attivo fino alla fine del periodo di grazia: rinnova prima che l'archivio passi in sola lettura."
                             ctaLabel="Rinnova ora"
                             onCta={() => setTab('acquista')}
                         />
