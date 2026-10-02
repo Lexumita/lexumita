@@ -39,9 +39,6 @@ export default function TerminiServizio() {
         <div className="space-y-4">
           <p className="font-body text-xs text-salvia/60 tracking-[0.3em] uppercase">Informativa legale</p>
           <h1 className="font-display text-5xl font-light text-nebbia">Termini di Servizio</h1>
-          <p className="font-body text-sm text-nebbia/40">
-            Ultimo aggiornamento: 2 ottobre 2026
-          </p>
           <div className="bg-slate border border-oro/15 p-4 flex items-start gap-3">
             <AlertCircle size={14} className="text-oro shrink-0 mt-0.5" />
             <p className="font-body text-xs text-nebbia/50 leading-relaxed">
