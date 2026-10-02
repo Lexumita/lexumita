@@ -1,0 +1,32 @@
+{
+  "caricamento": {
+    "titolo": "Caricamento in corso",
+    "file": {
+      "curriculum": "Curriculum_Bianchi_Mario.pdf",
+      "contratto_locazione": "Contratto_locazione.pdf",
+      "contratto": "Contratto.pdf",
+      "perizia": "Perizia_tecnica_Rossi.pdf",
+      "diffida": "Diffida_ACME_srl.docx",
+      "statuto": "Statuto_societa_srl.pdf"
+    },
+    "caricato_in": "Caricato in: Pratica 2026/047 - Mario Rossi",
+    "completato": "Completato"
+  },
+  "ricerca": {
+    "titolo": "Ricerca nell'archivio",
+    "query": "Rossi 2024",
+    "pulsante": "Cerca",
+    "risultato_1": {
+      "file": "Perizia_tecnica_Rossi.pdf",
+      "estratto": "\"...la perizia evidenzia vizi strutturali al locale, con responsabilita imputabile al locatore ai sensi dell'art. 1578 c.c...\"",
+      "tag_pratica": "Pratica 2026/047",
+      "tag_categoria": "Locazione"
+    },
+    "risultato_2": {
+      "file": "Email_Rossi_2024-11-08.pdf",
+      "estratto": "\"...allego come da accordi la perizia tecnica relativa all'immobile di via Roma 12...\"",
+      "tag_pratica": "Pratica 2026/047",
+      "tag_categoria": "Corrispondenza"
+    }
+  }
+}

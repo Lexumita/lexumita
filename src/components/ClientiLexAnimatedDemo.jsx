@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /**
  * ClientiLexAnimatedDemo
@@ -13,33 +14,27 @@ import { Sparkles } from 'lucide-react'
  * One-shot. ~9s totale.
  */
 
-const DOMANDA = 'Fammi un resoconto sul cliente Mario Rossi.'
-
+// Le parole (domanda e risposta) stanno in public/locales/it/lex_demo.json.
 // Risposta segmentata: ogni elemento e una sezione che si scrive in sequenza.
 // type='text' = testo normale, type='strong' = testo evidenziato, type='alert' = rosso, type='break' = nuovo paragrafo
-const RISPOSTA = [
-    { type: 'strong', text: 'Mario Rossi' },
-    { type: 'text', text: ' e cliente dal ' },
-    { type: 'strong', text: '14 marzo 2024' },
-    { type: 'text', text: '. Ha 3 pratiche: 2 chiuse (locazione e successione) e una aperta dall agosto 2025 sulla causa civile in materia di locazione.' },
-    { type: 'break', text: '' },
-    { type: 'text', text: 'Hai fatturato ' },
-    { type: 'strong', text: '8.450 €' },
-    { type: 'text', text: ' e incassato ' },
-    { type: 'strong', text: '7.350 €' },
-    { type: 'text', text: '. Resta in attesa la fattura 2026/041 da ' },
-    { type: 'alert', text: '1.100 €, scaduta da 42 giorni' },
-    { type: 'text', text: '.' },
-    { type: 'break', text: '' },
-    { type: 'text', text: 'Prossimi impegni: udienza il ' },
-    { type: 'strong', text: '28/05/2026' },
-    { type: 'text', text: ' al Tribunale di Milano e appuntamento il 22/05/2026 alle 15:00.' },
-    { type: 'break', text: '' },
-    { type: 'italic', text: 'Ti suggerisco di sollecitare la fattura prima dell udienza.' },
+// Qui resta la forma: un elenco di tipi per paragrafo, legato per posizione ai
+// paragrafi di chat.risposta nel JSON; fra un paragrafo e l'altro c'e un 'break'.
+const TIPI_RISPOSTA = [
+    ['strong', 'text', 'strong', 'text'],
+    ['text', 'strong', 'text', 'strong', 'text', 'alert', 'text'],
+    ['text', 'strong', 'text'],
+    ['italic'],
 ]
 
-// Lunghezza totale per calcolo durata
-const RISPOSTA_TOTAL_CHARS = RISPOSTA.reduce((acc, s) => acc + s.text.length, 0)
+const componiRisposta = (paragrafi) => {
+    const out = []
+    TIPI_RISPOSTA.forEach((tipi, p) => {
+        if (p > 0) out.push({ type: 'break', text: '' })
+        const testi = Array.isArray(paragrafi) && Array.isArray(paragrafi[p]) ? paragrafi[p] : []
+        tipi.forEach((type, i) => out.push({ type, text: testi[i] ?? '' }))
+    })
+    return out
+}
 
 // ── Velocita typing ─────────────────────────────────────
 const TYPE_SPEED_BASE_DOMANDA = 50
@@ -51,17 +46,24 @@ const T_TYPING_START = 600
 const T_PAUSA_PRE_SUBMIT = 500
 const T_LOADER_DUR = 1200
 
-// Durata stimata del typing della risposta
-const T_RISPOSTA_DURATION = RISPOSTA_TOTAL_CHARS * TYPE_SPEED_RISPOSTA
-
-const T_END = T_TYPING_START
-    + DOMANDA.length * (TYPE_SPEED_BASE_DOMANDA + 10)
-    + T_PAUSA_PRE_SUBMIT
-    + T_LOADER_DUR
-    + T_RISPOSTA_DURATION
-    + 800
-
 export default function ClientiLexAnimatedDemo() {
+    const { t } = useTranslation('lex_demo')
+    const DOMANDA = t('chat.domanda')
+    const RISPOSTA = componiRisposta(t('chat.risposta', { returnObjects: true }))
+
+    // Lunghezza totale per calcolo durata
+    const RISPOSTA_TOTAL_CHARS = RISPOSTA.reduce((acc, s) => acc + s.text.length, 0)
+
+    // Durata stimata del typing della risposta
+    const T_RISPOSTA_DURATION = RISPOSTA_TOTAL_CHARS * TYPE_SPEED_RISPOSTA
+
+    const T_END = T_TYPING_START
+        + DOMANDA.length * (TYPE_SPEED_BASE_DOMANDA + 10)
+        + T_PAUSA_PRE_SUBMIT
+        + T_LOADER_DUR
+        + T_RISPOSTA_DURATION
+        + 800
+
     const sectionRef = useRef(null)
     const startTimeRef = useRef(null)
     const [started, setStarted] = useState(false)
@@ -223,7 +225,7 @@ export default function ClientiLexAnimatedDemo() {
                     <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
                     <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
                 </div>
-                <span className="font-body text-xs text-nebbia/25 ml-2">Lex AI</span>
+                <span className="font-body text-xs text-nebbia/25 ml-2">{t('finestra.titolo')}</span>
             </div>
 
             <div className="p-5 space-y-3 flex-1 min-h-[260px]">
@@ -245,7 +247,7 @@ export default function ClientiLexAnimatedDemo() {
                     <div className="flex">
                         <div className="flex items-center gap-2 px-3.5 py-2.5 bg-salvia/5 border border-salvia/15">
                             <span className="animate-spin w-3 h-3 border border-salvia/40 border-t-salvia rounded-full" />
-                            <span className="font-body text-xs text-salvia/60 italic">Lex sta analizzando...</span>
+                            <span className="font-body text-xs text-salvia/60 italic">{t('chat.loader')}</span>
                         </div>
                     </div>
                 )}
@@ -255,7 +257,7 @@ export default function ClientiLexAnimatedDemo() {
                     <div className="flex">
                         <div className="max-w-[95%] bg-salvia/5 border border-salvia/15 px-3.5 py-3 space-y-1">
                             <p className="font-body text-xs text-salvia/80 font-medium flex items-center gap-1 mb-2">
-                                <Sparkles size={10} /> Lex AI
+                                <Sparkles size={10} /> {t('chat.firma')}
                             </p>
                             <div className="font-body text-xs leading-relaxed">
                                 {renderRisposta()}

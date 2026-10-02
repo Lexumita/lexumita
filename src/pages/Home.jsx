@@ -10,6 +10,14 @@ import {
   BookOpen, Users, Bookmark, Library, X
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation, Trans } from 'react-i18next'
+
+// Valori tecnici legati per posizione agli elenchi di home.json
+const ICONE_LEXAI = [Search, FileText, MessageSquare, Brain]
+const NUMERI_PASSI = ['01', '02', '03', '04']
+const COLORI_PRATICA = [undefined, undefined, 'text-salvia', 'text-oro']
+const COLORI_ETICHETTE = ['oro', 'salvia', 'oro']
+const RICERCHE_EVIDENZIATE = [true, false, false]
 
 // Scroll animation hook
 function useInView(threshold = 0.12) {
@@ -125,6 +133,7 @@ function MiniCard({ icon: Icon, title, text, anchor }) {
 
 // Hero card grande (banca dati)
 function HeroDatabaseCard() {
+  const { t } = useTranslation('home')
   return (
     <a
       className="block group bg-slate/70 border border-oro/20 p-7 md:p-9 hover:border-oro/40 transition-all relative overflow-hidden"
@@ -134,36 +143,27 @@ function HeroDatabaseCard() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Library size={16} className="text-oro" />
-            <span className="font-body text-xs text-oro/60 tracking-[0.25em] uppercase">Banca dati</span>
+            <span className="font-body text-xs text-oro/60 tracking-[0.25em] uppercase">{t('database_card.label')}</span>
           </div>
           <p className="font-display text-5xl md:text-6xl font-light text-oro-shimmer leading-none mb-3">
-            4.000.000<span className="text-oro/60 text-3xl md:text-4xl ml-1">+</span>
+            {t('database_card.count')}<span className="text-oro/60 text-3xl md:text-4xl ml-1">{t('database_card.count_plus')}</span>
           </p>
           <p className="font-display text-xl font-light text-nebbia mb-3">
-            tra documenti giuridici, italiani ed europei.
+            {t('database_card.headline')}
           </p>
           <p className="font-body text-sm text-nebbia/50 leading-relaxed mb-3">
-            Lavoriamo in modo continuo per ampliare ed aggiornare la Banca Dati.
+            {t('database_card.description')}
           </p>
           <p className="font-body text-sm text-oro/80 leading-relaxed">
-            Aperti a chiunque, gratis. Senza abbonamenti per area, senza limiti per materia.
+            {t('database_card.open_access')}
           </p>
         </div>
         <div className="space-y-2">
-          {[
-            { t: 'Normativa italiana', s: 'Costituzione, codici, leggi e decreti (vigenti e storici)' },
-            { t: 'Giurisprudenza amministrativa e contabile', s: 'TAR, Consiglio di Stato, Corte dei Conti' },
-            { t: 'Giurisprudenza tributaria', s: 'Corti di giustizia tributaria (BDGT-MEF)' },
-            { t: 'Prassi delle autorità', s: 'Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti' },
-            { t: 'Diritto dell\'Unione Europea', s: 'Trattati (TUE, TFUE, Carta), regolamenti, direttive e giurisprudenza della Corte di giustizia UE' },
-            { t: 'Corte europea dei diritti dell\'uomo', s: 'Convenzione (testo vigente) e giurisprudenza di Strasburgo dal 1955 (HUDOC)' },
-            { t: 'Diritti fondamentali internazionali', s: 'Dichiarazione universale dei diritti umani e leggi di ratifica dei trattati' },
-            { t: 'Deontologia e disciplina forense', s: 'Codice deontologico e 21.000 massime del Consiglio Nazionale Forense' },
-          ].map(({ t, s }) => (
-            <div key={t} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">
+          {t('database_card.items', { returnObjects: true }).map(({ t: titolo, s }) => (
+            <div key={titolo} className="px-3 py-2.5 bg-petrolio/50 border border-white/5">
               <div className="flex items-center gap-2 mb-0.5">
                 <div className="w-1 h-1 rounded-full bg-oro/60 shrink-0" />
-                <span className="font-body text-xs text-nebbia/75 font-medium">{t}</span>
+                <span className="font-body text-xs text-nebbia/75 font-medium">{titolo}</span>
               </div>
               <p className="font-body text-[11px] text-nebbia/40 leading-snug pl-3">{s}</p>
             </div>
@@ -193,6 +193,8 @@ function LexDemoBox({ variant }) {
 
 // PAGINA
 export default function Home() {
+  const { t } = useTranslation('home')
+  const ricerchePratica = t('gestionale.visual.research', { returnObjects: true })
   const [demoIdx, setDemoIdx] = useState(0)
   const [demoDir, setDemoDir] = useState('next')
   const cambiaDemo = (dir) => {
@@ -223,28 +225,28 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden">
       <Helmet>
-        <title>Lex AI — L'AI italiana per il diritto e il fisco | Lexum</title>
+        <title>{t('meta.title')}</title>
         <meta
           name="description"
-          content="Lex AI: l'AI italiana su banca dati verificata, oltre 4 milioni di documenti giuridici e fiscali, per avvocati e commercialisti. Ragionamento strutturato, fonti verificate, dentro una piattaforma completa."
+          content={t('meta.description')}
         />
         <link rel="canonical" href="https://www.lexum.it/" />
 
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.lexum.it/" />
-        <meta property="og:title" content="Lex AI — L'AI italiana per il diritto e il fisco | Lexum" />
+        <meta property="og:title" content={t('meta.og_title')} />
         <meta
           property="og:description"
-          content="Banca dati verificata, oltre 4 milioni di documenti, ragionamento strutturato. Per avvocati e commercialisti italiani."
+          content={t('meta.og_description')}
         />
         <meta property="og:image" content="https://www.lexum.it/logo.png" />
         <meta property="og:locale" content="it_IT" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Lex AI — L'AI italiana per il diritto e il fisco | Lexum" />
+        <meta name="twitter:title" content={t('meta.twitter_title')} />
         <meta
           name="twitter:description"
-          content="Banca dati verificata, oltre 4 milioni di documenti, per avvocati e commercialisti italiani."
+          content={t('meta.twitter_description')}
         />
         <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
       </Helmet>
@@ -265,17 +267,16 @@ export default function Home() {
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
               <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-              <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Lex AI · V2</span>
+              <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">{t('hero.badge')}</span>
             </div>
 
             <h1 className="font-display text-5xl md:text-7xl font-light text-nebbia leading-[1.1] mb-6">
-              L'AI italiana che ragiona su{' '}
-              <br className="hidden md:block" />
-              <span className="text-oro-shimmer">diritto e fisco.</span>
+              <Trans t={t} i18nKey="hero.title"
+                components={{ br: <br className="hidden md:block" />, hl: <span className="text-oro-shimmer" /> }} />
             </h1>
 
             <p className="font-body text-base md:text-lg text-nebbia/50 leading-relaxed max-w-2xl mx-auto mb-10">
-              Fonti verificate, oltre 4 milioni di documenti giuridici e fiscali, ragionamento strutturato. Dentro una piattaforma completa per avvocati e commercialisti.
+              {t('hero.subtitle')}
             </p>
           </div>
 
@@ -288,19 +289,19 @@ export default function Home() {
                   <LexDemoBox variant={DEMO_VARIANTS[demoIdx]} />
                 </div>
                 {demoIdx > 0 && (
-                  <button onClick={() => cambiaDemo('prev')} aria-label="Sessione precedente"
+                  <button onClick={() => cambiaDemo('prev')} aria-label={t('hero.carousel.prev')}
                     className="absolute top-1/2 -translate-y-1/2 left-1 md:-left-6 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
                     style={{ animation: 'arrowNudgeLeft 2.2s ease-in-out infinite' }}><ChevronLeft size={20} /></button>
                 )}
                 {demoIdx < DEMO_VARIANTS.length - 1 && (
-                  <button onClick={() => cambiaDemo('next')} aria-label="Sessione successiva"
+                  <button onClick={() => cambiaDemo('next')} aria-label={t('hero.carousel.next')}
                     className="absolute top-1/2 -translate-y-1/2 right-1 md:-right-6 w-11 h-11 flex items-center justify-center rounded-full bg-slate border border-oro/40 text-oro shadow-lg shadow-black/30 hover:bg-oro hover:text-petrolio transition-colors"
                     style={{ animation: 'arrowNudgeRight 2.2s ease-in-out infinite' }}><ChevronRight size={20} /></button>
                 )}
               </div>
               <div className="flex items-center justify-center gap-2.5 mt-5">
                 {DEMO_VARIANTS.map((v, i) => (
-                  <button key={v} onClick={() => { setDemoDir(i > demoIdx ? 'next' : 'prev'); setDemoIdx(i) }} aria-label={v}
+                  <button key={v} onClick={() => { setDemoDir(i > demoIdx ? 'next' : 'prev'); setDemoIdx(i) }} aria-label={t('hero.carousel.dots', { returnObjects: true })[i]}
                     className={`h-2 rounded-full transition-all ${i === demoIdx ? 'bg-oro w-6' : 'bg-white/15 w-2 hover:bg-white/30'}`} />
                 ))}
               </div>
@@ -311,14 +312,14 @@ export default function Home() {
           <div className="text-center">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
               <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
-                Inizia gratis con la banca dati <ArrowRight size={15} />
+                {t('hero.cta_primary')} <ArrowRight size={15} />
               </Link>
               <a href="#differenza" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
-                Scopri la differenza
+                {t('hero.cta_secondary')}
               </a>
             </div>
             <p className="font-body text-xs text-nebbia/25">
-              Nessuna carta richiesta. La banca dati è sempre gratuita.
+              {t('hero.no_card')}
             </p>
           </div>
         </div>
@@ -332,19 +333,18 @@ export default function Home() {
       <section id="fonti" className="py-24 px-6 bg-slate/20 border-t border-white/5 scroll-mt-28">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-12 max-w-2xl mx-auto">
-            <SectionLabel>Banca dati</SectionLabel>
+            <SectionLabel>{t('fonti.label')}</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-5">
-              Una banca dati verificata,{' '}
-              <span className="text-oro">aggiornata ogni settimana.</span>
+              <Trans t={t} i18nKey="fonti.title" components={{ hl: <span className="text-oro" /> }} />
             </h2>
             <div className="flex justify-center mb-4">
               <span className="inline-flex items-center gap-2 font-body text-xs px-3 py-1.5 bg-salvia/10 border border-salvia/25 text-salvia">
                 <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-                Aggiornamento settimanale al testo vigente
+                {t('fonti.weekly_badge')}
               </span>
             </div>
             <p className="font-body text-sm text-oro/80 leading-relaxed">
-              Fonti verificate. Niente ricerca web casuale, niente fonti generaliste.
+              {t('fonti.anti_noise')}
             </p>
           </FadeIn>
 
@@ -358,13 +358,12 @@ export default function Home() {
       <section id="differenza" className="py-24 px-6 border-t border-white/5 scroll-mt-28">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-12 max-w-2xl mx-auto">
-            <SectionLabel color="salvia">La differenza</SectionLabel>
+            <SectionLabel color="salvia">{t('differenza.label')}</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-              Il problema delle AI generiche è il contesto.{' '}
-              <span className="text-salvia">Lex ce l'ha.</span>
+              <Trans t={t} i18nKey="differenza.title" components={{ hl: <span className="text-salvia" /> }} />
             </h2>
             <p className="font-body text-base text-nebbia/40 leading-relaxed">
-              Le AI generiche rispondono nel vuoto: non conoscono il caso, i documenti, le scadenze. Lex vive dentro il gestionale dello studio.
+              {t('differenza.subtitle')}
             </p>
           </FadeIn>
 
@@ -376,11 +375,11 @@ export default function Home() {
                   <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/10 text-oro">
                     <Search size={18} />
                   </div>
-                  <span className="font-body text-[11px] uppercase tracking-widest text-oro/60 border border-oro/20 px-2 py-1">Senza contesto</span>
+                  <span className="font-body text-[11px] uppercase tracking-widest text-oro/60 border border-oro/20 px-2 py-1">{t('differenza.free.badge')}</span>
                 </div>
-                <h3 className="font-display text-2xl font-light text-nebbia mb-3">Ricerca libera</h3>
+                <h3 className="font-display text-2xl font-light text-nebbia mb-3">{t('differenza.free.title')}</h3>
                 <p className="font-body text-sm text-nebbia/50 leading-relaxed">
-                  Fai domande su tutto il diritto e il fisco italiano: Lex risponde con ragionamento strutturato su fonti verificate. Per esplorare, verificare, approfondire.
+                  {t('differenza.free.text')}
                 </p>
               </div>
             </FadeIn>
@@ -392,11 +391,11 @@ export default function Home() {
                   <div className="w-10 h-10 flex items-center justify-center border border-salvia/20 bg-salvia/10 text-salvia">
                     <Briefcase size={18} />
                   </div>
-                  <span className="font-body text-[11px] uppercase tracking-widest text-salvia/60 border border-salvia/20 px-2 py-1">Con contesto</span>
+                  <span className="font-body text-[11px] uppercase tracking-widest text-salvia/60 border border-salvia/20 px-2 py-1">{t('differenza.context.badge')}</span>
                 </div>
-                <h3 className="font-display text-2xl font-light text-nebbia mb-3">Lex nella pratica e nel mandato</h3>
+                <h3 className="font-display text-2xl font-light text-nebbia mb-3">{t('differenza.context.title')}</h3>
                 <p className="font-body text-sm text-nebbia/50 leading-relaxed">
-                  Dentro la pratica dell'avvocato o il mandato del commercialista, Lex legge atti, documenti, scadenze e dati del caso: analisi e strategie sul tuo caso, e atti e documenti generati già compilati con i dati reali.
+                  {t('differenza.context.text')}
                 </p>
               </div>
             </FadeIn>
@@ -406,7 +405,7 @@ export default function Home() {
             <div className="mt-6 bg-salvia/5 border border-salvia/15 p-5 flex items-center justify-center gap-3 text-center">
               <Check size={14} className="text-salvia shrink-0" />
               <p className="font-body text-sm text-nebbia/60 leading-relaxed">
-                Stesso motore, due modalità: libera quando esplori, con contesto quando lavori.
+                {t('differenza.note')}
               </p>
             </div>
           </FadeIn>
@@ -418,34 +417,27 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
-              <SectionLabel color="salvia">Funzionalità</SectionLabel>
+              <SectionLabel color="salvia">{t('lexai.label')}</SectionLabel>
               <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-6">
-                Cosa puoi fare con{' '}
-                <span className="text-salvia">Lex AI.</span>
+                <Trans t={t} i18nKey="lexai.title" components={{ hl: <span className="text-salvia" /> }} />
               </h2>
               <p className="font-body text-sm text-nebbia/50 leading-relaxed mb-8">
-                Una versione accessibile pensata per la ricerca legale e fiscale. Quattro modi concreti
-                in cui Lex ti aiuta a lavorare meglio sui contenuti giuridici.
+                {t('lexai.intro')}
               </p>
               <div className="space-y-4">
-                {[
-                  { icon: Search, t: 'Cerca riferimenti legali', d: 'Trova norme, sentenze e prassi rilevanti su un tema, con il ragionamento giuridico già strutturato.' },
-                  { icon: FileText, t: 'Analizza documenti', d: 'Carica un atto, una sentenza, un contratto. Lex evidenzia i punti rilevanti e i nodi da approfondire.' },
-                  { icon: MessageSquare, t: 'Conversazione continua', d: 'Approfondisci, cambia angolazione, chiedi follow-up. La conversazione si sviluppa nel tempo, non si resetta a ogni domanda.' },
-                  { icon: Brain, t: 'Chiarisce dubbi interpretativi', d: 'Quando una norma o una pronuncia non è chiara, Lex spiega in modo strutturato e cita le fonti.' },
-                ].map(({ icon: I, t, d }, i) => (
+                {t('lexai.items', { returnObjects: true }).map(({ t: titolo, d }, i) => { const I = ICONE_LEXAI[i]; return (
                   <FadeIn key={i} delay={i * 0.08}>
                     <div className="flex gap-4">
                       <div className="w-9 h-9 flex items-center justify-center border border-salvia/25 bg-salvia/5 shrink-0">
                         <I size={15} className="text-salvia" />
                       </div>
                       <div>
-                        <p className="font-body text-sm font-medium text-nebbia mb-1">{t}</p>
+                        <p className="font-body text-sm font-medium text-nebbia mb-1">{titolo}</p>
                         <p className="font-body text-xs text-nebbia/40 leading-relaxed">{d}</p>
                       </div>
                     </div>
                   </FadeIn>
-                ))}
+                ) })}
               </div>
             </FadeIn>
 
@@ -456,34 +448,30 @@ export default function Home() {
                   <span className="font-body text-xs text-salvia">Lex AI</span>
                   <div className="ml-auto flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-                    <span className="font-body text-xs text-nebbia/25">Attivo</span>
+                    <span className="font-body text-xs text-nebbia/25">{t('lexai.chat.status')}</span>
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="bg-petrolio border border-white/8 px-4 py-3">
-                    <p className="font-body text-xs text-nebbia/40 mb-1">Tu</p>
+                    <p className="font-body text-xs text-nebbia/40 mb-1">{t('lexai.chat.you')}</p>
                     <p className="font-body text-sm text-nebbia/65">
-                      "Cerco riferimenti sulla responsabilità del datore di lavoro in caso di infortunio."
+                      {t('lexai.chat.question')}
                     </p>
                   </div>
                   <div className="bg-salvia/5 border border-salvia/15 px-4 py-4 space-y-3">
                     <p className="font-body text-xs text-salvia/60">Lex AI</p>
                     <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                      I riferimenti principali in tema di responsabilità datoriale per infortuni sono:
+                      {t('lexai.chat.answer_intro')}
                     </p>
                     <div className="space-y-1.5">
-                      {[
-                        'Art. 2087 c.c. — obbligo generale di sicurezza',
-                        'D.Lgs. 81/2008 — testo unico sicurezza',
-                        'Art. 2049 c.c. — responsabilità per fatto dei dipendenti',
-                      ].map(t => (
-                        <div key={t} className="flex items-start gap-2 font-body text-xs text-nebbia/50">
-                          <div className="w-1 h-1 bg-salvia rounded-full shrink-0 mt-1.5" />{t}
+                      {t('lexai.chat.references', { returnObjects: true }).map(rif => (
+                        <div key={rif} className="flex items-start gap-2 font-body text-xs text-nebbia/50">
+                          <div className="w-1 h-1 bg-salvia rounded-full shrink-0 mt-1.5" />{rif}
                         </div>
                       ))}
                     </div>
                     <p className="font-body text-xs text-nebbia/40 leading-relaxed pt-1 border-t border-white/5">
-                      Vuoi che approfondisca uno di questi punti o carichi un documento da analizzare?
+                      {t('lexai.chat.answer_close')}
                     </p>
                   </div>
                 </div>
@@ -497,15 +485,12 @@ export default function Home() {
       <section id="ragiona" className="py-24 px-6 bg-slate/20 border-t border-white/5 scroll-mt-28">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-14 max-w-2xl mx-auto">
-            <SectionLabel color="salvia">Ragionamento</SectionLabel>
+            <SectionLabel color="salvia">{t('ragiona.label')}</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-              Non ti dà solo norme.{' '}
-              <span className="text-salvia">Struttura il ragionamento giuridico.</span>
+              <Trans t={t} i18nKey="ragiona.title" components={{ hl: <span className="text-salvia" /> }} />
             </h2>
             <p className="font-body text-sm text-nebbia/40 leading-relaxed">
-              Una buona risposta legale non è una lista di articoli. È un ragionamento che identifica le fonti,
-              chiarisce i presupposti, segnala le eccezioni e suggerisce cosa verificare.
-              Lex AI è costruita per fare proprio questo.
+              {t('ragiona.intro')}
             </p>
           </FadeIn>
 
@@ -514,24 +499,19 @@ export default function Home() {
 
               {/* Etichette laterali */}
               <div className="lg:col-span-3 space-y-3">
-                {[
-                  { n: '01', t: 'Identifica le norme', d: 'Cita gli articoli applicabili al caso concreto.' },
-                  { n: '02', t: 'Chiarisce i presupposti', d: 'Spiega cosa serve perché la norma operi.' },
-                  { n: '03', t: 'Segnala le eccezioni', d: 'Indica i limiti e le ipotesi di esclusione.' },
-                  { n: '04', t: 'Suggerisce verifiche', d: 'Pone le domande giuste per andare più a fondo.' },
-                ].map(({ n, t, d }, i) => (
+                {t('ragiona.steps', { returnObjects: true }).map(({ t: titolo, d }, i) => { const n = NUMERI_PASSI[i]; return (
                   <FadeIn key={n} delay={0.1 + i * 0.08}>
                     <div className="flex gap-3 p-3 bg-slate border border-white/5">
                       <div className="w-8 h-8 flex items-center justify-center border border-salvia/25 bg-salvia/5 text-salvia font-body text-[10px] shrink-0">
                         {n}
                       </div>
                       <div>
-                        <p className="font-body text-xs font-medium text-nebbia/80 mb-0.5">{t}</p>
+                        <p className="font-body text-xs font-medium text-nebbia/80 mb-0.5">{titolo}</p>
                         <p className="font-body text-[11px] text-nebbia/40 leading-relaxed">{d}</p>
                       </div>
                     </div>
                   </FadeIn>
-                ))}
+                ) })}
               </div>
 
               {/* Mockup risposta annotata */}
@@ -539,15 +519,15 @@ export default function Home() {
                 <div className="bg-slate border border-salvia/15 overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-petrolio/60">
                     <Sparkles size={12} className="text-salvia" />
-                    <span className="font-body text-xs text-salvia">Lex AI — anatomia di una risposta</span>
+                    <span className="font-body text-xs text-salvia">{t('ragiona.anatomy.header')}</span>
                   </div>
                   <div className="p-5 space-y-4">
 
                     {/* Domanda */}
                     <div className="bg-petrolio border border-white/8 px-4 py-3">
-                      <p className="font-body text-xs text-nebbia/40 mb-1">Tu</p>
+                      <p className="font-body text-xs text-nebbia/40 mb-1">{t('ragiona.anatomy.you')}</p>
                       <p className="font-body text-sm text-nebbia/65">
-                        "Quando opera la legittima difesa nel caso di intrusione in abitazione?"
+                        {t('ragiona.anatomy.question')}
                       </p>
                     </div>
 
@@ -559,10 +539,10 @@ export default function Home() {
                         <span className="absolute -left-2 top-0 w-1 h-full bg-salvia/30" />
                         <div className="pl-4">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">01 · Identifica le norme</span>
+                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">{t('ragiona.anatomy.norme_label')}</span>
                           </div>
                           <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                            La materia è disciplinata dall'art. 52 c.p. La L. 36/2019 ha introdotto una presunzione di proporzionalità nei luoghi indicati dall'art. 614 c.p.
+                            {t('ragiona.anatomy.norme_text')}
                           </p>
                         </div>
                       </div>
@@ -572,10 +552,10 @@ export default function Home() {
                         <span className="absolute -left-2 top-0 w-1 h-full bg-salvia/30" />
                         <div className="pl-4">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">02 · Chiarisce i presupposti</span>
+                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">{t('ragiona.anatomy.presupposti_label')}</span>
                           </div>
                           <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                            La presunzione opera solo se: il fatto avviene nei luoghi indicati, il soggetto è legittimamente presente, l'arma è legittimamente detenuta, la difesa riguarda incolumità o beni propri o altrui.
+                            {t('ragiona.anatomy.presupposti_text')}
                           </p>
                         </div>
                       </div>
@@ -585,10 +565,10 @@ export default function Home() {
                         <span className="absolute -left-2 top-0 w-1 h-full bg-salvia/30" />
                         <div className="pl-4">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">03 · Segnala le eccezioni</span>
+                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">{t('ragiona.anatomy.eccezioni_label')}</span>
                           </div>
                           <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                            La presunzione non elimina la verifica di attualità del pericolo e necessità della reazione. Cassazione 1/2021: vita e incolumità prevalgono sull'interesse patrimoniale.
+                            {t('ragiona.anatomy.eccezioni_text')}
                           </p>
                         </div>
                       </div>
@@ -598,17 +578,17 @@ export default function Home() {
                         <span className="absolute -left-2 top-0 w-1 h-full bg-salvia/30" />
                         <div className="pl-4">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">04 · Suggerisce verifiche</span>
+                            <span className="font-body text-[10px] uppercase tracking-widest text-salvia/70 font-medium">{t('ragiona.anatomy.verifiche_label')}</span>
                           </div>
                           <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                            Vuoi che approfondisca l'eccesso colposo (art. 55 comma 2 c.p.), il caso del ladro in fuga, o la legittima difesa putativa (art. 59 c.p.)?
+                            {t('ragiona.anatomy.verifiche_text')}
                           </p>
                         </div>
                       </div>
 
                       {/* Chip fonti citate */}
                       <div className="flex gap-1 flex-wrap pt-3 border-t border-white/5">
-                        {['Art. 52 c.p.', 'L. 36/2019', 'Art. 614 c.p.', 'Cass. 1/2021', 'Art. 55 c.p.', 'Art. 59 c.p.'].map(c => (
+                        {t('ragiona.anatomy.sources', { returnObjects: true }).map(c => (
                           <span key={c} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/40">{c}</span>
                         ))}
                       </div>
@@ -623,9 +603,9 @@ export default function Home() {
           {/* Trasparenza compatta */}
           <div className="mt-20">
             <FadeIn className="text-center mb-10 max-w-2xl mx-auto">
-              <SectionLabel>Trasparenza</SectionLabel>
+              <SectionLabel>{t('trasparenza.label')}</SectionLabel>
               <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia">
-                Cosa può e cosa non può.
+                {t('trasparenza.title')}
               </h3>
             </FadeIn>
 
@@ -636,17 +616,12 @@ export default function Home() {
                     <div className="w-7 h-7 flex items-center justify-center border border-salvia/25 bg-salvia/10">
                       <Check size={13} className="text-salvia" />
                     </div>
-                    <p className="font-body text-sm font-medium text-nebbia">Quello che Lex fa</p>
+                    <p className="font-body text-sm font-medium text-nebbia">{t('trasparenza.does_title')}</p>
                   </div>
                   <ul className="space-y-3">
-                    {[
-                      'Ricerca su fonti legali verificate',
-                      'Analizza documenti caricati',
-                      'Struttura il ragionamento giuridico',
-                      'Cita le fonti e segnala le eccezioni',
-                    ].map(t => (
-                      <li key={t} className="flex items-center gap-2.5 font-body text-sm text-nebbia/60">
-                        <div className="w-1.5 h-1.5 rounded-full bg-salvia shrink-0" />{t}
+                    {t('trasparenza.does', { returnObjects: true }).map(voce => (
+                      <li key={voce} className="flex items-center gap-2.5 font-body text-sm text-nebbia/60">
+                        <div className="w-1.5 h-1.5 rounded-full bg-salvia shrink-0" />{voce}
                       </li>
                     ))}
                   </ul>
@@ -659,17 +634,12 @@ export default function Home() {
                     <div className="w-7 h-7 flex items-center justify-center border border-nebbia/15 bg-nebbia/[0.02]">
                       <X size={13} className="text-nebbia/40" />
                     </div>
-                    <p className="font-body text-sm font-medium text-nebbia">Quello che non fa</p>
+                    <p className="font-body text-sm font-medium text-nebbia">{t('trasparenza.doesnt_title')}</p>
                   </div>
                   <ul className="space-y-3">
-                    {[
-                      'Non sostituisce il parere dell\'avvocato o del commercialista',
-                      'Non genera atti pronti per il deposito nella ricerca libera (quelli nascono nella pratica)',
-                      'Non accede alle sentenze riservate degli avvocati',
-                      'Non cerca su fonti web generaliste o non verificate',
-                    ].map(t => (
-                      <li key={t} className="flex items-center gap-2.5 font-body text-sm text-nebbia/45">
-                        <div className="w-1.5 h-1.5 rounded-full bg-nebbia/20 shrink-0" />{t}
+                    {t('trasparenza.doesnt', { returnObjects: true }).map(voce => (
+                      <li key={voce} className="flex items-center gap-2.5 font-body text-sm text-nebbia/45">
+                        <div className="w-1.5 h-1.5 rounded-full bg-nebbia/20 shrink-0" />{voce}
                       </li>
                     ))}
                   </ul>
@@ -688,11 +658,10 @@ export default function Home() {
           <div id="gestionale" className="scroll-mt-28">
             <FadeIn className="text-center max-w-2xl mx-auto mb-10">
               <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia mb-3">
-                Il gestionale di studio,{' '}
-                <span className="text-oro">con Lex sempre accanto.</span>
+                <Trans t={t} i18nKey="gestionale.title" components={{ hl: <span className="text-oro" /> }} />
               </h3>
               <p className="font-body text-sm text-nebbia/45 leading-relaxed">
-                Pratiche, clienti, appuntamenti, udienze, fatture e scadenze nello stesso posto. E quando ti serve un resoconto, Lex legge tutto e ti risponde in italiano.
+                {t('gestionale.subtitle')}
               </p>
             </FadeIn>
 
@@ -700,44 +669,39 @@ export default function Home() {
 
               {/* SINISTRA — Mockup statico pratica */}
               <FadeIn delay={0.1}>
-                <VisualBlock label="Pratica civile - Mario Rossi">
+                <VisualBlock label={t('gestionale.visual.label')}>
                   <div className="space-y-2">
-                    {[
-                      { l: 'Cliente', v: 'Mario Rossi' },
-                      { l: 'Tipo', v: 'Civile - Locazione' },
-                      { l: 'Stato', v: 'Aperta dal 08/2025', c: 'text-salvia' },
-                      { l: 'Pross. udienza', v: '28/05/2026', c: 'text-oro' },
-                    ].map(({ l, v, c }) => (
+                    {t('gestionale.visual.rows', { returnObjects: true }).map(({ l, v }, i) => (
                       <div key={l} className="flex justify-between py-1.5 border-b border-white/5">
                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
-                        <span className={`font-body text-xs ${c || 'text-nebbia/70'}`}>{v}</span>
+                        <span className={`font-body text-xs ${COLORI_PRATICA[i] || 'text-nebbia/70'}`}>{v}</span>
                       </div>
                     ))}
 
                     {/* Fatturazione */}
                     <div className="pt-3">
-                      <p className="font-body text-xs text-nebbia/25 mb-2">Fatturazione</p>
+                      <p className="font-body text-xs text-nebbia/25 mb-2">{t('gestionale.visual.billing_title')}</p>
                       <div className="flex items-center justify-between p-2 bg-petrolio/50 border border-red-400/20">
-                        <span className="font-body text-xs text-nebbia/60">Fattura 2026/041</span>
-                        <span className="font-body text-xs text-red-400/80">1.100 € - scaduta</span>
+                        <span className="font-body text-xs text-nebbia/60">{t('gestionale.visual.invoice')}</span>
+                        <span className="font-body text-xs text-red-400/80">{t('gestionale.visual.invoice_status')}</span>
                       </div>
                     </div>
 
                     {/* Ricerche */}
                     <div className="pt-3">
-                      <p className="font-body text-xs text-nebbia/25 mb-2">Ricerche (3)</p>
+                      <p className="font-body text-xs text-nebbia/25 mb-2">{t('gestionale.visual.research_title')}</p>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 p-2 bg-petrolio/50">
                           <Sparkles size={9} className="text-salvia" />
-                          <span className="font-body text-xs text-nebbia/50">Analisi Lex - art. 1578 c.c.</span>
+                          <span className="font-body text-xs text-nebbia/50">{ricerchePratica[0]}</span>
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-petrolio/50">
                           <Search size={9} className="text-oro" />
-                          <span className="font-body text-xs text-nebbia/50">Eccezione inadempimento locatore</span>
+                          <span className="font-body text-xs text-nebbia/50">{ricerchePratica[1]}</span>
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-petrolio/50">
                           <Bookmark size={9} className="text-oro" />
-                          <span className="font-body text-xs text-nebbia/50">Cass. Civ. III 4439/2024</span>
+                          <span className="font-body text-xs text-nebbia/50">{ricerchePratica[2]}</span>
                         </div>
                       </div>
                     </div>
@@ -757,50 +721,42 @@ export default function Home() {
           <div id="ricerche" className="scroll-mt-28">
             <FeatureRow
               icon={Bookmark}
-              title="Le tue ricerche, etichettate e collegate"
-              text="Salvi ogni ricerca legale che fai, la categorizzi con le tue etichette, la colleghi a una pratica o la confronti con altre. Lex AI trova le correlate, suggerisce articoli che non avevi considerato, ragiona insieme a te."
-              points={['Etichette personali', 'Confronto tra ricerche', 'Collegamento a pratica', 'Correlate suggerite da Lex AI']}
+              title={t('ricerche.title')}
+              text={t('ricerche.text')}
+              points={t('ricerche.points', { returnObjects: true })}
             >
-              <VisualBlock label="Ricerche - Locazione e morosita">
+              <VisualBlock label={t('ricerche.visual.label')}>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-3 py-2 bg-petrolio border border-oro/15">
                     <Search size={11} className="text-oro/60 shrink-0" />
-                    <span className="font-body text-xs text-nebbia/70 flex-1">eccezione inadempimento locatore</span>
-                    <span className="font-body text-[10px] text-nebbia/30 shrink-0">14 risultati</span>
+                    <span className="font-body text-xs text-nebbia/70 flex-1">{t('ricerche.visual.query')}</span>
+                    <span className="font-body text-[10px] text-nebbia/30 shrink-0">{t('ricerche.visual.results')}</span>
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {[
-                      { l: 'Locazione', c: 'oro' },
-                      { l: 'Morosita Rossi', c: 'salvia' },
-                      { l: 'Da approfondire', c: 'oro' },
-                    ].map(({ l, c }) => (
-                      <span key={l} className={`font-body text-[10px] px-2 py-0.5 border ${c === 'salvia' ? 'bg-salvia/10 border-salvia/25 text-salvia/80' : 'bg-oro/10 border-oro/25 text-oro/80'}`}>
+                    {t('ricerche.visual.tags', { returnObjects: true }).map((l, i) => (
+                      <span key={l} className={`font-body text-[10px] px-2 py-0.5 border ${COLORI_ETICHETTE[i] === 'salvia' ? 'bg-salvia/10 border-salvia/25 text-salvia/80' : 'bg-oro/10 border-oro/25 text-oro/80'}`}>
                         # {l}
                       </span>
                     ))}
                   </div>
 
                   <div className="space-y-1.5 pt-1">
-                    {[
-                      { t: 'Art. 1578 c.c. - vizi della cosa locata', sub: 'Salvata 2 giorni fa', highlight: true },
-                      { t: 'Cass. Civ. III 4439/2024 - inadempimento locatore', sub: 'Salvata 5 giorni fa' },
-                      { t: 'Art. 1453 c.c. - risoluzione per inadempimento', sub: 'Salvata 1 settimana fa' },
-                    ].map(({ t, sub, highlight }) => (
-                      <div key={t} className={`flex items-start gap-2 p-2.5 ${highlight ? 'bg-salvia/5 border border-salvia/15' : 'bg-petrolio/50 border border-white/5'}`}>
+                    {t('ricerche.visual.saved', { returnObjects: true }).map(({ t: titolo, sub }, i) => { const highlight = RICERCHE_EVIDENZIATE[i]; return (
+                      <div key={titolo} className={`flex items-start gap-2 p-2.5 ${highlight ? 'bg-salvia/5 border border-salvia/15' : 'bg-petrolio/50 border border-white/5'}`}>
                         <Bookmark size={10} className={`mt-0.5 shrink-0 ${highlight ? 'text-salvia' : 'text-nebbia/40'}`} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-body text-xs text-nebbia/70 truncate">{t}</p>
+                          <p className="font-body text-xs text-nebbia/70 truncate">{titolo}</p>
                           <p className="font-body text-[10px] text-nebbia/30">{sub}</p>
                         </div>
                       </div>
-                    ))}
+                    ) })}
                   </div>
 
                   <div className="flex items-center gap-2 p-2.5 bg-salvia/5 border border-salvia/15 mt-2">
                     <Sparkles size={11} className="text-salvia shrink-0" />
                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
-                      Lex suggerisce: <span className="text-salvia">art. 1587 c.c.</span> sull'obbligo di custodia del conduttore - correlato.
+                      <Trans t={t} i18nKey="ricerche.visual.suggestion" components={{ hl: <span className="text-salvia" /> }} />
                     </p>
                   </div>
                 </div>
@@ -814,11 +770,10 @@ export default function Home() {
           <div id="archivio" className="scroll-mt-28">
             <FadeIn className="text-center max-w-2xl mx-auto -mb-4">
               <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia mb-3">
-                I documenti dello studio,{' '}
-                <span className="text-oro">sempre a portata.</span>
+                <Trans t={t} i18nKey="archivio.title" components={{ hl: <span className="text-oro" /> }} />
               </h3>
               <p className="font-body text-sm text-nebbia/45 leading-relaxed">
-                Carichi, ritrovi, condividi. La gestione e la ricerca dell'archivio in un flusso unico, senza mai uscire dal contesto della pratica.
+                {t('archivio.subtitle')}
               </p>
             </FadeIn>
             <ArchivioAnimatedDemo />
@@ -832,38 +787,37 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
 
           <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-            <SectionLabel>Banca dati condivisa</SectionLabel>
+            <SectionLabel>{t('banca_condivisa.label')}</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-              Il tuo archivio diventa{' '}
-              <span className="text-oro">una risorsa.</span>
+              <Trans t={t} i18nKey="banca_condivisa.title" components={{ hl: <span className="text-oro" /> }} />
             </h2>
             <p className="font-body text-base text-nebbia/40 leading-relaxed">
-              Le sentenze che hai gia lavorato, anonimizzate e condivise, fanno crescere il sapere collettivo della professione. E ti restituiscono valore economico.
+              {t('banca_condivisa.subtitle')}
             </p>
           </FadeIn>
 
           <FeatureRow
             icon={BookOpen}
-            title="Valorizza il tuo archivio interno"
-            text="Anonimizza le tue sentenze e rendile disponibili in piattaforma. Gli altri avvocati che ne hanno bisogno possono acquistarle, e una quota torna a te. Il lavoro gia svolto diventa una risorsa economica."
-            points={['Anonimizzazione sentenze', 'Pubblicazione in piattaforma', 'Monetizzazione archivio', 'Accesso a contenuti di altri avvocati']}
+            title={t('banca_condivisa.feature_title')}
+            text={t('banca_condivisa.feature_text')}
+            points={t('banca_condivisa.points', { returnObjects: true })}
           >
-            <VisualBlock label="Banca dati Lexum">
+            <VisualBlock label={t('banca_condivisa.visual.label')}>
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-body text-xs text-nebbia/30">1 risultato - Diritto Civile / Contratti</span>
+                  <span className="font-body text-xs text-nebbia/30">{t('banca_condivisa.visual.results')}</span>
                 </div>
                 <div className="border border-white/8 p-4">
-                  <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Diritto Civile / Contratti / Inadempimento</p>
-                  <p className="font-body text-sm font-medium text-nebbia mb-1">Revoca patente - Omicidio stradale - Cass. Ord. n. 8058/2026</p>
-                  <p className="font-body text-xs text-nebbia/40 mb-2">Nino Avvocato - Corte di Cassazione - 2026</p>
+                  <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">{t('banca_condivisa.visual.category')}</p>
+                  <p className="font-body text-sm font-medium text-nebbia mb-1">{t('banca_condivisa.visual.title')}</p>
+                  <p className="font-body text-xs text-nebbia/40 mb-2">{t('banca_condivisa.visual.author')}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex gap-1">
-                      {['revoca patente', 'omicidio stradale', 'art. 589-bis'].map(t => (
-                        <span key={t} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{t}</span>
+                      {t('banca_condivisa.visual.tags', { returnObjects: true }).map(tag => (
+                        <span key={tag} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{tag}</span>
                       ))}
                     </div>
-                    <span className="font-body text-xs text-oro font-medium">5 €</span>
+                    <span className="font-body text-xs text-oro font-medium">{t('banca_condivisa.visual.price')}</span>
                   </div>
                 </div>
               </div>
@@ -878,42 +832,41 @@ export default function Home() {
           <div className="max-w-5xl mx-auto">
 
             <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-              <SectionLabel color="salvia">Area cliente</SectionLabel>
+              <SectionLabel color="salvia">{t('cliente.label')}</SectionLabel>
               <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                Anche il cliente{' '}
-                <span className="text-salvia">ha il suo spazio.</span>
+                <Trans t={t} i18nKey="cliente.title" components={{ hl: <span className="text-salvia" /> }} />
               </h2>
               <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                Documenti, appuntamenti, udienze e comunicazioni in un'area riservata. Lo studio lavora, il cliente resta informato.
+                {t('cliente.subtitle')}
               </p>
             </FadeIn>
 
             <FeatureRow
               icon={Users}
-              title="Un accesso dedicato anche per il cliente"
-              text="Il cliente accede alla propria area riservata e trova documenti, appuntamenti, udienze e materiali condivisi dallo studio. Puo caricare file direttamente in piattaforma. Meno email disperse, meno file persi."
-              points={['Accesso riservato', 'Documenti condivisi', 'Comunicazioni ordinate']}
+              title={t('cliente.feature_title')}
+              text={t('cliente.feature_text')}
+              points={t('cliente.points', { returnObjects: true })}
               reverse
             >
-              <VisualBlock label="Area cliente - Paolino Rossi" accent="salvia">
+              <VisualBlock label={t('cliente.visual.label')} accent="salvia">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-salvia/5 border border-salvia/10">
                     <div className="flex items-center gap-2">
                       <FileText size={13} className="text-salvia" />
-                      <span className="font-body text-xs text-nebbia/60">Perizia tecnica.pdf</span>
+                      <span className="font-body text-xs text-nebbia/60">{t('cliente.visual.file_shared')}</span>
                     </div>
-                    <span className="font-body text-xs text-nebbia/25">Condiviso</span>
+                    <span className="font-body text-xs text-nebbia/25">{t('cliente.visual.file_shared_status')}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-petrolio/50 border border-white/5">
                     <div className="flex items-center gap-2">
                       <FileText size={13} className="text-nebbia/30" />
-                      <span className="font-body text-xs text-nebbia/60">Contratto_firmato.pdf</span>
+                      <span className="font-body text-xs text-nebbia/60">{t('cliente.visual.file_uploaded')}</span>
                     </div>
-                    <span className="font-body text-xs text-salvia/60">Caricato da te</span>
+                    <span className="font-body text-xs text-salvia/60">{t('cliente.visual.file_uploaded_status')}</span>
                   </div>
                   <div className="p-3 bg-oro/5 border border-oro/15 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-oro animate-pulse" />
-                    <span className="font-body text-xs text-nebbia/50">Prossima udienza: 25/04/2026</span>
+                    <span className="font-body text-xs text-nebbia/50">{t('cliente.visual.next_hearing')}</span>
                   </div>
                 </div>
               </VisualBlock>
@@ -930,26 +883,25 @@ export default function Home() {
         </div>
         <div className="max-w-3xl mx-auto text-center relative">
           <FadeIn>
-            <SectionLabel>Inizia ora</SectionLabel>
+            <SectionLabel>{t('cta.label')}</SectionLabel>
             <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-6">
-              Inizia da Lex AI.{' '}
-              <span className="text-oro">Il resto è dentro Lexum.</span>
+              <Trans t={t} i18nKey="cta.title" components={{ hl: <span className="text-oro" /> }} />
             </h2>
             <p className="font-body text-base text-nebbia/45 leading-relaxed mb-10 max-w-xl mx-auto">
-              Ricerca libera gratuita sulla banca dati. E quando lavori su una pratica o un mandato, Lex è già lì con te, con il contesto del caso.
+              {t('cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-xl shadow-oro/20">
-                Inizia gratis <ArrowRight size={15} />
+                {t('cta.button')} <ArrowRight size={15} />
               </Link>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-2">
               <Link to="/per-avvocati" className="font-body text-sm text-nebbia/35 hover:text-nebbia/60 transition-colors">
-                Scopri Lexum per avvocati
+                {t('cta.link_lawyers')}
               </Link>
               <span className="hidden sm:block w-px h-4 bg-white/10" />
               <Link to="/per-commercialisti" className="font-body text-sm text-nebbia/35 hover:text-nebbia/60 transition-colors">
-                Scopri Lexum per commercialisti
+                {t('cta.link_accountants')}
               </Link>
             </div>
           </FadeIn>

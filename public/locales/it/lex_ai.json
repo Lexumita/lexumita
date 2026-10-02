@@ -1,0 +1,93 @@
+{
+  "anim": {
+    "input_hint": "Fai una domanda su una questione legale o fiscale, oppure carica un documento da analizzare.",
+    "input_placeholder": "Es. Responsabilità del datore di lavoro in caso di infortunio...",
+    "cta": "Cerca con Lex AI",
+    "domanda": "un ladro entra in casa, il proprietario reagisce, quando può configurarsi la legittima difesa?",
+    "user_label": "Tu",
+    "lex_label": "Lex AI",
+    "risposta": [
+      {
+        "text": "Normativa"
+      },
+      {
+        "text": "La legittima difesa è disciplinata dall'art. 52 c.p., che esclude la punibilità di chi ha commesso un fatto essendovi stato costretto dalla necessità di difendere un diritto proprio o altrui contro il pericolo attuale di un'offesa ingiusta, purché la difesa sia proporzionata all'offesa."
+      },
+      {
+        "text": "Nel caso del ladro che entra in casa, la L. 36/2019 ha introdotto una presunzione legale di proporzionalità quando il fatto avvenga nei luoghi di cui all'art. 614 c.p. (abitazione, privata dimora, pertinenze), il soggetto sia legittimamente presente e utilizzi un'arma legittimamente detenuta."
+      },
+      {
+        "text": "Presupposti che restano necessari"
+      },
+      {
+        "text": "La presunzione non elimina la verifica degli altri requisiti. La Cassazione (rassegna 1/2021) ha chiarito che occorre sempre accertare:"
+      },
+      {
+        "items": [
+          "Attualità del pericolo: deve esistere al momento della reazione. Se il ladro è in fuga, la difesa perde il suo presupposto.",
+          "Necessità della reazione: deve essere l'unica opzione praticabile.",
+          "Gerarchia dei valori: vita e incolumità prevalgono sull'interesse patrimoniale."
+        ]
+      },
+      {
+        "text": "Eccesso colposo e turbamento"
+      },
+      {
+        "text": "L'art. 55 comma 2 c.p. esclude la punibilità per eccesso quando chi reagisce si trovi in minorata difesa o grave turbamento derivante dalla situazione di pericolo in atto... CONTINUA..."
+      },
+      {
+        "items": [
+          "Art. 52 c.p.",
+          "L. 36/2019",
+          "Art. 614 c.p.",
+          "Cass. 1/2021",
+          "Art. 55 c.p.",
+          "Art. 59 c.p."
+        ]
+      }
+    ],
+    "action": "Aggiungi alla pratica",
+    "action_etichetta": "Aggiungi a etichetta"
+  },
+  "anim_commercialista": {
+    "input_placeholder": "Es. Detrazione IVA sulle spese di rappresentanza...",
+    "domanda": "regime forfettario: quali sono i limiti di ricavo e le cause di esclusione per il 2026?",
+    "risposta": [
+      {
+        "text": "Soglia di accesso"
+      },
+      {
+        "text": "Il regime forfettario (L. 190/2014) è riservato a chi nell'anno precedente ha conseguito ricavi o compensi non superiori a 85.000 euro. Con ricavi oltre 100.000 euro la fuoriuscita è immediata, già nell'anno in corso, con ripristino di IVA e regime ordinario."
+      },
+      {
+        "text": "Cause di esclusione"
+      },
+      {
+        "text": "Non può applicare il forfettario chi si trova in una di queste situazioni:"
+      },
+      {
+        "items": [
+          "Spese per lavoro dipendente e collaboratori oltre 20.000 euro lordi nell'anno.",
+          "Partecipazione in società di persone, associazioni professionali o imprese familiari.",
+          "Attività esercitata prevalentemente verso l'ex datore di lavoro degli ultimi due anni."
+        ]
+      },
+      {
+        "text": "Imposta sostitutiva"
+      },
+      {
+        "text": "Sul reddito imponibile, determinato applicando il coefficiente di redditività ATECO, si applica l'imposta sostitutiva del 15%, ridotta al 5% per le nuove attività nei primi cinque anni... CONTINUA..."
+      },
+      {
+        "items": [
+          "L. 190/2014",
+          "Soglia 85.000 €",
+          "Coeff. ATECO",
+          "Imposta 15%",
+          "Contributi INPS"
+        ]
+      }
+    ],
+    "action": "Aggiungi al mandato"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, FileText, Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /**
  * ArchivioAnimatedDemo — versione fluida (~10 sec totali)
@@ -17,7 +18,7 @@ import { Check, FileText, Search } from 'lucide-react'
  * IntersectionObserver al 25% di soglia. One-shot.
  */
 
-const SEARCH_QUERY = 'Rossi 2024'
+// Le parole (nomi dei file, query, risultati) stanno in public/locales/it/archivio_demo.json.
 const TYPE_SPEED_BASE = 95   // ms medi per carattere
 const TYPE_SPEED_VAR = 50    // variazione casuale ±
 
@@ -49,22 +50,26 @@ const easeInOutCubic = (t) => {
 
 // ── Componenti ─────────────────────────────────────────────────
 
-const StaticCompleted = ({ filename }) => (
+const StaticCompleted = ({ filename }) => {
+    const { t } = useTranslation('archivio_demo')
+    return (
     <div className="flex items-center gap-3">
         <div className="w-8 h-8 flex items-center justify-center border border-salvia/20 bg-salvia/10 shrink-0">
             <Check size={12} className="text-salvia" />
         </div>
         <div className="flex-1 min-w-0">
             <p className="font-body text-xs text-nebbia/70 truncate">{filename}</p>
-            <p className="font-body text-[10px] text-nebbia/30">Caricato in: Pratica 2026/047 - Mario Rossi</p>
+            <p className="font-body text-[10px] text-nebbia/30">{t('caricamento.caricato_in')}</p>
         </div>
         <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia/80 uppercase tracking-widest shrink-0">
-            Completato
+            {t('caricamento.completato')}
         </span>
     </div>
-)
+    )
+}
 
 const AnimatedBar = ({ filename, fromPct, started, completed, currentPct }) => {
+    const { t } = useTranslation('archivio_demo')
     if (completed) {
         return (
             <div className="flex items-center gap-3 transition-all duration-700 ease-out">
@@ -73,10 +78,10 @@ const AnimatedBar = ({ filename, fromPct, started, completed, currentPct }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="font-body text-xs text-nebbia/70 truncate">{filename}</p>
-                    <p className="font-body text-[10px] text-nebbia/30">Caricato in: Pratica 2026/047 - Mario Rossi</p>
+                    <p className="font-body text-[10px] text-nebbia/30">{t('caricamento.caricato_in')}</p>
                 </div>
                 <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/20 text-salvia/80 uppercase tracking-widest shrink-0">
-                    Completato
+                    {t('caricamento.completato')}
                 </span>
             </div>
         )
@@ -106,6 +111,8 @@ const AnimatedBar = ({ filename, fromPct, started, completed, currentPct }) => {
 }
 
 export default function ArchivioAnimatedDemo() {
+    const { t } = useTranslation('archivio_demo')
+    const SEARCH_QUERY = t('ricerca.query')
     const sectionRef = useRef(null)
     const [started, setStarted] = useState(false)
     const [now, setNow] = useState(0)
@@ -240,13 +247,13 @@ export default function ArchivioAnimatedDemo() {
           ═══════════════════════════════════════════════════════ */}
             <div className="bg-slate border border-white/5 p-4">
                 <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">
-                    Caricamento in corso
+                    {t('caricamento.titolo')}
                 </p>
                 <div className="space-y-2.5">
-                    <StaticCompleted filename="Curriculum_Bianchi_Mario.pdf" />
+                    <StaticCompleted filename={t('caricamento.file.curriculum')} />
 
                     <AnimatedBar
-                        filename="Contratto_locazione.pdf"
+                        filename={t('caricamento.file.contratto_locazione')}
                         fromPct={64}
                         started={started && now >= T_BAR_CONTRATTO_START}
                         completed={contrattoLocCompleted}
@@ -254,24 +261,24 @@ export default function ArchivioAnimatedDemo() {
                     />
 
                     <AnimatedBar
-                        filename="Contratto.pdf"
+                        filename={t('caricamento.file.contratto')}
                         fromPct={90}
                         started={started && now >= T_BAR_CONTRATTO_2_START}
                         completed={contrattoCompleted}
                         currentPct={contrattoPct}
                     />
 
-                    <StaticCompleted filename="Perizia_tecnica_Rossi.pdf" />
+                    <StaticCompleted filename={t('caricamento.file.perizia')} />
 
                     <AnimatedBar
-                        filename="Diffida_ACME_srl.docx"
+                        filename={t('caricamento.file.diffida')}
                         fromPct={28}
                         started={started && now >= T_BAR_DIFFIDA_START}
                         completed={diffidaCompleted}
                         currentPct={diffidaPct}
                     />
 
-                    <StaticCompleted filename="Statuto_societa_srl.pdf" />
+                    <StaticCompleted filename={t('caricamento.file.statuto')} />
                 </div>
             </div>
 
@@ -280,7 +287,7 @@ export default function ArchivioAnimatedDemo() {
           ═══════════════════════════════════════════════════════ */}
             <div className="bg-slate border border-white/5 p-4">
                 <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">
-                    Ricerca nell'archivio
+                    {t('ricerca.titolo')}
                 </p>
 
                 {/* Input + bottone */}
@@ -298,7 +305,7 @@ export default function ArchivioAnimatedDemo() {
                                 : 'bg-oro/10 border-oro/30 text-oro scale-100'
                             }`}
                     >
-                        Cerca
+                        {t('ricerca.pulsante')}
                     </button>
                 </div>
 
@@ -314,17 +321,17 @@ export default function ArchivioAnimatedDemo() {
                             <FileText size={12} className="text-salvia mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
                                 <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">
-                                    Perizia_tecnica_Rossi.pdf
+                                    {t('ricerca.risultato_1.file')}
                                 </p>
                                 <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">
-                                    "...la perizia evidenzia vizi strutturali al locale, con responsabilita imputabile al locatore ai sensi dell'art. 1578 c.c..."
+                                    {t('ricerca.risultato_1.estratto')}
                                 </p>
                                 <div className="flex gap-1 mt-2 flex-wrap">
                                     <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                        Pratica 2026/047
+                                        {t('ricerca.risultato_1.tag_pratica')}
                                     </span>
                                     <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                        Locazione
+                                        {t('ricerca.risultato_1.tag_categoria')}
                                     </span>
                                 </div>
                             </div>
@@ -341,17 +348,17 @@ export default function ArchivioAnimatedDemo() {
                             <FileText size={12} className="text-nebbia/40 mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
                                 <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">
-                                    Email_Rossi_2024-11-08.pdf
+                                    {t('ricerca.risultato_2.file')}
                                 </p>
                                 <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">
-                                    "...allego come da accordi la perizia tecnica relativa all'immobile di via Roma 12..."
+                                    {t('ricerca.risultato_2.estratto')}
                                 </p>
                                 <div className="flex gap-1 mt-2 flex-wrap">
                                     <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                        Pratica 2026/047
+                                        {t('ricerca.risultato_2.tag_pratica')}
                                     </span>
                                     <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                        Corrispondenza
+                                        {t('ricerca.risultato_2.tag_categoria')}
                                     </span>
                                 </div>
                             </div>

@@ -5,51 +5,20 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Sparkles, FolderOpen, Tag } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // ─── Contenuti per professione ───
+// Le parole stanno in public/locales/it/lex_ai.json: 'anim' (avvocato, più le etichette
+// comuni) e 'anim_commercialista'. Qui resta solo la forma della risposta, legata per
+// posizione ai blocchi del JSON (h2/p hanno 'text', list/chips hanno 'items').
 const DEMOS = {
     avvocato: {
-        placeholder: 'Es. Responsabilità del datore di lavoro in caso di infortunio...',
-        azione: 'Aggiungi alla pratica',
-        domanda: 'un ladro entra in casa, il proprietario reagisce, quando può configurarsi la legittima difesa?',
-        risposta: [
-            { type: 'h2', text: 'Normativa' },
-            { type: 'p', text: 'La legittima difesa è disciplinata dall\'art. 52 c.p., che esclude la punibilità di chi ha commesso un fatto essendovi stato costretto dalla necessità di difendere un diritto proprio o altrui contro il pericolo attuale di un\'offesa ingiusta, purché la difesa sia proporzionata all\'offesa.' },
-            { type: 'p', text: 'Nel caso del ladro che entra in casa, la L. 36/2019 ha introdotto una presunzione legale di proporzionalità quando il fatto avvenga nei luoghi di cui all\'art. 614 c.p. (abitazione, privata dimora, pertinenze), il soggetto sia legittimamente presente e utilizzi un\'arma legittimamente detenuta.' },
-            { type: 'h2', text: 'Presupposti che restano necessari' },
-            { type: 'p', text: 'La presunzione non elimina la verifica degli altri requisiti. La Cassazione (rassegna 1/2021) ha chiarito che occorre sempre accertare:' },
-            {
-                type: 'list', items: [
-                    'Attualità del pericolo: deve esistere al momento della reazione. Se il ladro è in fuga, la difesa perde il suo presupposto.',
-                    'Necessità della reazione: deve essere l\'unica opzione praticabile.',
-                    'Gerarchia dei valori: vita e incolumità prevalgono sull\'interesse patrimoniale.',
-                ]
-            },
-            { type: 'h2', text: 'Eccesso colposo e turbamento' },
-            { type: 'p', text: 'L\'art. 55 comma 2 c.p. esclude la punibilità per eccesso quando chi reagisce si trovi in minorata difesa o grave turbamento derivante dalla situazione di pericolo in atto... CONTINUA...' },
-            { type: 'chips', items: ['Art. 52 c.p.', 'L. 36/2019', 'Art. 614 c.p.', 'Cass. 1/2021', 'Art. 55 c.p.', 'Art. 59 c.p.'] },
-        ],
+        prefix: 'anim',
+        tipi: ['h2', 'p', 'p', 'h2', 'p', 'list', 'h2', 'p', 'chips'],
     },
     commercialista: {
-        placeholder: 'Es. Detrazione IVA sulle spese di rappresentanza...',
-        azione: 'Aggiungi al mandato',
-        domanda: 'regime forfettario: quali sono i limiti di ricavo e le cause di esclusione per il 2026?',
-        risposta: [
-            { type: 'h2', text: 'Soglia di accesso' },
-            { type: 'p', text: 'Il regime forfettario (L. 190/2014) è riservato a chi nell\'anno precedente ha conseguito ricavi o compensi non superiori a 85.000 euro. Con ricavi oltre 100.000 euro la fuoriuscita è immediata, già nell\'anno in corso, con ripristino di IVA e regime ordinario.' },
-            { type: 'h2', text: 'Cause di esclusione' },
-            { type: 'p', text: 'Non può applicare il forfettario chi si trova in una di queste situazioni:' },
-            {
-                type: 'list', items: [
-                    'Spese per lavoro dipendente e collaboratori oltre 20.000 euro lordi nell\'anno.',
-                    'Partecipazione in società di persone, associazioni professionali o imprese familiari.',
-                    'Attività esercitata prevalentemente verso l\'ex datore di lavoro degli ultimi due anni.',
-                ]
-            },
-            { type: 'h2', text: 'Imposta sostitutiva' },
-            { type: 'p', text: 'Sul reddito imponibile, determinato applicando il coefficiente di redditività ATECO, si applica l\'imposta sostitutiva del 15%, ridotta al 5% per le nuove attività nei primi cinque anni... CONTINUA...' },
-            { type: 'chips', items: ['L. 190/2014', 'Soglia 85.000 €', 'Coeff. ATECO', 'Imposta 15%', 'Contributi INPS'] },
-        ],
+        prefix: 'anim_commercialista',
+        tipi: ['h2', 'p', 'h2', 'p', 'list', 'h2', 'p', 'chips'],
     },
 }
 
@@ -73,9 +42,15 @@ const DUR = { IDLE: 1500, PRESS_SEND: 800, TRANSITION: FADE_DURATION, ACTIONS_AP
 
 // ─── Componente principale ───
 export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }) {
-    const demo = DEMOS[variant] ?? DEMOS.avvocato
-    const DOMANDA = demo.domanda
-    const RISPOSTA = demo.risposta
+    const { t } = useTranslation('lex_ai')
+    const forma = DEMOS[variant] ?? DEMOS.avvocato
+    const testiRisposta = t(`${forma.prefix}.risposta`, { returnObjects: true })
+    const demo = {
+        placeholder: t(`${forma.prefix}.input_placeholder`),
+        azione: t(`${forma.prefix}.action`),
+    }
+    const DOMANDA = t(`${forma.prefix}.domanda`)
+    const RISPOSTA = forma.tipi.map((type, i) => ({ type, ...(Array.isArray(testiRisposta) ? testiRisposta[i] : null) }))
 
     const [phase, setPhase] = useState(PHASE.IDLE)
     const [domandaText, setDomandaText] = useState('')
@@ -210,7 +185,7 @@ export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }
                 }}
             >
                 <p className="font-body text-xs text-nebbia/25">
-                    Fai una domanda su una questione legale o fiscale, oppure carica un documento da analizzare.
+                    {t('anim.input_hint')}
                 </p>
                 <div className={`bg-petrolio border ${isPressing ? 'border-salvia/60' : 'border-white/10'} text-nebbia font-body text-sm px-4 py-3.5 transition-colors min-h-[78px]`}>
                     <span className="text-nebbia/85">{domandaText}</span>
@@ -222,7 +197,7 @@ export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }
                         ? 'bg-salvia/30 border-salvia/60 text-salvia scale-[0.98]'
                         : 'bg-salvia/10 border-salvia/30 text-salvia'}`}
                 >
-                    <Sparkles size={13} /> Cerca con Lex AI
+                    <Sparkles size={13} /> {t('anim.cta')}
                 </button>
             </div>
 
@@ -239,7 +214,7 @@ export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }
             >
                 {/* Bubble utente */}
                 <div>
-                    <p className="font-body text-xs text-nebbia/30 mb-1.5">Tu</p>
+                    <p className="font-body text-xs text-nebbia/30 mb-1.5">{t('anim.user_label')}</p>
                     <div className="bg-petrolio border border-white/8 px-4 py-3">
                         <p className="font-body text-sm text-nebbia/65">{DOMANDA}</p>
                     </div>
@@ -256,7 +231,7 @@ export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }
                 >
                     {responseOpacity > 0 && (
                         <>
-                            <p className="font-body text-xs text-salvia/50 mb-1.5">Lex AI</p>
+                            <p className="font-body text-xs text-salvia/50 mb-1.5">{t('anim.lex_label')}</p>
                             <div className="bg-salvia/5 border border-salvia/15 p-5 space-y-3">
                                 {rispostaBlocks.map((block, i) => {
                                     if (!block) return null
@@ -315,7 +290,7 @@ export default function LexAnimatedDemo({ variant = 'avvocato', startDelay = 0 }
                         <FolderOpen size={12} /> {demo.azione}
                     </button>
                     <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-petrolio border border-salvia/25 text-salvia/80 font-body text-xs hover:bg-salvia/5 transition-colors">
-                        <Tag size={12} /> Aggiungi a etichetta
+                        <Tag size={12} /> {t('anim.action_etichetta')}
                     </button>
                 </div>
             </div>

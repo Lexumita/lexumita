@@ -1,0 +1,314 @@
+{
+  "meta": {
+    "title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
+    "description": "Lex AI: l'AI italiana su banca dati verificata, oltre 4 milioni di documenti giuridici e fiscali, per avvocati e commercialisti. Ragionamento strutturato, fonti verificate, dentro una piattaforma completa.",
+    "og_title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
+    "og_description": "Banca dati verificata, oltre 4 milioni di documenti, ragionamento strutturato. Per avvocati e commercialisti italiani.",
+    "twitter_title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
+    "twitter_description": "Banca dati verificata, oltre 4 milioni di documenti, per avvocati e commercialisti italiani."
+  },
+  "hero": {
+    "badge": "Lex AI · V2",
+    "title": "L'AI italiana che ragiona su <br/><hl>diritto e fisco.</hl>",
+    "subtitle": "Fonti verificate, oltre 4 milioni di documenti giuridici e fiscali, ragionamento strutturato. Dentro una piattaforma completa per avvocati e commercialisti.",
+    "carousel": {
+      "prev": "Sessione precedente",
+      "next": "Sessione successiva",
+      "dots": [
+        "avvocato",
+        "commercialista"
+      ]
+    },
+    "cta_primary": "Inizia gratis con la banca dati",
+    "cta_secondary": "Scopri la differenza",
+    "no_card": "Nessuna carta richiesta. La banca dati è sempre gratuita."
+  },
+  "fonti": {
+    "label": "Banca dati",
+    "title": "Una banca dati verificata, <hl>aggiornata ogni settimana.</hl>",
+    "weekly_badge": "Aggiornamento settimanale al testo vigente",
+    "anti_noise": "Fonti verificate. Niente ricerca web casuale, niente fonti generaliste."
+  },
+  "database_card": {
+    "label": "Banca dati",
+    "count": "4.000.000",
+    "count_plus": "+",
+    "headline": "tra documenti giuridici, italiani ed europei.",
+    "description": "Lavoriamo in modo continuo per ampliare ed aggiornare la Banca Dati.",
+    "open_access": "Aperti a chiunque, gratis. Senza abbonamenti per area, senza limiti per materia.",
+    "items": [
+      {
+        "t": "Normativa italiana",
+        "s": "Costituzione, codici, leggi e decreti (vigenti e storici)"
+      },
+      {
+        "t": "Giurisprudenza amministrativa e contabile",
+        "s": "TAR, Consiglio di Stato, Corte dei Conti"
+      },
+      {
+        "t": "Giurisprudenza tributaria",
+        "s": "Corti di giustizia tributaria (BDGT-MEF)"
+      },
+      {
+        "t": "Prassi delle autorità",
+        "s": "Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti"
+      },
+      {
+        "t": "Diritto dell'Unione Europea",
+        "s": "Trattati (TUE, TFUE, Carta), regolamenti, direttive e giurisprudenza della Corte di giustizia UE"
+      },
+      {
+        "t": "Corte europea dei diritti dell'uomo",
+        "s": "Convenzione (testo vigente) e giurisprudenza di Strasburgo dal 1955 (HUDOC)"
+      },
+      {
+        "t": "Diritti fondamentali internazionali",
+        "s": "Dichiarazione universale dei diritti umani e leggi di ratifica dei trattati"
+      },
+      {
+        "t": "Deontologia e disciplina forense",
+        "s": "Codice deontologico e 21.000 massime del Consiglio Nazionale Forense"
+      }
+    ]
+  },
+  "differenza": {
+    "label": "La differenza",
+    "title": "Il problema delle AI generiche è il contesto. <hl>Lex ce l'ha.</hl>",
+    "subtitle": "Le AI generiche rispondono nel vuoto: non conoscono il caso, i documenti, le scadenze. Lex vive dentro il gestionale dello studio.",
+    "free": {
+      "badge": "Senza contesto",
+      "title": "Ricerca libera",
+      "text": "Fai domande su tutto il diritto e il fisco italiano: Lex risponde con ragionamento strutturato su fonti verificate. Per esplorare, verificare, approfondire."
+    },
+    "context": {
+      "badge": "Con contesto",
+      "title": "Lex nella pratica e nel mandato",
+      "text": "Dentro la pratica dell'avvocato o il mandato del commercialista, Lex legge atti, documenti, scadenze e dati del caso: analisi e strategie sul tuo caso, e atti e documenti generati già compilati con i dati reali."
+    },
+    "note": "Stesso motore, due modalità: libera quando esplori, con contesto quando lavori."
+  },
+  "lexai": {
+    "label": "Funzionalità",
+    "title": "Cosa puoi fare con <hl>Lex AI.</hl>",
+    "intro": "Una versione accessibile pensata per la ricerca legale e fiscale. Quattro modi concreti in cui Lex ti aiuta a lavorare meglio sui contenuti giuridici.",
+    "items": [
+      {
+        "t": "Cerca riferimenti legali",
+        "d": "Trova norme, sentenze e prassi rilevanti su un tema, con il ragionamento giuridico già strutturato."
+      },
+      {
+        "t": "Analizza documenti",
+        "d": "Carica un atto, una sentenza, un contratto. Lex evidenzia i punti rilevanti e i nodi da approfondire."
+      },
+      {
+        "t": "Conversazione continua",
+        "d": "Approfondisci, cambia angolazione, chiedi follow-up. La conversazione si sviluppa nel tempo, non si resetta a ogni domanda."
+      },
+      {
+        "t": "Chiarisce dubbi interpretativi",
+        "d": "Quando una norma o una pronuncia non è chiara, Lex spiega in modo strutturato e cita le fonti."
+      }
+    ],
+    "chat": {
+      "status": "Attivo",
+      "you": "Tu",
+      "question": "\"Cerco riferimenti sulla responsabilità del datore di lavoro in caso di infortunio.\"",
+      "answer_intro": "I riferimenti principali in tema di responsabilità datoriale per infortuni sono:",
+      "references": [
+        "Art. 2087 c.c. — obbligo generale di sicurezza",
+        "D.Lgs. 81/2008 — testo unico sicurezza",
+        "Art. 2049 c.c. — responsabilità per fatto dei dipendenti"
+      ],
+      "answer_close": "Vuoi che approfondisca uno di questi punti o carichi un documento da analizzare?"
+    }
+  },
+  "ragiona": {
+    "label": "Ragionamento",
+    "title": "Non ti dà solo norme. <hl>Struttura il ragionamento giuridico.</hl>",
+    "intro": "Una buona risposta legale non è una lista di articoli. È un ragionamento che identifica le fonti, chiarisce i presupposti, segnala le eccezioni e suggerisce cosa verificare. Lex AI è costruita per fare proprio questo.",
+    "steps": [
+      {
+        "t": "Identifica le norme",
+        "d": "Cita gli articoli applicabili al caso concreto."
+      },
+      {
+        "t": "Chiarisce i presupposti",
+        "d": "Spiega cosa serve perché la norma operi."
+      },
+      {
+        "t": "Segnala le eccezioni",
+        "d": "Indica i limiti e le ipotesi di esclusione."
+      },
+      {
+        "t": "Suggerisce verifiche",
+        "d": "Pone le domande giuste per andare più a fondo."
+      }
+    ],
+    "anatomy": {
+      "header": "Lex AI — anatomia di una risposta",
+      "you": "Tu",
+      "question": "\"Quando opera la legittima difesa nel caso di intrusione in abitazione?\"",
+      "norme_label": "01 · Identifica le norme",
+      "norme_text": "La materia è disciplinata dall'art. 52 c.p. La L. 36/2019 ha introdotto una presunzione di proporzionalità nei luoghi indicati dall'art. 614 c.p.",
+      "presupposti_label": "02 · Chiarisce i presupposti",
+      "presupposti_text": "La presunzione opera solo se: il fatto avviene nei luoghi indicati, il soggetto è legittimamente presente, l'arma è legittimamente detenuta, la difesa riguarda incolumità o beni propri o altrui.",
+      "eccezioni_label": "03 · Segnala le eccezioni",
+      "eccezioni_text": "La presunzione non elimina la verifica di attualità del pericolo e necessità della reazione. Cassazione 1/2021: vita e incolumità prevalgono sull'interesse patrimoniale.",
+      "verifiche_label": "04 · Suggerisce verifiche",
+      "verifiche_text": "Vuoi che approfondisca l'eccesso colposo (art. 55 comma 2 c.p.), il caso del ladro in fuga, o la legittima difesa putativa (art. 59 c.p.)?",
+      "sources": [
+        "Art. 52 c.p.",
+        "L. 36/2019",
+        "Art. 614 c.p.",
+        "Cass. 1/2021",
+        "Art. 55 c.p.",
+        "Art. 59 c.p."
+      ]
+    }
+  },
+  "trasparenza": {
+    "label": "Trasparenza",
+    "title": "Cosa può e cosa non può.",
+    "does_title": "Quello che Lex fa",
+    "does": [
+      "Ricerca su fonti legali verificate",
+      "Analizza documenti caricati",
+      "Struttura il ragionamento giuridico",
+      "Cita le fonti e segnala le eccezioni"
+    ],
+    "doesnt_title": "Quello che non fa",
+    "doesnt": [
+      "Non sostituisce il parere dell'avvocato o del commercialista",
+      "Non genera atti pronti per il deposito nella ricerca libera (quelli nascono nella pratica)",
+      "Non accede alle sentenze riservate degli avvocati",
+      "Non cerca su fonti web generaliste o non verificate"
+    ]
+  },
+  "gestionale": {
+    "title": "Il gestionale di studio, <hl>con Lex sempre accanto.</hl>",
+    "subtitle": "Pratiche, clienti, appuntamenti, udienze, fatture e scadenze nello stesso posto. E quando ti serve un resoconto, Lex legge tutto e ti risponde in italiano.",
+    "visual": {
+      "label": "Pratica civile - Mario Rossi",
+      "rows": [
+        {
+          "l": "Cliente",
+          "v": "Mario Rossi"
+        },
+        {
+          "l": "Tipo",
+          "v": "Civile - Locazione"
+        },
+        {
+          "l": "Stato",
+          "v": "Aperta dal 08/2025"
+        },
+        {
+          "l": "Pross. udienza",
+          "v": "28/05/2026"
+        }
+      ],
+      "billing_title": "Fatturazione",
+      "invoice": "Fattura 2026/041",
+      "invoice_status": "EUR 1.100 - scaduta",
+      "research_title": "Ricerche (3)",
+      "research": [
+        "Analisi Lex - art. 1578 c.c.",
+        "Eccezione inadempimento locatore",
+        "Cass. Civ. III 4439/2024"
+      ]
+    }
+  },
+  "ricerche": {
+    "title": "Le tue ricerche, etichettate e collegate",
+    "text": "Salvi ogni ricerca legale che fai, la categorizzi con le tue etichette, la colleghi a una pratica o la confronti con altre. Lex AI trova le correlate, suggerisce articoli che non avevi considerato, ragiona insieme a te.",
+    "points": [
+      "Etichette personali",
+      "Confronto tra ricerche",
+      "Collegamento a pratica",
+      "Correlate suggerite da Lex AI"
+    ],
+    "visual": {
+      "label": "Ricerche - Locazione e morosita",
+      "query": "eccezione inadempimento locatore",
+      "results": "14 risultati",
+      "tags": [
+        "Locazione",
+        "Morosita Rossi",
+        "Da approfondire"
+      ],
+      "saved": [
+        {
+          "t": "Art. 1578 c.c. - vizi della cosa locata",
+          "sub": "Salvata 2 giorni fa"
+        },
+        {
+          "t": "Cass. Civ. III 4439/2024 - inadempimento locatore",
+          "sub": "Salvata 5 giorni fa"
+        },
+        {
+          "t": "Art. 1453 c.c. - risoluzione per inadempimento",
+          "sub": "Salvata 1 settimana fa"
+        }
+      ],
+      "suggestion": "Lex suggerisce: <hl>art. 1587 c.c.</hl> sull'obbligo di custodia del conduttore - correlato."
+    }
+  },
+  "archivio": {
+    "title": "I documenti dello studio, <hl>sempre a portata.</hl>",
+    "subtitle": "Carichi, ritrovi, condividi. La gestione e la ricerca dell'archivio in un flusso unico, senza mai uscire dal contesto della pratica."
+  },
+  "banca_condivisa": {
+    "label": "Banca dati condivisa",
+    "title": "Il tuo archivio diventa <hl>una risorsa.</hl>",
+    "subtitle": "Le sentenze che hai gia lavorato, anonimizzate e condivise, fanno crescere il sapere collettivo della professione. E ti restituiscono valore economico.",
+    "feature_title": "Valorizza il tuo archivio interno",
+    "feature_text": "Anonimizza le tue sentenze e rendile disponibili in piattaforma. Gli altri avvocati che ne hanno bisogno possono acquistarle, e una quota torna a te. Il lavoro gia svolto diventa una risorsa economica.",
+    "points": [
+      "Anonimizzazione sentenze",
+      "Pubblicazione in piattaforma",
+      "Monetizzazione archivio",
+      "Accesso a contenuti di altri avvocati"
+    ],
+    "visual": {
+      "label": "Banca dati Lexum",
+      "results": "1 risultato - Diritto Civile / Contratti",
+      "category": "Diritto Civile / Contratti / Inadempimento",
+      "title": "Revoca patente - Omicidio stradale - Cass. Ord. n. 8058/2026",
+      "author": "Nino Avvocato - Corte di Cassazione - 2026",
+      "tags": [
+        "revoca patente",
+        "omicidio stradale",
+        "art. 589-bis"
+      ],
+      "price": "EUR 5"
+    }
+  },
+  "cliente": {
+    "label": "Area cliente",
+    "title": "Anche il cliente <hl>ha il suo spazio.</hl>",
+    "subtitle": "Documenti, appuntamenti, udienze e comunicazioni in un'area riservata. Lo studio lavora, il cliente resta informato.",
+    "feature_title": "Un accesso dedicato anche per il cliente",
+    "feature_text": "Il cliente accede alla propria area riservata e trova documenti, appuntamenti, udienze e materiali condivisi dallo studio. Puo caricare file direttamente in piattaforma. Meno email disperse, meno file persi.",
+    "points": [
+      "Accesso riservato",
+      "Documenti condivisi",
+      "Comunicazioni ordinate"
+    ],
+    "visual": {
+      "label": "Area cliente - Paolino Rossi",
+      "file_shared": "Perizia tecnica.pdf",
+      "file_shared_status": "Condiviso",
+      "file_uploaded": "Contratto_firmato.pdf",
+      "file_uploaded_status": "Caricato da te",
+      "next_hearing": "Prossima udienza: 25/04/2026"
+    }
+  },
+  "cta": {
+    "label": "Inizia ora",
+    "title": "Inizia da Lex AI. <hl>Il resto è dentro Lexum.</hl>",
+    "subtitle": "Ricerca libera gratuita sulla banca dati. E quando lavori su una pratica o un mandato, Lex è già lì con te, con il contesto del caso.",
+    "button": "Inizia gratis",
+    "link_lawyers": "Scopri Lexum per avvocati",
+    "link_accountants": "Scopri Lexum per commercialisti"
+  }
+}
