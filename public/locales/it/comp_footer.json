@@ -1,0 +1,27 @@
+{
+  "brand": {
+    "description": "La piattaforma per avvocati e studi legali che unisce gestione operativa, banca dati e intelligenza artificiale.",
+    "status": "Piattaforma attiva"
+  },
+  "nav": {
+    "title": "Navigazione",
+    "home": "Home",
+    "lawyers": "Per Studi Legali",
+    "lex_ai": "Lex AI",
+    "novita": "Novità",
+    "contacts": "Contatti"
+  },
+  "trust": {
+    "title": "Sicurezza & Privacy",
+    "encrypted": "Dati protetti e crittografati",
+    "compliance": "Conformità GDPR e normativa italiana",
+    "email": "info@lexum.it"
+  },
+  "bottom": {
+    "copyright": "© {{year}} Lexum. Tutti i diritti riservati.",
+    "company": "Mosaico Experiences SA · CHE-365.261.725 · Via Cantonale 1, 6900 Lugano",
+    "privacy": "Privacy Policy",
+    "terms": "Termini di servizio",
+    "other_site": "Lexum Svizzera · lexum.ch"
+  }
+}

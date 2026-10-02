@@ -1,0 +1,13 @@
+{
+  "navbar": {
+    "home": "Home",
+    "avvocati": "Avvocati",
+    "commercialisti": "Commercialisti",
+    "novita": "Novità",
+    "contatti": "Contatti",
+    "accedi": "Accedi",
+    "inizia_ora": "Inizia ora",
+    "inizia_ora_freccia": "Inizia ora →",
+    "la_mia_area": "La mia area"
+  }
+}

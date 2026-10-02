@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { Menu, X, ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import logo from '@/assets/logo.png'
 import { useAuth } from '@/context/AuthContext'
 import { NOVITA_ATTIVA } from '@/lib/novita'
 
 const navLinks = [
-  { path: '/', label: 'Home' },
-  { path: '/per-avvocati', label: 'Avvocati' },
-  { path: '/per-commercialisti', label: 'Commercialisti' },
-  { path: '/novita', label: 'Novità' },
-  { path: '/contatti', label: 'Contatti' },
+  { path: '/', key: 'home' },
+  { path: '/per-avvocati', key: 'avvocati' },
+  { path: '/per-commercialisti', key: 'commercialisti' },
+  { path: '/novita', key: 'novita' },
+  { path: '/contatti', key: 'contatti' },
 ].filter(l => NOVITA_ATTIVA || l.path !== '/novita')
 
 // Mappa ruolo → URL della home interna
@@ -28,6 +29,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const { profile } = useAuth()
+  const { t } = useTranslation('common')
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40)
@@ -38,7 +40,7 @@ export default function Navbar() {
   useEffect(() => { setMenuOpen(false) }, [location])
 
   const homeUtente = profile?.role ? HOME_PER_RUOLO[profile.role] ?? '/' : null
-  const labelUtente = profile?.nome || 'La mia area'
+  const labelUtente = profile?.nome || t('navbar.la_mia_area')
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-petrolio/95 backdrop-blur-sm border-b border-white/5 py-3' : 'bg-transparent py-5'
@@ -52,14 +54,14 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map(({ path, label }) => (
+          {navLinks.map(({ path, key }) => (
             <NavLink key={path} to={path}
               end={path === '/'}
               className={({ isActive }) =>
                 `font-body text-xs tracking-widest uppercase transition-colors ${isActive ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
                 }`
               }>
-              {label}
+              {t(`navbar.${key}`)}
             </NavLink>
           ))}
         </nav>
@@ -76,10 +78,10 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login" className="font-body text-xs text-nebbia/40 hover:text-nebbia transition-colors">
-                Accedi
+                {t('navbar.accedi')}
               </Link>
               <Link to="/registrati" className="px-5 py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-all">
-                Inizia ora →
+                {t('navbar.inizia_ora_freccia')}
               </Link>
             </>
           )}
@@ -95,13 +97,13 @@ export default function Navbar() {
       {/* Mobile menu */}
       <div className={`md:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="bg-petrolio/95 backdrop-blur-sm border-t border-white/5 px-6 py-4 flex flex-col gap-1">
-          {navLinks.map(({ path, label }) => (
+          {navLinks.map(({ path, key }) => (
             <NavLink key={path} to={path}
               className={({ isActive }) =>
                 `py-3 px-2 font-body text-sm border-b border-white/5 transition-colors ${isActive ? 'text-oro' : 'text-nebbia/60 hover:text-nebbia'
                 }`
               }>
-              {label}
+              {t(`navbar.${key}`)}
             </NavLink>
           ))}
 
@@ -115,8 +117,8 @@ export default function Navbar() {
             </Link>
           ) : (
             <div className="flex gap-3 mt-3">
-              <Link to="/login" className="flex-1 text-center py-2.5 border border-white/10 text-nebbia/50 font-body text-xs hover:border-white/25 transition-colors">Accedi</Link>
-              <Link to="/registrati" className="flex-1 text-center py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-colors">Inizia ora</Link>
+              <Link to="/login" className="flex-1 text-center py-2.5 border border-white/10 text-nebbia/50 font-body text-xs hover:border-white/25 transition-colors">{t('navbar.accedi')}</Link>
+              <Link to="/registrati" className="flex-1 text-center py-2.5 bg-oro text-petrolio font-body text-xs font-medium hover:bg-oro/90 transition-colors">{t('navbar.inizia_ora')}</Link>
             </div>
           )}
         </div>
