@@ -515,6 +515,9 @@ function TabellaUtenti({ data, loading }) {
                     </td>
                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
                       {new Date(u.created_at).toLocaleDateString('it-IT')}
+                      <span className="ml-1.5 text-nebbia/25">
+                        {new Date(u.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link to={`/admin/utenti/${u.id}`}
