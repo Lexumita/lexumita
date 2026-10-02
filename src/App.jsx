@@ -83,6 +83,7 @@ import Fisco from '@/pages/fisco/Fisco'
 import Novita from './pages/Novita'
 import NovitaArticolo from './pages/NovitaArticolo'
 import AdminNovita from './pages/admin/Novita'
+import { NOVITA_ATTIVA } from './lib/novita'
 import SentenzaDettaglio from './pages/avvocato/SentenzaDettaglio'
 import PrassiDettaglio from './pages/avvocato/PrassiDettaglio'
 import SentenzaTributariaDettaglio from './pages/avvocato/SentenzaTributariaDettaglio'
@@ -189,8 +190,8 @@ export default function App() {
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
               <Route path="/per-commercialisti" element={<VetrinaLayout><PerCommercialisti /></VetrinaLayout>} />
-              <Route path="/novita" element={<VetrinaLayout><Novita /></VetrinaLayout>} />
-              <Route path="/novita/:slug" element={<VetrinaLayout><NovitaArticolo /></VetrinaLayout>} />
+              <Route path="/novita" element={NOVITA_ATTIVA ? <VetrinaLayout><Novita /></VetrinaLayout> : <Navigate to="/" replace />} />
+              <Route path="/novita/:slug" element={NOVITA_ATTIVA ? <VetrinaLayout><NovitaArticolo /></VetrinaLayout> : <Navigate to="/" replace />} />
               <Route path="/lex-ai" element={<Navigate to="/" replace />} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />

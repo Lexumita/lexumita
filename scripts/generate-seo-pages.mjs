@@ -158,16 +158,18 @@ async function novitaPubblicate() {
   }
 }
 
-const articoli = await novitaPubblicate()
+// Sezione spenta per ora: stesso interruttore di src/lib/novita.js
+const NOVITA_ATTIVA = false
+const articoli = NOVITA_ATTIVA ? await novitaPubblicate() : []
 
-scriviTestata('novita/index.html', `${SITE}/novita`, {
+if (NOVITA_ATTIVA) scriviTestata('novita/index.html', `${SITE}/novita`, {
   title: 'Novità — Lexum',
   description:
     'Le novità di Lexum: funzioni nuove, migliorie e aggiornamenti della piattaforma per avvocati e commercialisti.',
   ogTitle: 'Novità — Lexum',
   ogDescription: 'Funzioni nuove, migliorie e aggiornamenti della piattaforma Lexum.',
 })
-count++
+if (NOVITA_ATTIVA) count++
 
 for (const a of articoli) {
   if (!a?.slug) continue

@@ -5,6 +5,10 @@
 
 import { supabase } from '@/lib/supabase'
 
+// Sezione spenta per ora (02-10-2026): niente voce nel menu e nel footer, /novita
+// torna alla home. Per riaccenderla basta true qui e in scripts/generate-seo-pages.mjs.
+export const NOVITA_ATTIVA = false
+
 const CAMPI_ELENCO = 'slug, titolo, sommario, copertina_url, autore, categoria, pubblicato_il'
 
 export async function elencoNovita(limite = 60) {

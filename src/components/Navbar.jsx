@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom'
 import { Menu, X, ArrowRight } from 'lucide-react'
 import logo from '@/assets/logo.png'
 import { useAuth } from '@/context/AuthContext'
+import { NOVITA_ATTIVA } from '@/lib/novita'
 
 const navLinks = [
   { path: '/', label: 'Home' },
@@ -10,7 +11,7 @@ const navLinks = [
   { path: '/per-commercialisti', label: 'Commercialisti' },
   { path: '/novita', label: 'Novità' },
   { path: '/contatti', label: 'Contatti' },
-]
+].filter(l => NOVITA_ATTIVA || l.path !== '/novita')
 
 // Mappa ruolo → URL della home interna
 const HOME_PER_RUOLO = {

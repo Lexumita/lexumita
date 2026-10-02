@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Mail, Shield, Lock } from 'lucide-react'
 import logo from '@/assets/logo.png'
+import { NOVITA_ATTIVA } from '@/lib/novita'
 
 export default function Footer() {
   return (
@@ -31,7 +32,7 @@ export default function Footer() {
                 { to: '/#lexai', label: 'Lex AI' },
                 { to: '/novita', label: 'Novità' },
                 { to: '/contatti', label: 'Contatti' },
-              ].map(({ to, label }) => (
+              ].filter(l => NOVITA_ATTIVA || l.to !== '/novita').map(({ to, label }) => (
                 <li key={to}>
                   <Link to={to} className="font-body text-sm text-nebbia/40 hover:text-oro transition-colors">
                     {label}
