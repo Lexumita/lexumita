@@ -209,7 +209,7 @@
       ],
       "billing_title": "Fatturazione",
       "invoice": "Fattura 2026/041",
-      "invoice_status": "EUR 1.100 - scaduta",
+      "invoice_status": "1.100 € - scaduta",
       "research_title": "Ricerche (3)",
       "research": [
         "Analisi Lex - art. 1578 c.c.",
@@ -280,7 +280,7 @@
         "omicidio stradale",
         "art. 589-bis"
       ],
-      "price": "EUR 5"
+      "price": "5 €"
     }
   },
   "cliente": {

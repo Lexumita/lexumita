@@ -162,11 +162,11 @@
       },
       {
         "etichetta": "Fatturato 2026",
-        "valore": "EUR 4.200,00"
+        "valore": "4.200,00 €"
       },
       {
         "etichetta": "Da incassare",
-        "valore": "EUR 1.100,00"
+        "valore": "1.100,00 €"
       }
     ],
     "payments_label": "Pagamenti recenti",
@@ -174,17 +174,17 @@
       {
         "data": "12/03/2026",
         "descrizione": "Acconto pratica 2026/047",
-        "importo": "EUR 1.500,00"
+        "importo": "1.500,00 €"
       },
       {
         "data": "28/02/2026",
         "descrizione": "Onorario consulenza",
-        "importo": "EUR 600,00"
+        "importo": "600,00 €"
       },
       {
         "data": "15/02/2026",
         "descrizione": "Saldo pratica 2025/118",
-        "importo": "EUR 1.100,00"
+        "importo": "1.100,00 €"
       }
     ],
     "status_paid": "Pagato",
@@ -262,47 +262,47 @@
     "services": [
       {
         "descrizione": "Consulenza causa civile",
-        "importo": "EUR 1.200,00"
+        "importo": "1.200,00 €"
       },
       {
         "descrizione": "Comparsa di costituzione",
-        "importo": "EUR 800,00"
+        "importo": "800,00 €"
       },
       {
         "descrizione": "Udienza prima comparizione",
-        "importo": "EUR 500,00"
+        "importo": "500,00 €"
       }
     ],
     "totals": [
       {
         "etichetta": "Imponibile",
-        "importo": "EUR 2.500,00"
+        "importo": "2.500,00 €"
       },
       {
         "etichetta": "CPA 4%",
-        "importo": "EUR 100,00"
+        "importo": "100,00 €"
       },
       {
         "etichetta": "IVA 22%",
-        "importo": "EUR 572,00"
+        "importo": "572,00 €"
       },
       {
         "etichetta": "Ritenuta d acconto 20%",
-        "importo": "EUR -500,00"
+        "importo": "-500,00 €"
       }
     ],
     "total_label": "Totale netto da pagare",
-    "total": "EUR 2.672,00",
+    "total": "2.672,00 €",
     "sdi_note": "PDF generato in formato SDI - archiviato in <hl>Archivio > Fatture > 2026</hl>",
     "scadenzario": {
       "title": "Scadenzario sotto controllo",
       "text": "Vedi a colpo d occhio chi deve pagare, cosa e scaduto, cosa e in arrivo. Stati colorati per fattura: in attesa, pagata, scaduta.",
       "paid_label": "Pagata",
-      "paid_amount": "EUR 4.200",
+      "paid_amount": "4.200 €",
       "pending_label": "In attesa",
-      "pending_amount": "EUR 2.672",
+      "pending_amount": "2.672 €",
       "overdue_label": "Scaduta",
-      "overdue_amount": "EUR 1.100"
+      "overdue_amount": "1.100 €"
     },
     "parziali": {
       "title": "Pagamenti parziali tracciati",
@@ -311,17 +311,17 @@
         {
           "metodo": "Bonifico",
           "data": "12/03",
-          "importo": "EUR 1.500,00"
+          "importo": "1.500,00 €"
         },
         {
           "metodo": "Contanti",
           "data": "20/03",
-          "importo": "EUR 700,00"
+          "importo": "700,00 €"
         },
         {
           "metodo": "Saldo da incassare",
           "data": "—",
-          "importo": "EUR 472,00"
+          "importo": "472,00 €"
         }
       ]
     },
@@ -345,22 +345,22 @@
       "visual_label": "Lex su pagamenti",
       "question": "Quali clienti hanno fatture scadute da piu di 30 giorni?",
       "assistant_name": "Lex AI",
-      "answer": "Ho trovato 3 fatture scadute da oltre 30 giorni, per un totale di EUR 4.150,00.",
+      "answer": "Ho trovato 3 fatture scadute da oltre 30 giorni, per un totale di 4.150,00 €.",
       "results": [
         {
           "cliente": "Mario Rossi - 2026/041",
           "scadenza": "Scaduta da 42 giorni",
-          "importo": "EUR 1.100,00"
+          "importo": "1.100,00 €"
         },
         {
           "cliente": "L. Verdi srl - 2026/035",
           "scadenza": "Scaduta da 35 giorni",
-          "importo": "EUR 1.800,00"
+          "importo": "1.800,00 €"
         },
         {
           "cliente": "A. Bianchi - 2026/028",
           "scadenza": "Scaduta da 31 giorni",
-          "importo": "EUR 1.250,00"
+          "importo": "1.250,00 €"
         }
       ]
     }
@@ -407,21 +407,21 @@
       {
         "titolo": "Responsabilita medica - errore diagnostico",
         "acquisti": "12 acquisti",
-        "quota": "EUR 80,00"
+        "quota": "80,00 €"
       },
       {
         "titolo": "Locazione - inadempimento locatore",
         "acquisti": "8 acquisti",
-        "quota": "EUR 110,00"
+        "quota": "110,00 €"
       },
       {
         "titolo": "Omicidio stradale - revoca patente",
         "acquisti": "5 acquisti",
-        "quota": "EUR 45,00"
+        "quota": "45,00 €"
       }
     ],
     "total_label": "Totale ricavi 2026",
-    "total": "EUR 235,00"
+    "total": "235,00 €"
   },
   "sicurezza": {
     "label": "Sicurezza",

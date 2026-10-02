@@ -49,7 +49,7 @@
       "visual_label": "Lex AI - Conversazione",
       "domanda": "Per il cliente Rossi srl, cosa scade a luglio e a quanto ammonta il secondo acconto?",
       "ai_name": "Lex AI",
-      "risposta": "Rossi srl e in contabilita ordinaria. A luglio hai: liquidazione IVA del secondo trimestre (16/07), F24 dei contributi dipendenti (16/07) e la LIPE del Q2 (entro fine mese). Il secondo acconto IRES e IRAP e a novembre, non a luglio. Il primo acconto versato a giugno era di EUR 3.240,00; il saldo stimato per novembre e di EUR 4.860,00. Ho gia predisposto il modello F24 in bozza per la tua revisione.",
+      "risposta": "Rossi srl e in contabilita ordinaria. A luglio hai: liquidazione IVA del secondo trimestre (16/07), F24 dei contributi dipendenti (16/07) e la LIPE del Q2 (entro fine mese). Il secondo acconto IRES e IRAP e a novembre, non a luglio. Il primo acconto versato a giugno era di 3.240,00 €; il saldo stimato per novembre e di 4.860,00 €. Ho gia predisposto il modello F24 in bozza per la tua revisione.",
       "chip_iva": "IVA Q2",
       "chip_lipe": "LIPE Q2",
       "chip_file": "F24_bozza.pdf"
@@ -69,15 +69,15 @@
         },
         {
           "label": "Imponibile",
-          "value": "EUR 184,50"
+          "value": "184,50 €"
         },
         {
           "label": "IVA 22%",
-          "value": "EUR 40,59"
+          "value": "40,59 €"
         },
         {
           "label": "Totale",
-          "value": "EUR 225,09"
+          "value": "225,09 €"
         }
       ],
       "pronto": "Movimento pronto: conto <hl>Energia elettrica</hl>, uscita in cassa. Conferma per registrare."
@@ -198,19 +198,19 @@
     "kpi": [
       {
         "label": "Entrate 2026",
-        "value": "EUR 128.400"
+        "value": "128.400 €"
       },
       {
         "label": "Uscite 2026",
-        "value": "EUR 96.150"
+        "value": "96.150 €"
       },
       {
         "label": "Risultato",
-        "value": "EUR 32.250"
+        "value": "32.250 €"
       },
       {
         "label": "Liquidita",
-        "value": "EUR 41.900"
+        "value": "41.900 €"
       }
     ],
     "proiezione_label": "Proiezione liquidita (12 mesi)",
@@ -288,24 +288,24 @@
     "voci": [
       {
         "label": "Retribuzione lorda",
-        "value": "EUR 28.000,00"
+        "value": "28.000,00 €"
       },
       {
         "label": "INPS c/azienda (30%)",
-        "value": "EUR 8.400,00"
+        "value": "8.400,00 €"
       },
       {
         "label": "INAIL",
-        "value": "EUR 336,00"
+        "value": "336,00 €"
       },
       {
         "label": "TFR",
-        "value": "EUR 2.074,00"
+        "value": "2.074,00 €"
       }
     ],
     "totale_label": "Costo aziendale pieno",
-    "totale_value": "EUR 38.810,00",
-    "organico": "6 dipendenti in organico - costo del personale del cliente <hl>EUR 214.600</hl>."
+    "totale_value": "38.810,00 €",
+    "organico": "6 dipendenti in organico - costo del personale del cliente <hl>214.600 €</hl>."
   },
   "banca_dati": {
     "feature_title": "Banca dati normativa e ricerche salvate nel mandato",
@@ -394,9 +394,9 @@
   "cta": {
     "label": "Inizia ora",
     "title": "Porta lo studio <hl>dentro Lexum.</hl>",
-    "subtitle": "Registrati e inizia dal primo cliente. La verifica della professione conferma che sei un commercialista e abilita l'ambiente completo dello studio.",
+    "subtitle": "Registrati, completa i dati di fatturazione e scegli il piano: l'ambiente completo dello studio si attiva subito, senza attese né approvazioni.",
     "cta_primary": "Inizia ora",
     "cta_secondary": "Vedi i piani",
-    "nota": "Registrazione con verifica della professione. Nessuna carta richiesta."
+    "nota": "Registrazione gratuita. Nessuna carta richiesta per iniziare."
   }
 }
