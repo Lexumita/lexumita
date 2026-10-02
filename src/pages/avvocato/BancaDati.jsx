@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { formatPrezzo } from '@/lib/prezzi'
 
 // Un messaggio completato non cambia mai: senza memo, OGNI chunk dello
 // streaming ri-analizzava l'INTERA conversazione (costo quadratico — con le
@@ -1171,7 +1172,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                                             rel="noopener noreferrer"
                                                             className="shrink-0 flex flex-col items-end gap-1"
                                                         >
-                                                            <span className="font-display text-base font-semibold text-oro">EUR {s.prezzo}</span>
+                                                            <span className="font-display text-base font-semibold text-oro">{formatPrezzo(s.prezzo)}</span>
                                                             <span className="font-body text-[10px] text-oro/60 uppercase tracking-wider">vedi</span>
                                                         </a>
                                                     </div>
@@ -4161,7 +4162,7 @@ function BloccoRisultati({
                                         </span>
                                     ) : (
                                         <>
-                                            <span className="font-display text-lg font-semibold text-oro">EUR {prezzoAccesso}</span>
+                                            <span className="font-display text-lg font-semibold text-oro">{formatPrezzo(prezzoAccesso)}</span>
                                             <span className="font-body text-xs text-oro/60">accesso singolo</span>
                                         </>
                                     )}

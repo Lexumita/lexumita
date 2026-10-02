@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { TIPI_SCADENZA } from '@/lib/scadenzarioFiscale'
+import { formatImporto } from '@/lib/prezzi'
 
 const TIPO_APP_ICON = { presenza: MapPin, videocall: Video, telefonico: Phone, udienza: Calendar }
 
@@ -147,9 +148,9 @@ export default function CommercialistaDashboard() {
   const STATS = [
     { label: 'Clienti', value: loading ? '—' : nClienti, colorClass: 'text-oro', icon: Users },
     { label: 'Mandati attivi', value: loading ? '—' : nMandati, colorClass: 'text-oro', icon: Briefcase },
-    { label: 'Fatturato anno', value: loading ? '—' : `€ ${fmtEUR(fatt.fatturato)}`, colorClass: 'text-salvia', icon: CreditCard },
-    { label: 'Incassato anno', value: loading ? '—' : `€ ${fmtEUR(fatt.incassato)}`, colorClass: 'text-salvia', icon: Wallet },
-    { label: 'Da incassare', value: loading ? '—' : `€ ${fmtEUR(fatt.daIncassare)}`, colorClass: fatt.daIncassare > 0 ? 'text-amber-400' : 'text-nebbia/40', icon: FileText },
+    { label: 'Fatturato anno', value: loading ? '—' : `${formatImporto(fatt.fatturato)}`, colorClass: 'text-salvia', icon: CreditCard },
+    { label: 'Incassato anno', value: loading ? '—' : `${formatImporto(fatt.incassato)}`, colorClass: 'text-salvia', icon: Wallet },
+    { label: 'Da incassare', value: loading ? '—' : `${formatImporto(fatt.daIncassare)}`, colorClass: fatt.daIncassare > 0 ? 'text-amber-400' : 'text-nebbia/40', icon: FileText },
   ]
 
   const maxMese = Math.max(1, ...mesi.map(m => m.tot))
@@ -284,7 +285,7 @@ export default function CommercialistaDashboard() {
                   <div className="flex-1 h-4 bg-petrolio/60 relative overflow-hidden">
                     <div className="absolute inset-y-0 left-0 bg-salvia/40" style={{ width: `${(m.tot / maxMese) * 100}%` }} />
                   </div>
-                  <span className="font-body text-xs text-nebbia/60 w-24 text-right shrink-0">€ {fmtEUR(m.tot)}</span>
+                  <span className="font-body text-xs text-nebbia/60 w-24 text-right shrink-0">{formatImporto(m.tot)}</span>
                 </div>
               ))}
             </div>

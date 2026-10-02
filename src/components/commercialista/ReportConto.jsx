@@ -17,13 +17,14 @@ import { BarChart3, TrendingUp, TrendingDown, FileDown } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtEUR, MESI_ABBR } from '@/lib/cassa'
 import { costoPersonaleMeseAttivi, costoPersonaleProRataAnno, bonusDelMese, bonusDellAnnoX } from '@/lib/salariIT'
+import { formatImporto } from '@/lib/prezzi'
 
 const sum = (arr) => arr.reduce((t, m) => t + (Number(m.importo) || 0), 0)
 const N_ANNI = 4
 const MESI_FULL = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 
 const escHtml = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
-const eurP = (n) => '€ ' + Number(n || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const eurP = (n) => formatImporto(n || 0)
 
 function nomeClienteFmt(c) {
     if (!c) return '—'
@@ -247,10 +248,10 @@ export default function ReportConto({ clienteId, mandatoId = null, anno = null, 
                                             <div className="flex-1 w-full flex items-end justify-center gap-0.5">
                                                 <div className="w-1/2 bg-salvia/55 hover:bg-salvia/80 transition-colors"
                                                     style={{ height: `${(m.entrate / maxMese) * 100}%` }}
-                                                    title={`${MESI_ABBR[m.mo]}: entrate € ${fmtEUR(m.entrate)}`} />
+                                                    title={`${MESI_ABBR[m.mo]}: entrate ${formatImporto(m.entrate)}`} />
                                                 <div className="w-1/2 bg-oro/55 hover:bg-oro/80 transition-colors"
                                                     style={{ height: `${(m.uscite / maxMese) * 100}%` }}
-                                                    title={`${MESI_ABBR[m.mo]}: uscite € ${fmtEUR(m.uscite)}`} />
+                                                    title={`${MESI_ABBR[m.mo]}: uscite ${formatImporto(m.uscite)}`} />
                                             </div>
                                         </div>
                                     ))}
@@ -275,8 +276,8 @@ export default function ReportConto({ clienteId, mandatoId = null, anno = null, 
                             {perAnno.map(a => (
                                 <div key={a.anno} className="flex-1 flex flex-col items-center">
                                     <div className="flex-1 w-full flex items-end justify-center gap-1">
-                                        <div className="w-1/3 bg-salvia/55" style={{ height: `${(a.entrate / maxAnno) * 100}%` }} title={`Entrate € ${fmtEUR(a.entrate)}`} />
-                                        <div className="w-1/3 bg-oro/55" style={{ height: `${(a.uscite / maxAnno) * 100}%` }} title={`Uscite € ${fmtEUR(a.uscite)}`} />
+                                        <div className="w-1/3 bg-salvia/55" style={{ height: `${(a.entrate / maxAnno) * 100}%` }} title={`Entrate ${formatImporto(a.entrate)}`} />
+                                        <div className="w-1/3 bg-oro/55" style={{ height: `${(a.uscite / maxAnno) * 100}%` }} title={`Uscite ${formatImporto(a.uscite)}`} />
                                     </div>
                                     <span className="font-body text-[9px] text-nebbia/30 mt-1">{a.anno}</span>
                                 </div>
@@ -295,9 +296,9 @@ export default function ReportConto({ clienteId, mandatoId = null, anno = null, 
                                     {perAnno.map(a => (
                                         <tr key={a.anno} className="border-b border-white/5 last:border-0">
                                             <td className="px-3 py-2 font-body text-xs text-nebbia/70">{a.anno}</td>
-                                            <td className="px-3 py-2 text-right font-body text-xs text-salvia/80">{a.entrate ? `€ ${fmtEUR(a.entrate)}` : '—'}</td>
-                                            <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{a.uscite ? `€ ${fmtEUR(a.uscite)}` : '—'}</td>
-                                            <td className={`px-3 py-2 text-right font-display text-sm ${a.saldo >= 0 ? 'text-salvia' : 'text-red-400'}`}>€ {fmtEUR(a.saldo)}</td>
+                                            <td className="px-3 py-2 text-right font-body text-xs text-salvia/80">{a.entrate ? `${formatImporto(a.entrate)}` : '—'}</td>
+                                            <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{a.uscite ? `${formatImporto(a.uscite)}` : '—'}</td>
+                                            <td className={`px-3 py-2 text-right font-display text-sm ${a.saldo >= 0 ? 'text-salvia' : 'text-red-400'}`}>{formatImporto(a.saldo)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -337,7 +338,7 @@ function Composizione({ titolo, tipo, righe }) {
                             <div key={i}>
                                 <div className="flex items-center justify-between mb-1 gap-2">
                                     <span className="font-body text-xs text-nebbia/70 truncate">{r.cat}</span>
-                                    <span className="font-body text-xs text-nebbia/40 shrink-0">€ {fmtEUR(r.val)} <span className="text-nebbia/25">({pct}%)</span></span>
+                                    <span className="font-body text-xs text-nebbia/40 shrink-0">{formatImporto(r.val)} <span className="text-nebbia/25">({pct}%)</span></span>
                                 </div>
                                 <div className="h-1.5 bg-white/5">
                                     <div className={`h-full ${barCls}`} style={{ width: `${(r.val / max) * 100}%` }} />

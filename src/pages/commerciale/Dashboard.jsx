@@ -8,13 +8,14 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, StatCard, EmptyState, LoadingSpinner, Badge } from '@/components/shared'
+import { formatImporto } from '@/lib/prezzi'
 import {
   Wallet, Clock, CheckCircle2, Users, CalendarDays, ArrowRight, Copy, Check,
   Link2 as LinkIcon,
 } from 'lucide-react'
 
 export const euro = (n) =>
-  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n ?? 0))
+  formatImporto(n)
 
 export const STATO_PROVVIGIONE = {
   maturata: { label: 'Da richiedere', variant: 'oro' },

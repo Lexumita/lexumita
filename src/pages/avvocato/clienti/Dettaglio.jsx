@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext'
 import GestioneMandati from '@/components/commercialista/GestioneMandati'
 import DocumentiPortale from '@/components/shared/DocumentiPortale'
 import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
+import { formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -736,7 +737,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                             Fattura <span className="text-nebbia/70">{fattura.numero}</span>
                         </p>
                         <p className="font-body text-xs text-nebbia/40">
-                            Residuo da incassare: <span className="text-oro font-medium">EUR {fmtEUR(residuo)}</span>
+                            Residuo da incassare: <span className="text-oro font-medium">{formatImporto(residuo)}</span>
                         </p>
                     </div>
 
@@ -861,11 +862,11 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-slate border border-white/5 p-4">
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Da incassare</p>
-                        <p className="font-display text-2xl font-semibold text-oro">EUR {fmtEUR(totaleAperto)}</p>
+                        <p className="font-display text-2xl font-semibold text-oro">{formatImporto(totaleAperto)}</p>
                     </div>
                     <div className="bg-slate border border-white/5 p-4">
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Incassato</p>
-                        <p className="font-display text-2xl font-semibold text-salvia">EUR {fmtEUR(totalePagato)}</p>
+                        <p className="font-display text-2xl font-semibold text-salvia">{formatImporto(totalePagato)}</p>
                     </div>
                 </div>
             )}
@@ -891,7 +892,7 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                                                 </div>
                                                 <div className="shrink-0"><Badge label={sc.label} variant={sc.variant} /></div>
                                             </div>
-                                            <p className="font-display text-2xl font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</p>
+                                            <p className="font-display text-2xl font-semibold text-oro">{formatImporto(fatt.totale_lordo ?? fatt.importo)}</p>
                                             {fatt.descrizione && (
                                                 <p className="font-body text-xs text-nebbia/50 leading-relaxed break-words">{fatt.descrizione}</p>
                                             )}
@@ -934,7 +935,7 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                                             return (
                                                 <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro">EUR {fmtEUR(fatt.totale_lordo ?? fatt.importo)}</td>
+                                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro">{formatImporto(fatt.totale_lordo ?? fatt.importo)}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>

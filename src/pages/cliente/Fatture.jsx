@@ -5,6 +5,7 @@ import { PageHeader, Badge } from '@/components/shared'
 import { CreditCard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTipoStudio } from '@/hooks/useTipoStudio'
+import { formatImporto } from '@/lib/prezzi'
 
 const STATO_CFG = {
     in_attesa: { label: 'Da pagare', variant: 'warning' },
@@ -46,7 +47,7 @@ export default function ClienteFatture() {
                     <CreditCard size={16} className="text-amber-400 shrink-0" />
                     <div>
                         <p className="font-body text-sm font-medium text-amber-400">
-                            Totale da pagare: € {totaleAperto.toFixed(2)}
+                            Totale da pagare: {formatImporto(totaleAperto)}
                         </p>
                         <p className="font-body text-xs text-amber-400/60 mt-0.5">
                             Contatta il tuo {labelProfessionista.toLowerCase()} per le modalità di pagamento.
@@ -91,7 +92,7 @@ export default function ClienteFatture() {
                                             <span className="shrink-0"><Badge label={st.label} variant={st.variant} /></span>
                                         </div>
                                         <p className="font-display text-xl font-semibold text-oro">
-                                            € {parseFloat(f.importo).toFixed(2)}
+                                            {formatImporto(f.importo)}
                                         </p>
                                         <p className="font-body text-sm text-nebbia/70 break-words">
                                             {f.pratica?.titolo ?? f.descrizione ?? '—'}
@@ -132,7 +133,7 @@ export default function ClienteFatture() {
                                                 {f.pratica?.titolo ?? f.descrizione ?? '—'}
                                             </td>
                                             <td className="px-4 py-3 font-display text-sm font-semibold text-oro">
-                                                € {parseFloat(f.importo).toFixed(2)}
+                                                {formatImporto(f.importo)}
                                             </td>
                                             <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                                                 {f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}

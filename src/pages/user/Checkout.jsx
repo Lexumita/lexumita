@@ -5,6 +5,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { AlertCircle, Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatPrezzo } from '@/lib/prezzi'
+import { etichettaDurata } from '@/lib/vociPiano'
 
 export default function UserCheckout() {
     const { profile } = useAuth()
@@ -97,21 +99,9 @@ export default function UserCheckout() {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div>
                         <p className="font-display text-xl font-semibold text-nebbia">{prodotto.nome}</p>
-                        <p className="font-body text-xs text-nebbia/40 mt-1">
-                            {prodotto.durata_mesi ? `${prodotto.durata_mesi} mesi` : '—'}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                            <span className={`font-body text-[10px] px-2 py-0.5 border ${prodotto.include_banca_dati ? 'border-oro/30 text-oro' : 'border-white/10 text-nebbia/30'}`}>
-                                {prodotto.include_banca_dati ? 'Pro' : 'Base'}
-                            </span>
-                            {prodotto.include_monetizzazione && (
-                                <span className="font-body text-[10px] px-2 py-0.5 border border-salvia/30 text-salvia">
-                                    Monetizzazione
-                                </span>
-                            )}
-                        </div>
+                        <p className="font-body text-xs text-nebbia/40 mt-1">{etichettaDurata(prodotto)}</p>
                     </div>
-                    <p className="font-display text-3xl sm:text-4xl font-light text-oro shrink-0">EUR {prodotto.prezzo}</p>
+                    <p className="font-display text-3xl sm:text-4xl font-light text-oro shrink-0">{formatPrezzo(prodotto.prezzo)}</p>
                 </div>
                 <button
                     onClick={() => navigate('/abbonamenti')}
@@ -124,7 +114,7 @@ export default function UserCheckout() {
             {/* Totale */}
             <div className="flex justify-between items-center px-1 py-2 border-t border-white/5">
                 <span className="font-body text-sm text-nebbia/50">Totale da pagare</span>
-                <span className="font-display text-3xl font-semibold text-oro">EUR {prodotto.prezzo}</span>
+                <span className="font-display text-3xl font-semibold text-oro">{formatPrezzo(prodotto.prezzo)}</span>
             </div>
 
             {/* Info */}

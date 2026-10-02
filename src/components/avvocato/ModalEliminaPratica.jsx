@@ -11,6 +11,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2, X, AlertCircle, AlertTriangle, ExternalLink, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 function fmtEUR(n) {
     const v = Number(n ?? 0)
@@ -123,7 +124,7 @@ export default function ModalEliminaPratica({ pratica, onClose, onEliminata }) {
                                             <div className="min-w-0">
                                                 <p className="font-body text-sm text-nebbia">{f.numero}</p>
                                                 <p className="font-body text-xs text-nebbia/40 mt-0.5">
-                                                    {STATO_LABEL[f.stato] ?? f.stato} · EUR {fmtEUR(f.totale_lordo)}
+                                                    {STATO_LABEL[f.stato] ?? f.stato} · {formatImporto(f.totale_lordo)}
                                                 </p>
                                             </div>
                                         </div>

@@ -248,7 +248,7 @@ export default function PerCommercialisti() {
                                                     <Sparkles size={10} /> Lex AI
                                                 </p>
                                                 <p className="font-body text-xs text-nebbia/55 leading-relaxed">
-                                                    Rossi srl e in contabilita ordinaria. A luglio hai: liquidazione IVA del secondo trimestre (16/07), F24 dei contributi dipendenti (16/07) e la LIPE del Q2 (entro fine mese). Il secondo acconto IRES e IRAP e a novembre, non a luglio. Il primo acconto versato a giugno era di EUR 3.240,00; il saldo stimato per novembre e di EUR 4.860,00. Ho gia predisposto il modello F24 in bozza per la tua revisione.
+                                                    Rossi srl e in contabilita ordinaria. A luglio hai: liquidazione IVA del secondo trimestre (16/07), F24 dei contributi dipendenti (16/07) e la LIPE del Q2 (entro fine mese). Il secondo acconto IRES e IRAP e a novembre, non a luglio. Il primo acconto versato a giugno era di 3.240,00 €; il saldo stimato per novembre e di 4.860,00 €. Ho gia predisposto il modello F24 in bozza per la tua revisione.
                                                 </p>
                                                 <div className="flex gap-1 pt-1 flex-wrap">
                                                     <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">IVA Q2</span>
@@ -271,9 +271,9 @@ export default function PerCommercialisti() {
                                             {[
                                                 { l: 'Data', v: '28/06/2026' },
                                                 { l: 'Descrizione', v: 'Enel Energia - utenza sede' },
-                                                { l: 'Imponibile', v: 'EUR 184,50' },
-                                                { l: 'IVA 22%', v: 'EUR 40,59' },
-                                                { l: 'Totale', v: 'EUR 225,09', c: 'text-salvia' },
+                                                { l: 'Imponibile', v: '184,50 €' },
+                                                { l: 'IVA 22%', v: '40,59 €' },
+                                                { l: 'Totale', v: '225,09 €', c: 'text-salvia' },
                                             ].map(({ l, v, c }) => (
                                                 <div key={l} className="flex justify-between py-1 border-b border-white/5">
                                                     <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{l}</span>
@@ -495,10 +495,10 @@ export default function PerCommercialisti() {
                             <div className="space-y-3">
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { l: 'Entrate 2026', v: 'EUR 128.400', c: 'text-salvia' },
-                                        { l: 'Uscite 2026', v: 'EUR 96.150', c: 'text-oro' },
-                                        { l: 'Risultato', v: 'EUR 32.250', c: 'text-salvia' },
-                                        { l: 'Liquidita', v: 'EUR 41.900', c: 'text-nebbia/70' },
+                                        { l: 'Entrate 2026', v: '128.400 €', c: 'text-salvia' },
+                                        { l: 'Uscite 2026', v: '96.150 €', c: 'text-oro' },
+                                        { l: 'Risultato', v: '32.250 €', c: 'text-salvia' },
+                                        { l: 'Liquidita', v: '41.900 €', c: 'text-nebbia/70' },
                                     ].map(({ l, v, c }) => (
                                         <div key={l} className="bg-petrolio/50 border border-white/5 p-3">
                                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">{l}</p>
@@ -671,18 +671,18 @@ export default function PerCommercialisti() {
                                     ].map(({ l, v, c }) => (
                                         <div key={l} className="flex justify-between text-[11px]">
                                             <span className={`font-body ${c}`}>{l}</span>
-                                            <span className={`font-body ${c}`}>EUR {v}</span>
+                                            <span className={`font-body ${c}`}>{v}&nbsp;€</span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between pt-2 mt-1 border-t border-white/5">
                                         <span className="font-body text-xs text-nebbia/70">Costo aziendale pieno</span>
-                                        <span className="font-body text-sm text-salvia font-medium">EUR 38.810,00</span>
+                                        <span className="font-body text-sm text-salvia font-medium">38.810,00 €</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 p-2 bg-salvia/5 border border-salvia/15">
                                     <Users size={11} className="text-salvia shrink-0" />
                                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
-                                        6 dipendenti in organico - costo del personale del cliente <span className="text-salvia">EUR 214.600</span>.
+                                        6 dipendenti in organico - costo del personale del cliente <span className="text-salvia">214.600 €</span>.
                                     </p>
                                 </div>
                             </div>
@@ -881,8 +881,8 @@ export default function PerCommercialisti() {
                             <span className="text-oro">dentro Lexum.</span>
                         </h2>
                         <p className="font-body text-base text-nebbia/45 leading-relaxed mb-10 max-w-xl mx-auto">
-                            Registrati e inizia dal primo cliente. La verifica della professione conferma
-                            che sei un commercialista e abilita l'ambiente completo dello studio.
+                            Registrati, completa i dati di fatturazione e scegli il piano: l'ambiente completo
+                            dello studio si attiva subito, senza attese né approvazioni.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                             <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-xl shadow-oro/20">
@@ -893,7 +893,7 @@ export default function PerCommercialisti() {
                             </Link>
                         </div>
                         <p className="font-body text-xs text-nebbia/25">
-                            Registrazione con verifica della professione. Nessuna carta richiesta.
+                            Registrazione gratuita. Nessuna carta richiesta per iniziare.
                         </p>
                     </FadeIn>
                 </div>

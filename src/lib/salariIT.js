@@ -1,3 +1,5 @@
+import { formatImporto } from './prezzi'
+
 // src/lib/salariIT.js
 //
 // Helper PURI per il costo del personale (dipendenti/soci) del cliente-azienda.
@@ -10,15 +12,14 @@
 
 // € con 2 decimali
 export function fmtEUR(n) {
-    return `€ ${Number(n || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    return formatImporto(n || 0)
 }
 
 // Salario per la lista (lordo con periodicità)
 export function fmtSalario(d) {
     if (d.salario === null || d.salario === undefined) return null
-    const v = Number(d.salario).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const suffix = d.salario_periodicita === 'mensile' ? '/mese' : '/anno'
-    return `€ ${v}${suffix}`
+    return `${formatImporto(d.salario)}${suffix}`
 }
 
 // Aliquote di default se non impostate sul dipendente (stima, editabile per dipendente)

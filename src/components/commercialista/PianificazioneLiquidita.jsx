@@ -18,6 +18,7 @@ import { Wallet, AlertTriangle, Edit2, Check, X, Loader2, Activity } from 'lucid
 import { supabase } from '@/lib/supabase'
 import { fmtEUR, proiezioneLiquidita, MESI_ABBR } from '@/lib/cassa'
 import { costoPersonaleMeseAttivi, bonusDelMese } from '@/lib/salariIT'
+import { formatImporto } from '@/lib/prezzi'
 
 const oggiISO = () => new Date().toISOString().slice(0, 10)
 
@@ -126,7 +127,7 @@ export default function PianificazioneLiquidita({ clienteId, mandatoId = null, r
                         className="flex items-center gap-2 px-3 py-1.5 border border-white/10 hover:border-oro/30 transition-colors group">
                         <Wallet size={13} className="text-oro/60" />
                         <span className="font-body text-sm text-nebbia">
-                            {saldo ? `€ ${fmtEUR(saldo.importo)}` : 'Imposta saldo cassa'}
+                            {saldo ? `${formatImporto(saldo.importo)}` : 'Imposta saldo cassa'}
                         </span>
                         {saldo && <span className="font-body text-[11px] text-nebbia/30">al {new Date(saldo.data).toLocaleDateString('it-IT')}</span>}
                         <Edit2 size={11} className="text-nebbia/30 group-hover:text-oro transition-colors" />
@@ -156,15 +157,15 @@ export default function PianificazioneLiquidita({ clienteId, mandatoId = null, r
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                         <div className="bg-slate border border-white/10 p-4">
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">Saldo attuale</p>
-                            <p className="font-display text-xl text-nebbia">€ {fmtEUR(proj.saldoIniziale)}</p>
+                            <p className="font-display text-xl text-nebbia">{formatImporto(proj.saldoIniziale)}</p>
                         </div>
                         <div className="bg-slate border border-white/10 p-4">
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">Saldo fra 12 mesi</p>
-                            <p className={`font-display text-xl ${proj.saldoFinale >= 0 ? 'text-salvia' : 'text-red-400'}`}>€ {fmtEUR(proj.saldoFinale)}</p>
+                            <p className={`font-display text-xl ${proj.saldoFinale >= 0 ? 'text-salvia' : 'text-red-400'}`}>{formatImporto(proj.saldoFinale)}</p>
                         </div>
                         <div className={`bg-slate border p-4 ${proj.saldoMin < 0 ? 'border-red-500/40' : 'border-white/10'}`}>
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">Punto minimo</p>
-                            <p className={`font-display text-xl ${proj.saldoMin < 0 ? 'text-red-400' : 'text-nebbia'}`}>€ {fmtEUR(proj.saldoMin)}</p>
+                            <p className={`font-display text-xl ${proj.saldoMin < 0 ? 'text-red-400' : 'text-nebbia'}`}>{formatImporto(proj.saldoMin)}</p>
                             {proj.minBucket && (
                                 <p className="font-body text-[10px] text-nebbia/25 mt-0.5 capitalize">{MESI_ABBR[proj.minBucket.mese]} {proj.minBucket.anno}</p>
                             )}
@@ -176,7 +177,7 @@ export default function PianificazioneLiquidita({ clienteId, mandatoId = null, r
                         <div className="flex items-start gap-2 text-red-400 text-sm font-body p-3 bg-red-900/10 border border-red-500/25">
                             <AlertTriangle size={15} className="shrink-0 mt-0.5" />
                             <span>
-                                Attenzione: la liquidità va sotto zero a <span className="font-medium capitalize">{MESI_ABBR[proj.primaSottoZero.mese]} {proj.primaSottoZero.anno}</span> (€ {fmtEUR(proj.primaSottoZero.saldoFine)}).
+                                Attenzione: la liquidità va sotto zero a <span className="font-medium capitalize">{MESI_ABBR[proj.primaSottoZero.mese]} {proj.primaSottoZero.anno}</span> ({formatImporto(proj.primaSottoZero.saldoFine)}).
                             </span>
                         </div>
                     )}
@@ -189,7 +190,7 @@ export default function PianificazioneLiquidita({ clienteId, mandatoId = null, r
                                 const pos = b.saldoFine >= 0
                                 return (
                                     <div key={i} className="flex-1 flex flex-col items-center"
-                                        title={`${MESI_ABBR[b.mese]} ${b.anno} · saldo € ${fmtEUR(b.saldoFine)} · netto € ${fmtEUR(b.netto)}`}>
+                                        title={`${MESI_ABBR[b.mese]} ${b.anno} · saldo ${formatImporto(b.saldoFine)} · netto ${formatImporto(b.netto)}`}>
                                         <div className="flex-1 w-full flex items-end justify-center">
                                             {pos && <div className="w-3/5 bg-salvia/50 hover:bg-salvia/80 transition-colors" style={{ height: `${h}px` }} />}
                                         </div>
@@ -222,11 +223,11 @@ export default function PianificazioneLiquidita({ clienteId, mandatoId = null, r
                                 {proj.buckets.map((b, i) => (
                                     <tr key={i} className="border-b border-white/5 last:border-0">
                                         <td className="px-3 py-2 font-body text-xs text-nebbia/70 capitalize">{MESI_ABBR[b.mese]} {b.anno}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-salvia/80">{b.entrate ? `€ ${fmtEUR(b.entrate)}` : '—'}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{b.uscite ? `€ ${fmtEUR(b.uscite)}` : '—'}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{b.salari ? `€ ${fmtEUR(b.salari)}` : '—'}</td>
-                                        <td className={`px-3 py-2 text-right font-body text-xs ${b.netto >= 0 ? 'text-nebbia/60' : 'text-red-400/80'}`}>€ {fmtEUR(b.netto)}</td>
-                                        <td className={`px-3 py-2 text-right font-display text-sm ${b.saldoFine >= 0 ? 'text-nebbia' : 'text-red-400'}`}>€ {fmtEUR(b.saldoFine)}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-salvia/80">{b.entrate ? `${formatImporto(b.entrate)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{b.uscite ? `${formatImporto(b.uscite)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-oro/70">{b.salari ? `${formatImporto(b.salari)}` : '—'}</td>
+                                        <td className={`px-3 py-2 text-right font-body text-xs ${b.netto >= 0 ? 'text-nebbia/60' : 'text-red-400/80'}`}>{formatImporto(b.netto)}</td>
+                                        <td className={`px-3 py-2 text-right font-display text-sm ${b.saldoFine >= 0 ? 'text-nebbia' : 'text-red-400'}`}>{formatImporto(b.saldoFine)}</td>
                                     </tr>
                                 ))}
                             </tbody>

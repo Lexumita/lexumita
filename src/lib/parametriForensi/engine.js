@@ -138,7 +138,7 @@ export function calcolaParcella(input) {
   compensoFasi = r2(compensoFasi)
 
   if (scaglione?.computato) {
-    note.push('Scaglione oltre € 520.000: valori calcolati per progressione (art. 6). Verificare.')
+    note.push('Scaglione oltre 520.000 €: valori calcolati per progressione (art. 6). Verificare.')
   }
 
   // Aumenti (percentuale sul compenso delle fasi).

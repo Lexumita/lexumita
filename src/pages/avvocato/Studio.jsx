@@ -10,6 +10,8 @@ import {
     Sparkles, HardDrive, Clock
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatPrezzo, formatImporto } from '@/lib/prezzi'
+import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
 import { useAuth } from '@/context/AuthContext'
 
 // ─────────────────────────────────────────────────────────────
@@ -251,33 +253,21 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                                     className={`text-left p-4 border transition-all ${isSelezionato ? 'border-oro/50 bg-oro/10' : 'border-white/8 hover:border-oro/20'}`}
                                 >
                                     <p className="font-body text-sm font-medium text-nebbia mb-1">{p.nome}</p>
-                                    <p className="font-display text-2xl font-light text-oro mb-1">€ {p.prezzo}</p>
+                                    <p className="font-display text-2xl font-light text-oro mb-1">{formatPrezzo(p.prezzo)}</p>
                                     {differenza !== null && (
                                         <p className="font-body text-xs text-nebbia/40 mb-2">
-                                            Differenza: <span className={differenza > 0 ? 'text-amber-400' : 'text-salvia'}>€ {Math.abs(differenza)}</span>
+                                            Differenza: <span className={differenza > 0 ? 'text-amber-400' : 'text-salvia'}>{formatPrezzo(Math.abs(differenza))}</span>
                                         </p>
                                     )}
-                                    <p className="font-body text-xs text-nebbia/40 mb-2">
-                                        {p.posti ? `${p.posti} ${p.posti === 1 ? 'accesso' : 'accessi'}` : '—'}
-                                        {p.durata_mesi && ` · ${p.durata_mesi} mesi`}
-                                    </p>
-                                    <div className="flex gap-1.5 flex-wrap">
-                                        {p.include_banca_dati && (
-                                            <span className="font-body text-[10px] px-1.5 py-0.5 border border-oro/30 text-oro">Banca dati</span>
-                                        )}
-                                        {p.include_monetizzazione && (
-                                            <span className="font-body text-[10px] px-1.5 py-0.5 border border-salvia/30 text-salvia">Monetizzazione</span>
-                                        )}
-                                        {p.crediti_ai_mensili > 0 && (
-                                            <span className="font-body text-[10px] px-1.5 py-0.5 border border-salvia/30 text-salvia">{p.crediti_ai_mensili} crediti/mese</span>
-                                        )}
-                                        {p.spazio_gb > 0 && (
-                                            <span className="font-body text-[10px] px-1.5 py-0.5 border border-salvia/30 text-salvia">{p.spazio_gb} GB</span>
-                                        )}
-                                        {p.posti > 1 && (
-                                            <span className="font-body text-[10px] px-1.5 py-0.5 border border-white/10 text-nebbia/40">Studio</span>
-                                        )}
-                                    </div>
+                                    <p className="font-body text-xs text-nebbia/40 mb-2">{etichettaDurata(p)}</p>
+                                    <ul className="space-y-1">
+                                        {vociPiano(p).map(v => (
+                                            <li key={v} className="flex items-start gap-1.5 font-body text-[11px] text-nebbia/50">
+                                                <CheckCircle size={10} className="text-salvia shrink-0 mt-0.5" />
+                                                <span>{v}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </button>
                             )
                         })}
@@ -293,7 +283,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                                 <p className="font-body text-xs text-nebbia/40 mt-0.5">
                                     Importo da pagare:{' '}
                                     <span className="text-nebbia/70">
-                                        € {pianoAttualeId ? Math.max(pianoProposto.prezzo - prezzoAttuale, 0) : pianoProposto.prezzo}
+                                        {formatPrezzo(pianoAttualeId ? Math.max(pianoProposto.prezzo - prezzoAttuale, 0) : pianoProposto.prezzo)}
                                     </span>
                                     {pianoAttualeId && <span className="text-nebbia/30"> · scadenza invariata</span>}
                                 </p>
@@ -325,7 +315,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                             <div key={a.id} className="bg-slate border border-white/5 p-4 space-y-3">
                                 <p className="font-body text-sm font-medium text-nebbia">{a.nome}</p>
                                 <p className="font-body text-xs text-nebbia/40">+{a.posti} {a.posti === 1 ? 'accesso' : 'accessi'}</p>
-                                <p className="font-display text-2xl font-light text-oro">€ {a.prezzo}</p>
+                                <p className="font-display text-2xl font-light text-oro">{formatPrezzo(a.prezzo)}</p>
                                 <p className="font-body text-xs text-nebbia/30">Accessi: {postiAttuali} → {postiAttuali + (a.posti ?? 1)}</p>
                                 <button onClick={() => acquista(a.id, false)} disabled={acquistando === a.id}
                                     className="btn-secondary text-sm w-full justify-center disabled:opacity-40">
@@ -349,7 +339,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                             <div key={c.id} className="bg-slate border border-white/5 hover:border-salvia/30 p-4 space-y-3 transition-colors">
                                 <p className="font-body text-sm font-medium text-nebbia">{c.nome}</p>
                                 <p className="font-body text-xs text-nebbia/40">+{c.limite_clienti} clienti</p>
-                                <p className="font-display text-2xl font-light text-oro">€ {c.prezzo}</p>
+                                <p className="font-display text-2xl font-light text-oro">{formatPrezzo(c.prezzo)}</p>
                                 <p className="font-body text-[10px] text-nebbia/30 italic">Listino · pro-rata applicato al checkout</p>
                                 <button onClick={() => acquista(c.id, false)} disabled={acquistando === c.id}
                                     className="btn-secondary text-sm w-full justify-center disabled:opacity-40">
@@ -375,9 +365,9 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                                     <Sparkles size={13} className="text-salvia" />
                                     <p className="font-body text-sm font-medium text-nebbia">{p.nome}</p>
                                 </div>
-                                <p className="font-display text-2xl font-light text-salvia">€ {p.prezzo}</p>
+                                <p className="font-display text-2xl font-light text-salvia">{formatPrezzo(p.prezzo)}</p>
                                 <p className="font-body text-xs text-nebbia/40">
-                                    {p.crediti_ai_mensili} crediti · €{(p.prezzo / p.crediti_ai_mensili).toFixed(2)}/credito
+                                    {p.crediti_ai_mensili} crediti · {formatPrezzo(Math.round((p.prezzo / p.crediti_ai_mensili) * 100) / 100)} a credito
                                 </p>
                                 <p className="font-body text-[10px] text-nebbia/30 italic">Non scadono mai</p>
                                 <button onClick={() => acquista(p.id, false)} disabled={acquistando === p.id}
@@ -416,7 +406,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, scad
                                             <HardDrive size={13} className="text-salvia" />
                                             <p className="font-body text-sm font-medium text-nebbia">{s.nome}</p>
                                         </div>
-                                        <p className="font-display text-2xl font-light text-salvia">€ {s.prezzo}</p>
+                                        <p className="font-display text-2xl font-light text-salvia">{formatPrezzo(s.prezzo)}</p>
                                         <p className="font-body text-xs text-nebbia/40">
                                             {s.spazio_gb} GB · {s.durata_mesi} {s.durata_mesi === 1 ? 'mese' : 'mesi'}
                                         </p>
@@ -524,7 +514,7 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
                                 <div className="flex items-start justify-between gap-3">
                                     <p className="font-body text-sm text-nebbia min-w-0 break-words">{s.prodotto_nome ?? '—'}</p>
                                     <p className="font-body text-sm font-medium text-oro shrink-0 whitespace-nowrap">
-                                        {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
+                                        {parseFloat(s.importo ?? 0) === 0 ? '—' : formatImporto(s.importo)}
                                     </p>
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
@@ -552,7 +542,7 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
                                     <tr key={s.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                         <td className="px-4 py-3 font-body text-sm text-nebbia">{s.prodotto_nome ?? '—'}</td>
                                         <td className="px-4 py-3 font-body text-sm font-medium text-oro">
-                                            {parseFloat(s.importo ?? 0) === 0 ? '—' : `€ ${parseFloat(s.importo).toFixed(2)}`}
+                                            {parseFloat(s.importo ?? 0) === 0 ? '—' : formatImporto(s.importo)}
                                         </td>
                                         <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                                             {new Date(s.created_at).toLocaleDateString('it-IT')}
@@ -986,8 +976,8 @@ export default function AvvocatoStudio() {
                         <p className="section-label">Perché avere un piano?</p>
                         {[
                             ['Gestione clienti', 'Crea e gestisci i tuoi clienti, pratiche e documenti in un unico posto'],
-                            ['Banca dati sentenze', 'Accedi a migliaia di sentenze caricate da altri avvocati (piani Pro)'],
-                            ['Monetizzazione', 'Carica le tue sentenze e guadagna ogni volta che vengono acquistate (piani Pro)'],
+                            ['Banca Dati completa', 'Norme, giurisprudenza e prassi, con i crediti Lex AI inclusi ogni mese'],
+                            ['Documenti, fatture e calendario', 'Generatore di documenti, emissione di fatture e calendario degli appuntamenti'],
                             ['Studio multi-accesso', 'Invita collaboratori e gestite insieme clienti e pratiche'],
                         ].map(([titolo, desc]) => (
                             <div key={titolo} className="flex items-start gap-3 py-2 border-b border-white/5 last:border-0">

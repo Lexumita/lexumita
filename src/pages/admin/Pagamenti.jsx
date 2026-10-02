@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ModalGeneraAcquisto from '@/components/admin/ModalGeneraAcquisto'
+import { formatImporto } from '@/lib/prezzi'
 
 const STATO_PAG_BADGE = {
     completato: { label: 'Completato', variant: 'salvia' },
@@ -124,7 +125,7 @@ function TabPagamenti() {
         <div className="space-y-4">
             {/* 6 stats: Revenue + 4 tipi + Falliti */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <StatCard label="Revenue totale" value={`€ ${totale.toFixed(2)}`} colorClass="text-oro" />
+                <StatCard label="Revenue totale" value={`${formatImporto(totale)}`} colorClass="text-oro" />
                 <StatCard label="Abbonamenti" value={nAbb} colorClass="text-salvia" />
                 <StatCard label="Crediti AI" value={nCrediti} colorClass="text-salvia" />
                 <StatCard label="Storage" value={nStorage} colorClass="text-salvia" />
@@ -200,7 +201,7 @@ function TabPagamenti() {
                                             {p.utente?.studio && <p className="font-body text-xs text-nebbia/30 mt-0.5">{p.utente.studio}</p>}
                                         </td>
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/70">{p.prodotto_nome ?? '—'}</td>
-                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium">€ {parseFloat(p.importo).toFixed(2)}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium">{formatImporto(p.importo)}</td>
                                         <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                                         <td className="px-4 py-3"><Badge label={sb.label} variant={sb.variant} /></td>
                                     </tr>
@@ -265,8 +266,8 @@ function TabCompensi() {
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
-                <StatCard label="Da liquidare" value={`€ ${daLiquidare.toFixed(2)}`} colorClass="text-amber-400" />
-                <StatCard label="Già liquidato" value={`€ ${liquidato.toFixed(2)}`} colorClass="text-salvia" />
+                <StatCard label="Da liquidare" value={`${formatImporto(daLiquidare)}`} colorClass="text-amber-400" />
+                <StatCard label="Già liquidato" value={`${formatImporto(liquidato)}`} colorClass="text-salvia" />
                 <StatCard label="Righe totali" value={dati.length} colorClass="text-nebbia/60" />
             </div>
 
@@ -335,8 +336,8 @@ function TabCompensi() {
                                             <p className="font-body text-sm font-medium text-nebbia">Avv. {avv}</p>
                                             {c.sentenza?.autore?.studio && <p className="font-body text-xs text-nebbia/30 mt-0.5">{c.sentenza.autore.studio}</p>}
                                         </td>
-                                        <td className="px-4 py-3 font-body text-sm text-nebbia/60">€ {parseFloat(c.prezzo ?? 0).toFixed(2)}</td>
-                                        <td className="px-4 py-3 font-body text-sm text-salvia font-medium">€ {parseFloat(c.quota_autore ?? 0).toFixed(2)}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-nebbia/60">{formatImporto(c.prezzo ?? 0)}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-salvia font-medium">{formatImporto(c.quota_autore ?? 0)}</td>
                                         <td className="px-4 py-3"><Badge label={sb.label} variant={sb.variant} /></td>
                                     </tr>
                                 )
@@ -411,7 +412,7 @@ function TabRichieste() {
                         ['Avvocato', `Avv. ${selected.avvocato?.nome ?? ''} ${selected.avvocato?.cognome ?? ''}`],
                         ['Studio', selected.avvocato?.studio ?? '—'],
                         ['Data richiesta', new Date(selected.created_at).toLocaleDateString('it-IT')],
-                        ['Importo richiesto', `€ ${parseFloat(selected.importo).toFixed(2)}`],
+                        ['Importo richiesto', `${formatImporto(selected.importo)}`],
                     ].map(([l, v]) => (
                         <div key={l} className="flex justify-between border-b border-white/5 pb-2">
                             <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>
@@ -495,7 +496,7 @@ function TabRichieste() {
                                             <p className="font-body text-sm font-medium text-nebbia">{nome}</p>
                                             {r.avvocato?.studio && <p className="font-body text-xs text-nebbia/30 mt-0.5">{r.avvocato.studio}</p>}
                                         </td>
-                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium">€ {parseFloat(r.importo).toFixed(2)}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-oro font-medium">{formatImporto(r.importo)}</td>
                                         <td className="px-4 py-3"><Badge label={sb.label} variant={sb.variant} /></td>
                                         <td className="px-4 py-3 text-right">
                                             {r.stato === 'in_attesa' && (

@@ -14,6 +14,7 @@ import {
 } from '@/lib/parametriForensi/catalogo'
 import { calcolaParcella, scaglioneDaValore, fasiDisponibili } from '@/lib/parametriForensi/engine'
 import { hasDati, metaTabella } from '@/lib/parametriForensi/tabelle'
+import { formatImporto } from '@/lib/prezzi'
 
 function fmtEUR(n) {
   return Number(n ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -322,19 +323,19 @@ export default function CalcolaParcellaModal({ onClose, onInserisci }) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div>
                   <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Compenso</p>
-                  <p className="font-body text-sm text-nebbia">€ {fmtEUR(rp?.compenso)}</p>
+                  <p className="font-body text-sm text-nebbia">{formatImporto(rp?.compenso)}</p>
                 </div>
                 <div>
                   <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Imponibile</p>
-                  <p className="font-body text-sm text-nebbia">€ {fmtEUR(rp?.imponibile)}</p>
+                  <p className="font-body text-sm text-nebbia">{formatImporto(rp?.imponibile)}</p>
                 </div>
                 <div>
                   <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">Tot. fattura</p>
-                  <p className="font-body text-sm font-semibold text-oro">€ {fmtEUR(rp?.totaleLordo)}</p>
+                  <p className="font-body text-sm font-semibold text-oro">{formatImporto(rp?.totaleLordo)}</p>
                 </div>
                 <div>
                   <p className="font-body text-xs sm:text-[10px] text-nebbia/30 uppercase tracking-widest">{applicaRitenuta ? 'Netto' : 'Righe'}</p>
-                  <p className="font-body text-sm text-salvia">{applicaRitenuta ? `€ ${fmtEUR(rp?.totaleNetto)}` : (risultato.righe?.length ?? 0)}</p>
+                  <p className="font-body text-sm text-salvia">{applicaRitenuta ? `${formatImporto(rp?.totaleNetto)}` : (risultato.righe?.length ?? 0)}</p>
                 </div>
               </div>
 

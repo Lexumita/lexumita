@@ -10,6 +10,7 @@ import {
   Calendar, Scale, BookOpen, Landmark
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -212,7 +213,7 @@ export function AdminSentenze() {
         <StatCard label="Sospese" value={stats.byStato.sospesa} colorClass="text-nebbia/40" />
         <StatCard
           label="Guadagni generati"
-          value={`EUR ${stats.guadagnoTot.toFixed(2)}`}
+          value={`${formatImporto(stats.guadagnoTot)}`}
           colorClass="text-oro"
         />
       </div>
@@ -358,7 +359,7 @@ export function AdminSentenze() {
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">{s.anno ?? '—'}</td>
                     <td className="px-4 py-3 font-body text-sm text-oro">{s.accessi ?? 0}</td>
                     <td className="px-4 py-3 font-body text-sm text-salvia">
-                      EUR {(guadagni[s.id] ?? 0).toFixed(2)}
+                      {formatImporto(guadagni[s.id] ?? 0)}
                     </td>
                     <td className="px-4 py-3"><Badge label={sb.label} variant={sb.variant} /></td>
                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
@@ -512,7 +513,7 @@ export function AdminSentenzeDettaglio() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Accessi" value={nAccessi} colorClass="text-oro" />
-        <StatCard label="Guadagno" value={`EUR ${guadagno.toFixed(2)}`} colorClass="text-salvia" />
+        <StatCard label="Guadagno" value={`${formatImporto(guadagno)}`} colorClass="text-salvia" />
         <StatCard label="Caricata" value={new Date(s.created_at).toLocaleDateString('it-IT')} colorClass="text-nebbia/50" />
         <StatCard label="Aggiornata" value={s.updated_at ? new Date(s.updated_at).toLocaleDateString('it-IT') : '—'} colorClass="text-nebbia/50" />
       </div>

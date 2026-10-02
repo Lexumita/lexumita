@@ -15,6 +15,7 @@ import { FileText, TrendingUp, TrendingDown, Loader2, AlertCircle, ShieldAlert, 
 import { supabase } from '@/lib/supabase'
 import { fmtEUR } from '@/lib/cassa'
 import FormMovimento from './FormMovimento'
+import { formatImporto } from '@/lib/prezzi'
 
 function AssegnaMovimento({ doc, mandatoId, clienteId, onMovimentoChange }) {
     const [movimenti, setMovimenti] = useState([])
@@ -93,7 +94,7 @@ function AssegnaMovimento({ doc, mandatoId, clienteId, onMovimentoChange }) {
                     {movimenti.map(m => (
                         <div key={m.id} className="flex items-center gap-2 text-xs font-body">
                             {m.tipo === 'entrata' ? <TrendingUp size={10} className="text-salvia" /> : <TrendingDown size={10} className="text-oro" />}
-                            <span className="text-nebbia/70">€ {fmtEUR(m.importo)}</span>
+                            <span className="text-nebbia/70">{formatImporto(m.importo)}</span>
                             {m.origine === 'ocr' && !m.verificato && (
                                 <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border border-amber-400/30 text-amber-400"><ShieldAlert size={9} /> da verificare</span>
                             )}

@@ -12,6 +12,7 @@ import {
     ChevronLeft, Calendar, Scale, Building2,
     FileText, ExternalLink, AlertCircle, Search, X
 } from 'lucide-react'
+import { formatPrezzo } from '@/lib/prezzi'
 
 // ═══════════════════════════════════════════════════════════════
 // AggiungiAPratica — popover inline (clone del pattern di BancaDati)
@@ -409,7 +410,7 @@ export default function SentenzaTributariaDettaglio() {
                         <div>
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Valore controversia</p>
                             <p className="font-body text-sm text-nebbia/70">
-                                EUR {Number(sentenza.valore_controversia).toLocaleString('it-IT')}
+                                {formatPrezzo(sentenza.valore_controversia)}
                             </p>
                         </div>
                     )}
@@ -546,7 +547,7 @@ export default function SentenzaTributariaDettaglio() {
                             <div>
                                 <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Spese parte</p>
                                 <p className="font-body text-sm text-nebbia/70">
-                                    EUR {Number(sentenza.importo_spese_parte).toLocaleString('it-IT')}
+                                    {formatPrezzo(sentenza.importo_spese_parte)}
                                 </p>
                             </div>
                         )}
@@ -554,7 +555,7 @@ export default function SentenzaTributariaDettaglio() {
                             <div>
                                 <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Spese ufficio</p>
                                 <p className="font-body text-sm text-nebbia/70">
-                                    EUR {Number(sentenza.importo_spese_ufficio).toLocaleString('it-IT')}
+                                    {formatPrezzo(sentenza.importo_spese_ufficio)}
                                 </p>
                             </div>
                         )}

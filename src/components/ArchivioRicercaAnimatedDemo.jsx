@@ -174,7 +174,7 @@ export default function ArchivioRicercaAnimatedDemo() {
                                 Contratto_locazione_Rossi.pdf
                             </p>
                             <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">
-                                "...il presente contratto avra durata di 4+4 anni a partire dal 01/09/2024, con canone mensile di EUR 1.200..."
+                                "...il presente contratto avra durata di 4+4 anni a partire dal 01/09/2024, con canone mensile di 1.200 €..."
                             </p>
                             <div className="flex gap-1 mt-2 flex-wrap">
                                 <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">

@@ -9,6 +9,7 @@ import {
     FileSignature, Wallet, Archive
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 const STATO_CONFIG = {
     pagata: { label: 'Pagata', variant: 'salvia' },
@@ -96,7 +97,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                             Fattura <span className="text-nebbia/70">{fattura.numero}</span>
                         </p>
                         <p className="font-body text-xs text-nebbia/40">
-                            Residuo da incassare: <span className="text-oro font-medium">EUR {fmtEUR(residuo)}</span>
+                            Residuo da incassare: <span className="text-oro font-medium">{formatImporto(residuo)}</span>
                         </p>
                     </div>
 
@@ -780,9 +781,9 @@ export default function AvvocatoFatturazioneDettaglio() {
                                     <p className="font-body text-sm text-nebbia leading-relaxed">{r.descrizione}</p>
                                     <div className="flex items-end justify-between gap-3">
                                         <p className="font-body text-xs text-nebbia/40">
-                                            {Number(r.quantita).toFixed(2)} x EUR {fmtEUR(r.prezzo_unitario)}
+                                            {Number(r.quantita).toFixed(2)} x {formatImporto(r.prezzo_unitario)}
                                         </p>
-                                        <p className="font-display text-base text-oro whitespace-nowrap">EUR {fmtEUR(r.totale)}</p>
+                                        <p className="font-display text-base text-oro whitespace-nowrap">{formatImporto(r.totale)}</p>
                                     </div>
                                 </div>
                             ))}
@@ -806,8 +807,8 @@ export default function AvvocatoFatturazioneDettaglio() {
                                     <tr key={r.id} className="border-b border-white/5">
                                         <td className="px-4 py-3 font-body text-sm text-nebbia">{r.descrizione}</td>
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">{Number(r.quantita).toFixed(2)}</td>
-                                        <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">EUR {fmtEUR(r.prezzo_unitario)}</td>
-                                        <td className="px-4 py-3 font-body text-sm font-medium text-oro whitespace-nowrap">EUR {fmtEUR(r.totale)}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">{formatImporto(r.prezzo_unitario)}</td>
+                                        <td className="px-4 py-3 font-body text-sm font-medium text-oro whitespace-nowrap">{formatImporto(r.totale)}</td>
                                     </tr>
                                 ))}
                                 {righe.length === 0 && (
@@ -851,7 +852,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                                                 {p.note && <p className="font-body text-xs text-nebbia/40 mt-0.5 italic">{p.note}</p>}
                                             </div>
                                         </div>
-                                        <p className="font-display text-base lg:font-body lg:text-sm font-semibold text-salvia whitespace-nowrap self-end lg:self-auto">EUR {fmtEUR(p.importo)}</p>
+                                        <p className="font-display text-base lg:font-body lg:text-sm font-semibold text-salvia whitespace-nowrap self-end lg:self-auto">{formatImporto(p.importo)}</p>
                                     </div>
                                 ))}
                             </div>
@@ -860,7 +861,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                         {residuo > 0.01 && pagamenti.length > 0 && (
                             <div className="mt-3 flex items-center justify-between p-3 bg-amber-400/5 border border-amber-400/20">
                                 <p className="font-body text-sm text-amber-400">Residuo da incassare</p>
-                                <p className="font-body text-sm font-semibold text-amber-400">EUR {fmtEUR(residuo)}</p>
+                                <p className="font-body text-sm font-semibold text-amber-400">{formatImporto(residuo)}</p>
                             </div>
                         )}
                     </div>
@@ -893,31 +894,31 @@ export default function AvvocatoFatturazioneDettaglio() {
                         <div className="space-y-1.5">
                             <div className="flex justify-between text-xs font-body text-nebbia/60">
                                 <span>Imponibile</span>
-                                <span>EUR {fmtEUR(fattura.imponibile)}</span>
+                                <span>{formatImporto(fattura.imponibile)}</span>
                             </div>
                             {Number(fattura.cpa_importo ?? 0) > 0 && (
                                 <div className="flex justify-between text-xs font-body text-nebbia/60">
                                     <span>CPA {fattura.cpa_percentuale}%</span>
-                                    <span>EUR {fmtEUR(fattura.cpa_importo)}</span>
+                                    <span>{formatImporto(fattura.cpa_importo)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-xs font-body text-nebbia/60">
                                 <span>IVA {fattura.iva_percentuale}%</span>
-                                <span>EUR {fmtEUR(fattura.iva_importo)}</span>
+                                <span>{formatImporto(fattura.iva_importo)}</span>
                             </div>
                             <div className="flex justify-between pt-2 border-t border-white/10">
                                 <span className="font-body text-sm font-medium text-nebbia">Totale fattura</span>
-                                <span className="font-body text-base font-semibold text-oro">EUR {fmtEUR(fattura.totale_lordo)}</span>
+                                <span className="font-body text-base font-semibold text-oro">{formatImporto(fattura.totale_lordo)}</span>
                             </div>
                             {fattura.applica_ritenuta && Number(fattura.ritenuta_importo ?? 0) > 0 && (
                                 <>
                                     <div className="flex justify-between text-xs font-body text-red-400/80 pt-1">
                                         <span>Ritenuta {fattura.ritenuta_percentuale}%</span>
-                                        <span>- EUR {fmtEUR(fattura.ritenuta_importo)}</span>
+                                        <span>- {formatImporto(fattura.ritenuta_importo)}</span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t border-white/10">
                                         <span className="font-body text-sm font-medium text-nebbia">Netto a pagare</span>
-                                        <span className="font-body text-base font-semibold text-salvia">EUR {fmtEUR(fattura.totale_netto)}</span>
+                                        <span className="font-body text-base font-semibold text-salvia">{formatImporto(fattura.totale_netto)}</span>
                                     </div>
                                 </>
                             )}
@@ -927,12 +928,12 @@ export default function AvvocatoFatturazioneDettaglio() {
                             <div className="pt-3 border-t border-white/10 space-y-1">
                                 <div className="flex justify-between text-xs font-body">
                                     <span className="text-nebbia/60">Incassato</span>
-                                    <span className="text-salvia">EUR {fmtEUR(totalePagato)}</span>
+                                    <span className="text-salvia">{formatImporto(totalePagato)}</span>
                                 </div>
                                 {residuo > 0.01 && (
                                     <div className="flex justify-between text-xs font-body">
                                         <span className="text-nebbia/60">Residuo</span>
-                                        <span className="text-amber-400">EUR {fmtEUR(residuo)}</span>
+                                        <span className="text-amber-400">{formatImporto(residuo)}</span>
                                     </div>
                                 )}
                             </div>

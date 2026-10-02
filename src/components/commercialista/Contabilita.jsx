@@ -16,6 +16,7 @@ import { fmtEUR } from '@/lib/cassa'
 import { righeSeedPiano, NOME_CLASSE } from '@/lib/pianoContiItaliano'
 import ReportContabili from './ReportContabili'
 import Imputazioni from './Imputazioni'
+import { formatImporto } from '@/lib/prezzi'
 
 const num = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return isNaN(x) ? 0 : x }
 const oggiISO = () => new Date().toISOString().slice(0, 10)
@@ -143,7 +144,7 @@ export default function Contabilita({ clienteId, mandatoId = null }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                    <span className="font-display text-sm text-oro">€ {fmtEUR(totaleRiga(r.righe))}</span>
+                                    <span className="font-display text-sm text-oro">{formatImporto(totaleRiga(r.righe))}</span>
                                     <button onClick={() => setDaEliminare(r)} title="Elimina registrazione"
                                         className="w-6 h-6 flex items-center justify-center text-nebbia/30 hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
                                 </div>
@@ -152,8 +153,8 @@ export default function Contabilita({ clienteId, mandatoId = null }) {
                                 {(r.righe ?? []).map(rg => (
                                     <div key={rg.id} className="grid grid-cols-[1fr_auto_auto] gap-3 font-body text-xs">
                                         <span className="text-nebbia/60 truncate">{rg.conto ? `${rg.conto.numero} · ${rg.conto.nome}` : '—'}</span>
-                                        <span className="text-right text-nebbia/70 w-28">{Number(rg.dare) ? `€ ${fmtEUR(rg.dare)}` : ''}</span>
-                                        <span className="text-right text-nebbia/70 w-28">{Number(rg.avere) ? `€ ${fmtEUR(rg.avere)}` : ''}</span>
+                                        <span className="text-right text-nebbia/70 w-28">{Number(rg.dare) ? `${formatImporto(rg.dare)}` : ''}</span>
+                                        <span className="text-right text-nebbia/70 w-28">{Number(rg.avere) ? `${formatImporto(rg.avere)}` : ''}</span>
                                     </div>
                                 ))}
                                 <div className="grid grid-cols-[1fr_auto_auto] gap-3 font-body text-[10px] text-nebbia/30 uppercase tracking-widest pt-1">
@@ -340,10 +341,10 @@ function FormRegistrazione({ clienteId, mandatoId, conti, onClose, onSaved }) {
                     {/* Totali + bilanciamento */}
                     <div className="grid grid-cols-[1fr_120px_120px_28px] gap-2 border-t border-white/10 pt-2 font-body text-sm">
                         <span className={`${bilanciato ? 'text-salvia' : 'text-nebbia/40'} flex items-center gap-1.5`}>
-                            {bilanciato ? <><Check size={13} /> Registrazione bilanciata</> : diff !== 0 ? `Sbilancio di € ${fmtEUR(Math.abs(diff))}` : 'Inserisci le righe dare/avere'}
+                            {bilanciato ? <><Check size={13} /> Registrazione bilanciata</> : diff !== 0 ? `Sbilancio di ${formatImporto(Math.abs(diff))}` : 'Inserisci le righe dare/avere'}
                         </span>
-                        <span className="text-right text-nebbia">€ {fmtEUR(totDare)}</span>
-                        <span className="text-right text-nebbia">€ {fmtEUR(totAvere)}</span>
+                        <span className="text-right text-nebbia">{formatImporto(totDare)}</span>
+                        <span className="text-right text-nebbia">{formatImporto(totAvere)}</span>
                         <span></span>
                     </div>
 

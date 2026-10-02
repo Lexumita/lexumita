@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ModalEliminaFattura } from './FatturazioneDettaglio'
+import { formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -136,7 +137,7 @@ function TabPanoramica({ fatture, clienti }) {
                         <TrendingUp size={13} className="text-oro/60" />
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Fatturato {annoCorrente}</p>
                     </div>
-                    <p className="font-display text-2xl font-light text-oro">EUR {fmtEUR(totFatturatoAnno)}</p>
+                    <p className="font-display text-2xl font-light text-oro">{formatImporto(totFatturatoAnno)}</p>
                     <p className="font-body text-xs text-nebbia/30 mt-1">{fattureAnno.length} fatture</p>
                 </div>
 
@@ -145,7 +146,7 @@ function TabPanoramica({ fatture, clienti }) {
                         <Check size={13} className="text-salvia/70" />
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Incassato {annoCorrente}</p>
                     </div>
-                    <p className="font-display text-2xl font-light text-salvia">EUR {fmtEUR(totIncassatoAnno)}</p>
+                    <p className="font-display text-2xl font-light text-salvia">{formatImporto(totIncassatoAnno)}</p>
                     <p className="font-body text-xs text-nebbia/30 mt-1">
                         {totFatturatoAnno > 0 ? `${Math.round((totIncassatoAnno / totFatturatoAnno) * 100)}% del fatturato` : '—'}
                     </p>
@@ -156,7 +157,7 @@ function TabPanoramica({ fatture, clienti }) {
                         <Clock size={13} className="text-amber-400/70" />
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Da incassare</p>
                     </div>
-                    <p className="font-display text-2xl font-light text-amber-400">EUR {fmtEUR(totDaIncassare)}</p>
+                    <p className="font-display text-2xl font-light text-amber-400">{formatImporto(totDaIncassare)}</p>
                     <p className="font-body text-xs text-nebbia/30 mt-1">non scadute</p>
                 </div>
 
@@ -166,7 +167,7 @@ function TabPanoramica({ fatture, clienti }) {
                         <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Scaduto</p>
                     </div>
                     <p className={`font-display text-2xl font-light ${totScaduto > 0 ? 'text-red-400' : 'text-nebbia/40'}`}>
-                        EUR {fmtEUR(totScaduto)}
+                        {formatImporto(totScaduto)}
                     </p>
                     <p className="font-body text-xs text-nebbia/30 mt-1">richiede attenzione</p>
                 </div>
@@ -200,14 +201,14 @@ function TabPanoramica({ fatture, clienti }) {
                                     <div
                                         className="w-full bg-oro/70 hover:bg-oro transition-colors min-h-[2px]"
                                         style={{ height: `${(m.emesso / maxValore) * 100}%` }}
-                                        title={`Emesso: EUR ${fmtEUR(m.emesso)}`}
+                                        title={`Emesso: ${formatImporto(m.emesso)}`}
                                     />
                                 </div>
                                 <div className="flex-1 flex items-end">
                                     <div
                                         className="w-full bg-salvia/70 hover:bg-salvia transition-colors min-h-[2px]"
                                         style={{ height: `${(m.incassato / maxValore) * 100}%` }}
-                                        title={`Incassato: EUR ${fmtEUR(m.incassato)}`}
+                                        title={`Incassato: ${formatImporto(m.incassato)}`}
                                     />
                                 </div>
                             </div>
@@ -243,7 +244,7 @@ function TabPanoramica({ fatture, clienti }) {
                                                     }
                                                     <span className="font-body text-sm text-nebbia truncate">{nomeCliente(tc.cliente)}</span>
                                                 </div>
-                                                <span className="font-body text-sm font-semibold text-oro shrink-0">EUR {fmtEUR(tc.totale)}</span>
+                                                <span className="font-body text-sm font-semibold text-oro shrink-0">{formatImporto(tc.totale)}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 h-1 bg-petrolio">
@@ -288,7 +289,7 @@ function TabPanoramica({ fatture, clienti }) {
                                         <p className="font-body text-xs text-nebbia/40 mt-0.5">{f.numero}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="font-body text-sm font-semibold text-oro">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</p>
+                                        <p className="font-body text-sm font-semibold text-oro">{formatImporto(f.totale_lordo ?? f.importo)}</p>
                                         <p className={`font-body text-xs mt-0.5 ${f.giorni < 0 ? 'text-red-400' : 'text-amber-400'}`}>
                                             {f.giorni < 0 ? `Scaduta ${Math.abs(f.giorni)}g fa` : f.giorni === 0 ? 'Oggi' : `Tra ${f.giorni}g`}
                                         </p>
@@ -618,7 +619,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                                         <p className="font-body text-xs text-nebbia/50 truncate">{f.pratica.titolo}</p>
                                     )}
 
-                                    <p className="font-display text-2xl font-light text-oro">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</p>
+                                    <p className="font-display text-2xl font-light text-oro">{formatImporto(f.totale_lordo ?? f.importo)}</p>
 
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs">
                                         <span className="text-nebbia/40">
@@ -694,7 +695,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{f.pratica?.titolo ?? '—'}</td>
-                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro whitespace-nowrap">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</td>
+                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro whitespace-nowrap">{formatImporto(f.totale_lordo ?? f.importo)}</td>
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">{f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}</td>
                                     <td className={`px-4 py-3 font-body text-xs whitespace-nowrap ${f.stato === 'pagata' ? 'text-salvia' : sc_scaduta ? 'text-red-400' : 'text-nebbia/50'
                                         }`}>
@@ -783,7 +784,7 @@ function TabScadenzario({ fatture }) {
                     <p className={`section-label !m-0 ${textColor[variant]} !text-current`}>{titolo}</p>
                     <div className="flex items-center gap-3">
                         <span className="font-body text-xs text-nebbia/40">{lista.length} {lista.length === 1 ? 'fattura' : 'fatture'}</span>
-                        <span className={`font-body text-sm font-semibold ${textColor[variant]}`}>EUR {fmtEUR(totale)}</span>
+                        <span className={`font-body text-sm font-semibold ${textColor[variant]}`}>{formatImporto(totale)}</span>
                     </div>
                 </div>
 
@@ -807,7 +808,7 @@ function TabScadenzario({ fatture }) {
                                 <span className={`font-body text-xs ${textColor[variant]}`}>
                                     {f.giorni < 0 ? `${Math.abs(f.giorni)}g fa` : f.giorni === 0 ? 'Oggi' : `tra ${f.giorni}g`}
                                 </span>
-                                <p className="font-body text-sm font-semibold text-oro whitespace-nowrap">EUR {fmtEUR(f.totale_lordo ?? f.importo)}</p>
+                                <p className="font-body text-sm font-semibold text-oro whitespace-nowrap">{formatImporto(f.totale_lordo ?? f.importo)}</p>
                                 <ArrowRight size={13} className="text-nebbia/20" />
                             </div>
                         </Link>

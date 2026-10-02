@@ -14,6 +14,7 @@ import {
   ArrowRight, Clock, Scale, FileText, TrendingUp, Inbox,
   User, Building2, Users, FolderOpen, FolderCheck, ChevronDown
 } from 'lucide-react'
+import { formatPrezzo } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -650,12 +651,12 @@ export default function AvvocatoDashboard() {
                 <p className="font-body text-xs lg:text-[10px] text-salvia/60 uppercase tracking-widest mb-1 flex items-center gap-1">
                   <TrendingUp size={9} className="shrink-0" /> Incassato
                 </p>
-                <p className="font-body text-base text-salvia break-words">EUR {fmtEUR(periodo.incassato)}</p>
+                <p className="font-body text-base text-salvia break-words">{formatPrezzo(Math.round(periodo.incassato))}</p>
                 <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-0.5 truncate">{range.label}</p>
               </div>
               <div className="bg-petrolio/40 border border-white/5 px-3 py-2.5 min-w-0">
                 <p className="font-body text-xs lg:text-[10px] text-nebbia/40 uppercase tracking-widest mb-1">Da incassare</p>
-                <p className="font-body text-base text-nebbia/85 break-words">EUR {fmtEUR(periodo.da_incassare)}</p>
+                <p className="font-body text-base text-nebbia/85 break-words">{formatPrezzo(Math.round(periodo.da_incassare))}</p>
                 <p className="font-body text-xs lg:text-[10px] text-nebbia/30 mt-0.5 truncate">Totale debito attivo</p>
               </div>
             </div>
@@ -670,7 +671,7 @@ export default function AvvocatoDashboard() {
                       key={f.id}
                       icon={FileText}
                       titolo={`Fattura ${f.anno_numerazione}/${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - EUR ${fmtEUR(f.totale_lordo)}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_lordo))}`}
                       badge={badgeUrgenza(gg)}
                       link="/pagamenti"
                       accent="red"
@@ -689,7 +690,7 @@ export default function AvvocatoDashboard() {
                       key={f.id}
                       icon={FileText}
                       titolo={`Fattura ${f.anno}/${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - EUR ${fmtEUR(f.totale_lordo)}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_lordo))}`}
                       badge={badgeUrgenza(gg)}
                       link="/pagamenti"
                       accent="oro"

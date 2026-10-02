@@ -25,19 +25,19 @@ export const VERSIONI = [
 // nell'allegato al decreto; quelli superiori sono CALCOLATI per progressione
 // (art. 6 DM 55/2014) a partire dall'ultimo scaglione tabulato.
 export const SCAGLIONI = [
-  { id: 'fino_1100',           label: 'Fino a € 1.100',               min: 0,         max: 1100 },
-  { id: 'da_1101_5200',        label: 'Da € 1.101 a € 5.200',         min: 1101,      max: 5200 },
-  { id: 'da_5201_26000',       label: 'Da € 5.201 a € 26.000',        min: 5201,      max: 26000 },
-  { id: 'da_26001_52000',      label: 'Da € 26.001 a € 52.000',       min: 26001,     max: 52000 },
-  { id: 'da_52001_260000',     label: 'Da € 52.001 a € 260.000',      min: 52001,     max: 260000 },
-  { id: 'da_260001_520000',    label: 'Da € 260.001 a € 520.000',     min: 260001,    max: 520000 },
-  { id: 'da_520001_1000000',   label: 'Da € 520.001 a € 1.000.000',   min: 520001,    max: 1000000,   computato: true },
-  { id: 'da_1000001_2000000',  label: 'Da € 1.000.001 a € 2.000.000', min: 1000001,   max: 2000000,   computato: true },
-  { id: 'da_2000001_4000000',  label: 'Da € 2.000.001 a € 4.000.000', min: 2000001,   max: 4000000,   computato: true },
-  { id: 'da_4000001_8000000',  label: 'Da € 4.000.001 a € 8.000.000', min: 4000001,   max: 8000000,   computato: true },
-  { id: 'da_8000001_16000000', label: 'Da € 8.000.001 a € 16.000.000',min: 8000001,   max: 16000000,  computato: true },
-  { id: 'da_16000001_32000000',label: 'Da € 16.000.001 a € 32.000.000',min:16000001,  max: 32000000,  computato: true },
-  { id: 'oltre_32000000',      label: 'Oltre € 32.000.000',           min: 32000001,  max: null,      computato: true },
+  { id: 'fino_1100',           label: 'Fino a 1.100 €',               min: 0,         max: 1100 },
+  { id: 'da_1101_5200',        label: 'Da 1.101 € a 5.200 €',         min: 1101,      max: 5200 },
+  { id: 'da_5201_26000',       label: 'Da 5.201 € a 26.000 €',        min: 5201,      max: 26000 },
+  { id: 'da_26001_52000',      label: 'Da 26.001 € a 52.000 €',       min: 26001,     max: 52000 },
+  { id: 'da_52001_260000',     label: 'Da 52.001 € a 260.000 €',      min: 52001,     max: 260000 },
+  { id: 'da_260001_520000',    label: 'Da 260.001 € a 520.000 €',     min: 260001,    max: 520000 },
+  { id: 'da_520001_1000000',   label: 'Da 520.001 € a 1.000.000 €',   min: 520001,    max: 1000000,   computato: true },
+  { id: 'da_1000001_2000000',  label: 'Da 1.000.001 € a 2.000.000 €', min: 1000001,   max: 2000000,   computato: true },
+  { id: 'da_2000001_4000000',  label: 'Da 2.000.001 € a 4.000.000 €', min: 2000001,   max: 4000000,   computato: true },
+  { id: 'da_4000001_8000000',  label: 'Da 4.000.001 € a 8.000.000 €', min: 4000001,   max: 8000000,   computato: true },
+  { id: 'da_8000001_16000000', label: 'Da 8.000.001 € a 16.000.000 €',min: 8000001,   max: 16000000,  computato: true },
+  { id: 'da_16000001_32000000',label: 'Da 16.000.001 € a 32.000.000 €',min:16000001,  max: 32000000,  computato: true },
+  { id: 'oltre_32000000',      label: 'Oltre 32.000.000 €',           min: 32000001,  max: null,      computato: true },
 ]
 
 // Ultimo scaglione tabulato: base per la progressione art. 6 sugli scaglioni

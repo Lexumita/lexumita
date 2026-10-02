@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase'
 import { fmtEUR } from '@/lib/cassa'
 import { costoPersonaleMeseAttivi, costoPersonaleProRataAnno, bonusDelMese, bonusDellAnnoX } from '@/lib/salariIT'
 import FormMovimento from './FormMovimento'
+import { formatImporto } from '@/lib/prezzi'
 
 const MESI = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 const sum = (arr) => arr.reduce((t, m) => t + (Number(m.importo) || 0), 0)
@@ -165,15 +166,15 @@ export default function EntrateUscite({ clienteId, mandatoId = null, anno = null
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <span className="font-body text-xs text-salvia/80 flex items-center gap-1"><TrendingUp size={11} /> Entrate</span>
-                            <span className="font-display text-base text-salvia">€ {fmtEUR(entrateMese)}</span>
+                            <span className="font-display text-base text-salvia">{formatImporto(entrateMese)}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="font-body text-xs text-oro/80 flex items-center gap-1"><TrendingDown size={11} /> Uscite</span>
-                            <span className="font-display text-base text-oro">€ {fmtEUR(usciteMese)}</span>
+                            <span className="font-display text-base text-oro">{formatImporto(usciteMese)}</span>
                         </div>
                         <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
                             <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Saldo</span>
-                            <span className={`font-display text-base ${saldoMese >= 0 ? 'text-salvia' : 'text-red-400'}`}>€ {fmtEUR(saldoMese)}</span>
+                            <span className={`font-display text-base ${saldoMese >= 0 ? 'text-salvia' : 'text-red-400'}`}>{formatImporto(saldoMese)}</span>
                         </div>
                     </div>
                 </div>
@@ -184,7 +185,7 @@ export default function EntrateUscite({ clienteId, mandatoId = null, anno = null
                         <TrendingDown size={11} className="text-oro" />
                         <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{ePrevisto ? 'Uscite previste' : 'Uscite'} {annoSel}</p>
                     </div>
-                    <p className="font-display text-2xl text-oro">€ {fmtEUR(totaleUscite)}</p>
+                    <p className="font-display text-2xl text-oro">{formatImporto(totaleUscite)}</p>
                     <p className="font-body text-[10px] text-nebbia/25 mt-0.5">
                         {ePrevisto ? 'Costi pianificati dell’anno' : 'Somma dei costi registrati'}
                     </p>
@@ -196,9 +197,9 @@ export default function EntrateUscite({ clienteId, mandatoId = null, anno = null
                         <TrendingUp size={11} className="text-salvia" />
                         <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{ePrevisto ? 'Entrate previste' : 'Entrate'} {annoSel}</p>
                     </div>
-                    <p className="font-display text-2xl text-salvia">€ {fmtEUR(totaleEntrate)}</p>
+                    <p className="font-display text-2xl text-salvia">{formatImporto(totaleEntrate)}</p>
                     <p className="font-body text-[10px] text-nebbia/25 mt-0.5">
-                        Saldo {annoSel}: <span className={saldoAnno >= 0 ? 'text-salvia' : 'text-red-400'}>€ {fmtEUR(saldoAnno)}</span>
+                        Saldo {annoSel}: <span className={saldoAnno >= 0 ? 'text-salvia' : 'text-red-400'}>{formatImporto(saldoAnno)}</span>
                     </p>
                 </div>
             </div>
@@ -232,10 +233,10 @@ export default function EntrateUscite({ clienteId, mandatoId = null, anno = null
                                     <UsersIcon size={14} className="text-oro/60 shrink-0 mt-0.5" />
                                     <div className="min-w-0">
                                         <p className="font-body text-sm text-nebbia">Costo del personale {annoSel}</p>
-                                        <p className="font-body text-[11px] text-nebbia/30 mt-0.5">{rilevantiN} {rilevantiN === 1 ? 'persona' : 'persone'} · lordo + oneri + TFR{bonusAnno > 0 ? ` · € ${fmtEUR(bonusAnno)} di bonus` : ''}</p>
+                                        <p className="font-body text-[11px] text-nebbia/30 mt-0.5">{rilevantiN} {rilevantiN === 1 ? 'persona' : 'persone'} · lordo + oneri + TFR{bonusAnno > 0 ? ` · ${formatImporto(bonusAnno)} di bonus` : ''}</p>
                                     </div>
                                 </div>
-                                <span className="font-display text-sm text-oro shrink-0">€ {fmtEUR(personaleAnno)}</span>
+                                <span className="font-display text-sm text-oro shrink-0">{formatImporto(personaleAnno)}</span>
                             </div>
                         )}
                     />
@@ -266,7 +267,7 @@ export default function EntrateUscite({ clienteId, mandatoId = null, anno = null
                         </div>
                         <div className="p-6 space-y-4">
                             <p className="font-body text-sm text-nebbia/60 leading-relaxed">
-                                Vuoi eliminare <span className="text-nebbia font-medium">{daEliminare.descrizione}</span> (€ {fmtEUR(daEliminare.importo)})? L'operazione non è reversibile.
+                                Vuoi eliminare <span className="text-nebbia font-medium">{daEliminare.descrizione}</span> ({formatImporto(daEliminare.importo)})? L'operazione non è reversibile.
                             </p>
                             <div className="flex gap-2">
                                 <button onClick={() => setDaEliminare(null)} disabled={eliminando}
@@ -338,7 +339,7 @@ function SezioneMovimenti({ titolo, tipo, movimenti, onNuovo, onModifica, onElim
                             </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                            <span className={`font-display text-sm ${accent}`}>€ {fmtEUR(m.importo)}</span>
+                            <span className={`font-display text-sm ${accent}`}>{formatImporto(m.importo)}</span>
                             <div className="flex items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => onModifica(m)} title="Modifica"
                                     className="w-6 h-6 flex items-center justify-center text-nebbia/30 hover:text-oro transition-colors">

@@ -188,7 +188,7 @@ export default function Registrati() {
         <p className="section-label mb-6">Registrazione</p>
         <h1 className="font-display text-3xl sm:text-4xl font-light text-nebbia mb-2">Crea il tuo account</h1>
         <p className="font-body text-sm text-nebbia/40 mb-8 leading-relaxed">
-          La prima ricerca con Lex AI è gratuita. Verifica la tua identità per accedere a tutte le funzionalità di Lexum.
+          La prima ricerca con Lex AI è gratuita. Per tutte le funzionalità di Lexum bastano i dati di fatturazione e un abbonamento: nessuna attesa.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

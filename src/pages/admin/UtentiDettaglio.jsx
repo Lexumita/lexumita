@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -25,7 +26,7 @@ const ROLE_BADGE = {
 }
 
 const euro = (n) =>
-  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n ?? 0))
+  formatImporto(n)
 
 const STATI_PRATICA = {
   in_corso: { label: 'In corso', variant: 'salvia' },
@@ -403,11 +404,11 @@ function SezioneCliente({ utente }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate border border-white/5 p-4">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Da incassare</p>
-                    <p className="font-display text-2xl font-semibold text-oro">€ {totaleAperto.toFixed(2)}</p>
+                    <p className="font-display text-2xl font-semibold text-oro">{formatImporto(totaleAperto)}</p>
                   </div>
                   <div className="bg-slate border border-white/5 p-4">
                     <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">Incassato</p>
-                    <p className="font-display text-2xl font-semibold text-salvia">€ {totalePagato.toFixed(2)}</p>
+                    <p className="font-display text-2xl font-semibold text-salvia">{formatImporto(totalePagato)}</p>
                   </div>
                 </div>
               )}
@@ -429,7 +430,7 @@ function SezioneCliente({ utente }) {
                           return (
                             <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                               <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                              <td className="px-4 py-3 font-body text-sm font-semibold text-oro">€ {parseFloat(fatt.importo).toFixed(2)}</td>
+                              <td className="px-4 py-3 font-body text-sm font-semibold text-oro">{formatImporto(fatt.importo)}</td>
                               <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
                               <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
                               <td className="px-4 py-3"><Badge label={sc.label} variant={sc.variant} /></td>

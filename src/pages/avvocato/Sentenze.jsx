@@ -9,6 +9,7 @@ import {
   ChevronDown, ArrowUpDown, Download, Sparkles, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // HOOK — carica codici_lex raggruppati per macro-area
@@ -427,9 +428,9 @@ function TabGuadagni({ meId, studioId }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Guadagni totali" value={`€ ${(daCreditare + giaCreditato).toFixed(2)}`} colorClass="text-oro" />
-        <StatCard label="Da liquidare" value={`€ ${daCreditare.toFixed(2)}`} colorClass="text-amber-400" />
-        <StatCard label="Già liquidato" value={`€ ${giaCreditato.toFixed(2)}`} colorClass="text-salvia" />
+        <StatCard label="Guadagni totali" value={`${formatImporto(daCreditare + giaCreditato)}`} colorClass="text-oro" />
+        <StatCard label="Da liquidare" value={`${formatImporto(daCreditare)}`} colorClass="text-amber-400" />
+        <StatCard label="Già liquidato" value={`${formatImporto(giaCreditato)}`} colorClass="text-salvia" />
       </div>
 
       {daCreditare > 0 && !success && (
@@ -438,7 +439,7 @@ function TabGuadagni({ meId, studioId }) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
               <div>
                 <p className="font-body text-sm text-nebbia">
-                  Hai <span className="text-oro font-medium">€ {daCreditare.toFixed(2)}</span> disponibili
+                  Hai <span className="text-oro font-medium">{formatImporto(daCreditare)}</span> disponibili
                 </p>
                 <p className="font-body text-xs text-nebbia/40 mt-0.5">Invia una richiesta di pagamento a Lexum</p>
               </div>
@@ -446,7 +447,7 @@ function TabGuadagni({ meId, studioId }) {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="font-body text-sm text-oro font-medium">Richiesta — € {daCreditare.toFixed(2)}</p>
+              <p className="font-body text-sm text-oro font-medium">Richiesta — {formatImporto(daCreditare)}</p>
               <textarea rows={2} value={nota} onChange={e => setNota(e.target.value)}
                 placeholder="IBAN, riferimento fattura..."
                 className="w-full bg-slate border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25" />
@@ -493,9 +494,9 @@ function TabGuadagni({ meId, studioId }) {
                 </p>
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <span className="font-body text-xs text-nebbia/40">
-                    {new Date(c.created_at).toLocaleDateString('it-IT')} · prezzo € {parseFloat(c.prezzo ?? 0).toFixed(2)}
+                    {new Date(c.created_at).toLocaleDateString('it-IT')} · prezzo {formatImporto(c.prezzo ?? 0)}
                   </span>
-                  <span className="font-body text-sm font-medium text-oro">€ {parseFloat(c.quota_autore ?? 0).toFixed(2)}</span>
+                  <span className="font-body text-sm font-medium text-oro">{formatImporto(c.quota_autore ?? 0)}</span>
                 </div>
               </div>
             ))}
@@ -519,8 +520,8 @@ function TabGuadagni({ meId, studioId }) {
                   <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString('it-IT')}</td>
                   <td className="px-4 py-3 font-body text-sm text-nebbia max-w-xs truncate">{c.sentenza?.oggetto ?? '—'}</td>
                   <td className="px-4 py-3 font-body text-sm text-nebbia/60">{`${c.acquirente?.nome ?? ''} ${c.acquirente?.cognome ?? ''}`.trim() || '—'}</td>
-                  <td className="px-4 py-3 font-body text-sm text-nebbia/50">€ {parseFloat(c.prezzo ?? 0).toFixed(2)}</td>
-                  <td className="px-4 py-3 font-body text-sm font-medium text-oro">€ {parseFloat(c.quota_autore ?? 0).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-body text-sm text-nebbia/50">{formatImporto(c.prezzo ?? 0)}</td>
+                  <td className="px-4 py-3 font-body text-sm font-medium text-oro">{formatImporto(c.quota_autore ?? 0)}</td>
                   <td className="px-4 py-3">
                     <Badge label={c.stato === 'liquidato' ? 'Liquidato' : 'Da liquidare'} variant={c.stato === 'liquidato' ? 'salvia' : 'warning'} />
                   </td>
@@ -1233,7 +1234,7 @@ export function AvvocatoSentenzeDettaglio() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Accessi totali" value={accessi} colorClass="text-oro" />
-        <StatCard label="Guadagno maturato" value={`€ ${guadagno.toFixed(2)}`} colorClass="text-salvia" />
+        <StatCard label="Guadagno maturato" value={`${formatImporto(guadagno)}`} colorClass="text-salvia" />
         <StatCard label="Caricata il" value={new Date(s.created_at).toLocaleDateString('it-IT')} colorClass="text-nebbia/50" />
       </div>
 

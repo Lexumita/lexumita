@@ -403,8 +403,8 @@ export default function PerAvvocati() {
                                     {[
                                         { l: 'Tipo', v: 'Privato' },
                                         { l: 'Pratiche aperte', v: '2', c: 'text-oro' },
-                                        { l: 'Fatturato 2026', v: 'EUR 4.200,00', c: 'text-salvia' },
-                                        { l: 'Da incassare', v: 'EUR 1.100,00', c: 'text-oro' },
+                                        { l: 'Fatturato 2026', v: '4.200,00 €', c: 'text-salvia' },
+                                        { l: 'Da incassare', v: '1.100,00 €', c: 'text-oro' },
                                     ].map(({ l, v, c }) => (
                                         <div key={l} className="flex justify-between py-1.5 border-b border-white/5">
                                             <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{l}</span>
@@ -428,7 +428,7 @@ export default function PerAvvocati() {
                                                     <p className="font-body text-[10px] text-nebbia/30">{d}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-body text-[11px] text-nebbia/70">EUR {i}</p>
+                                                    <p className="font-body text-[11px] text-nebbia/70">{i}&nbsp;€</p>
                                                     <p className={`font-body text-[9px] uppercase tracking-widest ${stato === 'pagato' ? 'text-salvia/70' : 'text-oro/70'}`}>
                                                         {stato === 'pagato' ? 'Pagato' : 'In sospeso'}
                                                     </p>
@@ -603,7 +603,7 @@ export default function PerAvvocati() {
                                     ].map(({ d, i }) => (
                                         <div key={d} className="flex justify-between p-2 bg-petrolio/50 border border-white/5">
                                             <span className="font-body text-[11px] text-nebbia/65 truncate">{d}</span>
-                                            <span className="font-body text-[11px] text-nebbia/65 shrink-0 ml-2">EUR {i}</span>
+                                            <span className="font-body text-[11px] text-nebbia/65 shrink-0 ml-2">{i}&nbsp;€</span>
                                         </div>
                                     ))}
                                 </div>
@@ -618,12 +618,12 @@ export default function PerAvvocati() {
                                     ].map(({ l, v, c }) => (
                                         <div key={l} className="flex justify-between text-[11px]">
                                             <span className={`font-body ${c}`}>{l}</span>
-                                            <span className={`font-body ${c}`}>EUR {v}</span>
+                                            <span className={`font-body ${c}`}>{v}&nbsp;€</span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between pt-2 mt-1 border-t border-white/5">
                                         <span className="font-body text-xs text-nebbia/70">Totale netto da pagare</span>
-                                        <span className="font-body text-sm text-oro font-medium">EUR 2.672,00</span>
+                                        <span className="font-body text-sm text-oro font-medium">2.672,00 €</span>
                                     </div>
                                 </div>
 
@@ -655,17 +655,17 @@ export default function PerAvvocati() {
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-salvia rounded-full" />
                                         <span className="font-body text-[11px] text-nebbia/50">Pagata</span>
-                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">EUR 4.200</span>
+                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">4.200 €</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-oro rounded-full" />
                                         <span className="font-body text-[11px] text-nebbia/50">In attesa</span>
-                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">EUR 2.672</span>
+                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">2.672 €</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
                                         <span className="font-body text-[11px] text-nebbia/50">Scaduta</span>
-                                        <span className="font-body text-[11px] text-red-400/70 ml-auto">EUR 1.100</span>
+                                        <span className="font-body text-[11px] text-red-400/70 ml-auto">1.100 €</span>
                                     </div>
                                 </div>
                             </div>
@@ -690,7 +690,7 @@ export default function PerAvvocati() {
                                         <div key={l} className="flex items-center justify-between gap-2">
                                             <span className={`font-body text-[11px] ${open ? 'text-oro' : 'text-nebbia/50'}`}>{l}</span>
                                             <span className={`font-body text-[10px] ${open ? 'text-oro/60' : 'text-nebbia/30'}`}>{d}</span>
-                                            <span className={`font-body text-[11px] ${open ? 'text-oro' : 'text-nebbia/50'}`}>EUR {i}</span>
+                                            <span className={`font-body text-[11px] ${open ? 'text-oro' : 'text-nebbia/50'}`}>{i}&nbsp;€</span>
                                         </div>
                                     ))}
                                 </div>
@@ -775,7 +775,7 @@ export default function PerAvvocati() {
                                                     <Sparkles size={10} /> Lex AI
                                                 </p>
                                                 <p className="font-body text-xs text-nebbia/55 leading-relaxed">
-                                                    Ho trovato 3 fatture scadute da oltre 30 giorni, per un totale di EUR 4.150,00.
+                                                    Ho trovato 3 fatture scadute da oltre 30 giorni, per un totale di 4.150,00 €.
                                                 </p>
                                                 <div className="space-y-1 pt-1">
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
@@ -783,21 +783,21 @@ export default function PerAvvocati() {
                                                             <p className="font-body text-[11px] text-nebbia/70">Mario Rossi - 2026/041</p>
                                                             <p className="font-body text-[10px] text-red-400/70">Scaduta da 42 giorni</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">EUR 1.100,00</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">1.100,00 €</span>
                                                     </div>
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
                                                         <div>
                                                             <p className="font-body text-[11px] text-nebbia/70">L. Verdi srl - 2026/035</p>
                                                             <p className="font-body text-[10px] text-red-400/70">Scaduta da 35 giorni</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">EUR 1.800,00</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">1.800,00 €</span>
                                                     </div>
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
                                                         <div>
                                                             <p className="font-body text-[11px] text-nebbia/70">A. Bianchi - 2026/028</p>
                                                             <p className="font-body text-[10px] text-red-400/70">Scaduta da 31 giorni</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">EUR 1.250,00</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">1.250,00 €</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -889,9 +889,9 @@ export default function PerAvvocati() {
                         <VisualBlock label="Le tue sentenze pubblicate">
                             <div className="space-y-2">
                                 {[
-                                    { t: 'Responsabilita medica - errore diagnostico', n: '12 acquisti', q: 'EUR 80,00' },
-                                    { t: 'Locazione - inadempimento locatore', n: '8 acquisti', q: 'EUR 110,00' },
-                                    { t: 'Omicidio stradale - revoca patente', n: '5 acquisti', q: 'EUR 45,00' },
+                                    { t: 'Responsabilita medica - errore diagnostico', n: '12 acquisti', q: '80,00 €' },
+                                    { t: 'Locazione - inadempimento locatore', n: '8 acquisti', q: '110,00 €' },
+                                    { t: 'Omicidio stradale - revoca patente', n: '5 acquisti', q: '45,00 €' },
                                 ].map(({ t, n, q }) => (
                                     <div key={t} className="flex items-center gap-3 p-3 bg-petrolio/50 border border-white/5">
                                         <FileText size={12} className="text-oro shrink-0" />
@@ -904,7 +904,7 @@ export default function PerAvvocati() {
                                 ))}
                                 <div className="flex items-center justify-between p-3 bg-oro/5 border border-oro/15 mt-2">
                                     <span className="font-body text-xs text-nebbia/55">Totale ricavi 2026</span>
-                                    <span className="font-body text-sm text-oro font-medium">EUR 235,00</span>
+                                    <span className="font-body text-sm text-oro font-medium">235,00 €</span>
                                 </div>
                             </div>
                         </VisualBlock>

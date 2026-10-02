@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import CalcolaParcellaModal from '@/components/avvocato/CalcolaParcellaModal'
+import { formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -108,7 +109,7 @@ function PreviewFattura({ form, righe, totali, cliente, pratica }) {
                             return (
                                 <div key={i} className="flex justify-between gap-2 text-xs">
                                     <span className="font-body text-nebbia/70 truncate flex-1">{r.descrizione}</span>
-                                    <span className="font-body text-nebbia/40 whitespace-nowrap">{q} x EUR {fmtEUR(p)}</span>
+                                    <span className="font-body text-nebbia/40 whitespace-nowrap">{q} x {formatImporto(p)}</span>
                                 </div>
                             )
                         })}
@@ -119,31 +120,31 @@ function PreviewFattura({ form, righe, totali, cliente, pratica }) {
             <div className="border-t border-white/5 pt-3 space-y-1.5">
                 <div className="flex justify-between text-xs font-body text-nebbia/60">
                     <span>Imponibile</span>
-                    <span>EUR {fmtEUR(totali.imponibile)}</span>
+                    <span>{formatImporto(totali.imponibile)}</span>
                 </div>
                 {totali.cpa > 0 && (
                     <div className="flex justify-between text-xs font-body text-nebbia/60">
                         <span>CPA {form.cpa_percentuale}%</span>
-                        <span>EUR {fmtEUR(totali.cpa)}</span>
+                        <span>{formatImporto(totali.cpa)}</span>
                     </div>
                 )}
                 <div className="flex justify-between text-xs font-body text-nebbia/60">
                     <span>IVA {form.iva_percentuale}%</span>
-                    <span>EUR {fmtEUR(totali.iva)}</span>
+                    <span>{formatImporto(totali.iva)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-white/10">
                     <span className="font-body text-sm font-medium text-nebbia">Totale fattura</span>
-                    <span className="font-body text-base font-semibold text-oro">EUR {fmtEUR(totali.lordo)}</span>
+                    <span className="font-body text-base font-semibold text-oro">{formatImporto(totali.lordo)}</span>
                 </div>
                 {form.applica_ritenuta && (
                     <>
                         <div className="flex justify-between text-xs font-body text-red-400/80 pt-1">
                             <span>Ritenuta {form.ritenuta_percentuale}%</span>
-                            <span>- EUR {fmtEUR(totali.ritenuta)}</span>
+                            <span>- {formatImporto(totali.ritenuta)}</span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-white/10">
                             <span className="font-body text-sm font-medium text-nebbia">Netto a pagare</span>
-                            <span className="font-body text-base font-semibold text-salvia">EUR {fmtEUR(totali.netto)}</span>
+                            <span className="font-body text-base font-semibold text-salvia">{formatImporto(totali.netto)}</span>
                         </div>
                     </>
                 )}
@@ -534,7 +535,7 @@ export default function AvvocatoFatturazioneNuova() {
                                             <div>
                                                 <label className="block font-body text-xs lg:text-[10px] text-nebbia/40 tracking-widest uppercase mb-1">Totale riga</label>
                                                 <div className="bg-slate border border-white/5 px-3 py-2 font-body text-sm text-oro">
-                                                    EUR {fmtEUR(tot)}
+                                                    {formatImporto(tot)}
                                                 </div>
                                             </div>
                                         </div>

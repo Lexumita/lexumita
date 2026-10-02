@@ -17,6 +17,7 @@ import { FileBarChart, AlertCircle, Check, AlertTriangle, Loader2, Lock } from '
 import { supabase } from '@/lib/supabase'
 import { fmtEUR } from '@/lib/cassa'
 import { NOME_CLASSE } from '@/lib/pianoContiItaliano'
+import { formatImporto } from '@/lib/prezzi'
 
 export default function ReportContabili({ clienteId, conti = [] }) {
     const annoCorr = new Date().getFullYear()
@@ -145,7 +146,7 @@ export default function ReportContabili({ clienteId, conti = [] }) {
         const { error: e2 } = await supabase.from('righe_registrazione').insert(payload)
         setChiudendo(false); setChiusura(false)
         if (e2) { await supabase.from('registrazioni').delete().eq('id', reg.id); setErrore(e2.message); return }
-        setEsitoChiusura(`Esercizio ${annoSel} chiuso: ${result >= 0 ? 'utile' : 'perdita'} di € ${fmtEUR(Math.abs(result))}.`)
+        setEsitoChiusura(`Esercizio ${annoSel} chiuso: ${result >= 0 ? 'utile' : 'perdita'} di ${formatImporto(Math.abs(result))}.`)
         carica()
     }
 
@@ -188,7 +189,7 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                     <SezioneConti titolo="Costi" righe={costi} totale={totCosti} raggruppaClasse />
                     <div className="flex items-center justify-between px-4 py-3 border-t-2 border-white/15">
                         <span className="font-display text-sm text-nebbia">Risultato d'esercizio {annoSel}</span>
-                        <span className={`font-display text-lg ${risultato >= 0 ? 'text-salvia' : 'text-red-400'}`}>€ {fmtEUR(risultato)}</span>
+                        <span className={`font-display text-lg ${risultato >= 0 ? 'text-salvia' : 'text-red-400'}`}>{formatImporto(risultato)}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/5 flex-wrap">
                         <span className="font-body text-[11px] text-nebbia/30">La chiusura azzera i conti economici e riporta il risultato a patrimonio netto.</span>
@@ -209,17 +210,17 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                             <SezioneConti titolo="Passivo e patrimonio netto" righe={passivo} totale={totPassivo} />
                             <div className="flex items-center justify-between px-4 py-2 border-t border-white/5">
                                 <span className="font-body text-sm text-nebbia/70">Risultato cumulato</span>
-                                <span className={`font-body text-sm ${risultatoCum >= 0 ? 'text-salvia' : 'text-red-400'}`}>€ {fmtEUR(risultatoCum)}</span>
+                                <span className={`font-body text-sm ${risultatoCum >= 0 ? 'text-salvia' : 'text-red-400'}`}>{formatImporto(risultatoCum)}</span>
                             </div>
                             <div className="flex items-center justify-between px-4 py-3 border-t-2 border-white/15">
                                 <span className="font-display text-sm text-nebbia">Totale passivo + risultato</span>
-                                <span className="font-display text-base text-nebbia">€ {fmtEUR(totPassivo + risultatoCum)}</span>
+                                <span className="font-display text-base text-nebbia">{formatImporto(totPassivo + risultatoCum)}</span>
                             </div>
                         </div>
                     </div>
                     <div className={`flex items-center gap-2 text-xs font-body p-3 border ${quadra ? 'text-salvia bg-salvia/5 border-salvia/20' : 'text-red-400 bg-red-900/10 border-red-500/20'}`}>
-                        {quadra ? <><Check size={14} /> Bilancio quadrato: attivo € {fmtEUR(totAttivo)} = passivo + risultato € {fmtEUR(totPassivo + risultatoCum)}</>
-                            : <><AlertTriangle size={14} /> Bilancio non quadrato: differenza € {fmtEUR(sbil)}</>}
+                        {quadra ? <><Check size={14} /> Bilancio quadrato: attivo {formatImporto(totAttivo)} = passivo + risultato {formatImporto(totPassivo + risultatoCum)}</>
+                            : <><AlertTriangle size={14} /> Bilancio non quadrato: differenza {formatImporto(sbil)}</>}
                     </div>
                 </>
             ) : sub === 'iva' ? (
@@ -227,15 +228,15 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                         <div className="bg-slate border border-white/10 p-4">
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">IVA a debito {annoSel}</p>
-                            <p className="font-display text-xl text-nebbia">€ {fmtEUR(ivaAnno.dovuta)}</p>
+                            <p className="font-display text-xl text-nebbia">{formatImporto(ivaAnno.dovuta)}</p>
                         </div>
                         <div className="bg-slate border border-white/10 p-4">
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">IVA a credito</p>
-                            <p className="font-display text-xl text-nebbia">€ {fmtEUR(ivaAnno.precedente)}</p>
+                            <p className="font-display text-xl text-nebbia">{formatImporto(ivaAnno.precedente)}</p>
                         </div>
                         <div className={`bg-slate border p-4 ${ivaAnno.saldo >= 0 ? 'border-oro/30' : 'border-salvia/30'}`}>
                             <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1.5">{ivaAnno.saldo >= 0 ? 'IVA da versare' : 'Credito IVA'}</p>
-                            <p className={`font-display text-xl ${ivaAnno.saldo >= 0 ? 'text-oro' : 'text-salvia'}`}>€ {fmtEUR(Math.abs(ivaAnno.saldo))}</p>
+                            <p className={`font-display text-xl ${ivaAnno.saldo >= 0 ? 'text-oro' : 'text-salvia'}`}>{formatImporto(Math.abs(ivaAnno.saldo))}</p>
                         </div>
                     </div>
                     <div className="bg-slate border border-white/5 overflow-x-auto">
@@ -249,9 +250,9 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                                 {trimestri.map(tr => (
                                     <tr key={tr.q} className="border-b border-white/5 last:border-0">
                                         <td className="px-3 py-2 font-body text-xs text-nebbia/70">{tr.q}° trimestre {annoSel}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/60">{tr.dovuta ? `€ ${fmtEUR(tr.dovuta)}` : '—'}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/60">{tr.precedente ? `€ ${fmtEUR(tr.precedente)}` : '—'}</td>
-                                        <td className={`px-3 py-2 text-right font-body text-xs ${tr.saldo >= 0 ? 'text-oro/80' : 'text-salvia'}`}>{tr.saldo ? `€ ${fmtEUR(tr.saldo)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/60">{tr.dovuta ? `${formatImporto(tr.dovuta)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/60">{tr.precedente ? `${formatImporto(tr.precedente)}` : '—'}</td>
+                                        <td className={`px-3 py-2 text-right font-body text-xs ${tr.saldo >= 0 ? 'text-oro/80' : 'text-salvia'}`}>{tr.saldo ? `${formatImporto(tr.saldo)}` : '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -275,17 +276,17 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                                 return (
                                     <tr key={a.c.id} className="border-b border-white/5 last:border-0">
                                         <td className="px-3 py-1.5"><span className="font-mono text-xs text-oro/70 mr-2">{a.c.numero}</span><span className="font-body text-xs text-nebbia/70">{a.c.nome}</span></td>
-                                        <td className="px-3 py-1.5 text-right font-body text-xs text-nebbia/60">{a.dare ? `€ ${fmtEUR(a.dare)}` : '—'}</td>
-                                        <td className="px-3 py-1.5 text-right font-body text-xs text-nebbia/60">{a.avere ? `€ ${fmtEUR(a.avere)}` : '—'}</td>
-                                        <td className={`px-3 py-1.5 text-right font-body text-xs ${saldo < 0 ? 'text-red-400/80' : 'text-nebbia'}`}>€ {fmtEUR(saldo)}</td>
+                                        <td className="px-3 py-1.5 text-right font-body text-xs text-nebbia/60">{a.dare ? `${formatImporto(a.dare)}` : '—'}</td>
+                                        <td className="px-3 py-1.5 text-right font-body text-xs text-nebbia/60">{a.avere ? `${formatImporto(a.avere)}` : '—'}</td>
+                                        <td className={`px-3 py-1.5 text-right font-body text-xs ${saldo < 0 ? 'text-red-400/80' : 'text-nebbia'}`}>{formatImporto(saldo)}</td>
                                     </tr>
                                 )
                             })}
                         </tbody>
                         <tfoot><tr className="border-t-2 border-white/15 bg-petrolio/40">
                             <td className="px-3 py-2 font-body text-[11px] uppercase tracking-widest text-nebbia/50">Totali {verQuadra ? '· quadra ✓' : '· non quadra'}</td>
-                            <td className="px-3 py-2 text-right font-display text-sm text-nebbia">€ {fmtEUR(totVerDare)}</td>
-                            <td className="px-3 py-2 text-right font-display text-sm text-nebbia">€ {fmtEUR(totVerAvere)}</td>
+                            <td className="px-3 py-2 text-right font-display text-sm text-nebbia">{formatImporto(totVerDare)}</td>
+                            <td className="px-3 py-2 text-right font-display text-sm text-nebbia">{formatImporto(totVerAvere)}</td>
                             <td></td>
                         </tr></tfoot>
                     </table>
@@ -302,7 +303,7 @@ export default function ReportContabili({ clienteId, conti = [] }) {
                         <div className="p-6 space-y-4">
                             <p className="font-body text-sm text-nebbia/60 leading-relaxed">
                                 Verrà generata la registrazione di chiusura che azzera i conti economici del {annoSel} e riporta il risultato (
-                                <span className={risultatoCum >= 0 ? 'text-salvia' : 'text-red-400'}>€ {fmtEUR(risultatoCum)}</span>) al conto Utile/perdita d'esercizio.
+                                <span className={risultatoCum >= 0 ? 'text-salvia' : 'text-red-400'}>{formatImporto(risultatoCum)}</span>) al conto Utile/perdita d'esercizio.
                             </p>
                             {errore && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-2 bg-red-900/10 border border-red-500/20"><AlertCircle size={13} /> {errore}</div>}
                             <div className="flex gap-2">
@@ -337,14 +338,14 @@ function SezioneConti({ titolo, righe, totale, raggruppaClasse = false }) {
                                 <span className="font-body text-xs text-nebbia/70">{a.c.nome}</span>
                                 {raggruppaClasse && <span className="font-body text-[10px] text-nebbia/25 ml-2">{NOME_CLASSE[a.c.classe] ?? ''}</span>}
                             </span>
-                            <span className={`font-body text-xs ${a.val < 0 ? 'text-red-400/80' : 'text-nebbia'}`}>€ {fmtEUR(a.val)}</span>
+                            <span className={`font-body text-xs ${a.val < 0 ? 'text-red-400/80' : 'text-nebbia'}`}>{formatImporto(a.val)}</span>
                         </div>
                     ))}
                 </div>
             )}
             <div className="flex items-center justify-between px-4 py-2 border-t border-white/10">
                 <span className="font-body text-xs text-nebbia/50 uppercase tracking-widest">Totale {titolo}</span>
-                <span className="font-display text-sm text-nebbia">€ {fmtEUR(totale)}</span>
+                <span className="font-display text-sm text-nebbia">{formatImporto(totale)}</span>
             </div>
         </div>
     )

@@ -11,7 +11,7 @@ import { CAMPI_FATTURAZIONE, CAMPI_RECAPITO_SDI, campiMancanti, percentualeProfi
 const PROFILI = {
     avvocato: {
         titolo: 'Completa il tuo profilo — Avvocato',
-        intro: "Compila i dati di fatturazione per sbloccare tutta la piattaforma: bastano quelli, senza attese e senza approvazioni.",
+        intro: "Compila i dati di fatturazione e puoi subito acquistare un abbonamento: con l'abbonamento si attivano pratiche, clienti, atti e fatture. Nessuna attesa e nessuna approvazione.",
         badge: 'Avvocato verificato',
         documenti: [
             { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: false },
@@ -21,7 +21,7 @@ const PROFILI = {
     },
     commercialista: {
         titolo: 'Completa il tuo profilo — Commercialista',
-        intro: "Compila i dati di fatturazione per sbloccare tutta la piattaforma: bastano quelli, senza attese e senza approvazioni.",
+        intro: "Compila i dati di fatturazione e puoi subito acquistare un abbonamento: con l'abbonamento si attivano pratiche, clienti, atti e fatture. Nessuna attesa e nessuna approvazione.",
         badge: 'Commercialista verificato',
         documenti: [
             { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: false },
@@ -244,7 +244,7 @@ export function UserVerifica() {
                 <div className="bg-slate border border-oro/25 p-5">
                     <div className="flex items-center gap-2 mb-3">
                         <Sparkles size={15} className="text-oro" />
-                        <p className="font-body text-sm font-medium text-oro">Quello che si apre</p>
+                        <p className="font-body text-sm font-medium text-oro">Quello che si apre con un abbonamento</p>
                     </div>
                     <ul className="space-y-1.5 font-body text-xs text-nebbia/60 leading-relaxed">
                         <li>· Pratiche, udienze, scadenze e controparti</li>
@@ -282,7 +282,7 @@ export function UserVerifica() {
                     <p className="font-body text-sm font-medium text-nebbia mb-1">Dati per la fatturazione</p>
                     <p className="font-body text-xs text-nebbia/40 leading-relaxed">
                         Sono gli stessi che servono per emettere la fattura elettronica. Compilandoli sblocchi
-                        subito l'acquisto: nessuna attesa e nessuna approvazione da parte nostra.
+                        subito l'acquisto degli abbonamenti: nessuna attesa e nessuna approvazione da parte nostra.
                     </p>
                 </div>
 
@@ -399,8 +399,8 @@ export function UserVerificaStato() {
     const stato = profile?.verification_status ?? 'pending'
 
     const CONFIG = {
-        pending: { icon: Clock, color: 'text-amber-400', title: 'Verifica in corso', desc: 'Il team Lexum sta esaminando i tuoi documenti. Riceverai una notifica email entro 24-48 ore.' },
-        approved: { icon: CheckCircle, color: 'text-salvia', title: 'Verifica approvata!', desc: 'Ottimo! Ora puoi scegliere il piano di abbonamento oppure accedere direttamente alla banca dati.' },
+        pending: { icon: Clock, color: 'text-amber-400', title: 'Verifica in corso', desc: 'Il team Lexum sta esaminando i tuoi documenti per il distintivo di professionista verificato: riceverai un\u2019email entro 24-48 ore. Nel frattempo puoi usare Lexum e acquistare un abbonamento senza aspettare.' },
+        approved: { icon: CheckCircle, color: 'text-salvia', title: 'Verifica approvata!', desc: 'I tuoi documenti sono stati verificati: hai il distintivo di professionista verificato. Se non l\u2019hai già fatto, scegli un abbonamento per attivare pratiche, clienti, atti e fatture.' },
         rejected: { icon: XCircle, color: 'text-red-400', title: 'Verifica non approvata', desc: 'Non è stato possibile verificare la tua identità con i documenti forniti.' },
     }
 

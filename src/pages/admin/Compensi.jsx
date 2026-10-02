@@ -10,13 +10,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, StatCard, Badge, EmptyState } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 import {
   Wallet, Clock, CheckCircle2, Users, Search, AlertCircle, Check,
   ArrowRight, Receipt, X,
 } from 'lucide-react'
 
 const euro = (n) =>
-  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n ?? 0))
+  formatImporto(n)
 
 const dataIt = (iso) => iso ? new Date(iso).toLocaleDateString('it-IT') : '—'
 

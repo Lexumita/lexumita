@@ -3,6 +3,8 @@ import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
+import { formatPrezzo } from '@/lib/prezzi'
+import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
     Sparkles, ShoppingBag, CreditCard, ArrowRight, CheckCircle,
     AlertCircle, Loader2, Info, Shield, Zap, X, Tag
@@ -416,7 +418,7 @@ function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, 
                 <div className="min-w-0">
                     <p className="font-body text-xs text-oro tracking-widest uppercase mb-2">{prodotto.nome}</p>
                     <p className="font-display text-4xl font-light text-oro">
-                        EUR {prodotto.prezzo}
+                        {formatPrezzo(prodotto.prezzo)}
                         <span className="font-body text-sm text-nebbia/40 ml-2">{mesi === 1 ? 'al mese' : `per ${mesi} mesi`}</span>
                     </p>
                     <ul className="mt-4 space-y-2">
@@ -477,16 +479,16 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {pacchetti.map(p => {
                 const isLoading = acquistando === p.id
-                const prezzoPerCredito = (p.prezzo / p.crediti_ai_mensili).toFixed(2)
+                const prezzoPerCredito = Math.round((p.prezzo / p.crediti_ai_mensili) * 100) / 100
                 return (
                     <div key={p.id} className="bg-slate border border-white/5 hover:border-salvia/30 p-5 flex flex-col transition-colors">
                         <div className="flex items-center gap-2 mb-2">
                             <Sparkles size={13} className="text-salvia" />
                             <p className="font-body text-sm font-medium text-nebbia">{p.nome}</p>
                         </div>
-                        <p className="font-display text-3xl font-light text-salvia mt-2">EUR {p.prezzo}</p>
+                        <p className="font-display text-3xl font-light text-salvia mt-2">{formatPrezzo(p.prezzo)}</p>
                         <p className="font-body text-xs text-nebbia/40 mt-1">
-                            {p.crediti_ai_mensili} crediti · EUR {prezzoPerCredito}/credito
+                            {p.crediti_ai_mensili} crediti · {formatPrezzo(prezzoPerCredito)} a credito
                         </p>
                         <p className="font-body text-xs text-nebbia/30 mt-3 italic flex-1">Non scadono mai</p>
                         <button
@@ -535,43 +537,24 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {piani.map(p => {
                     const isLoading = acquistando === p.id
-                    const isHighlight = p.include_banca_dati && p.include_monetizzazione
+                    // Le voci vengono dai dati del prodotto (lib/vociPiano): restano vere
+                    // anche quando il listino cambia.
+                    const voci = vociPiano(p)
+                    const periodo = periodoPrezzo(p)
                     return (
-                        <div key={p.id} className={`bg-slate border p-6 flex flex-col ${isHighlight ? 'border-oro/40' : 'border-white/5'}`}>
-                            {isHighlight && (
-                                <p className="font-body text-xs text-oro tracking-widest uppercase mb-3">Consigliato</p>
-                            )}
-                            <h3 className="font-display text-xl font-semibold text-nebbia mb-1">{p.nome}</h3>
-                            <p className="font-body text-xs text-nebbia/40 mb-3">
-                                {p.durata_mesi ? `${p.durata_mesi} mesi` : 'Una tantum'}
-                            </p>
-
+                        <div key={p.id} className="bg-slate border border-white/5 hover:border-oro/30 transition-colors p-6 flex flex-col">
+                            <h3 className="font-display text-xl font-semibold text-nebbia mb-2">{p.nome}</h3>
                             <div className="flex flex-wrap gap-1.5 mb-4">
-                                {p.include_banca_dati && (
-                                    <span className="font-body text-[10px] px-2 py-0.5 border border-oro/30 text-oro">Pro</span>
-                                )}
-                                {p.include_monetizzazione && (
-                                    <span className="font-body text-[10px] px-2 py-0.5 border border-salvia/30 text-salvia">Monetizzazione</span>
-                                )}
-                                {p.posti > 1 && (
-                                    <span className="font-body text-[10px] px-2 py-0.5 border border-white/10 text-nebbia/40">
-                                        {p.posti} posti
-                                    </span>
-                                )}
+                                <span className="font-body text-[10px] px-2 py-0.5 border border-oro/30 text-oro">{etichettaDurata(p)}</span>
                             </div>
 
-                            <p className="font-display text-4xl font-light text-oro mb-4">EUR {p.prezzo}</p>
+                            <p className="font-display text-4xl font-light text-oro mb-4">
+                                {formatPrezzo(p.prezzo)}
+                                {periodo && <span className="font-body text-sm text-nebbia/40 ml-2">{periodo}</span>}
+                            </p>
 
                             <ul className="space-y-2 mb-5 flex-1">
-                                {[
-                                    'Gestione clienti illimitati',
-                                    'Pratiche e documenti',
-                                    'Calendario appuntamenti',
-                                    ...(p.crediti_ai_mensili ? [`${p.crediti_ai_mensili} crediti AI/mese`] : []),
-                                    ...(p.include_banca_dati ? ['Accesso banca dati sentenze'] : []),
-                                    ...(p.include_monetizzazione ? ['Carica sentenze e monetizza'] : []),
-                                    ...(p.posti > 1 ? [`Fino a ${p.posti} avvocati nello studio`] : []),
-                                ].map(feat => (
+                                {voci.map(feat => (
                                     <li key={feat} className="flex items-start gap-2 font-body text-xs text-nebbia/60">
                                         <CheckCircle size={11} className="text-salvia shrink-0 mt-0.5" />
                                         <span>{feat}</span>
@@ -582,10 +565,7 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
                             <button
                                 onClick={() => onAcquista(p.id)}
                                 disabled={isLoading}
-                                className={`w-full justify-center text-sm flex items-center gap-2 py-3 lg:py-2.5 font-body disabled:opacity-40 ${isHighlight
-                                    ? 'bg-oro text-petrolio hover:bg-oro/90 transition-colors'
-                                    : 'border border-oro/30 text-oro hover:bg-oro/10 transition-colors'
-                                    }`}
+                                className="w-full justify-center text-sm flex items-center gap-2 py-3 lg:py-2.5 font-body disabled:opacity-40 bg-oro text-petrolio hover:bg-oro/90 transition-colors"
                             >
                                 {isLoading
                                     ? <Loader2 size={14} className="animate-spin" />
@@ -636,7 +616,7 @@ function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati
                                     <CreditCard size={13} className="text-oro" />
                                     <p className="font-body text-sm font-medium text-nebbia">{s.nome}</p>
                                 </div>
-                                <p className="font-display text-3xl font-light text-oro mt-2 flex-1">EUR {s.prezzo}</p>
+                                <p className="font-display text-3xl font-light text-oro mt-2 flex-1">{formatPrezzo(s.prezzo)}</p>
                                 <button
                                     onClick={() => onAcquista(s.id)}
                                     disabled={isLoading}

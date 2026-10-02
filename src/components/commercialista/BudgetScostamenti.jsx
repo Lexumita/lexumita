@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import { Target, TrendingUp, TrendingDown } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtEUR, espandiPrevisto } from '@/lib/cassa'
+import { formatImporto } from '@/lib/prezzi'
 
 export default function BudgetScostamenti({ clienteId, mandatoId = null, anno = null, refreshTrigger = 0 }) {
     const annoCorr = new Date().getFullYear()
@@ -145,10 +146,10 @@ function SezioneBudget({ titolo, tipo, righe }) {
                                 return (
                                     <tr key={i} className="border-b border-white/5 last:border-0">
                                         <td className="px-3 py-2 font-body text-xs text-nebbia/70">{r.categoria}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/50">{r.previsto ? `€ ${fmtEUR(r.previsto)}` : '—'}</td>
-                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia">{r.effettivo ? `€ ${fmtEUR(r.effettivo)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia/50">{r.previsto ? `${formatImporto(r.previsto)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-right font-body text-xs text-nebbia">{r.effettivo ? `${formatImporto(r.effettivo)}` : '—'}</td>
                                         <td className={`px-3 py-2 text-right font-body text-xs ${scostClass(tipo, r.scost)}`}>
-                                            {r.scost === 0 ? '—' : `${r.scost > 0 ? '+' : '−'}€ ${fmtEUR(Math.abs(r.scost))}`}
+                                            {r.scost === 0 ? '—' : `${r.scost > 0 ? '+' : '−'}${formatImporto(Math.abs(r.scost))}`}
                                             {pct !== null && r.scost !== 0 && <span className="text-nebbia/25"> ({pct > 0 ? '+' : ''}{pct}%)</span>}
                                         </td>
                                     </tr>
@@ -158,10 +159,10 @@ function SezioneBudget({ titolo, tipo, righe }) {
                         <tfoot>
                             <tr className="border-t border-white/10 bg-petrolio/40">
                                 <td className="px-3 py-2 font-body text-[11px] text-nebbia/50 uppercase tracking-widest">Totale</td>
-                                <td className="px-3 py-2 text-right font-display text-sm text-nebbia/70">€ {fmtEUR(totPrev)}</td>
-                                <td className="px-3 py-2 text-right font-display text-sm text-nebbia">€ {fmtEUR(totEff)}</td>
+                                <td className="px-3 py-2 text-right font-display text-sm text-nebbia/70">{formatImporto(totPrev)}</td>
+                                <td className="px-3 py-2 text-right font-display text-sm text-nebbia">{formatImporto(totEff)}</td>
                                 <td className={`px-3 py-2 text-right font-display text-sm ${scostClass(tipo, totScost)}`}>
-                                    {totScost === 0 ? '—' : `${totScost > 0 ? '+' : '−'}€ ${fmtEUR(Math.abs(totScost))}`}
+                                    {totScost === 0 ? '—' : `${totScost > 0 ? '+' : '−'}${formatImporto(Math.abs(totScost))}`}
                                 </td>
                             </tr>
                         </tfoot>

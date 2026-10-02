@@ -17,6 +17,7 @@ import {
     Download, ExternalLink, Loader2, Landmark,
     Sparkles, X
 } from 'lucide-react'
+import { formatPrezzo } from '@/lib/prezzi'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -205,7 +206,7 @@ function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <p className="font-body text-xs text-nebbia/40 uppercase tracking-widest">Prezzo accesso</p>
-                        <p className="font-display text-3xl font-semibold text-oro mt-1">EUR {prezzo}</p>
+                        <p className="font-display text-3xl font-semibold text-oro mt-1">{formatPrezzo(prezzo)}</p>
                         <p className="font-body text-xs text-nebbia/30 mt-0.5">Pagamento una tantum</p>
                     </div>
                     <button

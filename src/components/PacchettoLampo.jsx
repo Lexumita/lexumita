@@ -14,12 +14,13 @@ import { X, Zap, Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
+import { formatPrezzo } from '@/lib/prezzi'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
 const DURATA_SOSPESA_MS = 60 * 60 * 1000   // una ricerca lasciata per pagare si ritrova entro un'ora
 
 export function formattaEuro(valore) {
-    return Number(valore).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
+    return formatPrezzo(valore)
 }
 
 // Ricerca da ritrovare dopo il pagamento. Il browser puo' negare l'archivio

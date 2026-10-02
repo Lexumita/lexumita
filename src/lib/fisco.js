@@ -5,6 +5,7 @@
 // Le scadenze le calcola il DB (v_documenti_fiscali): qui non si calcola nulla.
 
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 export const FORMATI_ACCETTATI = 'application/pdf,image/jpeg,image/png,image/webp'
 
@@ -47,7 +48,7 @@ export function fmtData(iso) {
 
 export function fmtEuro(n) {
     if (n == null || n === '') return '—'
-    return Number(n).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
+    return formatImporto(n)
 }
 
 export function oggiISO(delta = 0) {

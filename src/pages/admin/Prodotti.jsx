@@ -5,6 +5,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge } from '@/components/shared'
 import { Plus, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatPrezzo, formatImporto } from '@/lib/prezzi'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -107,7 +108,7 @@ export function AdminProdotti() {
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.spazio_gb > 0 ? `${p.spazio_gb} GB` : <Dash />}
                     </td>
-                    <td className="px-4 py-3 font-body text-sm text-oro font-medium">EUR {p.prezzo}</td>
+                    <td className="px-4 py-3 font-body text-sm text-oro font-medium">{formatPrezzo(p.prezzo)}</td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.durata_mesi ? `${p.durata_mesi} ${p.durata_mesi === 1 ? 'mese' : 'mesi'}` : <Dash />}
                     </td>
@@ -119,7 +120,7 @@ export function AdminProdotti() {
                         ? <span className="text-oro">
                             {p.provvigione_tipo === 'percentuale'
                               ? `${Number(p.provvigione_valore)}%`
-                              : `EUR ${Number(p.provvigione_valore)}`}
+                              : formatPrezzo(p.provvigione_valore)}
                           </span>
                         : <Dash />}
                     </td>
@@ -501,7 +502,7 @@ export function AdminProdottiForm() {
                     placeholder={form.provvigione_tipo === 'percentuale' ? '15' : '50'}
                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 pr-10 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body text-sm text-nebbia/30">
-                    {form.provvigione_tipo === 'percentuale' ? '%' : 'EUR'}
+                    {form.provvigione_tipo === 'percentuale' ? '%' : '€'}
                   </span>
                 </div>
               )}
@@ -512,13 +513,13 @@ export function AdminProdottiForm() {
               <div className="font-body text-xs text-nebbia/50 leading-relaxed">
                 {form.provvigione_tipo === 'percentuale' && form.provvigione_valore && !isNaN(parseFloat(form.provvigione_valore)) ? (
                   <>
-                    Su un prezzo di EUR {form.prezzo || '—'} il commerciale guadagna{' '}
+                    Su un prezzo di {form.prezzo ? formatPrezzo(form.prezzo) : '—'} il commerciale guadagna{' '}
                     <span className="text-oro">
-                      EUR {form.prezzo ? (parseFloat(form.prezzo) * parseFloat(form.provvigione_valore) / 100).toFixed(2) : '—'}
+                      {form.prezzo ? formatImporto(parseFloat(form.prezzo) * parseFloat(form.provvigione_valore) / 100) : '—'}
                     </span> per ogni vendita.
                   </>
                 ) : form.provvigione_tipo === 'fisso' && form.provvigione_valore ? (
-                  <>Il commerciale guadagna <span className="text-oro">EUR {form.provvigione_valore}</span> per ogni vendita, a prescindere dal prezzo.</>
+                  <>Il commerciale guadagna <span className="text-oro">{formatPrezzo(form.provvigione_valore)}</span> per ogni vendita, a prescindere dal prezzo.</>
                 ) : (
                   <>Senza provvigione questo prodotto <span className="text-nebbia/70">non genera compensi</span> per i commerciali, anche se il cliente è attribuito a uno di loro.</>
                 )}

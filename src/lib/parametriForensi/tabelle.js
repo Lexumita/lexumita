@@ -968,7 +968,7 @@ export const TABELLE_META = {
       confidenza: "high",
       fonte: "Normattiva — testo vigente dal 23-10-2022 (DM 55/2014 agg. DM 147/2022)",
       validataGU: true,
-      note: "Cella €5.201–26.000 = calcolatrice ufficiale; intera tabella = Normattiva 2022."
+      note: "Cella 5.201–26.000 € = calcolatrice ufficiale; intera tabella = Normattiva 2022."
     },
     giudice_di_pace: {
       confidenza: "high",

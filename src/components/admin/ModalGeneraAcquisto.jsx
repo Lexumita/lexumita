@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, User, Package, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { formatImporto } from '@/lib/prezzi'
 
 const TIPO_PRODOTTO_LABEL = {
     abbonamento: 'Abbonamento',
@@ -365,7 +366,7 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
                                                     </p>
                                                 </div>
                                                 <span className="font-body text-sm text-oro font-medium whitespace-nowrap">
-                                                    € {parseFloat(p.prezzo ?? 0).toFixed(2)}
+                                                    {formatImporto(p.prezzo ?? 0)}
                                                 </span>
                                             </div>
                                         </button>
@@ -496,7 +497,7 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
                                 <div className="flex justify-between">
                                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Importo</span>
                                     <span className={`font-body text-sm font-medium ${isOmaggio ? 'text-amber-400' : 'text-oro'}`}>
-                                        € {parseFloat(importo ?? 0).toFixed(2)}
+                                        {formatImporto(importo ?? 0)}
                                         {isOmaggio && <span className="text-xs ml-2">(omaggio)</span>}
                                     </span>
                                 </div>

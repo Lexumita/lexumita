@@ -719,7 +719,7 @@ export default function Home() {
                       <p className="font-body text-xs text-nebbia/25 mb-2">Fatturazione</p>
                       <div className="flex items-center justify-between p-2 bg-petrolio/50 border border-red-400/20">
                         <span className="font-body text-xs text-nebbia/60">Fattura 2026/041</span>
-                        <span className="font-body text-xs text-red-400/80">EUR 1.100 - scaduta</span>
+                        <span className="font-body text-xs text-red-400/80">1.100 € - scaduta</span>
                       </div>
                     </div>
 
@@ -863,7 +863,7 @@ export default function Home() {
                         <span key={t} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{t}</span>
                       ))}
                     </div>
-                    <span className="font-body text-xs text-oro font-medium">EUR 5</span>
+                    <span className="font-body text-xs text-oro font-medium">5 €</span>
                   </div>
                 </div>
               </div>
