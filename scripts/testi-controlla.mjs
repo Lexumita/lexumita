@@ -62,6 +62,7 @@ const CLASSI = new Set(['flex', 'grid', 'block', 'inline', 'hidden', 'relative',
   'visible', 'invisible', 'static', 'antialiased', 'outline', 'resize', 'ring', 'blur', 'filter',
   'transform', 'isolate', 'table', 'prose', 'sr-only'])
 const CSSOSO = (tok) => /[-:/[\]]/.test(tok) || CLASSI.has(tok) || !/[A-Za-zÀ-ÿ]/.test(tok)
+  || /^-?\d+(\.\d+)?(px|rem|em|ms|s|vh|vw|deg)$/.test(tok)               // misure: '0px', '300ms'
 // Una stringa di codice "sembra prosa" se ha almeno due parole e non è fatta
 // soltanto di classi Tailwind, percorsi o selettori; o se ha lettere accentate.
 const SEMBRA_PROSA = (s) => {
