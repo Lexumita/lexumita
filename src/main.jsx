@@ -1,3 +1,4 @@
+import './i18n'  // ← DEVE restare la prima riga: i testi devono esserci prima del primo disegno
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
