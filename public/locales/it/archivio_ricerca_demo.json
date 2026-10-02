@@ -1,0 +1,18 @@
+{
+  "search": {
+    "query": "Rossi 2024",
+    "button": "Cerca"
+  },
+  "result_1": {
+    "file": "Contratto_locazione_Rossi.pdf",
+    "excerpt": "\"...il presente contratto avra durata di 4+4 anni a partire dal 01/09/2024, con canone mensile di EUR 1.200...\"",
+    "pratica": "Pratica 2026/047",
+    "tag": "Locazione"
+  },
+  "result_2": {
+    "file": "Diffida_locatore_2024-11.pdf",
+    "excerpt": "\"...si invita il locatore alla risoluzione delle problematiche evidenziate nel contratto del 01/09/2024...\"",
+    "pratica": "Pratica 2026/047",
+    "tag": "Diffida"
+  }
+}

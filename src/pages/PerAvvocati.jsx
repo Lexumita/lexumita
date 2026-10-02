@@ -11,6 +11,18 @@ import {
     Library, Receipt,
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation, Trans } from 'react-i18next'
+
+// Valori tecnici legati per POSIZIONE agli elenchi di per_avvocati.json
+const COLORI_MEMBRI = ['oro', 'oro', 'salvia', 'salvia']
+const ACCENTI_RICERCHE = ['oro', 'salvia', 'salvia', 'salvia']
+const COLORI_EVENTI = ['oro', 'salvia', 'oro', 'salvia']
+const COLORI_RIGHE_CLIENTE = [undefined, 'text-oro', 'text-salvia', 'text-oro']
+const STATI_PAGAMENTI = ['pagato', 'pagato', 'in_sospeso']
+const ICONE_LEX = [Search, Scale, Brain, Sparkles, BookOpen, FileSignature]
+const COLORI_TOTALI = ['text-nebbia/55', 'text-nebbia/50', 'text-nebbia/50', 'text-nebbia/50']
+const APERTI_PARZIALI = [false, false, true]
+const ICONE_SICUREZZA = [ShieldCheck, EyeOff, Activity, FileText]
 
 // ─── Scroll animation hook ───────────────────────────────────
 function useInView(threshold = 0.12) {
@@ -107,31 +119,34 @@ function FeatureRow({ icon: Icon, title, text, points, reverse = false, accent =
 
 // ─────────────────────────────────────────────────────────────
 export default function PerAvvocati() {
+    const { t } = useTranslation('per_avvocati')
+    const lista = (k) => t(k, { returnObjects: true })
+
     return (
         <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
             <Helmet>
-                <title>Lexum per Studi Legali — Gestionale, AI e collaborazione di team</title>
+                <title>{t('meta.title')}</title>
                 <meta
                     name="description"
-                    content="Multi-accesso con permessi granulari, calendario condiviso, archivio intelligente, Lex AI e monetizzazione delle sentenze. Tutto il lavoro dello studio in un ambiente coerente."
+                    content={t('meta.description')}
                 />
                 <link rel="canonical" href="https://www.lexum.it/per-avvocati" />
 
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content="https://www.lexum.it/per-avvocati" />
-                <meta property="og:title" content="Lexum per Studi Legali — Gestionale, AI e team" />
+                <meta property="og:title" content={t('meta.og_title')} />
                 <meta
                     property="og:description"
-                    content="Gestionale, multi-accesso, calendario, archivio intelligente, Lex AI e monetizzazione dell'archivio. Tutto in un ambiente coerente."
+                    content={t('meta.og_description')}
                 />
                 <meta property="og:image" content="https://www.lexum.it/logo.png" />
                 <meta property="og:locale" content="it_IT" />
 
                 <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="Lexum per Studi Legali" />
+                <meta name="twitter:title" content={t('meta.twitter_title')} />
                 <meta
                     name="twitter:description"
-                    content="Gestionale, AI e collaborazione di team per studi legali italiani."
+                    content={t('meta.twitter_description')}
                 />
                 <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
             </Helmet>
@@ -152,30 +167,29 @@ export default function PerAvvocati() {
                 <div className="relative max-w-5xl mx-auto px-6 text-center" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
                     <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
                         <Star size={11} className="text-oro/60" />
-                        <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Per studi legali e avvocati</span>
+                        <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">{t('hero.badge')}</span>
                     </div>
 
                     <h1 className="font-display text-5xl md:text-7xl font-light text-nebbia leading-[1.1] mb-6">
-                        Tutto il lavoro dello studio,<br />
-                        <span className="text-oro-shimmer">in un unico ambiente.</span>
+                        <Trans t={t} i18nKey="hero.title"
+                            components={{ br: <br />, hl: <span className="text-oro-shimmer" /> }} />
                     </h1>
 
                     <p className="font-body text-base md:text-lg text-nebbia/45 leading-relaxed max-w-2xl mx-auto mb-10">
-                        Gestionale, calendario, archivio intelligente, Lex AI, banca dati condivisa e
-                        collaborazione di team. Tutto connesso, tutto al posto giusto, sempre.
+                        {t('hero.subtitle')}
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                         <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
-                            Prova Lexum una settimana <ArrowRight size={15} />
+                            {t('hero.cta_primary')}{' '}<ArrowRight size={15} />
                         </Link>
                         <Link to="/registrati" className="flex items-center gap-2 px-8 py-4 border border-salvia/30 bg-salvia/5 text-salvia font-body text-sm hover:bg-salvia/10 hover:border-salvia/50 transition-colors">
-                            Richiedi una call dimostrativa
+                            {t('hero.cta_secondary')}
                         </Link>
                     </div>
 
                     <p className="font-body text-xs text-nebbia/25 max-w-lg mx-auto">
-                        Nessuna carta richiesta. Cancellazione libera.
+                        {t('hero.no_card')}
                     </p>
                 </div>
 
@@ -191,37 +205,26 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel>Multi-accesso</SectionLabel>
+                        <SectionLabel>{t('multi_accesso.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Gestisci lo studio,{' '}
-                            <span className="text-oro">scegli chi vede cosa.</span>
+                            <Trans t={t} i18nKey="multi_accesso.title"
+                                components={{ hl: <span className="text-oro" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Compartimentazione delle informazioni, ruoli granulari, accesso controllato.
-                            L'archivio dello studio resta visibile solo a chi decidi tu.
+                            {t('multi_accesso.subtitle')}
                         </p>
                     </FadeIn>
 
                     <FeatureRow
                         icon={Users}
-                        title="Tu decidi chi vede cosa."
-                        text="Ogni membro dello studio ha il suo profilo. Tu scegli chi accede all'archivio completo e chi vede solo le pratiche assegnate. Le informazioni sensibili restano protette, anche all'interno del team."
-                        points={[
-                            'Ruoli e permessi configurabili',
-                            'Visibilita pratiche per singolo membro',
-                            'Compartimentazione archivio dello studio',
-                            'Audit interno: chi ha visto cosa, chi ha modificato cosa',
-                        ]}
+                        title={t('multi_accesso.feature_title')}
+                        text={t('multi_accesso.feature_text')}
+                        points={lista('multi_accesso.points')}
                     >
-                        <VisualBlock label="Studio - Membri e permessi">
+                        <VisualBlock label={t('multi_accesso.visual_label')}>
                             <div className="space-y-2">
-                                <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">Team studio</p>
-                                {[
-                                    { nome: 'Marco Rossi', ruolo: 'Titolare', avatar: 'MR', accesso: 'Tutto', accessoColor: 'oro' },
-                                    { nome: 'Laura Bianchi', ruolo: 'Socio senior', avatar: 'LB', accesso: 'Tutto', accessoColor: 'oro' },
-                                    { nome: 'Andrea Verdi', ruolo: 'Avvocato', avatar: 'AV', accesso: 'Solo pratiche assegnate', accessoColor: 'salvia' },
-                                    { nome: 'Giulia Neri', ruolo: 'Segreteria', avatar: 'GN', accesso: 'Anagrafiche e calendario', accessoColor: 'salvia' },
-                                ].map(({ nome, ruolo, avatar, accesso, accessoColor }) => (
+                                <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-3">{t('multi_accesso.team_label')}</p>
+                                {lista('multi_accesso.members').map(({ nome, ruolo, avatar, accesso }, i) => (
                                     <div key={nome} className="flex items-center gap-3 p-2.5 bg-petrolio/50 border border-white/5">
                                         <div className="w-8 h-8 flex items-center justify-center border border-oro/20 bg-oro/5 text-oro font-body text-[10px] font-medium shrink-0">
                                             {avatar}
@@ -230,7 +233,7 @@ export default function PerAvvocati() {
                                             <p className="font-body text-xs text-nebbia/70 truncate">{nome}</p>
                                             <p className="font-body text-[10px] text-nebbia/30">{ruolo}</p>
                                         </div>
-                                        <span className={`font-body text-[10px] px-2 py-0.5 border shrink-0 ${accessoColor === 'oro'
+                                        <span className={`font-body text-[10px] px-2 py-0.5 border shrink-0 ${COLORI_MEMBRI[i] === 'oro'
                                             ? 'bg-oro/10 border-oro/25 text-oro/80'
                                             : 'bg-salvia/10 border-salvia/25 text-salvia/80'
                                             }`}>
@@ -241,7 +244,7 @@ export default function PerAvvocati() {
                                 <div className="flex items-center gap-2 p-2.5 bg-oro/5 border border-oro/15 mt-2">
                                     <ShieldCheck size={11} className="text-oro shrink-0" />
                                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
-                                        Compartimentazione attiva: 4 membri, 2 livelli di accesso, 12 pratiche segmentate.
+                                        {t('multi_accesso.note')}
                                     </p>
                                 </div>
                             </div>
@@ -258,56 +261,45 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel color="salvia">Collaborazione</SectionLabel>
+                        <SectionLabel color="salvia">{t('collaborazione.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Tutti possono contribuire{' '}
-                            <span className="text-salvia">alla riuscita del caso.</span>
+                            <Trans t={t} i18nKey="collaborazione.title"
+                                components={{ hl: <span className="text-salvia" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Sulla stessa pratica lavorano piu avvocati. Ognuno ha le sue ricerche, ognuno
-                            porta il suo contributo. La pratica cresce in modo collettivo, senza confondere chi ha fatto cosa.
+                            {t('collaborazione.subtitle')}
                         </p>
                     </FadeIn>
 
                     <FeatureRow
                         icon={UserCheck}
-                        title="Una pratica, piu avvocati, ricerche separate ma collegate"
-                        text="Ogni membro assegnato alla pratica vede il quadro complessivo, ma le sue ricerche restano sue. Quando ne salva una, puo collegarla alla pratica e renderla disponibile a tutto il team. Lex AI legge tutte le ricerche del caso e suggerisce direzioni che nessuno aveva ancora considerato."
-                        points={[
-                            'Avvocati assegnati alla pratica',
-                            'Ricerche personali, contributi collettivi',
-                            'Lex AI legge tutto il caso e suggerisce',
-                            'Visibilita completa per il titolare',
-                        ]}
+                        title={t('collaborazione.feature_title')}
+                        text={t('collaborazione.feature_text')}
+                        points={lista('collaborazione.points')}
                         reverse
                     >
-                        <VisualBlock label="Pratica 2026/047 - Mario Rossi" accent="salvia">
+                        <VisualBlock label={t('collaborazione.visual_label')} accent="salvia">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                                    <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Avvocati assegnati</span>
-                                    <span className="font-body text-[10px] text-salvia">3 membri</span>
+                                    <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{t('collaborazione.assigned_label')}</span>
+                                    <span className="font-body text-[10px] text-salvia">{t('collaborazione.assigned_count')}</span>
                                 </div>
                                 <div className="flex gap-2">
-                                    {['MR', 'LB', 'AV'].map((a, i) => (
+                                    {lista('collaborazione.avatars').map((a, i) => (
                                         <div key={a} className={`w-7 h-7 flex items-center justify-center border text-[10px] font-medium ${i === 0 ? 'bg-oro/10 border-oro/25 text-oro' : 'bg-salvia/10 border-salvia/25 text-salvia'
                                             }`}>{a}</div>
                                     ))}
-                                    <span className="font-body text-[10px] text-nebbia/30 self-center ml-1">Marco (titolare), Laura, Andrea</span>
+                                    <span className="font-body text-[10px] text-nebbia/30 self-center ml-1">{t('collaborazione.assigned_names')}</span>
                                 </div>
 
                                 <div className="pt-3 border-t border-white/5">
-                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-2">Ricerche del caso (5)</p>
+                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-2">{t('collaborazione.research_label')}</p>
                                     <div className="space-y-1.5">
-                                        {[
-                                            { t: 'Art. 1578 c.c. - vizi cosa locata', autore: 'MR', accent: 'oro' },
-                                            { t: 'Cass. 4439/2024 - inadempimento locatore', autore: 'LB', accent: 'salvia' },
-                                            { t: 'Eccezione parziale inadempimento', autore: 'LB', accent: 'salvia' },
-                                            { t: 'Art. 1453 c.c. - risoluzione', autore: 'AV', accent: 'salvia' },
-                                        ].map(({ t, autore, accent }) => (
-                                            <div key={t} className="flex items-center gap-2 p-2 bg-petrolio/50 border border-white/5">
-                                                <Bookmark size={9} className={accent === 'oro' ? 'text-oro' : 'text-salvia'} />
-                                                <span className="font-body text-[11px] text-nebbia/65 flex-1 truncate">{t}</span>
-                                                <span className={`font-body text-[9px] px-1.5 py-0.5 border ${accent === 'oro' ? 'bg-oro/10 border-oro/25 text-oro/80' : 'bg-salvia/10 border-salvia/25 text-salvia/80'
+                                        {lista('collaborazione.research').map(({ titolo, autore }, i) => (
+                                            <div key={titolo} className="flex items-center gap-2 p-2 bg-petrolio/50 border border-white/5">
+                                                <Bookmark size={9} className={ACCENTI_RICERCHE[i] === 'oro' ? 'text-oro' : 'text-salvia'} />
+                                                <span className="font-body text-[11px] text-nebbia/65 flex-1 truncate">{titolo}</span>
+                                                <span className={`font-body text-[9px] px-1.5 py-0.5 border ${ACCENTI_RICERCHE[i] === 'oro' ? 'bg-oro/10 border-oro/25 text-oro/80' : 'bg-salvia/10 border-salvia/25 text-salvia/80'
                                                     }`}>{autore}</span>
                                             </div>
                                         ))}
@@ -317,7 +309,8 @@ export default function PerAvvocati() {
                                 <div className="flex items-start gap-2 p-2.5 bg-salvia/5 border border-salvia/15 mt-2">
                                     <Sparkles size={11} className="text-salvia shrink-0 mt-0.5" />
                                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
-                                        Lex ha analizzato tutte le ricerche. Suggerisce di approfondire <span className="text-salvia">art. 1587 c.c.</span> sull'obbligo di custodia del conduttore.
+                                        <Trans t={t} i18nKey="collaborazione.lex_suggestion"
+                                            components={{ hl: <span className="text-salvia" /> }} />
                                     </p>
                                 </div>
                             </div>
@@ -335,19 +328,14 @@ export default function PerAvvocati() {
 
                     <FeatureRow
                         icon={Calendar}
-                        title="Calendario integrato per appuntamenti, udienze e scadenze"
-                        text="Un unico calendario per lo studio. Vedi le tue udienze, gli appuntamenti con i clienti, le scadenze processuali, gli impegni del team. Ogni evento e collegato alla pratica di riferimento, con il contesto sempre a portata di mano."
-                        points={[
-                            'Vista personale, di team e di studio',
-                            'Eventi collegati alle pratiche',
-                            'Scadenze processuali e promemoria',
-                            'Sincronizzazione con calendari esterni',
-                        ]}
+                        title={t('calendario.feature_title')}
+                        text={t('calendario.feature_text')}
+                        points={lista('calendario.points')}
                     >
-                        <VisualBlock label="Calendario - Settimana corrente">
+                        <VisualBlock label={t('calendario.visual_label')}>
                             <div className="space-y-2.5">
                                 <div className="grid grid-cols-7 gap-1 mb-3">
-                                    {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((g, i) => (
+                                    {lista('calendario.days').map((g, i) => (
                                         <div key={i} className={`text-center font-body text-[10px] py-1 ${i === 2 ? 'bg-oro/15 text-oro' : 'text-nebbia/30'}`}>
                                             <div className="uppercase">{g}</div>
                                             <div className="text-nebbia/50 text-[11px] font-medium mt-0.5">{18 + i}</div>
@@ -356,18 +344,13 @@ export default function PerAvvocati() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    {[
-                                        { ora: '09:00', t: 'Udienza - Trib. Milano', sub: 'Mario Rossi - Pen.', col: 'oro' },
-                                        { ora: '11:30', t: 'Appuntamento - L. Verdi', sub: 'Pratica 2026/051', col: 'salvia' },
-                                        { ora: '14:30', t: 'Scadenza memoria difensiva', sub: 'Rossi vs ACME', col: 'oro' },
-                                        { ora: '16:00', t: 'Call interna - Team civile', sub: 'Revisione casi', col: 'salvia' },
-                                    ].map(({ ora, t, sub, col }) => (
-                                        <div key={t} className="flex items-center gap-3 p-2 bg-petrolio/50 border border-white/5">
-                                            <div className={`font-body text-[10px] font-medium px-1.5 py-0.5 border shrink-0 ${col === 'oro' ? 'bg-oro/10 border-oro/25 text-oro/80' : 'bg-salvia/10 border-salvia/25 text-salvia/80'
+                                    {lista('calendario.events').map(({ ora, titolo, sottotitolo }, i) => (
+                                        <div key={titolo} className="flex items-center gap-3 p-2 bg-petrolio/50 border border-white/5">
+                                            <div className={`font-body text-[10px] font-medium px-1.5 py-0.5 border shrink-0 ${COLORI_EVENTI[i] === 'oro' ? 'bg-oro/10 border-oro/25 text-oro/80' : 'bg-salvia/10 border-salvia/25 text-salvia/80'
                                                 }`}>{ora}</div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-body text-[11px] text-nebbia/70 truncate">{t}</p>
-                                                <p className="font-body text-[10px] text-nebbia/30">{sub}</p>
+                                                <p className="font-body text-[11px] text-nebbia/70 truncate">{titolo}</p>
+                                                <p className="font-body text-[10px] text-nebbia/30">{sottotitolo}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -387,50 +370,36 @@ export default function PerAvvocati() {
 
                     <FeatureRow
                         icon={Briefcase}
-                        title="Anagrafica cliente e storico pagamenti, sempre aggiornati"
-                        text="Per ogni cliente vedi le pratiche aperte e chiuse, le fatture emesse, i pagamenti ricevuti e quelli in sospeso. Niente piu fogli Excel paralleli o mail da rincorrere: tutto in un unico posto, collegato al lavoro che hai fatto."
-                        points={[
-                            'Anagrafica clienti completa',
-                            'Pratiche associate al cliente',
-                            'Storico pagamenti e fatture',
-                            'Note e comunicazioni archiviate',
-                        ]}
+                        title={t('clienti.feature_title')}
+                        text={t('clienti.feature_text')}
+                        points={lista('clienti.points')}
                         reverse
                     >
-                        <VisualBlock label="Cliente - Mario Rossi">
+                        <VisualBlock label={t('clienti.visual_label')}>
                             <div className="space-y-3">
                                 <div className="space-y-1.5">
-                                    {[
-                                        { l: 'Tipo', v: 'Privato' },
-                                        { l: 'Pratiche aperte', v: '2', c: 'text-oro' },
-                                        { l: 'Fatturato 2026', v: '4.200,00 €', c: 'text-salvia' },
-                                        { l: 'Da incassare', v: '1.100,00 €', c: 'text-oro' },
-                                    ].map(({ l, v, c }) => (
-                                        <div key={l} className="flex justify-between py-1.5 border-b border-white/5">
-                                            <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{l}</span>
-                                            <span className={`font-body text-xs ${c || 'text-nebbia/70'}`}>{v}</span>
+                                    {lista('clienti.rows').map(({ etichetta, valore }, i) => (
+                                        <div key={etichetta} className="flex justify-between py-1.5 border-b border-white/5">
+                                            <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{etichetta}</span>
+                                            <span className={`font-body text-xs ${COLORI_RIGHE_CLIENTE[i] || 'text-nebbia/70'}`}>{valore}</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="pt-2">
-                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-2">Pagamenti recenti</p>
+                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-2">{t('clienti.payments_label')}</p>
                                     <div className="space-y-1.5">
-                                        {[
-                                            { d: '12/03/2026', t: 'Acconto pratica 2026/047', i: '1.500,00', stato: 'pagato' },
-                                            { d: '28/02/2026', t: 'Onorario consulenza', i: '600,00', stato: 'pagato' },
-                                            { d: '15/02/2026', t: 'Saldo pratica 2025/118', i: '1.100,00', stato: 'in_sospeso' },
-                                        ].map(({ d, t, i, stato }) => (
-                                            <div key={d + t} className="flex items-center gap-2 p-2 bg-petrolio/50 border border-white/5">
-                                                <CreditCard size={10} className={stato === 'pagato' ? 'text-salvia' : 'text-oro'} />
+                                        {lista('clienti.payments').map(({ data, descrizione, importo }, n) => (
+                                            <div key={data + descrizione} className="flex items-center gap-2 p-2 bg-petrolio/50 border border-white/5">
+                                                <CreditCard size={10} className={STATI_PAGAMENTI[n] === 'pagato' ? 'text-salvia' : 'text-oro'} />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-body text-[11px] text-nebbia/70 truncate">{t}</p>
-                                                    <p className="font-body text-[10px] text-nebbia/30">{d}</p>
+                                                    <p className="font-body text-[11px] text-nebbia/70 truncate">{descrizione}</p>
+                                                    <p className="font-body text-[10px] text-nebbia/30">{data}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-body text-[11px] text-nebbia/70">{i}&nbsp;€</p>
-                                                    <p className={`font-body text-[9px] uppercase tracking-widest ${stato === 'pagato' ? 'text-salvia/70' : 'text-oro/70'}`}>
-                                                        {stato === 'pagato' ? 'Pagato' : 'In sospeso'}
+                                                    <p className="font-body text-[11px] text-nebbia/70">{importo}</p>
+                                                    <p className={`font-body text-[9px] uppercase tracking-widest ${STATI_PAGAMENTI[n] === 'pagato' ? 'text-salvia/70' : 'text-oro/70'}`}>
+                                                        {STATI_PAGAMENTI[n] === 'pagato' ? t('clienti.status_paid') : t('clienti.status_pending')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -452,16 +421,11 @@ export default function PerAvvocati() {
 
                     <FeatureRow
                         icon={FolderSearch}
-                        title="L'archivio dello studio diventa intelligente"
-                        text="Carichi i documenti, Lex AI li classifica e li ritrova quando servono. Cerchi con linguaggio naturale e trovi non solo il file giusto, ma anche il punto preciso del documento che ti interessa. La carta resta in cassettiera, il lavoro vero resta digitale."
-                        points={[
-                            'Documenti collegati alle pratiche',
-                            'Ricerca semantica nel testo',
-                            'Classificazione automatica',
-                            'Versionamento e tracciamento modifiche',
-                        ]}
+                        title={t('archivio.feature_title')}
+                        text={t('archivio.feature_text')}
+                        points={lista('archivio.points')}
                     >
-                        <VisualBlock label="Ricerca nell'archivio">
+                        <VisualBlock label={t('archivio.visual_label')}>
                             <ArchivioRicercaAnimatedDemo />
                         </VisualBlock>
                     </FeatureRow>
@@ -480,36 +444,28 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto relative">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel color="salvia">Intelligenza artificiale</SectionLabel>
+                        <SectionLabel color="salvia">{t('lex_ai.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Un assistente che lavora{' '}
-                            <span className="text-salvia">sui tuoi materiali.</span>
+                            <Trans t={t} i18nKey="lex_ai.title"
+                                components={{ hl: <span className="text-salvia" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Lex non e una chat generica. E un assistente che conosce le tue pratiche,
-                            le tue ricerche e l'intero contesto del lavoro legale italiano.
+                            {t('lex_ai.subtitle')}
                         </p>
                     </FadeIn>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                         <FadeIn delay={0.1}>
                             <div className="space-y-3">
-                                {[
-                                    { icon: Search, t: 'Ricerca legale intelligente', d: 'Cerca su norme, sentenze e prassi con linguaggio naturale. Lex capisce il contesto e suggerisce i risultati piu rilevanti.' },
-                                    { icon: Scale, t: 'Strategie processuali', d: 'Analizza il caso e propone strategie concrete, eccezioni da sollevare e argomenti da sviluppare in udienza.' },
-                                    { icon: Brain, t: 'Conversazione continua', d: 'Approfondisci, cambia angolazione, chiedi follow-up. Lex ricorda il contesto della conversazione.' },
-                                    { icon: Sparkles, t: 'Strategia su misura per la pratica', d: 'Legge tutte le ricerche e i materiali della pratica e genera una strategia personalizzata.' },
-                                    { icon: BookOpen, t: 'Sentenze correlate', d: 'Suggerisce quali sentenze della banca dati vale la pena consultare in base al tuo caso specifico.' },
-                                    { icon: FileSignature, t: 'Atti gia compilati', d: 'Diffide, comparse, istanze, precetti. Lex compila i template con i dati della pratica e produce atti pronti per la revisione.' },
-                                ].map(({ icon: I, t, d }, i) => (
+                                {lista('lex_ai.items').map(({ titolo, testo }, i) => ({ I: ICONE_LEX[i], titolo, testo })).map(({ I, titolo, testo }, i) => (
                                     <FadeIn key={i} delay={0.1 + i * 0.06}>
                                         <div className="flex gap-4 p-4 bg-slate border border-white/5 hover:border-salvia/20 transition-colors">
                                             <div className="w-8 h-8 flex items-center justify-center border border-salvia/20 bg-salvia/5 shrink-0">
                                                 <I size={13} className="text-salvia" />
                                             </div>
                                             <div>
-                                                <p className="font-body text-sm font-medium text-nebbia mb-0.5">{t}</p>
-                                                <p className="font-body text-xs text-nebbia/35 leading-relaxed">{d}</p>
+                                                <p className="font-body text-sm font-medium text-nebbia mb-0.5">{titolo}</p>
+                                                <p className="font-body text-xs text-nebbia/35 leading-relaxed">{testo}</p>
                                             </div>
                                         </div>
                                     </FadeIn>
@@ -518,27 +474,27 @@ export default function PerAvvocati() {
                         </FadeIn>
 
                         <FadeIn delay={0.2}>
-                            <VisualBlock label="Lex AI - Conversazione" accent="salvia">
+                            <VisualBlock label={t('lex_ai.visual_label')} accent="salvia">
                                 <div className="space-y-3">
                                     <div className="flex justify-end">
                                         <div className="max-w-[85%] bg-petrolio/60 border border-white/5 p-3">
                                             <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                                                Stiamo lavorando alla pratica Rossi sulla locazione, qual'è la strategia migliore per la prossima udienza?
+                                                {t('lex_ai.question')}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex">
                                         <div className="max-w-[90%] bg-salvia/5 border border-salvia/15 p-3 space-y-2">
                                             <p className="font-body text-xs text-salvia/80 font-medium flex items-center gap-1">
-                                                <Sparkles size={10} /> Lex AI
+                                                <Sparkles size={10} />{' '}{t('lex_ai.assistant_name')}
                                             </p>
                                             <p className="font-body text-xs text-nebbia/55 leading-relaxed">
-                                                Ho letto tutte e 12 le ricerche del caso, ognuna si è rivelata molto utile e completa, approccia il caso da prospettive diverse... molto utile! Ho trovato alcuni articoli ed una sentenza del 2007 che ci sarà d'aiuto. Unisco tutto per un'analisi completa. La strada piu solida e l'eccezione di parziale inadempimento del locatore (art. 1578 c.c.), gia approfondita da Laura. Suggerisco di rafforzarla con l'art. 1587 c.c. sulla custodia del conduttore. Ho preparato una bozza di memoria difensiva pronta per la tua revisione.
+                                                {t('lex_ai.answer')}
                                             </p>
                                             <div className="flex gap-1 pt-1 flex-wrap">
-                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Art. 1578 c.c.</span>
-                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">Art. 1587 c.c.</span>
-                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/25 text-salvia/80">Memoria.docx</span>
+                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{lista('lex_ai.tags')[0]}</span>
+                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{lista('lex_ai.tags')[1]}</span>
+                                                <span className="font-body text-[10px] px-1.5 py-0.5 bg-salvia/10 border border-salvia/25 text-salvia/80">{lista('lex_ai.tags')[2]}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -556,74 +512,59 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel>Contabilita integrata</SectionLabel>
+                        <SectionLabel>{t('contabilita.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Sistema di,{' '}
-                            <span className="text-oro">Fatturazione.</span>
+                            <Trans t={t} i18nKey="contabilita.title"
+                                components={{ hl: <span className="text-oro" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Le fatture, si emettono in pochi click. La contabilita dello studio assieme a
-                            clienti, pratiche e documenti, vivono all'interno dello stesso ambiente.
+                            {t('contabilita.subtitle')}
                         </p>
                     </FadeIn>
 
                     {/* FeatureRow principale */}
                     <FeatureRow
                         icon={Receipt}
-                        title="Fatture professionali, gia pronte."
-                        text="Ogni fattura nasce collegata a una pratica e a un cliente. Lexum calcola automaticamente IVA, CPA forense e ritenuta d'acconto. La numerazione e progressiva per anno. Il PDF e generato in formato compatibile SDI, pronto per il tuo commercialista o per il Sistema di Interscambio."
-                        points={[
-                            'Calcoli automatici IVA, CPA, ritenuta',
-                            'Numerazione progressiva annuale',
-                            'PDF compatibile SDI',
-                            'Archiviazione automatica nell archivio dello studio',
-                        ]}
+                        title={t('contabilita.feature_title')}
+                        text={t('contabilita.feature_text')}
+                        points={lista('contabilita.points')}
                     >
-                        <VisualBlock label="Fattura 2026/048 - Mario Rossi">
+                        <VisualBlock label={t('contabilita.visual_label')}>
                             <div className="space-y-3">
                                 {/* Intestazione */}
                                 <div className="flex items-center justify-between pb-2 border-b border-white/5">
                                     <div>
-                                        <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Numero</p>
-                                        <p className="font-body text-sm text-nebbia">2026/048</p>
+                                        <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{t('contabilita.number_label')}</p>
+                                        <p className="font-body text-sm text-nebbia">{t('contabilita.number')}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Data</p>
-                                        <p className="font-body text-sm text-nebbia">15/05/2026</p>
+                                        <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">{t('contabilita.date_label')}</p>
+                                        <p className="font-body text-sm text-nebbia">{t('contabilita.date')}</p>
                                     </div>
                                 </div>
 
                                 {/* Righe */}
                                 <div className="space-y-1.5">
-                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">Prestazioni</p>
-                                    {[
-                                        { d: 'Consulenza causa civile', i: '1.200,00' },
-                                        { d: 'Comparsa di costituzione', i: '800,00' },
-                                        { d: 'Udienza prima comparizione', i: '500,00' },
-                                    ].map(({ d, i }) => (
-                                        <div key={d} className="flex justify-between p-2 bg-petrolio/50 border border-white/5">
-                                            <span className="font-body text-[11px] text-nebbia/65 truncate">{d}</span>
-                                            <span className="font-body text-[11px] text-nebbia/65 shrink-0 ml-2">{i}&nbsp;€</span>
+                                    <p className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest mb-1">{t('contabilita.services_label')}</p>
+                                    {lista('contabilita.services').map(({ descrizione, importo }) => (
+                                        <div key={descrizione} className="flex justify-between p-2 bg-petrolio/50 border border-white/5">
+                                            <span className="font-body text-[11px] text-nebbia/65 truncate">{descrizione}</span>
+                                            <span className="font-body text-[11px] text-nebbia/65 shrink-0 ml-2">{importo}</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Totali calcolati */}
                                 <div className="space-y-1 pt-2 border-t border-white/5">
-                                    {[
-                                        { l: 'Imponibile', v: '2.500,00', c: 'text-nebbia/55' },
-                                        { l: 'CPA 4%', v: '100,00', c: 'text-nebbia/50' },
-                                        { l: 'IVA 22%', v: '572,00', c: 'text-nebbia/50' },
-                                        { l: 'Ritenuta d acconto 20%', v: '-500,00', c: 'text-nebbia/50' },
-                                    ].map(({ l, v, c }) => (
-                                        <div key={l} className="flex justify-between text-[11px]">
-                                            <span className={`font-body ${c}`}>{l}</span>
-                                            <span className={`font-body ${c}`}>{v}&nbsp;€</span>
+                                    {lista('contabilita.totals').map(({ etichetta, importo }, i) => (
+                                        <div key={etichetta} className="flex justify-between text-[11px]">
+                                            <span className={`font-body ${COLORI_TOTALI[i]}`}>{etichetta}</span>
+                                            <span className={`font-body ${COLORI_TOTALI[i]}`}>{importo}</span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between pt-2 mt-1 border-t border-white/5">
-                                        <span className="font-body text-xs text-nebbia/70">Totale netto da pagare</span>
-                                        <span className="font-body text-sm text-oro font-medium">2.672,00 €</span>
+                                        <span className="font-body text-xs text-nebbia/70">{t('contabilita.total_label')}</span>
+                                        <span className="font-body text-sm text-oro font-medium">{t('contabilita.total')}</span>
                                     </div>
                                 </div>
 
@@ -631,7 +572,8 @@ export default function PerAvvocati() {
                                 <div className="flex items-center gap-2 p-2 bg-oro/5 border border-oro/15">
                                     <FileText size={11} className="text-oro shrink-0" />
                                     <p className="font-body text-[11px] text-nebbia/55">
-                                        PDF generato in formato SDI - archiviato in <span className="text-oro/80">Archivio &gt; Fatture &gt; 2026</span>
+                                        <Trans t={t} i18nKey="contabilita.sdi_note"
+                                            components={{ hl: <span className="text-oro/80" /> }} />
                                     </p>
                                 </div>
                             </div>
@@ -647,25 +589,25 @@ export default function PerAvvocati() {
                                 <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/5 text-oro mb-4">
                                     <Activity size={16} />
                                 </div>
-                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">Scadenzario sotto controllo</h3>
+                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">{t('contabilita.scadenzario.title')}</h3>
                                 <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-4">
-                                    Vedi a colpo d occhio chi deve pagare, cosa e scaduto, cosa e in arrivo. Stati colorati per fattura: in attesa, pagata, scaduta.
+                                    {t('contabilita.scadenzario.text')}
                                 </p>
                                 <div className="space-y-1.5 pt-3 border-t border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-salvia rounded-full" />
-                                        <span className="font-body text-[11px] text-nebbia/50">Pagata</span>
-                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">4.200 €</span>
+                                        <span className="font-body text-[11px] text-nebbia/50">{t('contabilita.scadenzario.paid_label')}</span>
+                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">{t('contabilita.scadenzario.paid_amount')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-oro rounded-full" />
-                                        <span className="font-body text-[11px] text-nebbia/50">In attesa</span>
-                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">2.672 €</span>
+                                        <span className="font-body text-[11px] text-nebbia/50">{t('contabilita.scadenzario.pending_label')}</span>
+                                        <span className="font-body text-[11px] text-nebbia/30 ml-auto">{t('contabilita.scadenzario.pending_amount')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
-                                        <span className="font-body text-[11px] text-nebbia/50">Scaduta</span>
-                                        <span className="font-body text-[11px] text-red-400/70 ml-auto">1.100 €</span>
+                                        <span className="font-body text-[11px] text-nebbia/50">{t('contabilita.scadenzario.overdue_label')}</span>
+                                        <span className="font-body text-[11px] text-red-400/70 ml-auto">{t('contabilita.scadenzario.overdue_amount')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -677,20 +619,16 @@ export default function PerAvvocati() {
                                 <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/5 text-oro mb-4">
                                     <CreditCard size={16} />
                                 </div>
-                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">Pagamenti parziali tracciati</h3>
+                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">{t('contabilita.parziali.title')}</h3>
                                 <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-4">
-                                    Acconti, saldi, bonifici, contanti, assegni. Cinque metodi di pagamento tracciati per ogni fattura. Lo stato si aggiorna da solo quando il saldo e completato.
+                                    {t('contabilita.parziali.text')}
                                 </p>
                                 <div className="space-y-1.5 pt-3 border-t border-white/5">
-                                    {[
-                                        { l: 'Bonifico', d: '12/03', i: '1.500,00' },
-                                        { l: 'Contanti', d: '20/03', i: '700,00' },
-                                        { l: 'Saldo da incassare', d: '—', i: '472,00', open: true },
-                                    ].map(({ l, d, i, open }) => (
-                                        <div key={l} className="flex items-center justify-between gap-2">
-                                            <span className={`font-body text-[11px] ${open ? 'text-oro' : 'text-nebbia/50'}`}>{l}</span>
-                                            <span className={`font-body text-[10px] ${open ? 'text-oro/60' : 'text-nebbia/30'}`}>{d}</span>
-                                            <span className={`font-body text-[11px] ${open ? 'text-oro' : 'text-nebbia/50'}`}>{i}&nbsp;€</span>
+                                    {lista('contabilita.parziali.rows').map(({ metodo, data, importo }, i) => (
+                                        <div key={metodo} className="flex items-center justify-between gap-2">
+                                            <span className={`font-body text-[11px] ${APERTI_PARZIALI[i] ? 'text-oro' : 'text-nebbia/50'}`}>{metodo}</span>
+                                            <span className={`font-body text-[10px] ${APERTI_PARZIALI[i] ? 'text-oro/60' : 'text-nebbia/30'}`}>{data}</span>
+                                            <span className={`font-body text-[11px] ${APERTI_PARZIALI[i] ? 'text-oro' : 'text-nebbia/50'}`}>{importo}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -703,23 +641,23 @@ export default function PerAvvocati() {
                                 <div className="w-10 h-10 flex items-center justify-center border border-oro/20 bg-oro/5 text-oro mb-4">
                                     <Zap size={16} />
                                 </div>
-                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">Promemoria automatici</h3>
+                                <h3 className="font-display text-lg font-medium text-nebbia mb-2">{t('contabilita.promemoria.title')}</h3>
                                 <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-4">
-                                    Lexum ti avvisa tre giorni prima della scadenza e il giorno in cui una fattura va in ritardo. Niente piu solleciti scordati, niente piu mail dimenticate al cliente.
+                                    {t('contabilita.promemoria.text')}
                                 </p>
                                 <div className="space-y-2 pt-3 border-t border-white/5">
                                     <div className="flex items-start gap-2">
                                         <div className="w-1.5 h-1.5 bg-oro rounded-full mt-1.5 shrink-0" />
                                         <div>
-                                            <p className="font-body text-[11px] text-nebbia/55">Tra 3 giorni</p>
-                                            <p className="font-body text-[10px] text-nebbia/30">Fattura 2026/048 - Rossi</p>
+                                            <p className="font-body text-[11px] text-nebbia/55">{t('contabilita.promemoria.upcoming_when')}</p>
+                                            <p className="font-body text-[10px] text-nebbia/30">{t('contabilita.promemoria.upcoming_invoice')}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-2">
                                         <div className="w-1.5 h-1.5 bg-red-400 rounded-full mt-1.5 shrink-0" />
                                         <div>
-                                            <p className="font-body text-[11px] text-red-400/80">Scaduta oggi</p>
-                                            <p className="font-body text-[10px] text-nebbia/30">Fattura 2026/041 - Verdi</p>
+                                            <p className="font-body text-[11px] text-red-400/80">{t('contabilita.promemoria.overdue_when')}</p>
+                                            <p className="font-body text-[10px] text-nebbia/30">{t('contabilita.promemoria.overdue_invoice')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -739,19 +677,14 @@ export default function PerAvvocati() {
                                         <Sparkles size={18} />
                                     </div>
                                     <h3 className="font-display text-2xl md:text-3xl font-light text-nebbia">
-                                        Chiedi a Lex{' '}
-                                        <span className="text-salvia">chi non ha ancora pagato.</span>
+                                        <Trans t={t} i18nKey="contabilita.lex_pagamenti.title"
+                                            components={{ hl: <span className="text-salvia" /> }} />
                                     </h3>
                                     <p className="font-body text-sm text-nebbia/50 leading-relaxed">
-                                        L'unico gestionale legale dove puoi chiedere in italiano «quali fatture sono scadute da piu di trenta giorni?» o «quanto mi deve ancora pagare il cliente Rossi?» e ricevere la risposta in pochi secondi.
+                                        {t('contabilita.lex_pagamenti.text')}
                                     </p>
                                     <ul className="space-y-2 pt-2">
-                                        {[
-                                            'Domande in linguaggio naturale',
-                                            'Risposte immediate con i numeri',
-                                            'Link diretti alle fatture rilevanti',
-                                            'Nessun report da generare, nessun filtro',
-                                        ].map((p, i) => (
+                                        {lista('contabilita.lex_pagamenti.points').map((p, i) => (
                                             <li key={i} className="flex items-center gap-2 font-body text-xs text-nebbia/40">
                                                 <div className="w-1 h-1 bg-salvia rounded-full shrink-0" />
                                                 {p}
@@ -760,44 +693,44 @@ export default function PerAvvocati() {
                                     </ul>
                                 </div>
 
-                                <VisualBlock label="Lex su pagamenti" accent="salvia">
+                                <VisualBlock label={t('contabilita.lex_pagamenti.visual_label')} accent="salvia">
                                     <div className="space-y-3">
                                         <div className="flex justify-end">
                                             <div className="max-w-[85%] bg-petrolio/60 border border-white/5 p-3">
                                                 <p className="font-body text-xs text-nebbia/60 leading-relaxed">
-                                                    Quali clienti hanno fatture scadute da piu di 30 giorni?
+                                                    {t('contabilita.lex_pagamenti.question')}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex">
                                             <div className="max-w-[90%] bg-salvia/5 border border-salvia/15 p-3 space-y-2">
                                                 <p className="font-body text-xs text-salvia/80 font-medium flex items-center gap-1">
-                                                    <Sparkles size={10} /> Lex AI
+                                                    <Sparkles size={10} />{' '}{t('contabilita.lex_pagamenti.assistant_name')}
                                                 </p>
                                                 <p className="font-body text-xs text-nebbia/55 leading-relaxed">
-                                                    Ho trovato 3 fatture scadute da oltre 30 giorni, per un totale di 4.150,00 €.
+                                                    {t('contabilita.lex_pagamenti.answer')}
                                                 </p>
                                                 <div className="space-y-1 pt-1">
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
                                                         <div>
-                                                            <p className="font-body text-[11px] text-nebbia/70">Mario Rossi - 2026/041</p>
-                                                            <p className="font-body text-[10px] text-red-400/70">Scaduta da 42 giorni</p>
+                                                            <p className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[0].cliente}</p>
+                                                            <p className="font-body text-[10px] text-red-400/70">{lista('contabilita.lex_pagamenti.results')[0].scadenza}</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">1.100,00 €</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[0].importo}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
                                                         <div>
-                                                            <p className="font-body text-[11px] text-nebbia/70">L. Verdi srl - 2026/035</p>
-                                                            <p className="font-body text-[10px] text-red-400/70">Scaduta da 35 giorni</p>
+                                                            <p className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[1].cliente}</p>
+                                                            <p className="font-body text-[10px] text-red-400/70">{lista('contabilita.lex_pagamenti.results')[1].scadenza}</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">1.800,00 €</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[1].importo}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center p-2 bg-petrolio/60 border border-white/5">
                                                         <div>
-                                                            <p className="font-body text-[11px] text-nebbia/70">A. Bianchi - 2026/028</p>
-                                                            <p className="font-body text-[10px] text-red-400/70">Scaduta da 31 giorni</p>
+                                                            <p className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[2].cliente}</p>
+                                                            <p className="font-body text-[10px] text-red-400/70">{lista('contabilita.lex_pagamenti.results')[2].scadenza}</p>
                                                         </div>
-                                                        <span className="font-body text-[11px] text-nebbia/70">1.250,00 €</span>
+                                                        <span className="font-body text-[11px] text-nebbia/70">{lista('contabilita.lex_pagamenti.results')[2].importo}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -819,24 +752,15 @@ export default function PerAvvocati() {
 
                     <FeatureRow
                         icon={BookOpen}
-                        title="Una banca dati gratis, sempre disponibile"
-                        text="Oltre 4 milioni di documenti giuridici tra giurisprudenza italiana, normativa nazionale e UE, prassi e corpus condiviso dagli avvocati. Aperta a chiunque, senza abbonamenti per area, senza limiti di consultazione. La consulti dal primo giorno, e Lex AI ti aiuta a trovare quello che cerchi."
-                        points={[
-                            'Oltre 4 milioni di documenti',
-                            'Aggiornata in modo continuo',
-                            'Ricerca con linguaggio naturale',
-                        ]}
+                        title={t('banca_dati.feature_title')}
+                        text={t('banca_dati.feature_text')}
+                        points={lista('banca_dati.points')}
                         reverse
                     >
-                        <VisualBlock label="Banca dati Lexum">
+                        <VisualBlock label={t('banca_dati.visual_label')}>
                             <div className="space-y-3">
                                 <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { v: 'Giurisprudenza italiana' },
-                                        { v: 'Normativa italiana' },
-                                        { v: 'Diritto UE' },
-                                        { v: 'Prassi e corpus' },
-                                    ].map(({ v, l }) => (
+                                    {lista('banca_dati.tiles').map(({ titolo: v, sottotitolo: l }) => (
                                         <div key={l} className="bg-petrolio/50 border border-white/5 p-3">
                                             <p className="font-display text-xl font-light text-oro-static mb-0.5">{v}</p>
                                             <p className="font-body text-[10px] text-nebbia/35 leading-snug">{l}</p>
@@ -846,7 +770,7 @@ export default function PerAvvocati() {
                                 <div className="flex items-center gap-2 p-2.5 bg-oro/5 border border-oro/15">
                                     <Library size={11} className="text-oro shrink-0" />
                                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
-                                        Aperta a chiunque, gratis. Lavoriamo in modo continuo per ampliare e aggiornare le fonti.
+                                        {t('banca_dati.note')}
                                     </p>
                                 </div>
                             </div>
@@ -863,48 +787,37 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel>Monetizzazione</SectionLabel>
+                        <SectionLabel>{t('monetizzazione.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Il tuo archivio diventa{' '}
-                            <span className="text-oro">una risorsa attiva.</span>
+                            <Trans t={t} i18nKey="monetizzazione.title"
+                                components={{ hl: <span className="text-oro" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Le sentenze che hai gia lavorato, anonimizzate e pubblicate, fanno crescere il sapere
-                            collettivo della professione. E ti restituiscono valore economico ogni volta che
-                            vengono consultate.
+                            {t('monetizzazione.subtitle')}
                         </p>
                     </FadeIn>
 
                     <FeatureRow
                         icon={TrendingUp}
-                        title="Anonimizzi, pubblichi, monetizzi"
-                        text="Selezioni le sentenze che possono avere valore per altri professionisti. Lexum ti aiuta nell'anonimizzazione. Le pubblichi nella banca dati. Quando un altro avvocato le acquista, una quota va al tuo studio. Il lavoro gia fatto continua a produrre valore nel tempo."
-                        points={[
-                            'Selezione libera dei contenuti da pubblicare',
-                            'Supporto all\'anonimizzazione',
-                            'Quota sulle consultazioni',
-                            'Visibilita professionale aumentata',
-                        ]}
+                        title={t('monetizzazione.feature_title')}
+                        text={t('monetizzazione.feature_text')}
+                        points={lista('monetizzazione.points')}
                     >
-                        <VisualBlock label="Le tue sentenze pubblicate">
+                        <VisualBlock label={t('monetizzazione.visual_label')}>
                             <div className="space-y-2">
-                                {[
-                                    { t: 'Responsabilita medica - errore diagnostico', n: '12 acquisti', q: '80,00 €' },
-                                    { t: 'Locazione - inadempimento locatore', n: '8 acquisti', q: '110,00 €' },
-                                    { t: 'Omicidio stradale - revoca patente', n: '5 acquisti', q: '45,00 €' },
-                                ].map(({ t, n, q }) => (
-                                    <div key={t} className="flex items-center gap-3 p-3 bg-petrolio/50 border border-white/5">
+                                {lista('monetizzazione.items').map(({ titolo, acquisti, quota }) => (
+                                    <div key={titolo} className="flex items-center gap-3 p-3 bg-petrolio/50 border border-white/5">
                                         <FileText size={12} className="text-oro shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-body text-xs text-nebbia/70 truncate">{t}</p>
-                                            <p className="font-body text-[10px] text-nebbia/30">{n}</p>
+                                            <p className="font-body text-xs text-nebbia/70 truncate">{titolo}</p>
+                                            <p className="font-body text-[10px] text-nebbia/30">{acquisti}</p>
                                         </div>
-                                        <span className="font-body text-xs text-oro font-medium shrink-0">{q}</span>
+                                        <span className="font-body text-xs text-oro font-medium shrink-0">{quota}</span>
                                     </div>
                                 ))}
                                 <div className="flex items-center justify-between p-3 bg-oro/5 border border-oro/15 mt-2">
-                                    <span className="font-body text-xs text-nebbia/55">Totale ricavi 2026</span>
-                                    <span className="font-body text-sm text-oro font-medium">235,00 €</span>
+                                    <span className="font-body text-xs text-nebbia/55">{t('monetizzazione.total_label')}</span>
+                                    <span className="font-body text-sm text-oro font-medium">{t('monetizzazione.total')}</span>
                                 </div>
                             </div>
                         </VisualBlock>
@@ -920,47 +833,25 @@ export default function PerAvvocati() {
                 <div className="max-w-5xl mx-auto">
 
                     <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel color="salvia">Sicurezza</SectionLabel>
+                        <SectionLabel color="salvia">{t('sicurezza.label')}</SectionLabel>
                         <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            Riservatezza{' '}
-                            <span className="text-salvia">come standard, non come opzione.</span>
+                            <Trans t={t} i18nKey="sicurezza.title"
+                                components={{ hl: <span className="text-salvia" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            Il lavoro legale richiede protezioni reali, non promesse di marketing.
-                            Lexum e progettato con la riservatezza al centro di ogni decisione tecnica.
+                            {t('sicurezza.subtitle')}
                         </p>
                     </FadeIn>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                            {
-                                icon: ShieldCheck,
-                                t: 'Compartimentazione dati',
-                                d: 'Ogni studio e isolato. I tuoi dati non sono mai accessibili ad altri studi, ne agli altri membri del tuo team senza il tuo permesso esplicito.',
-                            },
-                            {
-                                icon: EyeOff,
-                                t: 'Anonimizzazione prima della pubblicazione',
-                                d: 'Prima che una sentenza diventi pubblica nella banca dati, i dati sensibili vengono rimossi. Lexum supporta il processo, ma il controllo finale resta tuo.',
-                            },
-                            {
-                                icon: Activity,
-                                t: 'Audit log completo',
-                                d: 'Ogni accesso, ogni modifica, ogni operazione viene registrata. Sai sempre chi ha fatto cosa, quando e dove. Trasparenza interna come strumento di governance.',
-                            },
-                            {
-                                icon: FileText,
-                                t: 'PDF in sola visualizzazione',
-                                d: 'I documenti della banca dati condivisa sono accessibili in formato digitale tramite link firmati. Non scaricabili, non ridistribuibili senza autorizzazione.',
-                            },
-                        ].map(({ icon: Icon, t, d }, i) => (
+                        {lista('sicurezza.items').map(({ titolo, testo }, i) => ({ Icon: ICONE_SICUREZZA[i], titolo, testo })).map(({ Icon, titolo, testo }, i) => (
                             <FadeIn key={i} delay={i * 0.06}>
                                 <div className="bg-slate border border-white/5 p-5 h-full hover:border-salvia/20 transition-colors">
                                     <div className="w-9 h-9 flex items-center justify-center border border-salvia/20 bg-salvia/5 text-salvia mb-3">
                                         <Icon size={15} />
                                     </div>
-                                    <p className="font-body text-sm font-medium text-nebbia mb-1.5">{t}</p>
-                                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">{d}</p>
+                                    <p className="font-body text-sm font-medium text-nebbia mb-1.5">{titolo}</p>
+                                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">{testo}</p>
                                 </div>
                             </FadeIn>
                         ))}
@@ -979,25 +870,24 @@ export default function PerAvvocati() {
 
                 <div className="max-w-3xl mx-auto text-center relative">
                     <FadeIn>
-                        <SectionLabel>Inizia ora</SectionLabel>
+                        <SectionLabel>{t('cta.label')}</SectionLabel>
                         <h2 className="font-display text-4xl md:text-5xl font-light text-nebbia mb-6">
-                            Vedi Lexum{' '}
-                            <span className="text-oro">al lavoro nel tuo studio.</span>
+                            <Trans t={t} i18nKey="cta.title"
+                                components={{ hl: <span className="text-oro" /> }} />
                         </h2>
                         <p className="font-body text-base text-nebbia/45 leading-relaxed mb-10 max-w-xl mx-auto">
-                            Prova Lexum, senza vincoli. Oppure prenota una call dimostrativa
-                            e ti mostriamo come funziona partendo dal lavoro reale del tuo studio.
+                            {t('cta.subtitle')}
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                             <Link to="/registrati" className="flex items-center gap-2.5 px-10 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-xl shadow-oro/20">
-                                Prova Lexum una settimana <ArrowRight size={15} />
+                                {t('cta.cta_primary')}{' '}<ArrowRight size={15} />
                             </Link>
                             <Link to="/registrati" className="flex items-center gap-2 px-10 py-4 border border-salvia/30 bg-salvia/5 text-salvia font-body text-sm hover:bg-salvia/10 hover:border-salvia/50 transition-colors">
-                                Richiedi una call dimostrativa
+                                {t('cta.cta_secondary')}
                             </Link>
                         </div>
                         <p className="font-body text-xs text-nebbia/25">
-                            Nessuna carta richiesta. Cancellazione libera in qualsiasi momento.
+                            {t('cta.no_card')}
                         </p>
                     </FadeIn>
                 </div>

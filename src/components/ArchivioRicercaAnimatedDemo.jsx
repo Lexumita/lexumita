@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileText, Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /**
  * ArchivioRicercaAnimatedDemo
@@ -18,7 +19,7 @@ import { FileText, Search } from 'lucide-react'
  * Durata totale: ~5.5 secondi.
  */
 
-const SEARCH_QUERY = 'Rossi 2024'
+// Il testo digitato (searchQuery) arriva dal namespace archivio_ricerca_demo.
 const TYPE_SPEED_BASE = 95
 const TYPE_SPEED_VAR = 50
 
@@ -32,6 +33,8 @@ const T_GAP_RISULTATI = 500
 const T_END = 5500
 
 export default function ArchivioRicercaAnimatedDemo() {
+    const { t } = useTranslation('archivio_ricerca_demo')
+    const searchQuery = t('search.query')
     const sectionRef = useRef(null)
     const startTimeRef = useRef(null)
     const [started, setStarted] = useState(false)
@@ -97,12 +100,12 @@ export default function ArchivioRicercaAnimatedDemo() {
             let i = 0
             const typeChar = () => {
                 if (cancelled) return
-                if (i <= SEARCH_QUERY.length) {
-                    setTypedText(SEARCH_QUERY.slice(0, i))
+                if (i <= searchQuery.length) {
+                    setTypedText(searchQuery.slice(0, i))
                     i++
-                    if (i <= SEARCH_QUERY.length) {
+                    if (i <= searchQuery.length) {
                         const speed = TYPE_SPEED_BASE + (Math.random() - 0.5) * TYPE_SPEED_VAR * 2
-                        const isSpace = SEARCH_QUERY[i - 1] === ' '
+                        const isSpace = searchQuery[i - 1] === ' '
                         const delay = isSpace ? speed * 1.8 : speed
                         timeoutId = setTimeout(typeChar, delay)
                     } else {
@@ -155,7 +158,7 @@ export default function ArchivioRicercaAnimatedDemo() {
                             : 'bg-oro/10 border-oro/30 text-oro scale-100'
                         }`}
                 >
-                    Cerca
+                    {t('search.button')}
                 </button>
             </div>
 
@@ -171,17 +174,17 @@ export default function ArchivioRicercaAnimatedDemo() {
                         <FileText size={12} className="text-salvia mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                             <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">
-                                Contratto_locazione_Rossi.pdf
+                                {t('result_1.file')}
                             </p>
                             <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">
-                                "...il presente contratto avra durata di 4+4 anni a partire dal 01/09/2024, con canone mensile di 1.200 €..."
+                                {t('result_1.excerpt')}
                             </p>
                             <div className="flex gap-1 mt-2 flex-wrap">
                                 <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                    Pratica 2026/047
+                                    {t('result_1.pratica')}
                                 </span>
                                 <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                    Locazione
+                                    {t('result_1.tag')}
                                 </span>
                             </div>
                         </div>
@@ -198,17 +201,17 @@ export default function ArchivioRicercaAnimatedDemo() {
                         <FileText size={12} className="text-nebbia/40 mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                             <p className="font-body text-xs text-nebbia/70 mb-0.5 truncate">
-                                Diffida_locatore_2024-11.pdf
+                                {t('result_2.file')}
                             </p>
                             <p className="font-body text-[10px] text-nebbia/35 leading-relaxed">
-                                "...si invita il locatore alla risoluzione delle problematiche evidenziate nel contratto del 01/09/2024..."
+                                {t('result_2.excerpt')}
                             </p>
                             <div className="flex gap-1 mt-2 flex-wrap">
                                 <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                    Pratica 2026/047
+                                    {t('result_2.pratica')}
                                 </span>
                                 <span className="font-body text-[9px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/35">
-                                    Diffida
+                                    {t('result_2.tag')}
                                 </span>
                             </div>
                         </div>
