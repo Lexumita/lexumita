@@ -341,7 +341,9 @@ export default function Acquista() {
                     loading={loadingProdotti}
                     acquistando={acquistando}
                     onAcquista={acquista}
-                    piano_attivo={!!profile?.piano_id}
+                    // Il Piano Personale non è un piano professionale e non viene
+                    // sostituito: resta valido fino alla sua scadenza
+                    piano_attivo={!isPrivato && !!profile?.piano_id}
                 />
             )}
 
