@@ -38,6 +38,35 @@ function SwitcherTipoSoggetto({ value, onChange, disabled = false }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// BANNER PIANO SCADUTO (02-10-2026)
+// create-cliente rifiuta nuovi clienti a piano scaduto (403 PIANO_SCADUTO): il
+// titolare lo vede appena apre la pagina, un collaboratore al primo invio.
+// ─────────────────────────────────────────────────────────────
+function BannerPianoScaduto() {
+    return (
+        <div className="bg-red-500/10 border border-red-500/30 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+                <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                    <p className="font-body text-sm font-medium text-red-400">
+                        Piano scaduto
+                    </p>
+                    <p className="font-body text-xs text-red-400/70 mt-1 leading-relaxed">
+                        Per registrare nuovi clienti il piano dello studio va rinnovato.
+                    </p>
+                </div>
+            </div>
+            <Link
+                to="/studio?tab=acquista"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/40 text-red-400 font-body text-sm hover:bg-red-500/30 transition-colors"
+            >
+                <ShoppingBag size={13} /> Rinnova il piano
+            </Link>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
 // BANNER CONTATORE CLIENTI
 // Soglie: < 70% nessun banner · 70-89% ambra · 90-99% rosso chiaro · 100% rosso bloccante
 // ─────────────────────────────────────────────────────────────
@@ -155,6 +184,7 @@ export default function AvvocatoClientiNuovo() {
     const [success, setSuccess] = useState(false)
     const [clienti, setClienti] = useState({ conteggio: 0, limite_piano: 0, limite_extra: 0, limite_totale: 0 })
     const [limiteRaggiunto, setLimiteRaggiunto] = useState(false)
+    const [pianoScaduto, setPianoScaduto] = useState(false)
 
     const f = k => ({ value: form[k], onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) })
 
@@ -165,8 +195,19 @@ export default function AvvocatoClientiNuovo() {
             setForm(p => ({ ...p, avvocato_id: user.id }))
             const { data: profilo } = await supabase
                 .from('profiles')
-                .select('posti_acquistati, titolare_id')
+                .select('posti_acquistati, titolare_id, abbonamento_scadenza, grazia_fino_al, abbonamento_tipo')
                 .eq('id', user.id).single()
+
+            // Piano dello studio: il titolare lo sa subito (un collaboratore lo sa dal server
+            // all'invio). Lo stato lo calcola il DB, come in create-cliente.
+            if (profilo && !profilo.titolare_id) {
+                const { data: stato, error: errStato } = await supabase.rpc('stato_abbonamento_calcolato', {
+                    p_scadenza: profilo.abbonamento_scadenza ?? null,
+                    p_grazia: profilo.grazia_fino_al ?? null,
+                    p_tipo: profilo.abbonamento_tipo ?? null,
+                })
+                if (!errStato && !['attivo', 'in_scadenza', 'in_grazia'].includes(stato)) setPianoScaduto(true)
+            }
 
             // Carica conteggio clienti (per banner soft/bloccante)
             const proprietarioId = profilo?.titolare_id ?? user.id
@@ -261,6 +302,11 @@ export default function AvvocatoClientiNuovo() {
 
             if (!json.ok) {
                 // Race condition: tra apertura form e submit qualcuno ha sforato il limite
+                if (json.code === 'PIANO_SCADUTO') {
+                    setPianoScaduto(true)
+                    setErrore('')  // il riquadro sopra spiega già
+                    return
+                }
                 if (json.code === 'LIMITE_CLIENTI_RAGGIUNTO') {
                     if (json.meta) {
                         setClienti({
@@ -311,7 +357,9 @@ export default function AvvocatoClientiNuovo() {
             <PageHeader label="Clienti" title="Nuovo cliente" />
 
             {/* ── Banner contatore clienti (soft / critico / bloccante) ── */}
-            <BannerContatoreClienti clienti={clienti} limiteRaggiunto={limiteRaggiunto} />
+            {pianoScaduto
+                ? <BannerPianoScaduto />
+                : <BannerContatoreClienti clienti={clienti} limiteRaggiunto={limiteRaggiunto} />}
 
             <form onSubmit={handleSubmit}>
                 <div className="bg-slate border border-white/5 p-4 sm:p-6 space-y-5">
@@ -510,12 +558,13 @@ export default function AvvocatoClientiNuovo() {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || limiteRaggiunto}
+                            disabled={loading || limiteRaggiunto || pianoScaduto}
                             className="btn-primary text-sm w-full sm:w-auto sm:flex-1 justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                             title={limiteRaggiunto ? 'Limite clienti raggiunto - acquista un add-on per continuare' : undefined}
                         >
                             {loading
                                 ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                                : pianoScaduto ? 'Piano scaduto'
                                 : limiteRaggiunto ? 'Limite raggiunto' : 'Crea cliente'
                             }
                         </button>
