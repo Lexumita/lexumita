@@ -3,7 +3,7 @@
 // Salvataggio in pratica tramite popover inline (no pannello laterale)
 
 import { useState, useEffect, useRef, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { escapeHtml } from '@/lib/escapeHtml'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
@@ -14,11 +14,17 @@ import { rottaSentenza } from '@/lib/rotte'
 import PacchettoLampo, {
     salvaRicercaInSospeso, prendiRicercaInSospeso, leggiEsitoLampo, leggiSaldoCrediti,
 } from '@/components/PacchettoLampo'
+import ScegliDaArchivio from '@/components/ScegliDaArchivio'
+import {
+    titolareDi, rottaArchivio, rottaAcquisti, leggiSpazioArchivio, leggiCategorieArchivio,
+    motivoBloccoArchivio, salvaInArchivio,
+} from '@/lib/archivio'
 import {
     Search, Sparkles, ChevronRight, ChevronLeft,
     BookOpen, AlertCircle, ArrowRight, X, Save,
     FileText, Plus, Eye, Flag, Globe, Clock,
-    Scale, Filter, Landmark, Calendar, Building2, ScrollText, FileDown, Loader2, Zap
+    Scale, Filter, Landmark, Calendar, Building2, ScrollText, FileDown, Loader2, Zap,
+    FolderOpen, Upload, Check,
 } from 'lucide-react'
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -676,11 +682,22 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         return () => { fermo = true; clearInterval(timer) }
     }, [ritornoLampo])
 
-    // ── Documento allegato (effimero: non entra nell'archivio, scade in 4 ore) ──
-    const [documento, setDocumento] = useState(null)   // { id, nome, n_chunk, troncato, scadenza }
+    // ── Documento allegato (effimero: l'analisi dura 4 ore) ──
+    // Arriva dal dispositivo (e si può salvare in archivio) oppure dall'archivio
+    // (si usa il testo che l'archivio ha già letto, niente nuovo caricamento).
+    const [documento, setDocumento] = useState(null)   // { id, nome, n_chunk, troncato, scadenza, origine, archivioId }
     const [caricandoDoc, setCaricandoDoc] = useState(false)
     const [erroreDoc, setErroreDoc] = useState(null)
     const fileInputRef = useRef(null)
+
+    const { profile } = useAuth()
+    const titolareArchivio = titolareDi(profile)
+    const [pickerArchivio, setPickerArchivio] = useState(false)
+    // File e testo del documento dal dispositivo: servono per salvarlo senza rileggerlo.
+    // Restano solo in memoria nella pagina.
+    const daSalvareRef = useRef(null)
+    // null | chiedi | verifica | categoria | salvando | salvato | errore
+    const [salvataggio, setSalvataggio] = useState(null)
 
     async function allegaDocumento(file) {
         if (!file) return
@@ -711,19 +728,118 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             const jsonDoc = await resDoc.json()
             if (!jsonDoc.ok) throw new Error(jsonDoc.error ?? 'Indicizzazione non riuscita')
 
+            daSalvareRef.current = { file, testo: jsonTesto.testo }
             setDocumento({
                 id: jsonDoc.documento_id,
                 nome: file.name,
                 n_chunk: jsonDoc.n_chunk,
                 troncato: jsonDoc.troncato,
                 scadenza: jsonDoc.expires_at,
+                origine: 'dispositivo',
+            })
+            setSalvataggio({ fase: 'chiedi' })
+        } catch (err) {
+            setErroreDoc(err.message)
+            setDocumento(null)
+            daSalvareRef.current = null
+            setSalvataggio(null)
+        } finally {
+            setCaricandoDoc(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    // Documento già in archivio: si analizza il testo che l'archivio ha già letto
+    async function analizzaDaArchivio(doc) {
+        setPickerArchivio(false)
+        setErroreDoc(null)
+        setCaricandoDoc(true)
+        daSalvareRef.current = null
+        setSalvataggio(null)
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            const res = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analizza-documento`,
+                {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ archivio_documento_id: doc.id }),
+                }
+            )
+            const json = await res.json()
+            if (!json.ok) throw new Error(json.error ?? 'Indicizzazione non riuscita')
+            setDocumento({
+                id: json.documento_id,
+                nome: json.nome_file ?? doc.titolo,
+                n_chunk: json.n_chunk,
+                troncato: json.troncato,
+                scadenza: json.expires_at,
+                origine: 'archivio',
+                archivioId: doc.id,
             })
         } catch (err) {
             setErroreDoc(err.message)
             setDocumento(null)
         } finally {
             setCaricandoDoc(false)
-            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    function rimuoviDocumento() {
+        setDocumento(null)
+        daSalvareRef.current = null
+        setSalvataggio(null)
+    }
+
+    // «Salva»: prima lo spazio (stessa regola del server), poi la scelta della categoria
+    async function chiediCategoria() {
+        const daSalvare = daSalvareRef.current
+        if (!daSalvare) {
+            setSalvataggio({ fase: 'errore', messaggio: 'Il file non è più disponibile: ricaricalo per salvarlo.' })
+            return
+        }
+        setSalvataggio({ fase: 'verifica' })
+        try {
+            const [spazio, categorie] = await Promise.all([
+                leggiSpazioArchivio(titolareArchivio),
+                leggiCategorieArchivio(titolareArchivio),
+            ])
+            const blocco = motivoBloccoArchivio(spazio, daSalvare.file.size)
+            if (blocco) {
+                setSalvataggio({ fase: 'errore', messaggio: blocco, acquista: spazio.scrivibile ? 'spazio' : 'rinnova' })
+                return
+            }
+            setSalvataggio({ fase: 'categoria', categorie, categoriaId: '' })
+        } catch (err) {
+            setSalvataggio({ fase: 'errore', messaggio: err.message })
+        }
+    }
+
+    async function confermaSalvataggio() {
+        const daSalvare = daSalvareRef.current
+        const scelta = salvataggio
+        if (!daSalvare || scelta?.fase !== 'categoria') return
+        setSalvataggio({ ...scelta, fase: 'salvando' })
+        try {
+            const doc = await salvaInArchivio({
+                file: daSalvare.file,
+                testo: daSalvare.testo,
+                titolareId: titolareArchivio,
+                userId: profile.id,
+                categoriaId: scelta.categoriaId || null,
+            })
+            daSalvareRef.current = null
+            setDocumento(d => (d ? { ...d, origine: 'archivio', archivioId: doc.id } : d))
+            setSalvataggio({
+                fase: 'salvato',
+                categoria: scelta.categorie.find(c => c.id === scelta.categoriaId)?.nome ?? 'Senza categoria',
+            })
+        } catch (err) {
+            setSalvataggio({
+                fase: 'errore',
+                messaggio: err.message,
+                acquista: /sola lettura/i.test(err.message) ? 'rinnova' : /spazio/i.test(err.message) ? 'spazio' : null,
+            })
         }
     }
 
@@ -1229,16 +1345,32 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 />
 
                 {!documento ? (
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={cercando || caricandoDoc}
-                        className="flex items-center gap-2 min-h-[40px] font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
-                    >
-                        {caricandoDoc
-                            ? <><span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" /> Lettura del documento...</>
-                            : <><Plus size={12} /> Allega un documento da analizzare</>
-                        }
-                    </button>
+                    caricandoDoc ? (
+                        <p className="flex items-center gap-2 min-h-[40px] font-body text-xs text-oro/80">
+                            <span className="animate-spin w-3 h-3 border-2 border-oro border-t-transparent rounded-full" /> Lettura del documento...
+                        </p>
+                    ) : (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0">
+                            <span className="flex items-center gap-1.5 font-body text-xs text-nebbia/45">
+                                <Plus size={12} /> Allega un documento da analizzare:
+                            </span>
+                            <button
+                                onClick={() => setPickerArchivio(true)}
+                                disabled={cercando}
+                                className="flex items-center gap-1.5 min-h-[40px] font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
+                            >
+                                <FolderOpen size={12} /> dal tuo archivio
+                            </button>
+                            <span className="font-body text-xs text-nebbia/20" aria-hidden="true">·</span>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={cercando}
+                                className="flex items-center gap-1.5 min-h-[40px] font-body text-xs text-oro/80 hover:text-oro transition-colors disabled:opacity-40"
+                            >
+                                <Upload size={12} /> dal tuo dispositivo
+                            </button>
+                        </div>
+                    )
                 ) : (
                     <div className="bg-petrolio/60 border border-salvia/20 px-3 py-2.5 space-y-1.5">
                         <div className="flex items-start justify-between gap-3">
@@ -1247,13 +1379,16 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <div className="min-w-0">
                                     <p className="font-body text-xs text-nebbia/80 truncate">{documento.nome}</p>
                                     <p className="font-body text-xs text-nebbia/35 break-words">
-                                        {documento.n_chunk} passaggi indicizzati · non archiviato, si cancella dopo 4 ore
+                                        {documento.n_chunk} passaggi indicizzati · {documento.origine === 'archivio'
+                                            ? 'dal tuo archivio'
+                                            : 'non archiviato, si cancella dopo 4 ore'}
                                     </p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => setDocumento(null)}
-                                className="p-2 -m-1 text-nebbia/30 hover:text-red-400 transition-colors shrink-0"
+                                onClick={rimuoviDocumento}
+                                disabled={salvataggio?.fase === 'salvando'}
+                                className="p-2 -m-1 text-nebbia/30 hover:text-red-400 transition-colors shrink-0 disabled:opacity-40"
                                 title="Rimuovi il documento"
                             >
                                 <X size={13} />
@@ -1264,6 +1399,88 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <AlertCircle size={11} className="shrink-0 mt-0.5" />
                                 Documento molto lungo: analizzata solo la prima parte.
                             </p>
+                        )}
+
+                        {/* Salvataggio in archivio (solo per i documenti dal dispositivo) */}
+                        {salvataggio?.fase === 'chiedi' && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0 pt-1 border-t border-white/5">
+                                <span className="font-body text-xs text-nebbia/55">Vuoi salvarlo nel tuo archivio?</span>
+                                <button
+                                    onClick={chiediCategoria}
+                                    className="flex items-center gap-1.5 min-h-[36px] font-body text-xs text-oro hover:text-oro/80 transition-colors"
+                                >
+                                    <Save size={12} /> Salva
+                                </button>
+                                <button
+                                    onClick={() => setSalvataggio(null)}
+                                    className="min-h-[36px] font-body text-xs text-nebbia/40 hover:text-nebbia/70 transition-colors"
+                                >
+                                    No, grazie
+                                </button>
+                            </div>
+                        )}
+                        {salvataggio?.fase === 'verifica' && (
+                            <p className="flex items-center gap-2 pt-2 border-t border-white/5 font-body text-xs text-nebbia/45">
+                                <Loader2 size={11} className="animate-spin" /> Controllo lo spazio dell'archivio...
+                            </p>
+                        )}
+                        {(salvataggio?.fase === 'categoria' || salvataggio?.fase === 'salvando') && (
+                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/5">
+                                <label htmlFor="categoria-salvataggio" className="font-body text-xs text-nebbia/55">Categoria</label>
+                                <select
+                                    id="categoria-salvataggio"
+                                    value={salvataggio.categoriaId}
+                                    onChange={e => setSalvataggio(st => ({ ...st, categoriaId: e.target.value }))}
+                                    disabled={salvataggio.fase === 'salvando'}
+                                    className="min-h-[36px] max-w-full bg-slate border border-white/10 text-nebbia/80 font-body text-xs px-2 py-1.5 outline-none focus:border-oro/40 disabled:opacity-50"
+                                >
+                                    <option value="">Senza categoria</option>
+                                    {salvataggio.categorie.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                </select>
+                                <button
+                                    onClick={confermaSalvataggio}
+                                    disabled={salvataggio.fase === 'salvando'}
+                                    className="flex items-center gap-1.5 min-h-[36px] px-3 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors disabled:opacity-50"
+                                >
+                                    {salvataggio.fase === 'salvando'
+                                        ? <><Loader2 size={11} className="animate-spin" /> Salvataggio...</>
+                                        : <><Check size={12} /> Salva in archivio</>}
+                                </button>
+                                {salvataggio.fase === 'categoria' && (
+                                    <button
+                                        onClick={() => setSalvataggio({ fase: 'chiedi' })}
+                                        className="min-h-[36px] font-body text-xs text-nebbia/40 hover:text-nebbia/70 transition-colors"
+                                    >
+                                        Annulla
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                        {salvataggio?.fase === 'salvato' && (
+                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 border-t border-white/5 font-body text-xs text-salvia">
+                                <span className="flex items-center gap-1.5"><Check size={12} /> Salvato nel tuo archivio · {salvataggio.categoria}</span>
+                                <Link to={rottaArchivio(profile?.role)} className="text-oro/80 hover:text-oro transition-colors">Apri l'archivio →</Link>
+                            </p>
+                        )}
+                        {salvataggio?.fase === 'errore' && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 border-t border-white/5">
+                                <p className="font-body text-xs text-amber-400/90 flex items-start gap-1.5">
+                                    <AlertCircle size={11} className="shrink-0 mt-0.5" /> {salvataggio.messaggio}
+                                </p>
+                                {salvataggio.acquista && (
+                                    <Link to={rottaAcquisti(profile?.role)} className="font-body text-xs text-oro/80 hover:text-oro transition-colors">
+                                        {profile?.role === 'user'
+                                            ? 'Scopri il Piano Personale →'
+                                            : salvataggio.acquista === 'rinnova' ? 'Rinnova il piano →' : 'Acquista spazio →'}
+                                    </Link>
+                                )}
+                                <button
+                                    onClick={() => setSalvataggio({ fase: 'chiedi' })}
+                                    className="min-h-[36px] font-body text-xs text-nebbia/40 hover:text-nebbia/70 transition-colors"
+                                >
+                                    Riprova
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}
@@ -1355,6 +1572,14 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 </div>
             </div>
 
+            <ScegliDaArchivio
+                aperto={pickerArchivio}
+                onChiudi={() => setPickerArchivio(false)}
+                onScegli={analizzaDaArchivio}
+                titolareId={titolareArchivio}
+                userId={profile?.id}
+                rottaArchivio={rottaArchivio(profile?.role)}
+            />
             <PacchettoLampo
                 aperto={lampo.aperto}
                 motivo={lampo.motivo}

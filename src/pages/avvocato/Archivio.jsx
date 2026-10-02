@@ -11,6 +11,9 @@ import {
 } from 'lucide-react'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import MandaAFisco from '@/components/fisco/MandaAFisco'
+import {
+    leggiSpazioArchivio, formattaSpazio, rottaAcquisti, traduciErroreArchivio,
+} from '@/lib/archivio'
 import { supabase } from '@/lib/supabase'
 import { escapeHtml } from '@/lib/escapeHtml'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
@@ -25,10 +28,6 @@ function formatSize(bytes) {
     if (!bytes) return '—'
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function bytesToGB(bytes) {
-    return (bytes ?? 0) / (1024 * 1024 * 1024)
 }
 
 function isPdf(file) {
@@ -977,6 +976,8 @@ function CardDocumento({
     const navigate = useNavigate()
     const { profile } = useAuth()
     const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
+    // I privati (ruolo 'user') non hanno pratiche, clienti né Fisco
+    const isPrivato = profile?.role === 'user'
     const isSentenza = doc._kind === 'sentenza'
 
     const etichetteAssegnate = (tagsByDoc[doc.id] ?? [])
@@ -1269,7 +1270,7 @@ function CardDocumento({
                     {!isSentenza && doc.metadati?.kind !== 'fattura' && (
                         <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-white/5">
                             {/* Aggiungi a pratica */}
-                            {praticaCorrente ? (
+                            {isPrivato ? null : praticaCorrente ? (
                                 <div className="flex items-center gap-1.5 px-2 py-2 lg:py-1 bg-oro/5 border border-oro/20 text-oro font-body text-xs">
                                     <FolderOpen size={10} />
                                     <span className="max-w-[160px] truncate">{praticaCorrente.titolo}</span>
@@ -1321,7 +1322,7 @@ function CardDocumento({
                             )}
 
                             {/* Manda a Fisco: stesso file, niente nuovo caricamento */}
-                            <MandaAFisco doc={doc} onInviato={onAggiornata} />
+                            {!isPrivato && <MandaAFisco doc={doc} onInviato={onAggiornata} />}
 
                             {/* Etichette assegnate (display) */}
                             {etichetteAssegnate.map(e => (
@@ -1426,6 +1427,8 @@ function CardDocumento({
 export default function Archivio() {
     const { profile } = useAuth()
     const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
+    // Archivio dei privati (02-10-2026): niente pratiche, clienti né sentenze proprie
+    const isPrivato = profile?.role === 'user'
     const location = useLocation()
     const fileInputRef = useRef(null)
 
@@ -1447,9 +1450,10 @@ export default function Archivio() {
     // Modal categorie
     const [mostraModalCategorie, setMostraModalCategorie] = useState(false)
 
+    // Spazio: lo calcola il DB (archivio_spazio), con la stessa regola che il
+    // server applica ai caricamenti. Valori in byte.
     const [quota, setQuota] = useState({
-        gb_piano: 0, gb_topup: 0, gb_totali: 0,
-        piano_attivo: false, occupato_gb: 0,
+        quota_bytes: 0, usati_bytes: 0, scrivibile: false, piano_attivo: false,
     })
 
     const [filesSelezionati, setFilesSelezionati] = useState([])
@@ -1531,17 +1535,21 @@ export default function Archivio() {
                 .select('*')
                 .or(`titolare_id.eq.${tIdF},autore_id.eq.${uIdF}`)
                 .order('created_at', { ascending: false }),
-            supabase
-                .from('profiles')
-                .select('id, nome, cognome')
-                .eq('role', 'cliente')
-                .eq('avvocato_id', tIdF),
-            supabase
-                .from(cfg.tabella)
-                .select('id, titolo, cliente_id')
-                .eq('avvocato_id', uIdF)
-                .eq('stato', cfg.filtroStato)
-                .order('created_at', { ascending: false }),
+            isPrivato
+                ? Promise.resolve({ data: [] })
+                : supabase
+                    .from('profiles')
+                    .select('id, nome, cognome')
+                    .eq('role', 'cliente')
+                    .eq('avvocato_id', tIdF),
+            isPrivato
+                ? Promise.resolve({ data: [] })
+                : supabase
+                    .from(cfg.tabella)
+                    .select('id, titolo, cliente_id')
+                    .eq('avvocato_id', uIdF)
+                    .eq('stato', cfg.filtroStato)
+                    .order('created_at', { ascending: false }),
             supabase
                 .from('etichette')
                 .select('id, nome, colore')
@@ -1557,11 +1565,13 @@ export default function Archivio() {
                 .select('id, nome, colore')
                 .eq('titolare_id', tIdF)
                 .order('nome'),
-            supabase
-                .from('sentenze')
-                .select('id, organo, sezione, numero, anno, oggetto, principio_diritto, tipo_provvedimento, data_pubblicazione, data_deposito, parole_chiave, pdf_storage_path, pdf_size_bytes, categoria_id, sottocategoria_id, created_at, stato')
-                .eq('autore_id', uIdF)
-                .order('created_at', { ascending: false }),
+            isPrivato
+                ? Promise.resolve({ data: [] })
+                : supabase
+                    .from('sentenze')
+                    .select('id, organo, sezione, numero, anno, oggetto, principio_diritto, tipo_provvedimento, data_pubblicazione, data_deposito, parole_chiave, pdf_storage_path, pdf_size_bytes, categoria_id, sottocategoria_id, created_at, stato')
+                    .eq('autore_id', uIdF)
+                    .order('created_at', { ascending: false }),
         ])
 
         // Sottocategorie: query separata su FK
@@ -1595,25 +1605,23 @@ export default function Archivio() {
         }
         setTagsByDoc(map)
 
-        // Quota storage (include sia documenti che sentenze)
-        const { data: quotaData } = await supabase.rpc('quota_studio', { p_proprietario_id: tIdF })
-        const q = Array.isArray(quotaData) ? quotaData[0] : quotaData
+        await aggiornaSpazio(tIdF)
+    }
 
-        const { data: tuttiDocStudio } = await supabase
-            .from('archivio_documenti')
-            .select('dimensione')
-            .eq('titolare_id', tIdF)
-
-        const occupatoBytes = (tuttiDocStudio ?? []).reduce((s, d) => s + (d.dimensione ?? 0), 0)
-            + (sentenzeProprie ?? []).reduce((s, sn) => s + (sn.pdf_size_bytes ?? 0), 0)
-
-        setQuota({
-            gb_piano: q?.gb_piano ?? 0,
-            gb_topup: q?.gb_topup ?? 0,
-            gb_totali: q?.gb_totali ?? 0,
-            piano_attivo: q?.piano_attivo ?? false,
-            occupato_gb: bytesToGB(occupatoBytes),
-        })
+    async function aggiornaSpazio(tId) {
+        const tIdF = tId ?? titolareId
+        if (!tIdF) return
+        try {
+            const sp = await leggiSpazioArchivio(tIdF)
+            setQuota({
+                quota_bytes: sp.quota,
+                usati_bytes: sp.usati,
+                scrivibile: sp.scrivibile,
+                piano_attivo: sp.pianoAttivo,
+            })
+        } catch {
+            // Se lo spazio non si legge il caricamento resta bloccato: lo controlla comunque il server
+        }
     }
 
     // Polling stato OCR + auto-cleanup barra progresso
@@ -1701,16 +1709,19 @@ export default function Archivio() {
         }
     }, [documenti.map(d => `${d.id}:${d.ocr_status}:${d.metadati?.suggeriti ? 1 : 0}`).join('|')])
 
-    const pianoScaduto = !quota.piano_attivo
-    const storagePct = quota.gb_totali > 0 ? quota.occupato_gb / quota.gb_totali : 1
-    const spazioPieno = quota.gb_totali === 0 || storagePct >= 1
+    const pianoScaduto = !quota.scrivibile
+    const storagePct = quota.quota_bytes > 0 ? quota.usati_bytes / quota.quota_bytes : 1
+    const spazioPieno = quota.quota_bytes === 0 || storagePct >= 1
+    const linkAcquisto = rottaAcquisti(profile?.role)
     const spazioQuasiPieno = !spazioPieno && storagePct >= SOGLIA_STORAGE_PIENO
     const uploadDisabilitato = pianoScaduto || spazioPieno
 
     const motivoBlocco = pianoScaduto
         ? 'Piano scaduto — archivio in sola lettura'
         : spazioPieno
-            ? 'Spazio esaurito — libera file o acquista un pacchetto storage'
+            ? (isPrivato
+                ? 'Spazio esaurito — libera file o attiva il Piano Personale'
+                : 'Spazio esaurito — libera file o acquista un pacchetto storage')
             : null
 
     function handleFilesChange(e) {
@@ -1737,12 +1748,11 @@ export default function Archivio() {
         }
 
         const dimensioneTotaleBytes = tutti.reduce((sum, f) => sum + f.size, 0)
-        const dimensioneTotaleGB = bytesToGB(dimensioneTotaleBytes)
-        const spazioLiberoGB = quota.gb_totali - quota.occupato_gb
+        const spazioLiberoBytes = Math.max(0, quota.quota_bytes - quota.usati_bytes)
 
-        if (dimensioneTotaleGB > spazioLiberoGB) {
+        if (dimensioneTotaleBytes > spazioLiberoBytes) {
             setErroreUpload(
-                `Spazio insufficiente. Stai caricando ${dimensioneTotaleGB.toFixed(2)} GB ma hai solo ${spazioLiberoGB.toFixed(2)} GB liberi.`
+                `Spazio insufficiente. Stai caricando ${formattaSpazio(dimensioneTotaleBytes)} ma hai solo ${formattaSpazio(spazioLiberoBytes)} liberi.`
             )
             e.target.value = ''
             return
@@ -1765,7 +1775,7 @@ export default function Archivio() {
         const tipo = isPdf(file) ? 'pdf' : (isTxt ? 'txt' : 'file')
 
         const { error: upErr } = await supabase.storage.from('archivio').upload(path, file)
-        if (upErr) throw new Error(upErr.message)
+        if (upErr) throw new Error(traduciErroreArchivio(upErr))
 
         const { data: doc, error: dbErr } = await supabase
             .from('archivio_documenti')
@@ -1787,7 +1797,11 @@ export default function Archivio() {
             .select()
             .single()
 
-        if (dbErr) throw new Error(dbErr.message)
+        if (dbErr) {
+            // Riga rifiutata (es. spazio finito col file appena caricato): niente file orfani
+            await supabase.storage.from('archivio').remove([path]).catch(() => { })
+            throw new Error(traduciErroreArchivio(dbErr))
+        }
         return doc
     }
 
@@ -1835,6 +1849,7 @@ export default function Archivio() {
                     ))
                 } catch (err) {
                     setCodaUpload(prev => prev.map((item, k) => k === idx ? { ...item, status: 'failed' } : item))
+                    setErroreUpload(`${file.name}: ${err.message}`)
                 }
             }))
         }
@@ -1843,8 +1858,7 @@ export default function Archivio() {
         setFilesSelezionati([])
         setUploadInCorso(false)
 
-        const aggiunta = nuoviDocs.reduce((s, d) => s + (d.dimensione ?? 0), 0)
-        setQuota(prev => ({ ...prev, occupato_gb: prev.occupato_gb + bytesToGB(aggiunta) }))
+        aggiornaSpazio()
 
         // Trigger process-archivio per i PDF e TXT
         const docsDaProcessare = nuoviDocs.filter(d => d.tipo === 'pdf' || d.tipo === 'txt')
@@ -1958,9 +1972,7 @@ export default function Archivio() {
         await supabase.from('archivio_documenti').delete().eq('id', doc.id)
         setDocumenti(prev => prev.filter(d => d.id !== doc.id))
 
-        if (doc.dimensione) {
-            setQuota(prev => ({ ...prev, occupato_gb: Math.max(0, prev.occupato_gb - bytesToGB(doc.dimensione)) }))
-        }
+        aggiornaSpazio()
 
         if (risultatiTrad) setRisultatiTrad(prev => prev.filter(d => d.id !== doc.id))
         if (risultatiLex) setRisultatiLex(prev => prev.filter(d => d.id !== doc.id))
@@ -2044,9 +2056,9 @@ export default function Archivio() {
     return (
         <div className="space-y-6">
             <PageHeader
-                label={cfg.labelHeader}
+                label={isPrivato ? 'Area personale' : cfg.labelHeader}
                 title="Archivio"
-                subtitle={`${documenti.length} documenti · ${documenti.filter(d => d.ocr_status === 'completed').length} indicizzati · ${quota.occupato_gb.toFixed(2)}/${quota.gb_totali} GB`}
+                subtitle={`${documenti.length} documenti · ${documenti.filter(d => d.ocr_status === 'completed').length} indicizzati · ${formattaSpazio(quota.usati_bytes)} di ${formattaSpazio(quota.quota_bytes)}`}
                 action={(
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
@@ -2094,7 +2106,7 @@ export default function Archivio() {
                                 <p className="font-body text-xs text-red-400/70 mt-1">
                                     I tuoi {documenti.length} documenti restano accessibili e cercabili, ma non puoi caricarne di nuovi finché non rinnovi il piano.
                                 </p>
-                                <Link to="/studio?tab=acquista" className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
+                                <Link to={linkAcquisto} className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
                                     Rinnova ora →
                                 </Link>
                             </div>
@@ -2107,10 +2119,12 @@ export default function Archivio() {
                             <div className="flex-1">
                                 <p className="font-body text-sm font-medium text-red-400">Spazio archivio esaurito</p>
                                 <p className="font-body text-xs text-red-400/70 mt-1">
-                                    Hai usato {quota.occupato_gb.toFixed(2)} GB su {quota.gb_totali} GB disponibili. Libera spazio o acquista un pacchetto extra.
+                                    {isPrivato
+                                        ? `Hai usato ${formattaSpazio(quota.usati_bytes)} su ${formattaSpazio(quota.quota_bytes)}. Libera spazio, oppure attiva il Piano Personale: 2 GB di archivio e 35 crediti Lex AI al mese.`
+                                        : `Hai usato ${formattaSpazio(quota.usati_bytes)} su ${formattaSpazio(quota.quota_bytes)} disponibili. Libera spazio o acquista un pacchetto extra.`}
                                 </p>
-                                <Link to="/studio?tab=acquista" className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
-                                    Acquista storage →
+                                <Link to={linkAcquisto} className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
+                                    {isPrivato ? 'Scopri il Piano Personale →' : 'Acquista storage →'}
                                 </Link>
                             </div>
                         </div>
@@ -2124,10 +2138,12 @@ export default function Archivio() {
                                     Archivio quasi pieno — {(storagePct * 100).toFixed(0)}% occupato
                                 </p>
                                 <p className="font-body text-xs text-amber-400/70 mt-1">
-                                    {quota.occupato_gb.toFixed(2)} GB su {quota.gb_totali} GB. Considera di acquistare spazio extra prima di riempire l'archivio.
+                                    {isPrivato
+                                        ? `${formattaSpazio(quota.usati_bytes)} su ${formattaSpazio(quota.quota_bytes)}. Con il Piano Personale hai 2 GB di archivio.`
+                                        : `${formattaSpazio(quota.usati_bytes)} su ${formattaSpazio(quota.quota_bytes)}. Considera di acquistare spazio extra prima di riempire l'archivio.`}
                                 </p>
-                                <Link to="/studio?tab=acquista" className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
-                                    Acquista storage →
+                                <Link to={linkAcquisto} className="mt-2 inline-block font-body text-xs text-oro border border-oro/30 px-3 py-1 hover:bg-oro/10 transition-colors">
+                                    {isPrivato ? 'Scopri il Piano Personale →' : 'Acquista storage →'}
                                 </Link>
                             </div>
                         </div>

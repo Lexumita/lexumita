@@ -516,7 +516,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
         const sugg = c.dati.metadati?.suggeriti ?? {}
         const verAuto = c.dati.metadati?.verificato_auto === true
         return (
-            <Link to={`/archivio?focus=${c.dati.id}`}
+            <Link to={`${basePathBancaDati === '/area' ? '/area/archivio' : '/archivio'}?focus=${c.dati.id}`}
                 className="block bg-slate border border-white/5 hover:border-oro/20 transition-colors p-4 group">
                 <div className="flex items-start gap-3">
                     <FileText size={14} className="text-oro/70 shrink-0 mt-0.5" />

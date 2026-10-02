@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import MandaAFisco from '@/components/fisco/MandaAFisco'
+import { rottaArchivio } from '@/lib/archivio'
 
 // Config bifronte per ruolo (stesso principio di AggiungiAPratica.jsx):
 // avvocato → pratiche (pratica_id), commercialista → mandati (mandato_id)
@@ -50,6 +51,9 @@ export default function ArchivioDettaglio() {
     const navigate = useNavigate()
     const { profile } = useAuth()
     const cfg = PM_CONFIG[profile?.role] ?? PM_CONFIG.avvocato
+    // I privati (ruolo 'user') non hanno clienti, pratiche né Fisco
+    const isPrivato = profile?.role === 'user'
+    const indietro = rottaArchivio(profile?.role)
 
     const [doc, setDoc] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -115,8 +119,12 @@ export default function ArchivioDettaglio() {
 
             // Carica clienti, pratiche, categorie
             const [{ data: cl }, { data: pr }, { data: cat }] = await Promise.all([
-                supabase.from('profiles').select('id, nome, cognome').eq('role', 'cliente').eq('avvocato_id', tId),
-                supabase.from(cfg.tabella).select('id, titolo').eq('avvocato_id', user.id).eq('stato', cfg.filtroStato),
+                isPrivato
+                    ? Promise.resolve({ data: [] })
+                    : supabase.from('profiles').select('id, nome, cognome').eq('role', 'cliente').eq('avvocato_id', tId),
+                isPrivato
+                    ? Promise.resolve({ data: [] })
+                    : supabase.from(cfg.tabella).select('id, titolo').eq('avvocato_id', user.id).eq('stato', cfg.filtroStato),
                 supabase.from('categorie_archivio').select('id, nome').eq('titolare_id', tId).order('nome'),
             ])
             setClienti(cl ?? [])
@@ -134,8 +142,10 @@ export default function ArchivioDettaglio() {
             titolo: formMeta.titolo,
             categoria: formMeta.categoria || null,
             tags: formMeta.tags ? formMeta.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-            cliente_id: formMeta.cliente_id || null,
-            [cfg.fk]: formMeta.pratica_id || null,
+            ...(isPrivato ? {} : {
+                cliente_id: formMeta.cliente_id || null,
+                [cfg.fk]: formMeta.pratica_id || null,
+            }),
             updated_at: new Date().toISOString(),
         }
         await supabase.from('archivio_documenti').update(aggiornato).eq('id', id)
@@ -184,7 +194,7 @@ export default function ArchivioDettaglio() {
 
     if (!doc) return (
         <div className="space-y-5">
-            <BackButton to="/archivio" label="Archivio" />
+            <BackButton to={indietro} label="Archivio" />
             <p className="font-body text-sm text-nebbia/40">Documento non trovato.</p>
         </div>
     )
@@ -195,7 +205,7 @@ export default function ArchivioDettaglio() {
 
     return (
         <div className="space-y-5">
-            <BackButton to="/archivio" label="Archivio" />
+            <BackButton to={indietro} label="Archivio" />
 
             {/* Header */}
             <div className="flex items-start justify-between flex-wrap gap-3">
@@ -209,7 +219,7 @@ export default function ArchivioDettaglio() {
                 <div className="flex items-center gap-2 flex-wrap">
                     <Badge label={sc.label} variant={sc.variant} />
                     {doc.verificato && <Badge label="Verificato" variant="salvia" />}
-                    <MandaAFisco doc={doc} />
+                    {!isPrivato && <MandaAFisco doc={doc} />}
                 </div>
             </div>
 
@@ -463,6 +473,7 @@ export default function ArchivioDettaglio() {
                                         className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/20"
                                     />
                                 </div>
+                                {!isPrivato && (<>
                                 <div>
                                     <label className="block font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1.5">Cliente</label>
                                     <select
@@ -489,6 +500,7 @@ export default function ArchivioDettaglio() {
                                         ))}
                                     </select>
                                 </div>
+                                </>)}
                             </div>
                         ) : (
                             <div className="space-y-3">

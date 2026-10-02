@@ -17,6 +17,7 @@ const TIPO_CONFIG = {
   crediti_ai: { label: 'Crediti AI', variant: 'salvia' },
   spazio_archiviazione: { label: 'Storage', variant: 'salvia' },
   gratuito: { label: 'Gratuito', variant: 'salvia' },
+  piano_privato: { label: 'Piano privati', variant: 'oro' },
 }
 
 function Dash() {
@@ -93,7 +94,7 @@ export function AdminProdotti() {
                     <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{p.nome}</td>
                     <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage || p.tipo === 'clienti_addon')
+                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage || p.tipo === 'clienti_addon' || p.tipo === 'piano_privato')
                         ? <Dash />
                         : p.posti === null ? 'illim.' : p.posti}
                     </td>
@@ -176,9 +177,11 @@ export function AdminProdottiForm() {
   const isCreditiAI = form.tipo === 'crediti_ai'
   const isStorage = form.tipo === 'spazio_archiviazione'
   const isGratuito = form.tipo === 'gratuito'
+  // Piano dei privati (ruolo 'user'): crediti + GB, NON fa diventare professionisti
+  const isPianoPrivato = form.tipo === 'piano_privato'
 
   // Tipi che richiedono campo durata_mesi
-  const haDurata = isAbb || isStorage || isGratuito
+  const haDurata = isAbb || isStorage || isGratuito || isPianoPrivato
 
   // Quanti posti ha il prodotto
   const postiNum = parseInt(form.posti) || 0
@@ -241,10 +244,10 @@ export function AdminProdottiForm() {
         include_banca_dati: (isAbb || isGratuito) ? form.include_banca_dati : false,
         include_monetizzazione: (isAbb || isGratuito) ? form.include_monetizzazione : false,
         revenue_pct: isAccesso ? parseInt(form.revenue_pct) : null,
-        crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
-        spazio_gb: (isAbb || isStorage || isGratuito) ? parseInt(form.spazio_gb) || 0 : 0,
+        crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito || isPianoPrivato) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
+        spazio_gb: (isAbb || isStorage || isGratuito || isPianoPrivato) ? parseInt(form.spazio_gb) || 0 : 0,
         limite_clienti: (isAbb || isClientiAddon || isGratuito) ? parseInt(form.limite_clienti) || 0 : null,
-        target_role: (isAbb || isGratuito) ? form.target_role : 'entrambi',
+        target_role: isPianoPrivato ? 'user' : (isAbb || isGratuito) ? form.target_role : 'entrambi',
         // Provvigione per i commerciali: se il tipo è vuoto il prodotto non
         // genera alcuna provvigione (comportamento di default).
         provvigione_tipo: form.provvigione_tipo || null,
@@ -277,12 +280,15 @@ export function AdminProdottiForm() {
     { v: 'crediti_ai', l: 'Crediti AI', desc: 'Pacchetto crediti AI acquistabili separatamente — non scadono mai' },
     { v: 'spazio_archiviazione', l: 'Storage', desc: 'Pacchetto GB extra per archivio documenti — pagamento una tantum con scadenza' },
     { v: 'gratuito', l: 'Gratuito', desc: 'Prova gratuita a tempo limitato — attivabile una sola volta per avvocato' },
+    { v: 'piano_privato', l: 'Piano privati', desc: 'Piano per gli utenti privati: crediti del mese + GB di archivio, senza diventare professionisti' },
   ]
 
   // Opzioni durata in base al tipo
   const opzioniDurata = isStorage
     ? [['1', '1 mese'], ['6', '6 mesi'], ['12', '12 mesi']]
-    : [['6', '6 mesi'], ['12', '12 mesi']]
+    : isPianoPrivato
+      ? [['1', '1 mese'], ['12', '12 mesi']]
+      : [['6', '6 mesi'], ['12', '12 mesi']]
 
   if (loading) {
     return (
@@ -522,10 +528,10 @@ export function AdminProdottiForm() {
         )}
 
         {/* Crediti AI — per abbonamento, crediti_ai e gratuito */}
-        {(isAbb || isCreditiAI || isGratuito) && (
+        {(isAbb || isCreditiAI || isGratuito || isPianoPrivato) && (
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
-              Crediti AI {isAbb ? '/ mese inclusi' : isGratuito ? 'inclusi nella prova' : 'nel pacchetto'} *
+              Crediti AI {(isAbb || isPianoPrivato) ? '/ mese inclusi' : isGratuito ? 'inclusi nella prova' : 'nel pacchetto'} *
             </label>
             <input type="number" min="0" {...f('crediti_ai_mensili')} placeholder="100"
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
@@ -594,10 +600,10 @@ export function AdminProdottiForm() {
         )}
 
         {/* Storage / Spazio archiviazione — per abbonamento, spazio_archiviazione e gratuito */}
-        {(isAbb || isStorage || isGratuito) && (
+        {(isAbb || isStorage || isGratuito || isPianoPrivato) && (
           <div>
             <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">
-              {isAbb ? 'Storage incluso (GB) *' : isGratuito ? 'Storage incluso nella prova (GB) *' : 'GB del pacchetto *'}
+              {(isAbb || isPianoPrivato) ? 'Storage incluso (GB) *' : isGratuito ? 'Storage incluso nella prova (GB) *' : 'GB del pacchetto *'}
             </label>
             <input type="number" min="0" {...f('spazio_gb')} placeholder="50"
               className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
