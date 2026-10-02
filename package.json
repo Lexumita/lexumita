@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/generate-seo-pages.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "testi:elenco": "node scripts/testi-elenco.mjs",
+    "testi:applica": "node scripts/testi-applica.mjs",
+    "testi:controlla": "node scripts/testi-controlla.mjs"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",

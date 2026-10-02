@@ -47,6 +47,7 @@ import LexLogs from './pages/admin/LexLogs'
 import MailLog from '@/pages/admin/MailLog'
 import AdminCalendario from './pages/admin/Calendario'
 import AdminProfilo from './pages/admin/Profilo'
+import AdminTesti from './pages/admin/Testi'
 
 // ── Commerciale (venditore) ──
 import CommercialeDashboard from './pages/commerciale/Dashboard'
@@ -240,6 +241,7 @@ export default function App() {
               <Route path="/admin/lex-logs" element={<Adm><LexLogs /></Adm>} />
               <Route path="/admin/calendario" element={<Adm><AdminCalendario /></Adm>} />
               <Route path="/admin/profilo" element={<Adm><AdminProfilo /></Adm>} />
+              <Route path="/admin/testi" element={<Adm><AdminTesti /></Adm>} />
 
               {/* ═══════════════════════════════════════════════════════
                 COMMERCIALE (venditore con codice personale + provvigioni)

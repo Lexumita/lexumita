@@ -5,7 +5,7 @@ import logo from '@/assets/logo.png'
 import {
   LayoutDashboard, Users, Package, Mail, UserCircle,
   BookOpen, CreditCard, Headphones, Calendar,
-  LogOut, Menu, ChevronRight, Activity
+  LogOut, Menu, ChevronRight, Activity, Languages
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 
@@ -23,6 +23,7 @@ export default function AdminLayout({ children }) {
     { path: '/admin/mail-log', label: 'Mail Log', icon: Mail },
     { path: '/admin/lex-logs', label: 'Lex Logs', icon: Activity },
     { path: '/admin/normativa', label: 'Normativa', icon: BookOpen },
+    { path: '/admin/testi', label: 'Testi', icon: Languages },
     { path: '/admin/assistenza', label: 'Assistenza', icon: Headphones },
     { path: '/admin/profilo', label: 'Profilo', icon: UserCircle },
   ]

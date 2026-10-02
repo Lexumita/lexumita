@@ -8,8 +8,8 @@
 // crearne uno nuovo, mai allungare un elenco, mai cambiare il tipo di un nodo.
 //
 // Perché conta davvero: in più pagine le icone stanno nel codice e sono legate
-// agli elenchi tradotti per POSIZIONE (Home.jsx, PerAvvocati.jsx, PerFiduciari.jsx,
-// PerProgettisti.jsx, Contatti.jsx). Un elenco che cresce di un elemento manda
+// agli elenchi tradotti per POSIZIONE (Home.jsx, PerAvvocati.jsx,
+// PerCommercialisti.jsx, Contatti.jsx). Un elenco che cresce di un elemento manda
 // il codice a cercare l'icona numero N+1, che non esiste: schermata bianca.
 
 const PEZZO = /([^.[\]]+)|\[(\d+)\]/g
