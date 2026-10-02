@@ -55,9 +55,9 @@ export default function UserLayout({ children }) {
     { path: '/area', label: 'Banca Dati', icon: Home, end: true },
     { path: '/area/ricerche', label: 'Ricerche', icon: Search },
     { path: '/area/archivio', label: 'Archivio', icon: Archive },
-    ...(verifyItem ? [verifyItem] : []),
     { path: '/area/assistenza', label: 'Domande?', icon: Headphones },
     { path: '/area/acquista', label: 'Acquista', icon: CreditCard },
+    ...(verifyItem ? [verifyItem] : []),
     { path: '/area/profilo', label: 'Profilo', icon: User },
   ]
 
@@ -65,7 +65,7 @@ export default function UserLayout({ children }) {
   const banner = bannerDismissed ? null
     : !completo ? {
       icon: Clock, color: 'amber',
-      text: 'Completa i dati di fatturazione per sbloccare pratiche, clienti, atti e fatture. Bastano due minuti: nessuna approvazione da attendere.',
+      text: 'Completa il profilo e richiedi l\u2019accesso completo alla piattaforma: bastano due minuti.',
       link: { to: '/verifica', label: 'Completa ora →' },
     }
       : !profile?.piano_id ? {
