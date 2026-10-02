@@ -1,6 +1,7 @@
 // src/pages/TerminiServizio.jsx
 import { FileText, AlertCircle, Shield, CreditCard } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation, Trans } from 'react-i18next'
 
 function Section({ title, children }) {
   return (
@@ -23,399 +24,273 @@ function Sub({ title, children }) {
 }
 
 export default function TerminiServizio() {
+  const { t } = useTranslation('termini')
+  // Le voci di un elenco del JSON, una <li> ciascuna
+  const voci = (chiave) => t(chiave, { returnObjects: true }).map((voce, i) => <li key={i}>{voce}</li>)
+
   return (
     <div className="min-h-screen bg-petrolio text-nebbia pt-20">
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
         <Helmet>
-          <title>Privacy Policy — Lexum</title>
+          <title>{t('meta.title')}</title>
           <meta
             name="description"
-            content="Informativa privacy di Lexum: come trattiamo i dati personali di avvocati, clienti e utenti della piattaforma in conformità al GDPR."
+            content={t('meta.description')}
           />
           <meta name="robots" content="noindex, follow" />
           <link rel="canonical" href="https://www.lexum.it/privacy" />
         </Helmet>
         {/* Header */}
         <div className="space-y-4">
-          <p className="font-body text-xs text-salvia/60 tracking-[0.3em] uppercase">Informativa legale</p>
-          <h1 className="font-display text-5xl font-light text-nebbia">Termini di Servizio</h1>
+          <p className="font-body text-xs text-salvia/60 tracking-[0.3em] uppercase">{t('header.label')}</p>
+          <h1 className="font-display text-5xl font-light text-nebbia">{t('header.title')}</h1>
           <div className="bg-slate border border-oro/15 p-4 flex items-start gap-3">
             <AlertCircle size={14} className="text-oro shrink-0 mt-0.5" />
             <p className="font-body text-xs text-nebbia/50 leading-relaxed">
-              Leggere attentamente i presenti Termini prima di utilizzare la piattaforma Lexum.
-              La registrazione e l'utilizzo del servizio costituiscono accettazione integrale
-              dei presenti Termini. Il contratto è regolato dal diritto svizzero.
+              {t('header.notice')}
             </p>
           </div>
         </div>
 
         {/* 1. Parti */}
-        <Section title="1. Parti del contratto">
+        <Section title={t('parti.title')}>
           <p>
-            I presenti Termini di Servizio regolano il rapporto contrattuale tra:
+            {t('parti.intro')}
           </p>
           <div className="bg-slate border border-white/5 p-5 space-y-1.5">
-            <p className="font-medium text-nebbia">Mosaico Experiences SA</p>
-            <p>CHE-365.261.725</p>
-            <p>Via Cantonale 1, 6900 Lugano, Svizzera</p>
-            <p className="text-nebbia/40 text-xs mt-2">(di seguito "Lexum", "noi" o "il Fornitore")</p>
+            <p className="font-medium text-nebbia">{t('parti.company')}</p>
+            <p>{t('parti.company_id')}</p>
+            <p>{t('parti.address')}</p>
+            <p className="text-nebbia/40 text-xs mt-2">{t('parti.company_alias')}</p>
           </div>
-          <p>e l'utente registrato alla piattaforma (di seguito "Utente" o "Cliente"),
-            che può essere un avvocato, uno studio legale o un professionista del settore legale.</p>
+          <p>{t('parti.utente')}</p>
         </Section>
 
         {/* 2. Descrizione */}
-        <Section title="2. Descrizione del servizio">
+        <Section title={t('descrizione.title')}>
           <p>
-            Lexum è una piattaforma SaaS (Software as a Service) dedicata ad avvocati e studi legali
-            che fornisce, tra gli altri, i seguenti servizi:
+            {t('descrizione.intro')}
           </p>
           <ul className="list-disc list-inside space-y-1.5 pl-2">
-            <li>Gestione di pratiche, clienti e documenti</li>
-            <li>Archivio digitale con estrazione testo automatica tramite OCR</li>
-            <li>Banca dati di sentenze e giurisprudenza condivisa tra professionisti</li>
-            <li>Ricerca semantica su normativa italiana tramite intelligenza artificiale (Lex)</li>
-            <li>Strumenti di analisi e strategia processuale assistiti dall'AI</li>
-            <li>Calendario e gestione delle udienze</li>
-            <li>Portale clienti per la condivisione di documenti e comunicazioni</li>
+            {voci('descrizione.items')}
           </ul>
           <p>
-            Lexum è uno strumento di supporto professionale. Le analisi e i suggerimenti
-            generati dall'AI hanno natura puramente informativa e non costituiscono pareri legali.
-            La responsabilità professionale rimane in capo all'avvocato in ogni circostanza.
+            {t('descrizione.supporto')}
           </p>
         </Section>
 
         {/* 3. Registrazione */}
-        <Section title="3. Registrazione e account">
-          <Sub title="3.1 Requisiti">
+        <Section title={t('registrazione.title')}>
+          <Sub title={t('registrazione.requisiti.title')}>
             <p>
-              La registrazione a Lexum è riservata a professionisti legali (avvocati, praticanti,
-              collaboratori di studio) e a chiunque necessiti di strumenti di ricerca legale
-              (accesso Lex AI). L'Utente dichiara di avere capacità giuridica di agire e,
-              se professionista, di essere iscritto all'albo competente.
+              {t('registrazione.requisiti.text')}
             </p>
           </Sub>
-          <Sub title="3.2 Obblighi dell'Utente">
+          <Sub title={t('registrazione.obblighi.title')}>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Fornire informazioni veritiere, accurate e aggiornate in fase di registrazione</li>
-              <li>Mantenere riservate le proprie credenziali di accesso</li>
-              <li>Notificare immediatamente qualsiasi accesso non autorizzato al proprio account</li>
-              <li>Non condividere le credenziali con terzi non autorizzati</li>
-              <li>Aggiornare i propri dati in caso di variazioni</li>
+              {voci('registrazione.obblighi.items')}
             </ul>
           </Sub>
-          <Sub title="3.3 Account studio">
+          <Sub title={t('registrazione.studio.title')}>
             <p>
-              Il titolare dell'account studio (titolare) è responsabile degli accessi
-              dei collaboratori da lui invitati. Ogni azione compiuta da un collaboratore
-              è imputabile allo studio e al suo titolare.
+              {t('registrazione.studio.text')}
             </p>
           </Sub>
         </Section>
 
         {/* 4. Piani */}
-        <Section title="4. Piani di abbonamento e pagamenti">
-          <Sub title="4.1 Piani disponibili">
+        <Section title={t('piani.title')}>
+          <Sub title={t('piani.disponibili.title')}>
             <p>
-              Lexum è disponibile in diversi piani di abbonamento con caratteristiche e prezzi
-              differenti, consultabili sulla piattaforma. I prezzi sono espressi in Euro (EUR)
-              e si intendono IVA esclusa ove applicabile.
+              {t('piani.disponibili.text')}
             </p>
           </Sub>
-          <Sub title="4.2 Fatturazione">
+          <Sub title={t('piani.fatturazione.title')}>
             <p>
-              Gli abbonamenti sono fatturati anticipatamente per il periodo selezionato
-              (mensile o annuale). I pagamenti sono elaborati tramite un fornitore di servizi di pagamento certificato.
-              La fattura viene emessa automaticamente al momento del pagamento.
+              {t('piani.fatturazione.text')}
             </p>
           </Sub>
-          <Sub title="4.3 Durata e rinnovo">
+          <Sub title={t('piani.durata.title')}>
             <p>
-              Ogni piano dura il periodo scelto al momento dell'acquisto e si paga in un'unica
-              soluzione: non si rinnova automaticamente e non comporta addebiti successivi.
-              Per continuare a usare il servizio dopo la scadenza occorre acquistare un nuovo
-              periodo dalla sezione Studio della piattaforma. A titolo di cortesia, prima della
-              scadenza Lexum invia un promemoria all'indirizzo email dell'account.
+              {t('piani.durata.text')}
             </p>
           </Sub>
-          <Sub title="4.4 Scadenza del piano">
+          <Sub title={t('piani.scadenza.title')}>
             <p>
-              Alla scadenza, se non è stato acquistato un nuovo periodo, le funzionalità
-              riservate agli abbonati non sono più disponibili: l'account resta accessibile
-              e i documenti già caricati in archivio restano consultabili in sola lettura.
-              Lexum può concedere, a propria discrezione, un periodo di grazia durante il
-              quale il servizio resta accessibile. I dati vengono conservati per 30 giorni
-              dalla scadenza, trascorsi i quali possono essere eliminati definitivamente.
+              {t('piani.scadenza.text')}
             </p>
           </Sub>
-          <Sub title="4.5 Rimborsi">
+          <Sub title={t('piani.rimborsi.title')}>
             <p>
-              Non sono previsti rimborsi per periodi di abbonamento già fatturati,
-              salvo vizi del servizio imputabili a Lexum. In caso di upgrade di piano,
-              viene calcolata la differenza pro-rata per il periodo residuo.
+              {t('piani.rimborsi.text')}
             </p>
           </Sub>
-          <Sub title="4.6 Crediti AI">
+          <Sub title={t('piani.crediti.title')}>
             <p>
-              I crediti AI acquistati hanno validità indicata al momento dell'acquisto
-              e non sono rimborsabili né trasferibili. I crediti inclusi nell'abbonamento
-              mensile non si accumulano di mese in mese.
+              {t('piani.crediti.text')}
             </p>
           </Sub>
-          <Sub title="4.7 Prova gratuita">
+          <Sub title={t('piani.prova.title')}>
             <p>
-              Lexum offre una prova gratuita della durata di 7 giorni (o periodo diverso
-              indicato al momento dell'attivazione) per i nuovi utenti registrati come avvocati.
-              La prova gratuita:
+              {t('piani.prova.intro')}
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>È attivabile una sola volta per account e non è trasferibile</li>
-              <li>Non richiede l'inserimento di dati di pagamento</li>
-              <li>Include le funzionalità indicate al momento dell'attivazione</li>
-              <li>Si conclude automaticamente alla scadenza senza addebiti</li>
-              <li>Alla scadenza, l'accesso alle funzionalità a pagamento viene sospeso</li>
-              <li>I dati inseriti durante la prova rimangono accessibili dopo l'acquisto di un piano</li>
-              <li>I dati vengono conservati per 30 giorni dalla scadenza della prova,
-                trascorsi i quali possono essere eliminati definitivamente</li>
+              {voci('piani.prova.items')}
             </ul>
             <p>
-              Lexum si riserva il diritto di modificare le condizioni della prova gratuita
-              o di sospenderla in qualsiasi momento per i nuovi utenti, senza effetto
-              sulle prove già attivate.
+              {t('piani.prova.modifiche')}
             </p>
           </Sub>
         </Section>
 
         {/* 5. Contenuti */}
-        <Section title="5. Contenuti caricati dall'Utente">
-          <Sub title="5.1 Proprietà">
+        <Section title={t('contenuti.title')}>
+          <Sub title={t('contenuti.proprieta.title')}>
             <p>
-              L'Utente rimane il solo proprietario dei contenuti caricati sulla piattaforma
-              (documenti, sentenze, pratiche, note). Lexum non rivendica alcun diritto
-              di proprietà su tali contenuti.
+              {t('contenuti.proprieta.text')}
             </p>
           </Sub>
-          <Sub title="5.2 Licenza d'uso">
+          <Sub title={t('contenuti.licenza.title')}>
             <p>
-              Caricando contenuti sulla piattaforma, l'Utente concede a Lexum una licenza
-              limitata, non esclusiva e non trasferibile per elaborare tali contenuti
-              al solo scopo di erogare il servizio (archiviazione, OCR, indicizzazione,
-              ricerca semantica, analisi AI).
+              {t('contenuti.licenza.text')}
             </p>
           </Sub>
-          <Sub title="5.3 Banca dati condivisa">
+          <Sub title={t('contenuti.banca_dati.title')}>
             <p>
-              Caricando sentenze nella banca dati condivisa, l'Utente dichiara di avere
-              il diritto di condividere tali documenti e accetta che altri avvocati registrati
-              possano acquistare l'accesso al documento. Il compenso per ogni accesso viene
-              ripartito secondo le percentuali indicate al momento del caricamento.
+              {t('contenuti.banca_dati.text')}
             </p>
           </Sub>
-          <Sub title="5.4 Contenuti vietati">
-            <p>È vietato caricare sulla piattaforma:</p>
+          <Sub title={t('contenuti.vietati.title')}>
+            <p>{t('contenuti.vietati.intro')}</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Contenuti che violano diritti di terzi (copyright, privacy, segreti aziendali)</li>
-              <li>Materiale illegale o che incita a attività illecite</li>
-              <li>Dati personali di terzi non pertinenti alle pratiche legali gestite</li>
-              <li>Malware, virus o codice dannoso</li>
-              <li>Contenuti falsi o fuorvianti</li>
+              {voci('contenuti.vietati.items')}
             </ul>
           </Sub>
-          <Sub title="5.5 Responsabilità sui contenuti">
+          <Sub title={t('contenuti.responsabilita.title')}>
             <p>
-              L'Utente è il responsabile del trattamento dei dati personali dei propri clienti
-              ai sensi del GDPR. Lexum agisce quale responsabile del trattamento (data processor)
-              per i dati caricati dall'Utente. Le parti sottoscrivono implicitamente un accordo
-              di trattamento dei dati (DPA) conforme all'art. 28 GDPR con l'accettazione
-              dei presenti Termini.
+              {t('contenuti.responsabilita.text')}
             </p>
           </Sub>
         </Section>
 
         {/* 6. Uso accettabile */}
-        <Section title="6. Uso accettabile della piattaforma">
-          <p>L'Utente si impegna a non utilizzare Lexum per:</p>
+        <Section title={t('uso.title')}>
+          <p>{t('uso.intro')}</p>
           <ul className="list-disc list-inside space-y-1.5 pl-2">
-            <li>Attività illegali o contrarie all'etica professionale forense</li>
-            <li>Tentare di accedere ad aree della piattaforma non autorizzate</li>
-            <li>Effettuare reverse engineering, decompilare o tentare di estrarre il codice sorgente</li>
-            <li>Sovraccaricare intenzionalmente i sistemi (DDoS, scraping massivo)</li>
-            <li>Condividere l'accesso alla piattaforma con terzi non autorizzati</li>
-            <li>Raccogliere dati di altri utenti senza autorizzazione</li>
-            <li>Creare account multipli per aggirare limitazioni del piano</li>
-            <li>Utilizzare le funzionalità AI per generare contenuti fuorvianti o falsi pareri legali</li>
+            {voci('uso.items')}
           </ul>
         </Section>
 
         {/* 7. AI */}
-        <Section title="7. Funzionalità di intelligenza artificiale">
-          <Sub title="7.1 Natura del servizio AI">
+        <Section title={t('ai.title')}>
+          <Sub title={t('ai.natura.title')}>
             <p>
-              Le funzionalità basate su intelligenza artificiale (Lex AI) forniscono
-              informazioni e analisi a carattere puramente informativo.
-              I risultati generati dall'AI non costituiscono pareri legali,
-              consulenza professionale o sostituzione del giudizio dell'avvocato.
+              {t('ai.natura.text')}
             </p>
           </Sub>
-          <Sub title="7.2 Limitazioni">
+          <Sub title={t('ai.limitazioni.title')}>
             <p>
-              L'AI lavora sulla base delle fonti presenti nel database Lexum
-              (normativa italiana, giurisprudenza caricata, documenti dell'archivio verificati).
-              Lexum non garantisce la completezza, l'accuratezza o l'aggiornamento delle
-              informazioni generate. L'Utente è responsabile della verifica indipendente
-              di qualsiasi informazione prima di utilizzarla nell'esercizio della professione.
+              {t('ai.limitazioni.text')}
             </p>
           </Sub>
-          <Sub title="7.3 Utilizzo dei contenuti">
+          <Sub title={t('ai.utilizzo.title')}>
             <p>
-              I contenuti caricati dall'Utente non vengono utilizzati per addestrare
-              modelli AI di terze parti. Le query inviate all'AI vengono elaborate
-              dai fornitori indicati nella Privacy Policy nel rispetto degli accordi DPA.
+              {t('ai.utilizzo.text')}
             </p>
           </Sub>
         </Section>
 
         {/* 8. Disponibilità */}
-        <Section title="8. Disponibilità del servizio e manutenzione">
+        <Section title={t('disponibilita.title')}>
           <p>
-            Lexum si impegna a garantire la disponibilità della piattaforma con un obiettivo
-            di uptime del 99,5% su base mensile, escluse le finestre di manutenzione programmate.
+            {t('disponibilita.uptime')}
           </p>
           <p>
-            Le manutenzioni programmate vengono comunicate con almeno 48 ore di anticipo.
-            In caso di interruzioni non programmate, Lexum si impegna a ripristinare
-            il servizio nel minor tempo possibile e a comunicare l'evento agli utenti interessati.
+            {t('disponibilita.manutenzioni')}
           </p>
           <p>
-            Lexum non è responsabile per interruzioni causate da eventi fuori dal proprio controllo
-            (forza maggiore, guasti di infrastruttura di terzi, attacchi informatici esterni).
+            {t('disponibilita.forza_maggiore')}
           </p>
         </Section>
 
         {/* 9. Limitazione responsabilità */}
-        <Section title="9. Limitazione di responsabilità">
+        <Section title={t('responsabilita.title')}>
           <p>
-            Nei limiti consentiti dalla legge svizzera applicabile:
+            {t('responsabilita.intro')}
           </p>
           <ul className="list-disc list-inside space-y-2 pl-2">
-            <li>
-              Lexum non è responsabile per danni indiretti, consequenziali,
-              perdita di profitto o perdita di dati derivanti dall'uso della piattaforma
-            </li>
-            <li>
-              La responsabilità complessiva di Lexum per qualsiasi richiesta è limitata
-              all'importo pagato dall'Utente nei 3 mesi precedenti l'evento generatore del danno
-            </li>
-            <li>
-              Lexum non è responsabile per decisioni professionali adottate dall'avvocato
-              sulla base di informazioni generate dall'AI
-            </li>
-            <li>
-              Lexum non è responsabile per contenuti caricati da terzi nella banca dati condivisa
-            </li>
+            {voci('responsabilita.items')}
           </ul>
         </Section>
 
         {/* 10. Proprietà intellettuale */}
-        <Section title="10. Proprietà intellettuale">
+        <Section title={t('proprieta.title')}>
           <p>
-            La piattaforma Lexum, il suo codice sorgente, il design, i loghi, i marchi
-            e tutti i contenuti originali prodotti da Lexum sono di proprietà esclusiva
-            di Mosaico Experiences SA e sono protetti dalla normativa svizzera e
-            internazionale sul diritto d'autore e sulla proprietà intellettuale.
+            {t('proprieta.piattaforma')}
           </p>
           <p>
-            L'Utente non è autorizzato a riprodurre, distribuire, modificare o creare
-            opere derivate dalla piattaforma senza espressa autorizzazione scritta di Lexum.
+            {t('proprieta.divieto')}
           </p>
         </Section>
 
         {/* 11. Risoluzione */}
-        <Section title="11. Sospensione e risoluzione del contratto">
-          <Sub title="11.1 Risoluzione da parte dell'Utente">
+        <Section title={t('risoluzione.title')}>
+          <Sub title={t('risoluzione.utente.title')}>
             <p>
-              L'Utente può recedere dal contratto in qualsiasi momento. Poiché i piani non
-              si rinnovano automaticamente, è sufficiente non acquistare un nuovo periodo:
-              il servizio a pagamento termina alla scadenza del periodo già pagato, senza
-              ulteriori addebiti. Per la chiusura dell'account l'Utente può scrivere a info@lexum.it.
+              {t('risoluzione.utente.text')}
             </p>
           </Sub>
-          <Sub title="11.2 Sospensione da parte di Lexum">
+          <Sub title={t('risoluzione.sospensione.title')}>
             <p>
-              Lexum si riserva il diritto di sospendere o terminare l'account dell'Utente
-              in caso di:
+              {t('risoluzione.sospensione.intro')}
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Violazione dei presenti Termini</li>
-              <li>Uso fraudolento o abusivo della piattaforma</li>
-              <li>Richiesta dell'autorità giudiziaria competente</li>
+              {voci('risoluzione.sospensione.items')}
             </ul>
             <p>
-              In caso di violazioni gravi, la sospensione può essere immediata.
-              Per violazioni minori, Lexum si impegna a fornire un preavviso di 14 giorni.
+              {t('risoluzione.sospensione.preavviso')}
             </p>
           </Sub>
-          <Sub title="11.3 Effetti della risoluzione">
+          <Sub title={t('risoluzione.effetti.title')}>
             <p>
-              Alla risoluzione del contratto, l'Utente ha 30 giorni per esportare i propri dati.
-              Trascorso tale periodo, i dati vengono eliminati definitivamente,
-              salvo obblighi di conservazione previsti dalla legge.
+              {t('risoluzione.effetti.text')}
             </p>
           </Sub>
         </Section>
 
         {/* 12. Legge applicabile */}
-        <Section title="12. Legge applicabile e foro competente">
+        <Section title={t('legge.title')}>
           <p>
-            I presenti Termini sono regolati dal diritto svizzero, con esclusione delle
-            norme di conflitto di leggi. Per le controversie con consumatori residenti
-            nell'Unione Europea si applicano le norme imperative di protezione dei consumatori
-            del paese di residenza dell'Utente.
+            {t('legge.diritto')}
           </p>
           <p>
-            Il foro competente per qualsiasi controversia relativa ai presenti Termini
-            è il Tribunale di Lugano (Svizzera), fatta salva la competenza esclusiva
-            di altri fori prevista da norme imperative (in particolare, per i consumatori UE,
-            il foro del paese di residenza del consumatore).
+            {t('legge.foro')}
           </p>
           <p>
-            Prima di ricorrere alle vie legali, le parti si impegnano a tentare una
-            risoluzione amichevole della controversia entro 30 giorni dalla notifica
-            scritta del problema.
+            {t('legge.amichevole')}
           </p>
         </Section>
 
         {/* 13. Modifiche */}
-        <Section title="13. Modifiche ai Termini">
+        <Section title={t('modifiche.title')}>
           <p>
-            Lexum si riserva il diritto di modificare i presenti Termini.
-            Le modifiche sostanziali vengono comunicate via email con almeno 30 giorni
-            di anticipo rispetto alla data di entrata in vigore.
-            Le modifiche di natura tecnica o redazionale possono essere apportate senza preavviso.
+            {t('modifiche.diritto')}
           </p>
           <p>
-            L'uso continuato della piattaforma dopo l'entrata in vigore delle modifiche
-            costituisce accettazione dei nuovi Termini. In caso di disaccordo,
-            l'Utente può recedere dal contratto prima della data di entrata in vigore.
+            {t('modifiche.accettazione')}
           </p>
         </Section>
 
         {/* 14. Disposizioni finali */}
-        <Section title="14. Disposizioni finali">
+        <Section title={t('finali.title')}>
           <p>
-            Se una o più disposizioni dei presenti Termini risultassero invalide o inapplicabili,
-            le restanti disposizioni rimarranno in vigore a pieno titolo.
-            La disposizione invalida sarà sostituita da una valida che si avvicini
-            il più possibile all'intento originale.
+            {t('finali.invalidita')}
           </p>
           <p>
-            La mancata applicazione di una disposizione dei presenti Termini da parte di Lexum
-            non costituisce rinuncia al diritto di applicarla in futuro.
+            {t('finali.rinuncia')}
           </p>
           <p>
-            Per qualsiasi comunicazione relativa ai presenti Termini scrivere a:{' '}
-            <a href="mailto:info@lexum.it" className="text-oro hover:text-oro/70 transition-colors">info@lexum.it</a>
+            <Trans t={t} i18nKey="finali.comunicazioni" components={{ mail: <a href="mailto:info@lexum.it" className="text-oro hover:text-oro/70 transition-colors" /> }} />
           </p>
         </Section>
 
@@ -423,8 +298,7 @@ export default function TerminiServizio() {
         <div className="bg-slate border border-white/5 p-5 flex items-start gap-3">
           <FileText size={14} className="text-nebbia/30 shrink-0 mt-0.5" />
           <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-            Mosaico Experiences SA · CHE-365.261.725 · Via Cantonale 1, 6900 Lugano, Svizzera ·
-            <a href="mailto:info@lexum.it" className="text-oro hover:text-oro/70 transition-colors ml-1">info@lexum.it</a>
+            <Trans t={t} i18nKey="footer.text" components={{ mail: <a href="mailto:info@lexum.it" className="text-oro hover:text-oro/70 transition-colors ml-1" /> }} />
           </p>
         </div>
 

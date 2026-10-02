@@ -2,11 +2,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation, Trans } from 'react-i18next'
 import {
   ArrowRight, Mail, MessageSquare, Calendar,
   Plus, Minus, Shield, Lock, Globe, EyeOff,
   Clock, Send,
 } from 'lucide-react'
+
+const ICONE_TRUST = [Globe, Shield, Lock, EyeOff]
 
 // ─── Scroll animation hook ───────────────────────────────────
 function useInView(threshold = 0.12) {
@@ -73,31 +76,35 @@ function FaqItem({ q, a, defaultOpen = false }) {
 
 // ─────────────────────────────────────────────────────────────
 export default function Contatti() {
+  const { t } = useTranslation('contatti')
+  const faq = t('faq.items', { returnObjects: true })
+  const trust = t('trust', { returnObjects: true })
+
   return (
     <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
       <Helmet>
-        <title>Lexum — Contatti, demo e supporto</title>
+        <title>{t('meta.title')}</title>
         <meta
           name="description"
-          content="Hai una domanda su Lexum? Vuoi una demo personalizzata? Scrivici, registrati per parlare direttamente col team, o consulta le risposte alle domande più frequenti."
+          content={t('meta.description')}
         />
         <link rel="canonical" href="https://www.lexum.it/contatti" />
 
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.lexum.it/contatti" />
-        <meta property="og:title" content="Lexum — Contatti" />
+        <meta property="og:title" content={t('meta.og_title')} />
         <meta
           property="og:description"
-          content="Parla col team, richiedi una demo o leggi le risposte più frequenti."
+          content={t('meta.og_description')}
         />
         <meta property="og:image" content="https://www.lexum.it/logo.png" />
         <meta property="og:locale" content="it_IT" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Lexum — Contatti" />
+        <meta name="twitter:title" content={t('meta.twitter_title')} />
         <meta
           name="twitter:description"
-          content="Parla col team, richiedi una demo o leggi le risposte più frequenti."
+          content={t('meta.twitter_description')}
         />
         <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
       </Helmet>
@@ -112,14 +119,12 @@ export default function Contatti() {
         </div>
 
         <div className="max-w-3xl mx-auto relative text-center" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
-          <SectionLabel>Contatti</SectionLabel>
+          <SectionLabel>{t('hero.label')}</SectionLabel>
           <h1 className="font-display text-5xl md:text-6xl font-light text-nebbia mb-6 leading-[1.1]">
-            Parliamo del<br />
-            <span className="text-oro">tuo studio.</span>
+            <Trans t={t} i18nKey="hero.title" components={{ br: <br />, hl: <span className="text-oro" /> }} />
           </h1>
           <p className="font-body text-base text-nebbia/45 leading-relaxed max-w-xl mx-auto">
-            Tre modi per metterci in comunicazione, a seconda di cosa ti serve.
-            Il team è composto da persone vere, non da risponditori automatici.
+            {t('hero.subtitle')}
           </p>
         </div>
       </section>
@@ -137,20 +142,18 @@ export default function Contatti() {
                 <div className="w-11 h-11 flex items-center justify-center border border-salvia/25 bg-salvia/10 mb-5">
                   <MessageSquare size={17} className="text-salvia" />
                 </div>
-                <p className="font-body text-[10px] text-salvia/60 tracking-[0.3em] uppercase mb-2">Chat col team</p>
+                <p className="font-body text-[10px] text-salvia/60 tracking-[0.3em] uppercase mb-2">{t('ways.chat.label')}</p>
                 <h3 className="font-display text-xl font-light text-nebbia mb-3">
-                  Domande veloci, risposte da una persona.
+                  {t('ways.chat.title')}
                 </h3>
                 <p className="font-body text-sm text-nebbia/45 leading-relaxed mb-5 flex-1">
-                  Registrati gratuitamente: dentro la tua area trovi una sezione assistenza
-                  in cui puoi scriverci direttamente. Risponde un operatore del team,
-                  non un bot. Solitamente entro poche ore nei giorni feriali.
+                  {t('ways.chat.text')}
                 </p>
                 <Link
                   to="/registrati"
                   className="flex items-center justify-center gap-2 w-full py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors"
                 >
-                  Registrati e scrivici <ArrowRight size={13} />
+                  {t('ways.chat.cta')} <ArrowRight size={13} />
                 </Link>
               </div>
             </FadeIn>
@@ -163,20 +166,18 @@ export default function Contatti() {
                   <div className="w-11 h-11 flex items-center justify-center border border-oro/30 bg-oro/10 mb-5">
                     <Calendar size={17} className="text-oro" />
                   </div>
-                  <p className="font-body text-[10px] text-oro/60 tracking-[0.3em] uppercase mb-2">Demo dedicata</p>
+                  <p className="font-body text-[10px] text-oro/60 tracking-[0.3em] uppercase mb-2">{t('ways.demo.label')}</p>
                   <h3 className="font-display text-xl font-light text-nebbia mb-3">
-                    30 minuti col team, partendo dal tuo studio.
+                    {t('ways.demo.title')}
                   </h3>
                   <p className="font-body text-sm text-nebbia/45 leading-relaxed mb-5 flex-1">
-                    Registrati e ti contattiamo entro 48 ore lavorative per fissare
-                    una call dimostrativa. Ti mostriamo Lexum partendo dalle esigenze
-                    concrete del tuo studio, non da una demo generica.
+                    {t('ways.demo.text')}
                   </p>
                   <Link
                     to="/registrati"
                     className="flex items-center justify-center gap-2 w-full py-3 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors"
                   >
-                    Richiedi una demo <ArrowRight size={13} />
+                    {t('ways.demo.cta')} <ArrowRight size={13} />
                   </Link>
                 </div>
               </div>
@@ -188,19 +189,18 @@ export default function Contatti() {
                 <div className="w-11 h-11 flex items-center justify-center border border-white/15 bg-white/[0.02] mb-5">
                   <Mail size={17} className="text-nebbia/50" />
                 </div>
-                <p className="font-body text-[10px] text-nebbia/40 tracking-[0.3em] uppercase mb-2">Email diretta</p>
+                <p className="font-body text-[10px] text-nebbia/40 tracking-[0.3em] uppercase mb-2">{t('ways.email.label')}</p>
                 <h3 className="font-display text-xl font-light text-nebbia mb-3">
-                  Per chi preferisce scrivere senza registrarsi.
+                  {t('ways.email.title')}
                 </h3>
                 <p className="font-body text-sm text-nebbia/45 leading-relaxed mb-5 flex-1">
-                  Scrivici a info@lexum.it. Rispondiamo nei giorni feriali, dal lunedì al venerdì,
-                  9:00–18:00. Per chi ha solo una domanda rapida, è la via più diretta.
+                  {t('ways.email.text')}
                 </p>
                 <a
                   href="mailto:info@lexum.it"
                   className="flex items-center justify-center gap-2 w-full py-3 border border-white/15 text-nebbia/65 font-body text-sm hover:border-white/30 hover:text-nebbia transition-colors"
                 >
-                  <Send size={13} /> info@lexum.it
+                  <Send size={13} /> {t('ways.email.cta')}
                 </a>
               </div>
             </FadeIn>
@@ -211,7 +211,7 @@ export default function Contatti() {
           <FadeIn delay={0.4}>
             <div className="flex items-center justify-center gap-2 mt-8 font-body text-xs text-nebbia/30">
               <Clock size={11} />
-              <span>Lun–Ven, 9:00–18:00 (CET). Risposte entro poche ore nei giorni feriali.</span>
+              <span>{t('ways.hours')}</span>
             </div>
           </FadeIn>
         </div>
@@ -224,65 +224,31 @@ export default function Contatti() {
         <div className="max-w-3xl mx-auto">
 
           <FadeIn className="text-center mb-12 max-w-2xl mx-auto">
-            <SectionLabel>Domande frequenti</SectionLabel>
+            <SectionLabel>{t('faq.label')}</SectionLabel>
             <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-              Le domande più richieste.
+              {t('faq.title')}
             </h2>
             <p className="font-body text-sm text-nebbia/40 leading-relaxed">
-              Spesso la domanda è già stata fatta da qualcun altro. Ecco le risposte alle cose che ci chiedono più spesso.
+              {t('faq.subtitle')}
             </p>
           </FadeIn>
 
           <FadeIn delay={0.1}>
             <div className="space-y-3">
-
-              <FaqItem
-                q="Posso provare Lexum gratis?"
-                a="Sì. Hai una settimana di prova gratuita, senza carta di credito richiesta, con accesso a tutte le funzioni principali del piano. Al termine, se vuoi continuare, scegli il piano che si adatta al tuo studio. Se non continui, non ti viene addebitato nulla."
-                defaultOpen
-              />
-
-              <FaqItem
-                q="Lexum sostituisce le banche dati che uso oggi?"
-                a="Per molti studi sì. Lex AI consulta oltre 4 milioni di documenti tra giurisprudenza italiana, normativa, prassi e diritto UE, ed è pensata per coprire la stragrande maggioranza delle ricerche legali quotidiane. Per chi ha bisogno di funzioni molto specialistiche di banche dati storiche o di settore, Lexum si integra senza problemi. Puoi copiare il contenuto che hai trovato in altre fonti, aggiungerlo alle tue ricerche e ragionarci con Lex nel flusso di lavoro esistente."
-              />
-
-              <FaqItem
-                q="Ci sono limiti di accesso alla Banca Dati?"
-                a="No, su Lexum non ci sono limiti alla banca dati. puoi effettuare ricerche in tutti i campi. es. civile, penale, europeo. L'unico limite attuale è se la legge che stai cercando è contenuta nei 4.000.000 di articoli legali presenti nella Banca Dati Lexum. "
-              />
-
-              <FaqItem
-                q="Quanto costa Lexum?"
-                a="I dettagli sui piani li trovi dopo la registrazione, dove puoi scegliere quello che si adatta meglio al tuo studio (singolo professionista, studio piccolo, studio medio-grande). La banca dati condivisa con oltre 4 milioni di documenti è invece accessibile gratuitamente a tutti."
-              />
-
-              <FaqItem
-                q="I miei dati restano miei?"
-                a="Sì. Lexum è progettato con la riservatezza al centro: i dati di ogni studio sono compartimentati e isolati, ospitati su server europei conformi al GDPR, e non vengono mai venduti o condivisi con terzi. Le sentenze del tuo archivio restano private. Solo se decidi di pubblicarle nella banca dati condivisa vengono prima anonimizzate, e tu mantieni sempre il controllo finale."
-              />
-
-              <FaqItem
-                q="Come funziona la verifica come avvocato?"
-                a="Per usare Lexum non serve: ti registri, completi i dati di fatturazione e scegli un abbonamento, che si attiva subito. La verifica è facoltativa: se carichi i documenti dell'Ordine (tessera, attestato di iscrizione o documento equivalente), il team li esamina entro 48 ore lavorative e ti assegna il distintivo di avvocato verificato, visibile ai tuoi clienti."
-              />
-
-              <FaqItem
-                q="Posso usare Lexum se sono un avvocato singolo?"
-                a="Assolutamente sì. Lexum è pensato sia per studi medio-grandi sia per il professionista singolo. Le stesse funzionalità sono disponibili in entrambi i casi, dimensionate sulle esigenze di chi le usa: gestionale, calendario, archivio intelligente, Lex AI e banca dati condivisa."
-              />
-
-              <FaqItem
-                q="Cosa succede ai miei dati se smetto di usare Lexum?"
-                a="I tuoi dati restano i tuoi. In qualsiasi momento puoi esportare l'intero archivio dello studio (clienti, pratiche, documenti, comunicazioni) in formato standard. Se cancelli l'account, i dati vengono eliminati definitivamente nei tempi previsti dal GDPR."
-              />
-
+              {faq.map((it, i) => (
+                <FaqItem
+                  key={i}
+                  q={it.q}
+                  a={it.a}
+                  defaultOpen={i === 0}
+                />
+              ))}
             </div>
           </FadeIn>
 
           <FadeIn delay={0.2}>
             <p className="text-center font-body text-sm text-nebbia/35 mt-10">
-              Non hai trovato la risposta? <Link to="/registrati" className="text-oro hover:text-oro/70 transition-colors">Registrati e scrivici</Link>, ti rispondiamo direttamente.
+              <Trans t={t} i18nKey="faq.outro" components={{ lnk: <Link to="/registrati" className="text-oro hover:text-oro/70 transition-colors" /> }} />
             </p>
           </FadeIn>
         </div>
@@ -295,17 +261,15 @@ export default function Contatti() {
         <div className="max-w-4xl mx-auto">
           <FadeIn>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              {[
-                { icon: Globe, t: 'Dati ospitati in Europa' },
-                { icon: Shield, t: 'Conforme al GDPR' },
-                { icon: Lock, t: 'Compartimentazione studio' },
-                { icon: EyeOff, t: 'Anonimizzazione contenuti' },
-              ].map(({ icon: Icon, t }) => (
-                <div key={t} className="flex items-center gap-2">
-                  <Icon size={13} className="text-salvia/70 shrink-0" />
-                  <span className="font-body text-xs text-nebbia/40">{t}</span>
-                </div>
-              ))}
+              {trust.map((testo, i) => {
+                const Icon = ICONE_TRUST[i]
+                return (
+                  <div key={testo} className="flex items-center gap-2">
+                    <Icon size={13} className="text-salvia/70 shrink-0" />
+                    <span className="font-body text-xs text-nebbia/40">{testo}</span>
+                  </div>
+                )
+              })}
             </div>
           </FadeIn>
         </div>

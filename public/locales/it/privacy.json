@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "title": "Privacy Policy — Lexum",
+    "description": "Informativa privacy di Lexum: come trattiamo i dati personali di avvocati, clienti e utenti della piattaforma in conformità al GDPR."
+  },
+  "header": {
+    "label": "Informativa legale",
+    "title": "Privacy Policy",
+    "updated": "Ultimo aggiornamento: {{data}}",
+    "notice": "La presente informativa è redatta ai sensi del Regolamento (UE) 2016/679 (GDPR), del D.Lgs. 196/2003 (Codice Privacy italiano) e della Legge federale svizzera sulla protezione dei dati (nLPD/revDSG, in vigore dal 1° settembre 2023)."
+  },
+  "titolare": {
+    "title": "1. Titolare del trattamento",
+    "intro": "Il titolare del trattamento dei dati personali è:",
+    "company": "Mosaico Experiences SA",
+    "company_id": "CHE-365.261.725",
+    "address": "Via Cantonale 1, 6900 Lugano, Svizzera",
+    "email": "Email: <mail>privacy@lexum.it</mail>",
+    "ue": "Per gli utenti residenti nell'Unione Europea, in assenza di un rappresentante UE formalmente designato, il titolare rimane responsabile del rispetto del GDPR in relazione ai trattamenti effettuati nell'ambito della piattaforma Lexum."
+  },
+  "dati": {
+    "title": "2. Dati personali raccolti",
+    "forniti": {
+      "title": "2.1 Dati forniti direttamente dall'utente",
+      "intro": "Al momento della registrazione e nell'utilizzo della piattaforma raccogliamo:",
+      "items": [
+        "Nome, cognome e dati anagrafici",
+        "Indirizzo email e numero di telefono",
+        "Dati dello studio legale o professionale",
+        "Dati di fatturazione (ragione sociale, codice fiscale/partita IVA, indirizzo)",
+        "Contenuti caricati sulla piattaforma (documenti, sentenze, pratiche)",
+        "Comunicazioni inviate tramite la piattaforma"
+      ]
+    },
+    "automatici": {
+      "title": "2.2 Dati raccolti automaticamente",
+      "items": [
+        "Indirizzo IP e dati di navigazione",
+        "Tipo di browser e sistema operativo",
+        "Date e orari di accesso",
+        "Pagine visitate e funzionalità utilizzate",
+        "Log di sistema e dati tecnici necessari alla sicurezza"
+      ]
+    },
+    "particolari": {
+      "title": "2.3 Dati particolari",
+      "text": "In ragione della natura della piattaforma, i documenti e le pratiche caricate dagli avvocati possono contenere dati particolari ai sensi dell'art. 9 GDPR (es. dati relativi alla salute, all'orientamento sessuale, alle convinzioni religiose dei clienti finali). Il trattamento di tali dati avviene esclusivamente su istruzione dell'avvocato, che ne rimane responsabile nei confronti dei propri clienti."
+    }
+  },
+  "finalita": {
+    "title": "3. Finalità e basi giuridiche del trattamento",
+    "items": [
+      {
+        "finalita": "Erogazione del servizio",
+        "base": "Esecuzione del contratto (art. 6.1.b GDPR)",
+        "desc": "Gestione dell'account, accesso alla piattaforma, elaborazione delle pratiche, ricerche AI e funzionalità collegate."
+      },
+      {
+        "finalita": "Fatturazione e adempimenti fiscali",
+        "base": "Obbligo legale (art. 6.1.c GDPR)",
+        "desc": "Emissione di fatture, gestione dei pagamenti tramite un fornitore di servizi di pagamento, conservazione della documentazione contabile secondo la legge svizzera e italiana."
+      },
+      {
+        "finalita": "Sicurezza della piattaforma",
+        "base": "Legittimo interesse (art. 6.1.f GDPR)",
+        "desc": "Prevenzione di accessi non autorizzati, rilevamento di anomalie, protezione dei dati degli utenti."
+      },
+      {
+        "finalita": "Intelligenza artificiale e ricerca",
+        "base": "Esecuzione del contratto (art. 6.1.b GDPR)",
+        "desc": "Elaborazione dei contenuti caricati per fornire le funzionalità di ricerca semantica e analisi AI (Lex). I contenuti non vengono usati per addestrare modelli AI di terze parti."
+      },
+      {
+        "finalita": "Comunicazioni di servizio",
+        "base": "Esecuzione del contratto (art. 6.1.b GDPR)",
+        "desc": "Notifiche relative all'account, aggiornamenti del servizio, comunicazioni di assistenza."
+      },
+      {
+        "finalita": "Marketing (solo con consenso)",
+        "base": "Consenso (art. 6.1.a GDPR)",
+        "desc": "Invio di newsletter e comunicazioni promozionali, solo previo consenso esplicito revocabile in qualsiasi momento."
+      }
+    ]
+  },
+  "destinatari": {
+    "title": "4. Destinatari dei dati",
+    "intro": "I dati personali possono essere comunicati alle seguenti categorie di destinatari, esclusivamente per le finalità indicate:",
+    "items": [
+      "<hl>Fornitori di infrastruttura cloud, database e autenticazione</hl> — hosting, archiviazione dei dati e gestione degli accessi (UE/USA, con garanzie adeguate)",
+      "<hl>Fornitori di servizi di pagamento</hl> — elaborazione delle transazioni e fatturazione (USA, con garanzie adeguate)",
+      "<hl>Fornitori di posta elettronica transazionale</hl> — invio di email di servizio e notifiche (USA, con garanzie adeguate)",
+      "<hl>Fornitori di servizi di intelligenza artificiale</hl> — riconoscimento ottico dei documenti, elaborazione del linguaggio naturale e generazione di rappresentazioni semantiche per le funzionalità dell'assistente e della ricerca (UE/USA, con garanzie adeguate); i contenuti trasmessi sono esclusi dall'addestramento dei modelli",
+      "<hl>Consulenti professionali</hl> — consulenti legali, fiscali e revisori, vincolati a obblighi di riservatezza, ove necessario",
+      "<hl>Autorità competenti</hl> — su richiesta legittima di autorità giudiziarie o amministrative"
+    ],
+    "dpa": "Tutti i fornitori di servizi sono vincolati da accordi di trattamento dei dati (DPA) conformi al GDPR. Per i trasferimenti verso paesi terzi (in particolare USA) vengono adottate le Clausole Contrattuali Standard approvate dalla Commissione Europea. L'elenco nominativo e aggiornato dei responsabili del trattamento è disponibile su richiesta scritta al Titolare, ai recapiti indicati nella presente informativa."
+  },
+  "conservazione": {
+    "title": "5. Periodo di conservazione",
+    "items": [
+      {
+        "tipo": "Dati dell'account",
+        "periodo": "Per tutta la durata del contratto e fino a 2 anni dalla cancellazione dell'account"
+      },
+      {
+        "tipo": "Documenti e pratiche caricati",
+        "periodo": "Per tutta la durata del contratto; cancellati su richiesta o entro 90 giorni dalla cessazione"
+      },
+      {
+        "tipo": "Dati di fatturazione",
+        "periodo": "10 anni dalla data della fattura (obbligo legale svizzero e italiano)"
+      },
+      {
+        "tipo": "Log di sistema",
+        "periodo": "Massimo 12 mesi dalla registrazione"
+      },
+      {
+        "tipo": "Comunicazioni di assistenza",
+        "periodo": "3 anni dalla chiusura del ticket"
+      }
+    ]
+  },
+  "diritti": {
+    "title": "6. Diritti degli interessati",
+    "intro": "In qualità di interessato, hai il diritto di:",
+    "items": [
+      {
+        "diritto": "Accesso",
+        "desc": "Ottenere conferma del trattamento e copia dei tuoi dati"
+      },
+      {
+        "diritto": "Rettifica",
+        "desc": "Correggere dati inesatti o incompleti"
+      },
+      {
+        "diritto": "Cancellazione",
+        "desc": "Richiedere la cancellazione dei tuoi dati (\"diritto all'oblio\")"
+      },
+      {
+        "diritto": "Limitazione",
+        "desc": "Limitare il trattamento in determinate circostanze"
+      },
+      {
+        "diritto": "Portabilità",
+        "desc": "Ricevere i tuoi dati in formato strutturato e leggibile"
+      },
+      {
+        "diritto": "Opposizione",
+        "desc": "Opporti al trattamento basato su legittimo interesse"
+      },
+      {
+        "diritto": "Revoca del consenso",
+        "desc": "Revocare in qualsiasi momento il consenso prestato"
+      },
+      {
+        "diritto": "Reclamo",
+        "desc": "Presentare reclamo all'autorità di controllo competente"
+      }
+    ],
+    "esercizio": "Per esercitare i tuoi diritti scrivi a <mail>privacy@lexum.it</mail>. Risponderemo entro 30 giorni. Per reclami puoi rivolgerti al Garante Privacy italiano (<garante>garanteprivacy.it</garante>) o all'Incaricato federale svizzero della protezione dei dati (IFPDT)."
+  },
+  "sicurezza": {
+    "title": "7. Sicurezza dei dati",
+    "intro": "Adottiamo misure tecniche e organizzative adeguate per proteggere i dati personali da accessi non autorizzati, perdita, distruzione o divulgazione. In particolare:",
+    "items": [
+      "Crittografia dei dati in transito (TLS 1.2+) e a riposo",
+      "Autenticazione sicura e gestione degli accessi basata sui ruoli",
+      "Infrastruttura cloud con certificazioni SOC 2 e ISO 27001",
+      "Backup regolari e procedure di disaster recovery",
+      "Monitoraggio continuo per il rilevamento di anomalie",
+      "Accesso ai dati limitato al personale autorizzato e strettamente necessario"
+    ],
+    "breach": "In caso di violazione dei dati personali (data breach) che presenti un rischio elevato per i diritti degli interessati, provvederemo alla notifica entro 72 ore all'autorità di controllo competente e, ove necessario, agli interessati coinvolti."
+  },
+  "cookie": {
+    "title": "8. Cookie e tecnologie di tracciamento",
+    "text": "La piattaforma Lexum utilizza esclusivamente cookie tecnici strettamente necessari al funzionamento del servizio (es. cookie di sessione per l'autenticazione). Non utilizziamo cookie di profilazione o di terze parti a fini pubblicitari."
+  },
+  "modifiche": {
+    "title": "9. Modifiche alla presente informativa",
+    "text": "Ci riserviamo il diritto di aggiornare la presente informativa in caso di modifiche normative o del servizio. Le modifiche sostanziali saranno comunicate via email almeno 30 giorni prima dell'entrata in vigore. L'uso continuato della piattaforma dopo tale periodo costituisce accettazione delle modifiche."
+  },
+  "footer": {
+    "text": "Per qualsiasi domanda relativa al trattamento dei tuoi dati personali contatta il nostro responsabile privacy all'indirizzo <mail>privacy@lexum.it</mail> oppure scrivi a Mosaico Experiences SA, Via Cantonale 1, 6900 Lugano, Svizzera."
+  }
+}

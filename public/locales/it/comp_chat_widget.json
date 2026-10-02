@@ -1,0 +1,14 @@
+{
+  "panel": {
+    "header": "Supporto Lexum",
+    "title": "Parla con il team Lexum",
+    "text": "Vuoi richiedere una Demo Gratuita o hai altre domande? Registrati e apri una chat con noi — risponde una persona, non un bot.",
+    "bonus": "Registrandoti la <b>prima ricerca</b> con Lex AI è gratuita",
+    "cta_register": "Registrati e fai la tua domanda",
+    "cta_login": "Hai già un account? Accedi"
+  },
+  "button": {
+    "close": "Chiudi",
+    "open": "Parla con noi"
+  }
+}
