@@ -1,0 +1,402 @@
+{
+  "meta": {
+    "title": "Lexum per Commercialisti — Studio, scadenzario fiscale, contabilita e Lex AI",
+    "description": "Mandati, scadenzario fiscale automatico, cassa e conto economico, contabilita in partita doppia, costo del personale e Lex AI. Tutto il lavoro dello studio del commercialista in un unico ambiente.",
+    "og_title": "Lexum per Commercialisti — Studio, fisco, contabilita e AI",
+    "og_description": "Scadenzario fiscale automatico, contabilita in partita doppia, cassa e conto economico, costo del personale e Lex AI. Tutto in un ambiente coerente.",
+    "twitter_title": "Lexum per Commercialisti",
+    "twitter_description": "Gestionale, fisco, contabilita e AI per lo studio del commercialista italiano."
+  },
+  "hero": {
+    "badge": "Per commercialisti e studi contabili",
+    "title": "Lo studio del commercialista,<br/><hl>finalmente in un unico posto.</hl>",
+    "subtitle": "Mandati, scadenzario fiscale, cassa e conto economico, contabilita in partita doppia, costo del personale e un assistente AI che conosce ogni cliente. Tutto connesso, sempre.",
+    "cta_primary": "Inizia ora",
+    "cta_secondary": "Scopri Lex AI",
+    "no_card": "Nessuna carta richiesta. Cancellazione libera."
+  },
+  "lex_ai": {
+    "label": "Intelligenza artificiale",
+    "title": "Un assistente che conosce <hl>il singolo mandato.</hl>",
+    "subtitle": "Lex non e una chat generica. Conosce scadenze, conto economico e personale del cliente su cui stai lavorando, e risponde a domande, calcoli e adempimenti.",
+    "features": [
+      {
+        "title": "Sa cosa scade e quando",
+        "text": "Chiedi «cosa scade questo mese per il cliente Rossi?» e Lex risponde con F24, liquidazioni IVA e dichiarativi del mandato."
+      },
+      {
+        "title": "Calcoli fiscali e contabili",
+        "text": "Acconti, saldi, aliquote, arrotondamenti. Lex fa i conti sul regime del cliente e mostra come ci e arrivato."
+      },
+      {
+        "title": "Legge il conto economico",
+        "text": "Domande in italiano sui numeri del cliente: margini, scostamenti, liquidita attesa. Risposte immediate, senza report da generare."
+      },
+      {
+        "title": "Adempimenti spiegati",
+        "text": "Cosa serve per una LIPE, come si imputa un costo, quale quadro compilare. Lex spiega e cita la fonte normativa."
+      },
+      {
+        "title": "Conversazione continua",
+        "text": "Approfondisci, cambia cliente, chiedi follow-up. Lex ricorda il contesto del mandato e della conversazione."
+      },
+      {
+        "title": "OCR sulle fatture",
+        "text": "Carichi una fattura o una ricevuta: Lex estrae importo, data e descrizione e ti propone il movimento gia pronto da registrare."
+      }
+    ],
+    "chat": {
+      "visual_label": "Lex AI - Conversazione",
+      "domanda": "Per il cliente Rossi srl, cosa scade a luglio e a quanto ammonta il secondo acconto?",
+      "ai_name": "Lex AI",
+      "risposta": "Rossi srl e in contabilita ordinaria. A luglio hai: liquidazione IVA del secondo trimestre (16/07), F24 dei contributi dipendenti (16/07) e la LIPE del Q2 (entro fine mese). Il secondo acconto IRES e IRAP e a novembre, non a luglio. Il primo acconto versato a giugno era di EUR 3.240,00; il saldo stimato per novembre e di EUR 4.860,00. Ho gia predisposto il modello F24 in bozza per la tua revisione.",
+      "chip_iva": "IVA Q2",
+      "chip_lipe": "LIPE Q2",
+      "chip_file": "F24_bozza.pdf"
+    },
+    "ocr": {
+      "visual_label": "OCR - Nuova fattura acquisto",
+      "file_caricato": "fattura_enel_giugno.pdf caricata",
+      "estratto_label": "Movimento estratto",
+      "righe": [
+        {
+          "label": "Data",
+          "value": "28/06/2026"
+        },
+        {
+          "label": "Descrizione",
+          "value": "Enel Energia - utenza sede"
+        },
+        {
+          "label": "Imponibile",
+          "value": "EUR 184,50"
+        },
+        {
+          "label": "IVA 22%",
+          "value": "EUR 40,59"
+        },
+        {
+          "label": "Totale",
+          "value": "EUR 225,09"
+        }
+      ],
+      "pronto": "Movimento pronto: conto <hl>Energia elettrica</hl>, uscita in cassa. Conferma per registrare."
+    }
+  },
+  "mandati": {
+    "label": "Organizzazione",
+    "title": "Un mandato per cliente, <hl>tutto il resto attorno.</hl>",
+    "subtitle": "Organizzi il lavoro per cliente in mandati. Ogni mandato raccoglie scadenze, documenti e contabilita: apri il cliente e hai davanti tutto quello che ti serve.",
+    "feature_title": "Il banco di lavoro del mandato",
+    "feature_text": "Basta rincorrere cartelle sul desktop, mail sparse e fogli Excel paralleli. Ogni cliente ha il suo mandato: dentro trovi le scadenze fiscali, i documenti caricati, la contabilita, il conto economico e le comunicazioni. Il lavoro dello studio smette di essere frammentato.",
+    "points": [
+      "Un mandato per ogni cliente",
+      "Scadenze, documenti e contabilita collegati",
+      "Stato del mandato sempre visibile",
+      "Passaggio di consegne tra collaboratori senza attrito"
+    ],
+    "visual_label": "Mandato - Rossi srl",
+    "righe": [
+      {
+        "label": "Regime contabile",
+        "value": "Ordinario"
+      },
+      {
+        "label": "Forma giuridica",
+        "value": "S.r.l."
+      },
+      {
+        "label": "Scadenze aperte",
+        "value": "4"
+      },
+      {
+        "label": "Dipendenti",
+        "value": "6"
+      }
+    ],
+    "sezioni_label": "Sezioni del mandato",
+    "sezioni": [
+      "Scadenzario",
+      "Cassa",
+      "Contabilita",
+      "Documenti",
+      "Dipendenti",
+      "Conto economico"
+    ]
+  },
+  "scadenzario": {
+    "label": "Il differenziatore",
+    "title": "Lo scadenzario fiscale <hl>che si genera da solo.</hl>",
+    "subtitle": "Con un click generi tutte le scadenze fiscali dell'anno in base al regime del cliente. F24, liquidazioni IVA, LIPE, acconti e dichiarativi, gia posizionati nel calendario.",
+    "feature_title": "Un click e l'anno fiscale del cliente e pianificato",
+    "feature_text": "Scegli il regime contabile del cliente (ordinario, semplificato o forfettario) e Lexum costruisce lo scadenzario completo dell'anno: versamenti F24, liquidazioni IVA mensili o trimestrali, LIPE, acconti IRES, IRAP e IRPEF, dichiarativi. Ogni scadenza e collegata al mandato e sincronizzabile con il calendario, con promemoria automatici.",
+    "points": [
+      "Adempimenti per regime: ordinario, semplificato, forfettario",
+      "F24, IVA, LIPE, acconti e dichiarativi",
+      "Sincronizzazione con il calendario",
+      "Promemoria automatici prima di ogni scadenza"
+    ],
+    "visual_label": "Scadenzario 2026 - Rossi srl",
+    "regime_label": "Regime",
+    "regime_value": "Ordinario",
+    "scadenze": [
+      {
+        "data": "16/07",
+        "title": "Liquidazione IVA Q2",
+        "tipo": "IVA"
+      },
+      {
+        "data": "16/07",
+        "title": "F24 ritenute dipendenti",
+        "tipo": "F24"
+      },
+      {
+        "data": "31/07",
+        "title": "LIPE secondo trimestre",
+        "tipo": "LIPE"
+      },
+      {
+        "data": "20/08",
+        "title": "F24 IVA e contributi",
+        "tipo": "F24"
+      },
+      {
+        "data": "30/11",
+        "title": "Secondo acconto IRES/IRAP",
+        "tipo": "Acconto"
+      }
+    ],
+    "generato": "Generato in automatico dal regime: <hl>37 scadenze</hl> per l'anno, tutte sul calendario.",
+    "regimi": [
+      {
+        "title": "Ordinario",
+        "text": "IVA mensile, LIPE trimestrali, dichiarativi completi, acconti IRES e IRAP. Lo scadenzario piu articolato, costruito senza dimenticare nulla."
+      },
+      {
+        "title": "Semplificato",
+        "text": "IVA trimestrale, registri semplificati, acconti IRPEF e IRAP. Gli adempimenti giusti per il regime, senza appesantire il cliente."
+      },
+      {
+        "title": "Forfettario",
+        "text": "Imposta sostitutiva, acconto e saldo, adempimenti ridotti. Lo scadenzario tiene conto delle regole specifiche del forfettario."
+      }
+    ]
+  },
+  "cassa": {
+    "label": "Cassa e liquidita",
+    "title": "Entrate, uscite e liquidita <hl>del cliente, a colpo d'occhio.</hl>",
+    "subtitle": "Registri entrate e uscite, ottieni il conto economico, pianifichi la liquidita a dodici mesi e confronti budget e scostamenti. Tutto in euro, tutto dentro il mandato.",
+    "feature_title": "Il conto economico di cassa, sempre aggiornato",
+    "feature_text": "Ogni movimento registrato aggiorna il conto economico del cliente. Vedi entrate e uscite per categoria, il risultato del periodo, la liquidita disponibile e la proiezione a dodici mesi. Imposti un budget e Lexum ti mostra gli scostamenti man mano che l'anno avanza.",
+    "points": [
+      "Entrate e uscite per categoria",
+      "Conto economico e risultato di periodo",
+      "Pianificazione della liquidita a 12 mesi",
+      "Budget e scostamenti"
+    ],
+    "visual_label": "Conto economico - Rossi srl",
+    "kpi": [
+      {
+        "label": "Entrate 2026",
+        "value": "EUR 128.400"
+      },
+      {
+        "label": "Uscite 2026",
+        "value": "EUR 96.150"
+      },
+      {
+        "label": "Risultato",
+        "value": "EUR 32.250"
+      },
+      {
+        "label": "Liquidita",
+        "value": "EUR 41.900"
+      }
+    ],
+    "proiezione_label": "Proiezione liquidita (12 mesi)",
+    "budget": "Budget uscite rispettato: scostamento <hl>-3,2%</hl> sul previsto."
+  },
+  "contabilita": {
+    "label": "Partita doppia",
+    "title": "Dalla registrazione <hl>al bilancio d'esercizio.</hl>",
+    "subtitle": "Piano dei conti italiano precaricato, libro giornale, imputazione automatica dei movimenti, bilancio e conto economico, liquidazione IVA, bilancio di verifica e chiusura.",
+    "feature_title": "Contabilita ordinaria completa, dentro il mandato",
+    "feature_text": "Il piano dei conti in schema CEE e gia pronto. I movimenti di cassa vengono imputati automaticamente ai conti giusti e finiscono nel libro giornale. Da li Lexum costruisce lo stato patrimoniale e il conto economico, calcola la liquidazione IVA su base LIPE, produce il bilancio di verifica e ti accompagna nella chiusura d'esercizio.",
+    "points": [
+      "Piano dei conti italiano (schema CEE) precaricato",
+      "Libro giornale e imputazione automatica",
+      "Stato patrimoniale e conto economico",
+      "Liquidazione IVA, bilancio di verifica, chiusura"
+    ],
+    "visual_label": "Libro giornale - registrazione",
+    "fattura": "Fattura acquisto n. 214",
+    "data": "28/06/2026",
+    "righe": [
+      {
+        "conto": "Energia elettrica",
+        "dare": "184,50"
+      },
+      {
+        "conto": "IVA a credito",
+        "dare": "40,59"
+      },
+      {
+        "conto": "Debiti v/fornitori",
+        "avere": "225,09"
+      }
+    ],
+    "col_conto": "Conto",
+    "col_dare": "Dare",
+    "col_avere": "Avere",
+    "quadrata": "Partita quadrata. Imputazione automatica dal movimento di cassa.",
+    "output": [
+      {
+        "title": "Stato patrimoniale",
+        "text": "Attivo e passivo aggiornati dal giornale, pronti da consultare."
+      },
+      {
+        "title": "Conto economico",
+        "text": "Costi e ricavi per natura, risultato d'esercizio in tempo reale."
+      },
+      {
+        "title": "Liquidazione IVA",
+        "text": "IVA a debito e a credito su base LIPE, per periodo."
+      },
+      {
+        "title": "Verifica e chiusura",
+        "text": "Bilancio di verifica e chiusura d'esercizio guidata."
+      }
+    ],
+    "nota": "Ammortamenti e ratei restano una scelta professionale: si registrano manualmente, senza automatismi che ti tolgano il controllo."
+  },
+  "personale": {
+    "label": "Personale",
+    "title": "Il costo del personale <hl>calcolato per intero.</hl>",
+    "subtitle": "Anagrafica dei dipendenti dei clienti con inquadramento completo e calcolo del costo aziendale pieno, con aliquote per singolo dipendente.",
+    "feature_title": "Dal lordo al costo aziendale, dipendente per dipendente",
+    "feature_text": "Registri qualifica, tipo di contratto e CCNL applicato. Lexum calcola il costo aziendale pieno: retribuzione lorda, contributi INPS, premio INAIL e accantonamento TFR. Le aliquote sono impostabili per singolo dipendente, cosi il costo del lavoro del cliente e quello reale, non una stima.",
+    "points": [
+      "Anagrafica con qualifica, contratto e CCNL",
+      "Costo pieno: lordo, INPS, INAIL, TFR",
+      "Aliquote configurabili per dipendente",
+      "Totale costo del personale del cliente"
+    ],
+    "visual_label": "Costo del personale - dipendente",
+    "avatar": "MB",
+    "nome": "Marta Bianchi",
+    "inquadramento": "Impiegata - CCNL Commercio - Tempo indeterminato",
+    "voci": [
+      {
+        "label": "Retribuzione lorda",
+        "value": "EUR 28.000,00"
+      },
+      {
+        "label": "INPS c/azienda (30%)",
+        "value": "EUR 8.400,00"
+      },
+      {
+        "label": "INAIL",
+        "value": "EUR 336,00"
+      },
+      {
+        "label": "TFR",
+        "value": "EUR 2.074,00"
+      }
+    ],
+    "totale_label": "Costo aziendale pieno",
+    "totale_value": "EUR 38.810,00",
+    "organico": "6 dipendenti in organico - costo del personale del cliente <hl>EUR 214.600</hl>."
+  },
+  "banca_dati": {
+    "feature_title": "Banca dati normativa e ricerche salvate nel mandato",
+    "feature_text": "Accedi alla banca dati normativa e tributaria condivisa con la piattaforma legale. Cerchi con linguaggio naturale, salvi le ricerche che contano e le colleghi al mandato del cliente. Quando torni su quel cliente, hai gia sotto mano le fonti che avevi trovato.",
+    "points": [
+      "Banca dati normativa e tributaria",
+      "Aggiornamento settimanale al testo vigente",
+      "Ricerca con linguaggio naturale",
+      "Ricerche salvabili e collegate al mandato"
+    ],
+    "visual_label": "Ricerca - Rossi srl",
+    "query": "detrazione IVA su spese di rappresentanza",
+    "salvate_label": "Ricerche salvate nel mandato (3)",
+    "ricerche": [
+      {
+        "title": "Art. 19-bis1 DPR 633/72 - indetraibilita",
+        "tag": "IVA"
+      },
+      {
+        "title": "Regime forfettario - limiti di ricavo 2026",
+        "tag": "Redditi"
+      },
+      {
+        "title": "Deducibilita spese di rappresentanza",
+        "tag": "IRES"
+      }
+    ],
+    "allineate": "Norme allineate <hl>ogni settimana</hl> al testo vigente. Ultimo aggiornamento: 3 giorni fa.",
+    "aggiornamento": {
+      "badge": "Aggiornamento settimanale al testo vigente",
+      "title": "Lavori sempre <hl>sulla norma aggiornata.</hl>",
+      "text": "Il fisco cambia di continuo: manovre, decreti, circolari, proroghe. Ogni settimana allineiamo la banca dati al testo vigente, cosi quando consulti una norma o Lex AI ti risponde, la versione e quella in vigore, non quella dell'anno scorso.",
+      "points": [
+        "Leggi e norme fiscali allineate al vigente",
+        "Ciclo di aggiornamento settimanale",
+        "Versioni superate segnalate, non confuse con le attuali",
+        "Lex AI risponde sulla base del testo aggiornato"
+      ],
+      "visual_label": "Stato aggiornamento banca dati",
+      "ultimo_label": "Ultimo allineamento",
+      "ultimo_value": "3 giorni fa",
+      "norme": [
+        {
+          "title": "DPR 633/72 - Testo IVA",
+          "stato": "Vigente"
+        },
+        {
+          "title": "TUIR - DPR 917/86",
+          "stato": "Vigente"
+        },
+        {
+          "title": "Legge di Bilancio 2026",
+          "stato": "Vigente"
+        },
+        {
+          "title": "D.Lgs. 471/97 - Sanzioni",
+          "stato": "Aggiornato"
+        }
+      ],
+      "prossimo": "Prossimo ciclo di aggiornamento tra <hl>4 giorni</hl>."
+    }
+  },
+  "studio": {
+    "label": "Studio e sicurezza",
+    "title": "Uno studio collaborativo, <hl>dati al sicuro.</hl>",
+    "subtitle": "Gestisci lo studio con i tuoi collaboratori, ognuno con il suo ruolo. I dati sono isolati per studio e la riservatezza e al centro di ogni decisione tecnica.",
+    "cards": [
+      {
+        "title": "Collaboratori e ruoli",
+        "text": "Titolare, collaboratori e praticanti lavorano sugli stessi mandati con permessi differenziati. Tu decidi chi vede quali clienti e cosa puo modificare."
+      },
+      {
+        "title": "Dati isolati per studio",
+        "text": "Ogni studio e un ambiente a se. I dati dei tuoi clienti non sono mai accessibili ad altri studi, ne ai collaboratori senza il tuo permesso esplicito."
+      },
+      {
+        "title": "Riservatezza come standard",
+        "text": "La protezione dei dati fiscali e contabili dei clienti non e un optional di marketing: e progettata al centro della piattaforma."
+      },
+      {
+        "title": "Tracciabilita delle operazioni",
+        "text": "Ogni accesso e ogni modifica vengono registrati. Sai sempre chi ha fatto cosa e quando, come strumento di governance interna dello studio."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Inizia ora",
+    "title": "Porta lo studio <hl>dentro Lexum.</hl>",
+    "subtitle": "Registrati e inizia dal primo cliente. La verifica della professione conferma che sei un commercialista e abilita l'ambiente completo dello studio.",
+    "cta_primary": "Inizia ora",
+    "cta_secondary": "Vedi i piani",
+    "nota": "Registrazione con verifica della professione. Nessuna carta richiesta."
+  }
+}
