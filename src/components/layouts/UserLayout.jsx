@@ -65,7 +65,7 @@ export default function UserLayout({ children }) {
   const banner = bannerDismissed ? null
     : !completo ? {
       icon: Clock, color: 'amber',
-      text: 'Completa il profilo e richiedi l\u2019accesso completo alla piattaforma: bastano due minuti.',
+      text: 'Completa il profilo e scegli un abbonamento: pratiche, clienti, atti e fatture si attivano subito. Bastano due minuti.',
       link: { to: '/verifica', label: 'Completa ora →' },
     }
       : !profile?.piano_id ? {

@@ -520,7 +520,13 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
 
     if (piani.length === 0) return (
         <div className="bg-slate border border-white/5 p-10 text-center">
-            <p className="font-body text-sm text-nebbia/30">Nessun piano disponibile al momento.</p>
+            <p className="font-body text-sm text-nebbia/50">Nessun piano disponibile al momento.</p>
+            <p className="font-body text-xs text-nebbia/40 mt-2">
+                Scrivici dall'assistenza: ti aiutiamo a trovare il piano giusto per la tua attività.
+            </p>
+            <Link to="/area/assistenza" className="inline-flex items-center gap-1.5 mt-4 font-body text-xs text-oro hover:text-oro/80 transition-colors">
+                Contatta l'assistenza <ArrowRight size={12} />
+            </Link>
         </div>
     )
 
