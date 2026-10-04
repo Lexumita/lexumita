@@ -169,7 +169,9 @@ export default function AvvocatoClientiNuovo() {
         regime_contabile: '',
         // Comuni
         email: '', telefono: '', pec: '',
-        indirizzo: '', comune: '', provincia: '', cap: '',
+        indirizzo: '', numero_civico: '', comune: '', provincia: '', cap: '', paese: 'IT',
+        // Fatturazione elettronica (04-10-2026)
+        codice_destinatario_sdi: '', pec_fatturazione: '',
         note: '',
         avvocato_id: '',
         // Portale
@@ -245,6 +247,11 @@ export default function AvvocatoClientiNuovo() {
         }
         if (!form.email.trim()) return setErrore("L'email e obbligatoria")
         if (!/\S+@\S+\.\S+/.test(form.email)) return setErrore('Email non valida')
+        if (form.codice_destinatario_sdi.trim() && !/^[A-Za-z0-9]{6,7}$/.test(form.codice_destinatario_sdi.trim())) {
+            return setErrore('Il codice destinatario SDI ha 7 caratteri (6 per la pubblica amministrazione)')
+        }
+        if (form.pec_fatturazione.trim() && !/\S+@\S+\.\S+/.test(form.pec_fatturazione)) return setErrore('PEC di fatturazione non valida')
+        if (form.paese.trim() && !/^[A-Za-z]{2}$/.test(form.paese.trim())) return setErrore('Paese: codice di due lettere (es. IT)')
 
         if (form.attiva_portale) {
             if (!form.password_iniziale) return setErrore('Inserisci la password iniziale per attivare il portale')
@@ -261,7 +268,12 @@ export default function AvvocatoClientiNuovo() {
                 telefono: form.telefono,
                 pec: form.pec,
                 cf: form.cf,
+                partita_iva: form.partita_iva,
                 indirizzo: form.indirizzo,
+                numero_civico: form.numero_civico,
+                paese: form.paese.trim().toUpperCase() || 'IT',
+                codice_destinatario_sdi: form.codice_destinatario_sdi.trim().toUpperCase(),
+                pec_fatturazione: form.pec_fatturazione,
                 comune: form.comune,
                 provincia: form.provincia,
                 cap: form.cap,
@@ -279,7 +291,6 @@ export default function AvvocatoClientiNuovo() {
                 payload.luogo_nascita = form.luogo_nascita
             } else {
                 payload.ragione_sociale = form.ragione_sociale
-                payload.partita_iva = form.partita_iva
                 payload.sede_legale = form.sede_legale
                 payload.rappr_nome = form.rappr_nome
                 payload.rappr_cognome = form.rappr_cognome
@@ -378,7 +389,10 @@ export default function AvvocatoClientiNuovo() {
                                 <InputField label="Nome *" placeholder="Anna" {...f('nome')} />
                                 <InputField label="Cognome *" placeholder="Rossi" {...f('cognome')} />
                             </div>
-                            <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501Z" {...f('cf')} />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501Z" {...f('cf')} />
+                                <InputField label="Partita IVA (ditta o professionista)" placeholder="Facoltativa" {...f('partita_iva')} />
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <InputField label="Data di nascita" type="date" {...f('data_nascita')} />
                                 <InputField label="Luogo di nascita" placeholder="Milano" {...f('luogo_nascita')} />
@@ -444,18 +458,34 @@ export default function AvvocatoClientiNuovo() {
                         </div>
                     </div>
 
+                    {/* Fatturazione elettronica */}
+                    <div className="border-t border-white/8 pt-5 space-y-4">
+                        <p className="section-label">Fatturazione elettronica</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <InputField label="Codice destinatario SDI" placeholder="7 caratteri, es. M5UXCR1" {...f('codice_destinatario_sdi')} />
+                            <InputField label="PEC di fatturazione" placeholder="fatture@pec.it" {...f('pec_fatturazione')} />
+                        </div>
+                        <p className="font-body text-xs text-nebbia/30">
+                            Per chi ha la partita IVA serve uno dei due. Per un privato senza partita IVA si lasciano vuoti.
+                        </p>
+                    </div>
+
                     {/* Indirizzo */}
                     <div className="border-t border-white/8 pt-5 space-y-4">
                         <p className="section-label">Indirizzo</p>
-                        <InputField
-                            label={tipo === 'persona_fisica' ? 'Indirizzo di residenza' : 'Sede operativa (se diversa dalla sede legale)'}
-                            placeholder="Via, numero civico"
-                            {...f('indirizzo')}
-                        />
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-4">
+                            <InputField
+                                label={tipo === 'persona_fisica' ? 'Indirizzo di residenza (via)' : 'Indirizzo per la fatturazione (via)'}
+                                placeholder="Via Roma"
+                                {...f('indirizzo')}
+                            />
+                            <InputField label="Numero civico" placeholder="12" {...f('numero_civico')} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <InputField label="Comune" placeholder="Milano" {...f('comune')} />
                             <InputField label="Provincia" placeholder="MI" {...f('provincia')} />
                             <InputField label="CAP" placeholder="20100" {...f('cap')} />
+                            <InputField label="Paese" placeholder="IT" {...f('paese')} />
                         </div>
                     </div>
 

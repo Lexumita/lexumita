@@ -52,7 +52,7 @@ export default function ClientePanoramica() {
                     .order('data_ora_inizio', { ascending: true })
                     .limit(1),
                 supabase.from('fatture')
-                    .select('id, numero, importo, stato, data_scadenza')
+                    .select('id, numero, importo, totale_netto, stato, tipo_documento, data_scadenza')
                     .eq('cliente_id', user.id)
                     .order('data_emissione', { ascending: false }),
                 supabase.from('ticket_assistenza')
@@ -91,7 +91,8 @@ export default function ClientePanoramica() {
         carica()
     }, [loadingTipo, isCommercialista])
 
-    const fattureInAttesa = fatture.filter(f => f.stato === 'in_attesa')
+    // Aperte = da pagare, comprese le scadute (04-10-2026); le note di credito no
+    const fattureInAttesa = fatture.filter(f => f.tipo_documento !== 'TD04' && (f.stato === 'in_attesa' || f.stato === 'scaduta'))
 
     const getUltimoAutore = (t) => {
         const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

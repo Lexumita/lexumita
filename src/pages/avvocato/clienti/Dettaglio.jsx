@@ -16,6 +16,7 @@ import GestioneMandati from '@/components/commercialista/GestioneMandati'
 import DocumentiPortale from '@/components/shared/DocumentiPortale'
 import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
 import { formatImporto } from '@/lib/prezzi'
+import { importoDovuto } from '@/lib/fatturazione'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -30,6 +31,7 @@ const STATI_FATTURA = {
     pagata: { label: 'Pagata', variant: 'salvia' },
     scaduta: { label: 'Scaduta', variant: 'red' },
     annullata: { label: 'Annullata', variant: 'gray' },
+    emessa: { label: 'Nota di credito', variant: 'gray' },
 }
 
 const STATUS_OCR = {
@@ -841,20 +843,30 @@ function TabPagamenti({ clienteId, avvocatoId }) {
         setLoading(false)
     }
 
-    // Residuo = (totale_lordo ?? importo) - somma pagamenti già registrati
+    // 04-10-2026: il cliente deve il NETTO (con la ritenuta paga lordo meno
+    // ritenuta) meno le note di credito collegate.
+    const noteDi = fid => fatture
+        .filter(n => n.tipo_documento === 'TD04' && n.fattura_origine_id === fid)
+        .reduce((a, n) => a + Number(n.totale_netto ?? n.totale_lordo ?? 0), 0)
+
+    // Residuo = dovuto - somma pagamenti già registrati
     async function apriPagamento(fatt) {
         const { data: pag } = await supabase
             .from('pagamenti_fattura')
             .select('importo')
             .eq('fattura_id', fatt.id)
         const giaPagato = (pag ?? []).reduce((a, p) => a + Number(p.importo ?? 0), 0)
-        const dovuto = Number(fatt.totale_lordo ?? fatt.importo ?? 0)
+        const dovuto = importoDovuto(fatt, noteDi(fatt.id))
         const residuo = Math.max(0, dovuto - giaPagato)
         setFatturaPagamento({ ...fatt, residuo })
     }
 
-    const totaleAperto = fatture.filter(f => ['in_attesa', 'scaduta'].includes(f.stato)).reduce((a, f) => a + Number(f.totale_lordo ?? f.importo ?? 0), 0)
-    const totalePagato = fatture.filter(f => f.stato === 'pagata').reduce((a, f) => a + Number(f.totale_lordo ?? f.importo ?? 0), 0)
+    const totaleAperto = fatture
+        .filter(f => f.tipo_documento !== 'TD04' && ['in_attesa', 'scaduta'].includes(f.stato))
+        .reduce((a, f) => a + Math.max(0, importoDovuto(f, noteDi(f.id))), 0)
+    const totalePagato = fatture
+        .filter(f => f.tipo_documento !== 'TD04' && f.stato === 'pagata')
+        .reduce((a, f) => a + Math.max(0, importoDovuto(f, noteDi(f.id))), 0)
 
     return (
         <div className="space-y-4">
@@ -871,12 +883,12 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                 </div>
             )}
             <div className="flex justify-end">
-                <Link to={`/pagamenti?cliente_id=${clienteId}`} className="btn-primary text-sm flex items-center gap-2">
-                    <Plus size={14} /> Vai a Pagamenti per nuova fattura
+                <Link to={`/fatturazione/nuova?cliente_id=${clienteId}`} className="btn-primary text-sm flex items-center gap-2">
+                    <Plus size={14} /> Nuova fattura
                 </Link>
             </div>
             {loading ? <div className="flex items-center justify-center py-12"><span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" /></div>
-                : fatture.length === 0 ? <EmptyState icon={CreditCard} title="Nessuna fattura" desc="Vai alla pagina Pagamenti per emettere fatture" />
+                : fatture.length === 0 ? <EmptyState icon={CreditCard} title="Nessuna fattura" desc="Emetti la prima fattura con «Nuova fattura»" />
                     : (
                         <>
                             {/* Mobile: lista di card */}
@@ -887,12 +899,12 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                                         <div key={fatt.id} className="p-4 space-y-3">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
-                                                    <p className="text-xs text-nebbia/30 uppercase tracking-widest">Fattura</p>
+                                                    <p className="text-xs text-nebbia/30 uppercase tracking-widest">{fatt.tipo_documento === 'TD04' ? 'Nota di credito' : 'Fattura'}</p>
                                                     <p className="font-body text-sm font-medium text-nebbia/70 mt-1 break-words">{fatt.numero}</p>
                                                 </div>
                                                 <div className="shrink-0"><Badge label={sc.label} variant={sc.variant} /></div>
                                             </div>
-                                            <p className="font-display text-2xl font-semibold text-oro">{formatImporto(fatt.totale_lordo ?? fatt.importo)}</p>
+                                            <p className="font-display text-2xl font-semibold text-oro">{fatt.tipo_documento === 'TD04' ? '- ' : ''}{formatImporto(fatt.totale_lordo ?? fatt.importo)}</p>
                                             {fatt.descrizione && (
                                                 <p className="font-body text-xs text-nebbia/50 leading-relaxed break-words">{fatt.descrizione}</p>
                                             )}
@@ -935,7 +947,7 @@ function TabPagamenti({ clienteId, avvocatoId }) {
                                             return (
                                                 <tr key={fatt.id} className="border-b border-white/5 hover:bg-petrolio/40 transition-colors">
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/60 font-medium">{fatt.numero}</td>
-                                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro">{formatImporto(fatt.totale_lordo ?? fatt.importo)}</td>
+                                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro">{fatt.tipo_documento === 'TD04' ? '- ' : ''}{formatImporto(fatt.totale_lordo ?? fatt.importo)}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{fatt.descrizione ?? '—'}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{new Date(fatt.data_emissione).toLocaleDateString('it-IT')}</td>
                                                     <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">{fatt.data_scadenza ? new Date(fatt.data_scadenza).toLocaleDateString('it-IT') : '—'}</td>
@@ -1482,7 +1494,7 @@ export default function AvvocatoClientiDettaglio() {
             setMeId(user.id)
 
             const { data: c } = await supabase.from('profiles')
-                .select('id, tipo_soggetto, nome, cognome, ragione_sociale, partita_iva, sede_legale, rappr_nome, rappr_cognome, rappr_cf, rappr_carica, email, telefono, pec, cf, data_nascita, luogo_nascita, indirizzo, comune, provincia, cap, note_iniziali, avvocato_id, created_at')
+                .select('id, tipo_soggetto, nome, cognome, ragione_sociale, partita_iva, sede_legale, rappr_nome, rappr_cognome, rappr_cf, rappr_carica, email, telefono, pec, cf, data_nascita, luogo_nascita, indirizzo, numero_civico, comune, provincia, cap, paese, codice_destinatario_sdi, pec_fatturazione, regime_contabile, note_iniziali, avvocato_id, created_at')
                 .eq('id', id).single()
             if (c) {
                 const cliente = { ...c, tipo_soggetto: c.tipo_soggetto ?? 'persona_fisica' }
@@ -1534,9 +1546,14 @@ export default function AvvocatoClientiDettaglio() {
                         telefono: formCliente.telefono,
                         pec: formCliente.pec,
                         indirizzo: formCliente.indirizzo,
+                        numero_civico: formCliente.numero_civico,
                         comune: formCliente.comune,
                         provincia: formCliente.provincia,
                         cap: formCliente.cap,
+                        paese: formCliente.paese || 'IT',
+                        codice_destinatario_sdi: formCliente.codice_destinatario_sdi,
+                        pec_fatturazione: formCliente.pec_fatturazione,
+                        // il regime ora viene caricato: prima si azzerava a ogni salvataggio
                         regime_contabile: formCliente.regime_contabile ?? null,
                         avvocato_id: avvocatoId || null,
                     }),
@@ -1641,7 +1658,10 @@ export default function AvvocatoClientiDettaglio() {
                                             <InputField label="Nome" {...fc('nome')} />
                                             <InputField label="Cognome" {...fc('cognome')} />
                                         </div>
-                                        <InputField label="Codice fiscale" {...fc('cf')} />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <InputField label="Codice fiscale" {...fc('cf')} />
+                                            <InputField label="Partita IVA (ditta o professionista)" placeholder="Facoltativa" {...fc('partita_iva')} />
+                                        </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Data nascita</label>
@@ -1703,15 +1723,29 @@ export default function AvvocatoClientiDettaglio() {
                                 </div>
 
                                 <div className="border-t border-white/8 pt-3 space-y-3">
+                                    <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Fatturazione elettronica</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <InputField label="Codice destinatario SDI" placeholder="7 caratteri" {...fc('codice_destinatario_sdi')} />
+                                        <InputField label="PEC di fatturazione" placeholder="fatture@pec.it" {...fc('pec_fatturazione')} />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-white/8 pt-3 space-y-3">
                                     <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase">Indirizzo</p>
-                                    <InputField label="Indirizzo" placeholder="Via Roma 1" {...fc('indirizzo')} />
+                                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px] gap-3">
+                                        <InputField label="Indirizzo (via)" placeholder="Via Roma" {...fc('indirizzo')} />
+                                        <InputField label="Numero civico" placeholder="1" {...fc('numero_civico')} />
+                                    </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div className="sm:col-span-2">
                                             <InputField label="Comune" {...fc('comune')} />
                                         </div>
                                         <InputField label="Provincia" placeholder="MI" {...fc('provincia')} />
                                     </div>
-                                    <InputField label="CAP" {...fc('cap')} />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <InputField label="CAP" {...fc('cap')} />
+                                        <InputField label="Paese" placeholder="IT" {...fc('paese')} />
+                                    </div>
                                 </div>
 
                                 {erroreCliente && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {erroreCliente}</div>}
@@ -1721,6 +1755,7 @@ export default function AvvocatoClientiDettaglio() {
                                 {isPF ? [
                                     ['Nome completo', `${cliente.nome ?? ''} ${cliente.cognome ?? ''}`.trim() || '—'],
                                     ['Codice fiscale', cliente.cf || '—'],
+                                    ...(cliente.partita_iva ? [['Partita IVA', cliente.partita_iva]] : []),
                                     ['Data nascita', cliente.data_nascita ? new Date(cliente.data_nascita).toLocaleDateString('it-IT') : '—'],
                                     ['Luogo nascita', cliente.luogo_nascita || '—'],
                                 ].map(([l, v]) => (
@@ -1762,6 +1797,8 @@ export default function AvvocatoClientiDettaglio() {
                                         ['Email', cliente.email],
                                         ['Telefono', cliente.telefono || '—'],
                                         ['PEC', cliente.pec || '—'],
+                                        ['Codice SDI', cliente.codice_destinatario_sdi || '—'],
+                                        ['PEC fatturazione', cliente.pec_fatturazione || '—'],
                                     ].map(([l, v]) => (
                                         <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
                                             <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>
@@ -1773,10 +1810,11 @@ export default function AvvocatoClientiDettaglio() {
                                 <div className="border-t border-white/5 pt-3 mt-3 space-y-2">
                                     <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">Indirizzo</p>
                                     {[
-                                        ['Indirizzo', cliente.indirizzo || '—'],
+                                        ['Indirizzo', [cliente.indirizzo, cliente.numero_civico].filter(Boolean).join(' ') || '—'],
                                         ['Comune', cliente.comune || '—'],
                                         ['Provincia', cliente.provincia || '—'],
                                         ['CAP', cliente.cap || '—'],
+                                        ['Paese', cliente.paese || 'IT'],
                                     ].map(([l, v]) => (
                                         <div key={l} className="flex justify-between gap-3 lg:gap-0 border-b border-white/5 pb-2">
                                             <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0 lg:shrink">{l}</span>

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Badge } from '@/components/shared'
-import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, ArrowRight, Shield, ShieldCheck } from 'lucide-react'
+import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, ArrowRight, Shield, ShieldCheck, Receipt } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { REGIMI, CASSE, cassaPredefinita, ibanValido } from '@/lib/fatturazione'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
 import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
@@ -28,6 +29,35 @@ function Campo({ label, value, placeholder = '—', type = 'text', disabled = fa
                 className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
         </div>
     )
+}
+
+function CampoSelect({ label, value, opzioni, editing, onChange }) {
+    const testo = opzioni.find(o => o.codice === value)?.etichetta
+    if (!editing) {
+        return (
+            <div>
+                <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-1">{label}</label>
+                <p className={`font-body text-sm py-2 border-b border-white/8 ${testo ? 'text-nebbia' : 'text-nebbia/25 italic'}`}>{testo || '—'}</p>
+            </div>
+        )
+    }
+    return (
+        <div>
+            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">{label}</label>
+            <select value={value} onChange={e => onChange(e.target.value)}
+                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-2.5 outline-none focus:border-oro/50">
+                {opzioni.map(o => <option key={o.codice} value={o.codice}>{o.etichetta}</option>)}
+            </select>
+        </div>
+    )
+}
+
+// Dati di fatturazione (04-10-2026): prima si potevano scrivere solo dalla pagina
+// /verifica, che dopo la promozione a professionista non si vede piu'.
+const FATT_VUOTO = {
+    partita_iva: '', cf: '', regime_fiscale: 'RF01', cassa_previdenza: 'cassa_forense',
+    indirizzo: '', numero_civico: '', cap: '', comune: '', provincia: '', paese: 'IT',
+    iban: '', codice_destinatario_sdi: '',
 }
 
 export default function AvvocatoProfilo() {
@@ -54,6 +84,14 @@ export default function AvvocatoProfilo() {
     const [okAtti, setOkAtti] = useState(false)
     const [errAtti, setErrAtti] = useState('')
 
+    // Dati di fatturazione
+    const [fatt, setFatt] = useState(FATT_VUOTO)
+    const [fattOriginali, setFattOriginali] = useState(FATT_VUOTO)
+    const [editingFatt, setEditingFatt] = useState(false)
+    const [salvandoFatt, setSalvandoFatt] = useState(false)
+    const [okFatt, setOkFatt] = useState(false)
+    const [errFatt, setErrFatt] = useState('')
+
     // Password
     const [editingPwd, setEditingPwd] = useState(false)
     const [pwd, setPwd] = useState({ nuova: '', conferma: '' })
@@ -79,7 +117,7 @@ export default function AvvocatoProfilo() {
 
                 const { data: profilo } = await supabase
                     .from('profiles')
-                    .select('nome, cognome, email, telefono, specializzazioni, studio, tipo_account, verification_status, piano_id, abbonamento_tipo, abbonamento_scadenza, posti_acquistati, include_banca_dati, include_monetizzazione, foro, numero_albo, pec, data_iscrizione_albo, mfa_attivo, mfa_attivato_at')
+                    .select('nome, cognome, email, telefono, specializzazioni, studio, tipo_account, verification_status, piano_id, abbonamento_tipo, abbonamento_scadenza, posti_acquistati, include_banca_dati, include_monetizzazione, foro, numero_albo, pec, data_iscrizione_albo, mfa_attivo, mfa_attivato_at, role, partita_iva, cf, regime_fiscale, cassa_previdenza, indirizzo, numero_civico, cap, comune, provincia, paese, iban, codice_destinatario_sdi')
                     .eq('id', user.id)
                     .single()
 
@@ -105,6 +143,23 @@ export default function AvvocatoProfilo() {
                     }
                     setAtti(a)
                     setAttiOriginali(a)
+
+                    const f = {
+                        partita_iva: profilo.partita_iva ?? '',
+                        cf: profilo.cf ?? '',
+                        regime_fiscale: profilo.regime_fiscale ?? 'RF01',
+                        cassa_previdenza: profilo.cassa_previdenza ?? cassaPredefinita(profilo.role),
+                        indirizzo: profilo.indirizzo ?? '',
+                        numero_civico: profilo.numero_civico ?? '',
+                        cap: profilo.cap ?? '',
+                        comune: profilo.comune ?? '',
+                        provincia: profilo.provincia ?? '',
+                        paese: profilo.paese ?? 'IT',
+                        iban: profilo.iban ?? '',
+                        codice_destinatario_sdi: profilo.codice_destinatario_sdi ?? '',
+                    }
+                    setFatt(f)
+                    setFattOriginali(f)
 
                     setTipoAccount(profilo.tipo_account ?? null)
                     setVerificato(profilo.verification_status === 'approved')
@@ -184,6 +239,38 @@ export default function AvvocatoProfilo() {
 
     function handleAnnullaAtti() { setAtti(attiOriginali); setEditingAtti(false); setErrAtti('') }
 
+    async function handleSalvaFatt() {
+        setErrFatt(''); setOkFatt(false)
+        const v = Object.fromEntries(Object.entries(fatt).map(([k, x]) => [k, typeof x === 'string' ? x.trim() : x]))
+        v.paese = (v.paese || 'IT').toUpperCase()
+        v.provincia = v.provincia.toUpperCase()
+        v.cf = v.cf.toUpperCase()
+        v.codice_destinatario_sdi = v.codice_destinatario_sdi.toUpperCase()
+        v.iban = v.iban.replace(/\s+/g, '').toUpperCase()
+        if (!/^[A-Z]{2}$/.test(v.paese)) return setErrFatt('Paese: codice a due lettere (es. IT)')
+        if (v.paese === 'IT') {
+            if (v.partita_iva && !/^[0-9]{11}$/.test(v.partita_iva)) return setErrFatt('La partita IVA italiana ha 11 cifre')
+            if (v.cap && !/^[0-9]{5}$/.test(v.cap)) return setErrFatt('Il CAP ha 5 cifre')
+            if (v.provincia && !/^[A-Z]{2}$/.test(v.provincia)) return setErrFatt('Provincia: sigla di due lettere (es. MI)')
+        }
+        if (v.cf && !/^([A-Z0-9]{16}|[0-9]{11})$/.test(v.cf)) return setErrFatt('Codice fiscale non valido (16 caratteri, o 11 cifre)')
+        if (v.iban && !ibanValido(v.iban)) return setErrFatt('IBAN non valido: controlla le cifre')
+        if (v.codice_destinatario_sdi && !/^[A-Z0-9]{7}$/.test(v.codice_destinatario_sdi)) return setErrFatt('Il codice destinatario SDI ha 7 caratteri')
+        setSalvandoFatt(true)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            const payload = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x === '' ? null : x]))
+            payload.regime_fiscale = v.regime_fiscale || 'RF01'
+            const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
+            if (error) throw new Error(error.message)
+            setFatt(v); setFattOriginali(v); setEditingFatt(false); setOkFatt(true)
+            setTimeout(() => setOkFatt(false), 3000)
+        } catch (err) { setErrFatt(err.message) }
+        finally { setSalvandoFatt(false) }
+    }
+
+    function handleAnnullaFatt() { setFatt(fattOriginali); setEditingFatt(false); setErrFatt('') }
+
     async function handleCambiaPwd() {
         setErrPwd(''); setOkPwd(false)
         if (pwd.nuova.length < 8) return setErrPwd('Minimo 8 caratteri')
@@ -251,6 +338,14 @@ export default function AvvocatoProfilo() {
     if (!atti.numero_albo) campiAttiMancanti.push('Numero albo')
     if (!atti.pec) campiAttiMancanti.push('PEC')
     const profiloCompleto = campiAttiMancanti.length === 0
+
+    // Completezza dei dati che servono in fattura
+    const fattMancanti = []
+    if (!fatt.partita_iva) fattMancanti.push('Partita IVA')
+    if (!fatt.cf) fattMancanti.push('Codice fiscale')
+    if (!fatt.indirizzo || !fatt.cap || !fatt.comune) fattMancanti.push('Indirizzo')
+    if (!fatt.iban) fattMancanti.push('IBAN')
+    const fattCompleto = fattMancanti.length === 0
 
     if (loading) return (
         <div className="flex items-center justify-center py-40">
@@ -376,6 +471,87 @@ export default function AvvocatoProfilo() {
                     </button>
                 )}
             </div>
+
+            {/* DATI DI FATTURAZIONE (chi emette: il titolare; i membri usano quelli dello studio) */}
+            {isMembro ? (
+                <div className="bg-slate border border-white/5 p-5 flex items-start gap-3">
+                    <Receipt size={14} className="text-oro/60 shrink-0 mt-0.5" />
+                    <p className="font-body text-xs text-nebbia/45 leading-relaxed">
+                        Le fatture dello studio le emette il titolare: in fattura compaiono i suoi dati di fatturazione.
+                    </p>
+                </div>
+            ) : (
+                <div className={`bg-slate border p-6 space-y-5 ${fattCompleto ? 'border-white/5' : 'border-amber-500/30'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <Receipt size={14} className="text-oro/60 shrink-0" />
+                            <p className="section-label !m-0">Dati di fatturazione</p>
+                            {fattCompleto && (
+                                <span className="font-body text-[10px] text-salvia border border-salvia/30 bg-salvia/5 px-2 py-0.5 uppercase tracking-wider">
+                                    Completo
+                                </span>
+                            )}
+                        </div>
+                        {!editingFatt ? (
+                            <button onClick={() => setEditingFatt(true)} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-oro transition-colors border border-white/10 hover:border-oro/30 px-3 py-1.5 min-h-[40px] lg:min-h-0">
+                                <Edit2 size={12} /> {fattCompleto ? 'Modifica' : 'Compila'}
+                            </button>
+                        ) : (
+                            <button onClick={handleAnnullaFatt} className="shrink-0 flex items-center justify-center gap-1.5 font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors border border-white/10 px-3 py-1.5 min-h-[40px] lg:min-h-0">
+                                <X size={12} /> Annulla
+                            </button>
+                        )}
+                    </div>
+
+                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                        Intestano le fatture ai tuoi clienti e decidono IVA, cassa e ritenuta.
+                        {!fattCompleto && <> Mancano: <span className="text-amber-400/80">{fattMancanti.join(', ')}</span>.</>}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <Campo label="Partita IVA" value={fatt.partita_iva} placeholder="12345678901"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, partita_iva: v }))} />
+                        <Campo label="Codice fiscale" value={fatt.cf} placeholder="RSSMRA80A01F205X"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, cf: v }))} />
+                        <CampoSelect label="Regime fiscale" value={fatt.regime_fiscale} opzioni={REGIMI}
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, regime_fiscale: v }))} />
+                        <CampoSelect label="Cassa di previdenza" value={fatt.cassa_previdenza} opzioni={CASSE}
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, cassa_previdenza: v }))} />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-5">
+                        <Campo label="Indirizzo (via)" value={fatt.indirizzo} placeholder="Via Roma"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, indirizzo: v }))} />
+                        <Campo label="Numero civico" value={fatt.numero_civico} placeholder="12"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, numero_civico: v }))} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_100px_100px] gap-5">
+                        <Campo label="CAP" value={fatt.cap} placeholder="20121"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, cap: v }))} />
+                        <Campo label="Comune" value={fatt.comune} placeholder="Milano"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, comune: v }))} />
+                        <Campo label="Provincia" value={fatt.provincia} placeholder="MI"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, provincia: v }))} />
+                        <Campo label="Paese" value={fatt.paese} placeholder="IT"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, paese: v }))} />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-5">
+                        <Campo label="IBAN per i pagamenti" value={fatt.iban} placeholder="IT60X0542811101000000123456"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, iban: v }))} />
+                        <Campo label="Codice destinatario SDI" value={fatt.codice_destinatario_sdi} placeholder="Facoltativo"
+                            editing={editingFatt} onChange={v => setFatt(f => ({ ...f, codice_destinatario_sdi: v }))} />
+                    </div>
+
+                    {errFatt && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errFatt}</div>}
+                    {okFatt && <div className="flex items-center gap-2 text-salvia text-xs font-body p-3 bg-salvia/5 border border-salvia/20"><CheckCircle size={14} /> Dati di fatturazione aggiornati.</div>}
+                    {editingFatt && (
+                        <button onClick={handleSalvaFatt} disabled={salvandoFatt} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40">
+                            {salvandoFatt ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" /> : <><Check size={14} /> Salva dati di fatturazione</>}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* ABBONAMENTO */}
             {pianoDati && (

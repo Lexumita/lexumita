@@ -21,6 +21,7 @@ const STATO_CONFIG = {
     in_attesa: { label: 'In attesa', variant: 'warning' },
     scaduta: { label: 'Scaduta', variant: 'red' },
     annullata: { label: 'Annullata', variant: 'gray' },
+    emessa: { label: 'Nota di credito', variant: 'gray' },
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -45,6 +46,20 @@ function isScaduta(f) {
 function statoEffettivo(f) {
     if (f.stato === 'in_attesa' && isScaduta(f)) return 'scaduta'
     return f.stato
+}
+
+// 04-10-2026: le note di credito (TD04) stornano una fattura; il cliente deve il
+// NETTO (con la ritenuta paga lordo meno ritenuta) meno note e pagamenti.
+// Le fatture scadute (stato 'scaduta', messo dal DB) restano tra quelle aperte.
+const isNotaCredito = f => f.tipo_documento === 'TD04'
+const aperta = f => !isNotaCredito(f) && (f.stato === 'in_attesa' || f.stato === 'scaduta')
+
+// Fatturato: fatture meno note di credito (le annullate a mano, senza nota, non contano)
+function importoFatturato(f) {
+    const lordo = Number(f.totale_lordo ?? f.importo ?? 0)
+    if (isNotaCredito(f)) return -lordo
+    if (f.stato === 'annullata' && !(f._note > 0)) return 0
+    return lordo
 }
 
 function giorniScadenza(f) {
@@ -73,27 +88,26 @@ function SortTh({ label, field, sortField, sortDir, onSort }) {
 // ─────────────────────────────────────────────────────────────
 // TAB PANORAMICA
 // ─────────────────────────────────────────────────────────────
-function TabPanoramica({ fatture, clienti }) {
+function TabPanoramica({ fatture, clienti, pagamenti = [] }) {
     const annoCorrente = new Date().getFullYear()
 
     // KPI
-    const fattureAnno = fatture.filter(f =>
-        new Date(f.data_emissione).getFullYear() === annoCorrente &&
-        f.stato !== 'annullata'
-    )
+    const fattureAnno = fatture.filter(f => new Date(f.data_emissione).getFullYear() === annoCorrente)
 
-    const totFatturatoAnno = fattureAnno.reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
-    const totIncassatoAnno = fattureAnno.filter(f => f.stato === 'pagata').reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
-    const totDaIncassare = fatture.filter(f => f.stato === 'in_attesa' && !isScaduta(f)).reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
-    const totScaduto = fatture.filter(f => isScaduta(f) || f.stato === 'scaduta').reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
+    const totFatturatoAnno = fattureAnno.reduce((s, f) => s + importoFatturato(f), 0)
+    const totIncassatoAnno = pagamenti
+        .filter(p => p.data_pagamento && new Date(p.data_pagamento).getFullYear() === annoCorrente)
+        .reduce((s, p) => s + Number(p.importo ?? 0), 0)
+    const totDaIncassare = fatture.filter(f => aperta(f) && f.stato !== 'scaduta' && !isScaduta(f)).reduce((s, f) => s + (f._residuo ?? 0), 0)
+    const totScaduto = fatture.filter(f => aperta(f) && (f.stato === 'scaduta' || isScaduta(f))).reduce((s, f) => s + (f._residuo ?? 0), 0)
 
     // Top clienti anno
     const perCliente = {}
     for (const f of fattureAnno) {
         const cid = f.cliente?.id ?? 'altro'
         if (!perCliente[cid]) perCliente[cid] = { cliente: f.cliente, totale: 0, fatture: 0 }
-        perCliente[cid].totale += Number(f.totale_lordo ?? f.importo ?? 0)
-        perCliente[cid].fatture += 1
+        perCliente[cid].totale += importoFatturato(f)
+        if (!isNotaCredito(f)) perCliente[cid].fatture += 1
     }
     const topClienti = Object.values(perCliente)
         .sort((a, b) => b.totale - a.totale)
@@ -110,19 +124,19 @@ function TabPanoramica({ fatture, clienti }) {
         meseLabels.push({ key: meseKey, label, anno: d.getFullYear() })
     }
     for (const m of meseLabels) {
-        const emesso = fatture
-            .filter(f => f.data_emissione?.startsWith(m.key) && f.stato !== 'annullata')
-            .reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
-        const incassato = fatture
-            .filter(f => f.data_pagamento?.startsWith(m.key))
-            .reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
+        const emesso = Math.max(0, fatture
+            .filter(f => f.data_emissione?.startsWith(m.key))
+            .reduce((s, f) => s + importoFatturato(f), 0))
+        const incassato = pagamenti
+            .filter(p => p.data_pagamento?.startsWith(m.key))
+            .reduce((s, p) => s + Number(p.importo ?? 0), 0)
         meseDati.push({ ...m, emesso, incassato })
     }
     const maxValore = Math.max(1, ...meseDati.map(m => Math.max(m.emesso, m.incassato)))
 
     // Da incassare urgenti
     const urgenti = fatture
-        .filter(f => f.stato === 'in_attesa')
+        .filter(f => aperta(f) && (f._residuo ?? 0) > 0)
         .map(f => ({ ...f, giorni: giorniScadenza(f) }))
         .filter(f => f.giorni !== null && f.giorni <= 7)
         .sort((a, b) => (a.giorni ?? 0) - (b.giorni ?? 0))
@@ -289,7 +303,7 @@ function TabPanoramica({ fatture, clienti }) {
                                         <p className="font-body text-xs text-nebbia/40 mt-0.5">{f.numero}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="font-body text-sm font-semibold text-oro">{formatImporto(f.totale_lordo ?? f.importo)}</p>
+                                        <p className="font-body text-sm font-semibold text-oro">{formatImporto(f._residuo)}</p>
                                         <p className={`font-body text-xs mt-0.5 ${f.giorni < 0 ? 'text-red-400' : 'text-amber-400'}`}>
                                             {f.giorni < 0 ? `Scaduta ${Math.abs(f.giorni)}g fa` : f.giorni === 0 ? 'Oggi' : `Tra ${f.giorni}g`}
                                         </p>
@@ -592,7 +606,9 @@ function TabFatture({ fatture, clienti, onReload }) {
                         const stato = statoEffettivo(f)
                         const sc = STATO_CONFIG[stato] ?? STATO_CONFIG.in_attesa
                         const sc_scaduta = stato === 'scaduta'
-                        const scadenzaTesto = f.stato === 'pagata' && f.data_pagamento
+                        const scadenzaTesto = isNotaCredito(f)
+                            ? 'Storno'
+                            : f.stato === 'pagata' && f.data_pagamento
                             ? `Pagata ${new Date(f.data_pagamento).toLocaleDateString('it-IT')}`
                             : f.stato === 'pagata'
                                 ? 'Pagata'
@@ -619,7 +635,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                                         <p className="font-body text-xs text-nebbia/50 truncate">{f.pratica.titolo}</p>
                                     )}
 
-                                    <p className="font-display text-2xl font-light text-oro">{formatImporto(f.totale_lordo ?? f.importo)}</p>
+                                    <p className="font-display text-2xl font-light text-oro">{isNotaCredito(f) ? '- ' : ''}{formatImporto(f.totale_lordo ?? f.importo)}</p>
 
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs">
                                         <span className="text-nebbia/40">
@@ -695,7 +711,7 @@ function TabFatture({ fatture, clienti, onReload }) {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 max-w-xs truncate">{f.pratica?.titolo ?? '—'}</td>
-                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro whitespace-nowrap">{formatImporto(f.totale_lordo ?? f.importo)}</td>
+                                    <td className="px-4 py-3 font-body text-sm font-semibold text-oro whitespace-nowrap">{isNotaCredito(f) ? '- ' : ''}{formatImporto(f.totale_lordo ?? f.importo)}</td>
                                     <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">{f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}</td>
                                     <td className={`px-4 py-3 font-body text-xs whitespace-nowrap ${f.stato === 'pagata' ? 'text-salvia' : sc_scaduta ? 'text-red-400' : 'text-nebbia/50'
                                         }`}>
@@ -756,7 +772,7 @@ function TabScadenzario({ fatture }) {
     const in30gg = new Date(oggi); in30gg.setDate(in30gg.getDate() + 30)
 
     const conScadenza = fatture
-        .filter(f => f.stato === 'in_attesa' && f.data_scadenza)
+        .filter(f => aperta(f) && f.data_scadenza && (f._residuo ?? 0) > 0)
         .map(f => ({ ...f, scadDate: new Date(f.data_scadenza), giorni: giorniScadenza(f) }))
 
     const scadute = conScadenza.filter(f => f.scadDate < oggi).sort((a, b) => a.scadDate - b.scadDate)
@@ -766,7 +782,7 @@ function TabScadenzario({ fatture }) {
 
     function Sezione({ titolo, lista, variant }) {
         if (lista.length === 0) return null
-        const totale = lista.reduce((s, f) => s + Number(f.totale_lordo ?? f.importo ?? 0), 0)
+        const totale = lista.reduce((s, f) => s + (f._residuo ?? 0), 0)
         const colorVariant = {
             red: 'border-red-500/30 bg-red-900/10',
             amber: 'border-amber-400/30 bg-amber-400/5',
@@ -808,7 +824,7 @@ function TabScadenzario({ fatture }) {
                                 <span className={`font-body text-xs ${textColor[variant]}`}>
                                     {f.giorni < 0 ? `${Math.abs(f.giorni)}g fa` : f.giorni === 0 ? 'Oggi' : `tra ${f.giorni}g`}
                                 </span>
-                                <p className="font-body text-sm font-semibold text-oro whitespace-nowrap">{formatImporto(f.totale_lordo ?? f.importo)}</p>
+                                <p className="font-body text-sm font-semibold text-oro whitespace-nowrap">{formatImporto(f._residuo)}</p>
                                 <ArrowRight size={13} className="text-nebbia/20" />
                             </div>
                         </Link>
@@ -844,6 +860,7 @@ function TabScadenzario({ fatture }) {
 export default function AvvocatoFatturazione() {
     const [fatture, setFatture] = useState([])
     const [clienti, setClienti] = useState([])
+    const [pagamenti, setPagamenti] = useState([])
     const [loading, setLoading] = useState(true)
     const [tab, setTab] = useState('panoramica')
 
@@ -866,8 +883,8 @@ export default function AvvocatoFatturazione() {
             supabase
                 .from('fatture')
                 .select(`
-          id, numero, stato, data_emissione, data_scadenza, data_pagamento,
-          importo, totale_lordo, totale_netto, applica_ritenuta,
+          id, numero, stato, data_emissione, data_scadenza, data_pagamento, cliente_id,
+          importo, totale_lordo, totale_netto, applica_ritenuta, tipo_documento, fattura_origine_id,
           descrizione, pdf_storage_path,
           cliente:cliente_id(id, nome, cognome, ragione_sociale, tipo_soggetto),
           pratica:pratica_id(id, titolo)
@@ -882,7 +899,27 @@ export default function AvvocatoFatturazione() {
                 .order('cognome'),
         ])
 
-        setFatture(fatt ?? [])
+        // Pagamenti e note di credito: quanto resta davvero da incassare
+        const lista = fatt ?? []
+        const idsFatture = lista.filter(f => !isNotaCredito(f)).map(f => f.id)
+        const { data: pag } = idsFatture.length
+            ? await supabase.from('pagamenti_fattura').select('fattura_id, importo, data_pagamento').in('fattura_id', idsFatture)
+            : { data: [] }
+        const pagatoPer = {}
+        for (const pg of pag ?? []) pagatoPer[pg.fattura_id] = (pagatoPer[pg.fattura_id] ?? 0) + Number(pg.importo ?? 0)
+        const notePer = {}
+        for (const n of lista.filter(isNotaCredito)) {
+            notePer[n.fattura_origine_id] = (notePer[n.fattura_origine_id] ?? 0) + Number(n.totale_netto ?? n.totale_lordo ?? 0)
+        }
+        for (const f of lista) {
+            f._note = notePer[f.id] ?? 0
+            f._pagato = pagatoPer[f.id] ?? 0
+            f._dovuto = isNotaCredito(f) ? 0 : Math.max(0, Number(f.totale_netto ?? f.totale_lordo ?? f.importo ?? 0) - f._note)
+            f._residuo = Math.max(0, Math.round((f._dovuto - f._pagato) * 100) / 100)
+        }
+
+        setFatture(lista)
+        setPagamenti(pag ?? [])
         setClienti(cli ?? [])
         setLoading(false)
     }
@@ -927,7 +964,7 @@ export default function AvvocatoFatturazione() {
                 ))}
             </div>
 
-            {tab === 'panoramica' && <TabPanoramica fatture={fatture} clienti={clienti} />}
+            {tab === 'panoramica' && <TabPanoramica fatture={fatture} clienti={clienti} pagamenti={pagamenti} />}
             {tab === 'fatture' && <TabFatture fatture={fatture} clienti={clienti} onReload={carica} />}
             {tab === 'scadenzario' && <TabScadenzario fatture={fatture} />}
         </div>

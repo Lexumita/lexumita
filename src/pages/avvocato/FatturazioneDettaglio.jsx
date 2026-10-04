@@ -1,4 +1,9 @@
 // src/pages/avvocato/FatturazioneDettaglio.jsx
+//
+// 04-10-2026: residuo calcolato sul NETTO (con la ritenuta il cliente paga
+// lordo meno ritenuta) e al netto delle note di credito; «Nota di credito» per
+// le fatture emesse; «Elimina» solo per quelle mai emesse (senza PDF); niente
+// piu' «Annulla» a mano (una fattura emessa si storna con una nota di credito).
 
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
@@ -6,16 +11,25 @@ import { BackButton, Badge } from '@/components/shared'
 import {
     FileText, Download, Trash2, Plus, Check, AlertCircle, X,
     Building2, User, Calendar, CreditCard, Edit2, Loader2,
-    FileSignature, Wallet, Archive
+    FileSignature, Wallet, Archive, Undo2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
+import { etichettaCassa, etichettaNatura, importoDovuto, messaggioErroreFunzione } from '@/lib/fatturazione'
 
 const STATO_CONFIG = {
     pagata: { label: 'Pagata', variant: 'salvia' },
     in_attesa: { label: 'In attesa', variant: 'warning' },
     scaduta: { label: 'Scaduta', variant: 'red' },
     annullata: { label: 'Annullata', variant: 'gray' },
+    emessa: { label: 'Emessa', variant: 'gray' },
+}
+
+function indirizzoCliente(c) {
+    if (!c) return ''
+    const via = [c.indirizzo, c.numero_civico].filter(Boolean).join(' ')
+    const citta = [c.cap, c.comune].filter(Boolean).join(' ') + (c.provincia ? ` (${c.provincia})` : '')
+    return [via, citta.trim(), c.paese && c.paese !== 'IT' ? c.paese : ''].filter(Boolean).join(', ')
 }
 
 const METODI_PAGAMENTO = [
@@ -98,6 +112,9 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
                         </p>
                         <p className="font-body text-xs text-nebbia/40">
                             Residuo da incassare: <span className="text-oro font-medium">{formatImporto(residuo)}</span>
+                            {fattura.applica_ritenuta && Number(fattura.ritenuta_importo ?? 0) > 0 && (
+                                <span className="text-nebbia/30"> (netto della ritenuta)</span>
+                            )}
                         </p>
                     </div>
 
@@ -200,8 +217,7 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
             const { data, error } = await supabase.functions.invoke('elimina-fattura', {
                 body: { fattura_id: fattura.id }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            if (error || !data?.ok) throw new Error(await messaggioErroreFunzione(error, data, 'Eliminazione non riuscita'))
             onEliminata()
         } catch (err) {
             setErrore(err.message)
@@ -216,7 +232,7 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
                 <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
                     <div className="flex items-center gap-2">
                         <Trash2 size={16} className="text-red-400" />
-                        <h2 className="font-display text-lg text-nebbia">Elimina fattura</h2>
+                        <h2 className="font-display text-lg text-nebbia">{fattura.tipo_documento === 'TD04' ? 'Elimina nota di credito' : 'Elimina fattura'}</h2>
                     </div>
                     <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
                         <X size={18} />
@@ -229,8 +245,8 @@ export function ModalEliminaFattura({ fattura, onClose, onEliminata }) {
                             <span className="font-semibold">Operazione irreversibile.</span>
                         </p>
                         <p className="font-body text-xs text-red-400/80 leading-relaxed">
-                            Saranno cancellati: la fattura, le righe, i pagamenti registrati,
-                            il PDF generato e il record nell'archivio dello studio.
+                            Il documento non è ancora stato emesso (nessun PDF): saranno cancellati
+                            il documento, le righe e gli eventuali pagamenti registrati.
                             Il numero <strong>{fattura.numero}</strong> resta consumato nel
                             registro fiscale (non puo' essere riutilizzato).
                         </p>
@@ -508,6 +524,7 @@ export default function AvvocatoFatturazioneDettaglio() {
     const [fattura, setFattura] = useState(null)
     const [righe, setRighe] = useState([])
     const [pagamenti, setPagamenti] = useState([])
+    const [noteCredito, setNoteCredito] = useState([])
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState('')
 
@@ -520,21 +537,26 @@ export default function AvvocatoFatturazioneDettaglio() {
 
     async function carica() {
         setLoading(true); setErrore('')
-        const [{ data: f }, { data: rig }, { data: pag }] = await Promise.all([
+        const [{ data: f }, { data: rig }, { data: pag }, { data: nc }] = await Promise.all([
             supabase.from('fatture')
                 .select(`
           *,
-          cliente:cliente_id(id, nome, cognome, ragione_sociale, tipo_soggetto, cf, partita_iva, email, telefono, indirizzo, comune, provincia, cap, pec),
-          pratica:pratica_id(id, titolo)
+          cliente:cliente_id(id, nome, cognome, ragione_sociale, tipo_soggetto, cf, partita_iva, email, telefono, indirizzo, numero_civico, comune, provincia, cap, paese, pec, codice_destinatario_sdi, pec_fatturazione),
+          pratica:pratica_id(id, titolo),
+          avvocato:avvocato_id(role),
+          origine:fattura_origine_id(id, numero, data_emissione)
         `)
                 .eq('id', id).single(),
             supabase.from('righe_fattura').select('*').eq('fattura_id', id).order('ordine'),
             supabase.from('pagamenti_fattura').select('*').eq('fattura_id', id).order('data_pagamento', { ascending: false }),
+            supabase.from('fatture').select('id, numero, data_emissione, totale_netto, totale_lordo, pdf_generato_at')
+                .eq('fattura_origine_id', id).order('data_emissione'),
         ])
         if (!f) { setErrore('Fattura non trovata'); setLoading(false); return }
         setFattura(f)
         setRighe(rig ?? [])
         setPagamenti(pag ?? [])
+        setNoteCredito(nc ?? [])
         setLoading(false)
     }
 
@@ -546,8 +568,7 @@ export default function AvvocatoFatturazioneDettaglio() {
             const { data, error } = await supabase.functions.invoke('genera-fattura-pdf', {
                 body: { fattura_id: id }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            if (error || !data?.ok) throw new Error(await messaggioErroreFunzione(error, data, 'Generazione PDF non riuscita'))
             // Apri il PDF generato in nuova scheda
             if (data.url) window.open(data.url, '_blank')
             // Ricarica fattura per avere pdf_generato_at aggiornato
@@ -575,12 +596,6 @@ export default function AvvocatoFatturazioneDettaglio() {
         }
     }
 
-    async function annullaFattura() {
-        if (!confirm('Annullare questa fattura? Lo stato passa a "annullata" ma la fattura non viene cancellata (per motivi fiscali).')) return
-        await supabase.from('fatture').update({ stato: 'annullata' }).eq('id', id)
-        await carica()
-    }
-
     if (loading) return (
         <div className="flex items-center justify-center py-40">
             <Loader2 size={24} className="animate-spin text-oro" />
@@ -596,15 +611,21 @@ export default function AvvocatoFatturazioneDettaglio() {
         </div>
     )
 
-    const totaleLordo = Number(fattura.totale_lordo ?? fattura.importo ?? 0)
+    const isNC = fattura.tipo_documento === 'TD04'
+    const totaleNote = noteCredito.reduce((s, n) => s + Number(n.totale_netto ?? n.totale_lordo ?? 0), 0)
+    const dovuto = importoDovuto(fattura, totaleNote)
     const totalePagato = pagamenti.reduce((s, p) => s + Number(p.importo ?? 0), 0)
-    const residuo = totaleLordo - totalePagato
+    const residuo = isNC ? 0 : Math.max(0, Math.round((dovuto - totalePagato) * 100) / 100)
     const isScaduta = fattura.stato === 'in_attesa' && fattura.data_scadenza && new Date(fattura.data_scadenza) < new Date()
     const statoEff = isScaduta ? 'scaduta' : fattura.stato
     const sc = STATO_CONFIG[statoEff] ?? STATO_CONFIG.in_attesa
 
     const ha_pdf = !!fattura.pdf_storage_path
     const archiviata = ha_pdf
+    const emessa = !!fattura.pdf_generato_at
+    const eliminabile = !emessa && noteCredito.length === 0
+    const stornabile = !isNC && emessa && fattura.stato !== 'annullata' && dovuto > 0.01
+    const etichettaRigaCassa = etichettaCassa(fattura.cassa_previdenza, fattura.avvocato?.role)
 
     return (
         <div className="space-y-5">
@@ -614,7 +635,7 @@ export default function AvvocatoFatturazioneDettaglio() {
             <div className="flex items-start justify-between flex-wrap gap-4">
                 <div>
                     <p className="section-label mb-2 flex items-center gap-2">
-                        <FileText size={11} /> Fattura
+                        <FileText size={11} /> {isNC ? 'Nota di credito' : 'Fattura'}
                     </p>
                     <h1 className="font-display text-4xl font-light text-nebbia">{fattura.numero}</h1>
                     <p className="font-body text-sm text-nebbia/40 mt-1">
@@ -623,6 +644,13 @@ export default function AvvocatoFatturazioneDettaglio() {
                             <> · Scadenza {new Date(fattura.data_scadenza).toLocaleDateString('it-IT')}</>
                         )}
                     </p>
+                    {isNC && fattura.origine && (
+                        <p className="font-body text-sm text-nebbia/50 mt-1">
+                            A storno della fattura{' '}
+                            <Link to={`/fatturazione/${fattura.origine.id}`} className="text-oro/80 hover:text-oro">{fattura.origine.numero}</Link>
+                            {' '}del {new Date(fattura.origine.data_emissione).toLocaleDateString('it-IT')}
+                        </p>
+                    )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <Badge label={sc.label} variant={sc.variant} />
@@ -642,7 +670,7 @@ export default function AvvocatoFatturazioneDettaglio() {
 
             {/* Azioni rapide */}
             <div className="flex flex-wrap gap-2">
-                {residuo > 0 && fattura.stato !== 'annullata' && (
+                {!isNC && residuo > 0.01 && fattura.stato !== 'annullata' && (
                     <button
                         onClick={() => setModalPagamento(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors"
@@ -690,22 +718,31 @@ export default function AvvocatoFatturazioneDettaglio() {
 
                 <div className="hidden lg:block flex-1" />
 
-                {fattura.stato !== 'annullata' && fattura.stato !== 'pagata' && (
+                {stornabile && (
                     <button
-                        onClick={annullaFattura}
-                        className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/40 hover:text-amber-400 hover:border-amber-400/30 transition-colors font-body text-sm"
+                        onClick={() => navigate(`/fatturazione/nuova?storno=${fattura.id}`)}
+                        className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/60 hover:text-amber-400 hover:border-amber-400/30 transition-colors font-body text-sm"
+                        title="Storna la fattura (tutta o in parte) con una nota di credito"
                     >
-                        <X size={14} /> Annulla
+                        <Undo2 size={14} /> Nota di credito
                     </button>
                 )}
 
-                <button
-                    onClick={() => setModalElimina(true)}
-                    className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/40 hover:text-red-400 hover:border-red-500/30 transition-colors font-body text-sm"
-                >
-                    <Trash2 size={14} /> Elimina
-                </button>
+                {eliminabile && (
+                    <button
+                        onClick={() => setModalElimina(true)}
+                        className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/40 hover:text-red-400 hover:border-red-500/30 transition-colors font-body text-sm"
+                    >
+                        <Trash2 size={14} /> Elimina
+                    </button>
+                )}
             </div>
+
+            {emessa && !isNC && fattura.stato !== 'annullata' && (
+                <p className="font-body text-xs text-nebbia/35 -mt-2">
+                    Documento emesso: non si elimina. Per correggerlo o annullarlo emetti una nota di credito.
+                </p>
+            )}
 
             {/* Layout 2 colonne: dati + riepilogo */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
@@ -729,9 +766,11 @@ export default function AvvocatoFatturazioneDettaglio() {
                                 <div className="font-body text-xs text-nebbia/40 mt-1 space-y-0.5">
                                     {fattura.cliente?.cf && <p>C.F. {fattura.cliente.cf}</p>}
                                     {fattura.cliente?.partita_iva && <p>P.IVA {fattura.cliente.partita_iva}</p>}
-                                    {(fattura.cliente?.indirizzo || fattura.cliente?.comune) && (
+                                    {indirizzoCliente(fattura.cliente) && <p>{indirizzoCliente(fattura.cliente)}</p>}
+                                    {(fattura.cliente?.codice_destinatario_sdi || fattura.cliente?.pec_fatturazione) && (
                                         <p>
-                                            {[fattura.cliente.indirizzo, fattura.cliente.cap, fattura.cliente.comune, fattura.cliente.provincia].filter(Boolean).join(' ')}
+                                            {[fattura.cliente.codice_destinatario_sdi && `SDI ${fattura.cliente.codice_destinatario_sdi}`,
+                                              fattura.cliente.pec_fatturazione && `PEC ${fattura.cliente.pec_fatturazione}`].filter(Boolean).join(' · ')}
                                         </p>
                                     )}
                                     {fattura.cliente?.email && <p>{fattura.cliente.email}</p>}
@@ -778,7 +817,10 @@ export default function AvvocatoFatturazioneDettaglio() {
                         <div className="lg:hidden divide-y divide-white/5 border-t border-white/5">
                             {righe.map(r => (
                                 <div key={r.id} className="p-4 space-y-2">
-                                    <p className="font-body text-sm text-nebbia leading-relaxed">{r.descrizione}</p>
+                                    <p className="font-body text-sm text-nebbia leading-relaxed">
+                                        {r.descrizione}
+                                        {r.natura_iva && <span className="text-nebbia/35 text-xs"> · {r.natura_iva} {etichettaNatura(r.natura_iva)}</span>}
+                                    </p>
                                     <div className="flex items-end justify-between gap-3">
                                         <p className="font-body text-xs text-nebbia/40">
                                             {Number(r.quantita).toFixed(2)} x {formatImporto(r.prezzo_unitario)}
@@ -805,7 +847,10 @@ export default function AvvocatoFatturazioneDettaglio() {
                             <tbody>
                                 {righe.map(r => (
                                     <tr key={r.id} className="border-b border-white/5">
-                                        <td className="px-4 py-3 font-body text-sm text-nebbia">{r.descrizione}</td>
+                                        <td className="px-4 py-3 font-body text-sm text-nebbia">
+                                            {r.descrizione}
+                                            {r.natura_iva && <span className="text-nebbia/35 text-xs"> · {r.natura_iva} {etichettaNatura(r.natura_iva)}</span>}
+                                        </td>
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">{Number(r.quantita).toFixed(2)}</td>
                                         <td className="px-4 py-3 font-body text-sm text-nebbia/60 whitespace-nowrap">{formatImporto(r.prezzo_unitario)}</td>
                                         <td className="px-4 py-3 font-body text-sm font-medium text-oro whitespace-nowrap">{formatImporto(r.totale)}</td>
@@ -819,11 +864,12 @@ export default function AvvocatoFatturazioneDettaglio() {
                         </div>
                     </div>
 
-                    {/* Pagamenti */}
+                    {/* Pagamenti (non per le note di credito) */}
+                    {!isNC && (
                     <div className="bg-slate border border-white/5 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <p className="section-label !m-0">Pagamenti ricevuti</p>
-                            {residuo > 0 && fattura.stato !== 'annullata' && (
+                            {residuo > 0.01 && fattura.stato !== 'annullata' && (
                                 <button
                                     onClick={() => setModalPagamento(true)}
                                     className="flex items-center gap-1.5 font-body text-xs text-salvia border border-salvia/30 px-3 py-1.5 hover:bg-salvia/10 transition-colors"
@@ -865,6 +911,23 @@ export default function AvvocatoFatturazioneDettaglio() {
                             </div>
                         )}
                     </div>
+                    )}
+
+                    {/* Note di credito collegate */}
+                    {noteCredito.length > 0 && (
+                        <div className="bg-slate border border-white/5 p-5 space-y-2">
+                            <p className="section-label">Note di credito</p>
+                            {noteCredito.map(n => (
+                                <Link key={n.id} to={`/fatturazione/${n.id}`}
+                                    className="flex items-center justify-between gap-3 p-3 bg-petrolio/40 border border-white/5 hover:border-oro/30 transition-colors">
+                                    <span className="font-body text-sm text-nebbia">
+                                        {n.numero} <span className="text-nebbia/40 text-xs">del {new Date(n.data_emissione).toLocaleDateString('it-IT')}{!n.pdf_generato_at && ' · non emessa'}</span>
+                                    </span>
+                                    <span className="font-body text-sm text-amber-400 whitespace-nowrap">- {formatImporto(n.totale_netto ?? n.totale_lordo)}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Note */}
                     {(fattura.note_pubbliche || fattura.note_interne) && (
@@ -897,17 +960,36 @@ export default function AvvocatoFatturazioneDettaglio() {
                                 <span>{formatImporto(fattura.imponibile)}</span>
                             </div>
                             {Number(fattura.cpa_importo ?? 0) > 0 && (
-                                <div className="flex justify-between text-xs font-body text-nebbia/60">
-                                    <span>CPA {fattura.cpa_percentuale}%</span>
+                                <div className="flex justify-between gap-2 text-xs font-body text-nebbia/60">
+                                    <span>{etichettaRigaCassa ?? 'Cassa'} {Number(fattura.cpa_percentuale)}%</span>
                                     <span>{formatImporto(fattura.cpa_importo)}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between text-xs font-body text-nebbia/60">
-                                <span>IVA {fattura.iva_percentuale}%</span>
-                                <span>{formatImporto(fattura.iva_importo)}</span>
-                            </div>
+                            {Number(fattura.iva_importo ?? 0) > 0 || !fattura.natura_iva ? (
+                                <div className="flex justify-between text-xs font-body text-nebbia/60">
+                                    <span>IVA {Number(fattura.iva_percentuale)}%</span>
+                                    <span>{formatImporto(fattura.iva_importo)}</span>
+                                </div>
+                            ) : (
+                                <div className="flex justify-between gap-2 text-xs font-body text-nebbia/60">
+                                    <span>IVA 0% · {fattura.natura_iva} {etichettaNatura(fattura.natura_iva)}</span>
+                                    <span>{formatImporto(0)}</span>
+                                </div>
+                            )}
+                            {Number(fattura.esenti_importo ?? 0) > 0 && (
+                                <div className="flex justify-between text-xs font-body text-nebbia/60">
+                                    <span>Spese esenti art. 15</span>
+                                    <span>{formatImporto(fattura.esenti_importo)}</span>
+                                </div>
+                            )}
+                            {Number(fattura.bollo_importo ?? 0) > 0 && fattura.bollo_a_carico_cliente && (
+                                <div className="flex justify-between text-xs font-body text-nebbia/60">
+                                    <span>Imposta di bollo</span>
+                                    <span>{formatImporto(fattura.bollo_importo)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between pt-2 border-t border-white/10">
-                                <span className="font-body text-sm font-medium text-nebbia">Totale fattura</span>
+                                <span className="font-body text-sm font-medium text-nebbia">{isNC ? 'Totale nota di credito' : 'Totale documento'}</span>
                                 <span className="font-body text-base font-semibold text-oro">{formatImporto(fattura.totale_lordo)}</span>
                             </div>
                             {fattura.applica_ritenuta && Number(fattura.ritenuta_importo ?? 0) > 0 && (
@@ -923,6 +1005,19 @@ export default function AvvocatoFatturazioneDettaglio() {
                                 </>
                             )}
                         </div>
+
+                        {totaleNote > 0 && (
+                            <div className="pt-3 border-t border-white/10 space-y-1">
+                                <div className="flex justify-between text-xs font-body">
+                                    <span className="text-nebbia/60">Stornato con note di credito</span>
+                                    <span className="text-amber-400">- {formatImporto(totaleNote)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs font-body">
+                                    <span className="text-nebbia/60">Dovuto dal cliente</span>
+                                    <span className="text-nebbia">{formatImporto(Math.max(0, dovuto))}</span>
+                                </div>
+                            </div>
+                        )}
 
                         {totalePagato > 0 && (
                             <div className="pt-3 border-t border-white/10 space-y-1">
@@ -955,7 +1050,7 @@ export default function AvvocatoFatturazioneDettaglio() {
                             <div className="pt-3 border-t border-white/10 flex items-start gap-2">
                                 <Archive size={12} className="text-salvia/70 shrink-0 mt-0.5" />
                                 <p className="font-body text-xs text-salvia/70">
-                                    Questa fattura e' visibile in archivio nella categoria "Fatture".
+                                    {isNC ? 'Questa nota di credito' : "Questa fattura"} e' visibile in archivio nella categoria "Fatture".
                                 </p>
                             </div>
                         )}

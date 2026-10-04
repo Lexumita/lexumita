@@ -361,29 +361,32 @@ export default function AvvocatoDashboard() {
     // ─── Fatture emesse nel periodo (per: fatturato totale e incassato del periodo) ───
     const { data: fattPeriodo } = await supabase
       .from('fatture')
-      .select('totale_lordo, stato')
+      .select('totale_lordo, totale_netto, stato, tipo_documento')
       .eq('avvocato_id', profile.id)
       .gte('data_emissione', inizioDate)
       .lte('data_emissione', fineDate)
 
     let fatturatoTot = 0
     let incassato = 0
+    // 04-10-2026: le note di credito stornano il fatturato; incassato e da
+    // incassare sul netto (con la ritenuta il cliente paga lordo meno ritenuta)
     for (const f of fattPeriodo ?? []) {
       const imp = Number(f.totale_lordo) || 0
+      if (f.tipo_documento === 'TD04') { fatturatoTot -= imp; continue }
       if (f.stato !== 'bozza' && f.stato !== 'annullata') fatturatoTot += imp
-      if (f.stato === 'pagata') incassato += imp
+      if (f.stato === 'pagata') incassato += Number(f.totale_netto ?? f.totale_lordo) || 0
     }
 
     // ─── Da incassare: TUTTO il debito attivo, indipendente dal periodo ───
     // Tutte le fatture in attesa (anche scadute) escluso bozza/pagata/annullata
     const { data: fattAttive } = await supabase
       .from('fatture')
-      .select('totale_lordo, stato, data_scadenza')
+      .select('totale_lordo, totale_netto, stato, data_scadenza')
       .eq('avvocato_id', profile.id)
       .in('stato', ['in_attesa', 'scaduta'])
 
     const daIncassare = (fattAttive ?? []).reduce(
-      (sum, f) => sum + (Number(f.totale_lordo) || 0),
+      (sum, f) => sum + (Number(f.totale_netto ?? f.totale_lordo) || 0),
       0
     )
 
@@ -442,7 +445,7 @@ export default function AvvocatoDashboard() {
     const { data: tutteFatture } = await supabase
       .from('fatture')
       .select(`
-                id, numero, anno_numerazione, data_scadenza, data_pagamento, totale_lordo, stato,
+                id, numero, anno_numerazione, data_scadenza, data_pagamento, totale_lordo, totale_netto, stato,
                 cliente:cliente_id(nome, cognome, ragione_sociale, tipo_soggetto)
             `)
       .eq('avvocato_id', profile.id)
@@ -452,7 +455,8 @@ export default function AvvocatoDashboard() {
     let inScadenza = []
 
     for (const f of tutteFatture ?? []) {
-      if (f.stato === 'pagata' || f.stato === 'bozza') continue
+      // solo quelle da pagare (prima comparivano anche le annullate)
+      if (f.stato !== 'in_attesa' && f.stato !== 'scaduta') continue
       const dataScad = f.data_scadenza ? new Date(f.data_scadenza) : null
       if (!dataScad) continue
       if (dataScad < inizioGiorno) scadute.push(f)
@@ -643,7 +647,7 @@ export default function AvvocatoDashboard() {
           <SectionCard
             title="Fatturazione"
             icon={Receipt}
-            link="/pagamenti"
+            link="/fatturazione"
           >
             {/* Hero stat: incassato + da incassare nel range */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -670,10 +674,10 @@ export default function AvvocatoDashboard() {
                     <EventoItem
                       key={f.id}
                       icon={FileText}
-                      titolo={`Fattura ${f.anno_numerazione}/${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_lordo))}`}
+                      titolo={`Fattura ${f.numero}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_netto ?? f.totale_lordo))}`}
                       badge={badgeUrgenza(gg)}
-                      link="/pagamenti"
+                      link={`/fatturazione/${f.id}`}
                       accent="red"
                     />
                   )
@@ -689,10 +693,10 @@ export default function AvvocatoDashboard() {
                     <EventoItem
                       key={f.id}
                       icon={FileText}
-                      titolo={`Fattura ${f.anno}/${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_lordo))}`}
+                      titolo={`Fattura ${f.numero}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_netto ?? f.totale_lordo))}`}
                       badge={badgeUrgenza(gg)}
-                      link="/pagamenti"
+                      link={`/fatturazione/${f.id}`}
                       accent="oro"
                     />
                   )

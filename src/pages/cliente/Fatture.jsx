@@ -1,4 +1,8 @@
 // src/pages/cliente/Fatture.jsx
+//
+// 04-10-2026: importo = il NETTO che il cliente paga (con la ritenuta d'acconto
+// il lordo non e' quanto deve versare); le scadute contano tra quelle da pagare;
+// le note di credito si vedono come tali e riducono il dovuto.
 
 import { useState, useEffect } from 'react'
 import { PageHeader, Badge } from '@/components/shared'
@@ -12,7 +16,11 @@ const STATO_CFG = {
     pagata: { label: 'Pagata', variant: 'salvia' },
     scaduta: { label: 'Scaduta', variant: 'red' },
     annullata: { label: 'Annullata', variant: 'gray' },
+    emessa: { label: 'Nota di credito', variant: 'gray' },
 }
+
+const isNC = f => f.tipo_documento === 'TD04'
+const netto = f => parseFloat(f.totale_netto ?? f.importo ?? 0)
 
 export default function ClienteFatture() {
     const { labelProfessionista } = useTipoStudio()
@@ -26,7 +34,7 @@ export default function ClienteFatture() {
             if (!user) return
             const { data } = await supabase
                 .from('fatture')
-                .select('id, numero, descrizione, importo, stato, data_emissione, data_scadenza, data_pagamento, pratica:pratica_id(titolo)')
+                .select('id, numero, descrizione, importo, totale_netto, stato, tipo_documento, fattura_origine_id, data_emissione, data_scadenza, data_pagamento, pratica:pratica_id(titolo)')
                 .eq('cliente_id', user.id)
                 .order('data_emissione', { ascending: false })
             setFatture(data ?? [])
@@ -36,7 +44,11 @@ export default function ClienteFatture() {
     }, [])
 
     const rows = fatture.filter(f => !statoF || f.stato === statoF)
-    const totaleAperto = fatture.filter(f => f.stato === 'in_attesa').reduce((a, f) => a + parseFloat(f.importo ?? 0), 0)
+    const notePer = {}
+    for (const n of fatture.filter(isNC)) notePer[n.fattura_origine_id] = (notePer[n.fattura_origine_id] ?? 0) + netto(n)
+    const totaleAperto = fatture
+        .filter(f => !isNC(f) && (f.stato === 'in_attesa' || f.stato === 'scaduta'))
+        .reduce((a, f) => a + Math.max(0, netto(f) - (notePer[f.id] ?? 0)), 0)
 
     return (
         <div className="space-y-5">
@@ -92,7 +104,7 @@ export default function ClienteFatture() {
                                             <span className="shrink-0"><Badge label={st.label} variant={st.variant} /></span>
                                         </div>
                                         <p className="font-display text-xl font-semibold text-oro">
-                                            {formatImporto(f.importo)}
+                                            {isNC(f) ? '- ' : ''}{formatImporto(netto(f))}
                                         </p>
                                         <p className="font-body text-sm text-nebbia/70 break-words">
                                             {f.pratica?.titolo ?? f.descrizione ?? '—'}
@@ -133,7 +145,7 @@ export default function ClienteFatture() {
                                                 {f.pratica?.titolo ?? f.descrizione ?? '—'}
                                             </td>
                                             <td className="px-4 py-3 font-display text-sm font-semibold text-oro">
-                                                {formatImporto(f.importo)}
+                                                {isNC(f) ? '- ' : ''}{formatImporto(netto(f))}
                                             </td>
                                             <td className="px-4 py-3 font-body text-xs text-nebbia/50 whitespace-nowrap">
                                                 {f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}

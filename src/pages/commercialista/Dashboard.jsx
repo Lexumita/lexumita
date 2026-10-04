@@ -86,7 +86,7 @@ export default function CommercialistaDashboard() {
 
       // Tutte le fatture del professionista (per KPI anno + scadenzario)
       supabase.from('fatture')
-        .select('totale_lordo, stato, data_emissione, data_scadenza')
+        .select('totale_lordo, totale_netto, stato, tipo_documento, data_emissione, data_scadenza')
         .eq('avvocato_id', profile.id),
 
       // Prossimi appuntamenti (7 giorni)
@@ -117,12 +117,15 @@ export default function CommercialistaDashboard() {
 
     const fatture = fattRes.data ?? []
     let fatturato = 0, incassato = 0, daIncassare = 0, scadute = 0
+    // 04-10-2026: note di credito in sottrazione; incassato e da incassare sul netto
     for (const f of fatture) {
       const imp = Number(f.totale_lordo) || 0
+      const netto = Number(f.totale_netto ?? f.totale_lordo) || 0
       const emessaQuestAnno = f.data_emissione?.startsWith(String(annoCorr))
+      if (f.tipo_documento === 'TD04') { if (emessaQuestAnno) fatturato -= imp; continue }
       if (emessaQuestAnno && f.stato !== 'bozza' && f.stato !== 'annullata') fatturato += imp
-      if (emessaQuestAnno && f.stato === 'pagata') incassato += imp
-      if (f.stato === 'in_attesa' || f.stato === 'scaduta') daIncassare += imp
+      if (emessaQuestAnno && f.stato === 'pagata') incassato += netto
+      if (f.stato === 'in_attesa' || f.stato === 'scaduta') daIncassare += netto
       if (f.stato === 'scaduta') scadute++
     }
     setFatt({ fatturato, incassato, daIncassare, scadute })
@@ -137,7 +140,7 @@ export default function CommercialistaDashboard() {
     for (const f of fatture) {
       if (f.stato === 'bozza' || f.stato === 'annullata' || !f.data_emissione) continue
       const b = buckets.find(b => f.data_emissione.startsWith(b.chiave))
-      if (b) b.tot += Number(f.totale_lordo) || 0
+      if (b) b.tot += (f.tipo_documento === 'TD04' ? -1 : 1) * (Number(f.totale_lordo) || 0)
     }
     setMesi(buckets)
 
