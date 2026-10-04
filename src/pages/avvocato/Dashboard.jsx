@@ -51,6 +51,64 @@ function badgeUrgenza(gg) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// FATTURE APERTE E MESSAGGI: helper
+// ─────────────────────────────────────────────────────────────
+
+// Quanto resta davvero da incassare, come la pagina Fatturazione: il netto meno
+// le note di credito (TD04) che stornano la fattura e i pagamenti già registrati.
+async function residuiFatture(fatture) {
+  const ids = fatture.map(f => f.id)
+  if (ids.length === 0) return {}
+  const [{ data: pag }, { data: note }] = await Promise.all([
+    supabase.from('pagamenti_fattura').select('fattura_id, importo').in('fattura_id', ids),
+    supabase
+      .from('fatture')
+      .select('fattura_origine_id, totale_netto, totale_lordo')
+      .eq('tipo_documento', 'TD04')
+      .in('fattura_origine_id', ids),
+  ])
+  const pagato = {}
+  for (const p of pag ?? []) pagato[p.fattura_id] = (pagato[p.fattura_id] ?? 0) + (Number(p.importo) || 0)
+  const stornato = {}
+  for (const n of note ?? []) {
+    stornato[n.fattura_origine_id] = (stornato[n.fattura_origine_id] ?? 0) + (Number(n.totale_netto ?? n.totale_lordo) || 0)
+  }
+  const residui = {}
+  for (const f of fatture) {
+    const dovuto = Math.max(0, (Number(f.totale_netto ?? f.totale_lordo) || 0) - (stornato[f.id] ?? 0))
+    residui[f.id] = Math.max(0, Math.round((dovuto - (pagato[f.id] ?? 0)) * 100) / 100)
+  }
+  return residui
+}
+
+// Ticket aperti con un cliente in cui l'ultimo messaggio è del cliente. Come la pagina
+// Assistenza: ticket_assistenza non ha cliente né avvocato, ma mittente e destinatario,
+// e `ultimo_mittente` non cambia quando si risponde, quindi conta l'autore dell'ultimo
+// messaggio (messaggi_ticket.autore_tipo).
+async function messaggiNonLetti(meId) {
+  const { data } = await supabase
+    .from('ticket_assistenza')
+    .select(`
+      id, oggetto, stato, updated_at,
+      mittente:mittente_id(nome, cognome, ragione_sociale, tipo_soggetto, role),
+      destinatario:destinatario_id(nome, cognome, ragione_sociale, tipo_soggetto, role),
+      messaggi:messaggi_ticket(autore_tipo, created_at)
+    `)
+    .or(`mittente_id.eq.${meId},destinatario_id.eq.${meId}`)
+    .eq('stato', 'aperto')
+    .order('updated_at', { ascending: false })
+  const out = []
+  for (const t of data ?? []) {
+    const cliente = t.mittente?.role === 'cliente' ? t.mittente : t.destinatario?.role === 'cliente' ? t.destinatario : null
+    if (!cliente) continue
+    const ultimo = [...(t.messaggi ?? [])].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))[0]
+    if (ultimo?.autore_tipo !== 'cliente') continue
+    out.push({ id: t.id, oggetto: t.oggetto, cliente, ultimo_messaggio_at: ultimo.created_at })
+  }
+  return out.sort((a, b) => (b.ultimo_messaggio_at ?? '').localeCompare(a.ultimo_messaggio_at ?? '')).slice(0, 5)
+}
+
+// ─────────────────────────────────────────────────────────────
 // RANGE DATE: helper
 // ─────────────────────────────────────────────────────────────
 function calcolaRange(preset, customStart, customEnd) {
@@ -378,17 +436,16 @@ export default function AvvocatoDashboard() {
     }
 
     // ─── Da incassare: TUTTO il debito attivo, indipendente dal periodo ───
-    // Tutte le fatture in attesa (anche scadute) escluso bozza/pagata/annullata
+    // Tutte le fatture in attesa (anche scadute) escluso bozza/pagata/annullata;
+    // 04-10-2026: meno pagamenti parziali e note di credito, come Fatturazione
     const { data: fattAttive } = await supabase
       .from('fatture')
-      .select('totale_lordo, totale_netto, stato, data_scadenza')
+      .select('id, totale_lordo, totale_netto, stato, data_scadenza')
       .eq('avvocato_id', profile.id)
       .in('stato', ['in_attesa', 'scaduta'])
 
-    const daIncassare = (fattAttive ?? []).reduce(
-      (sum, f) => sum + (Number(f.totale_netto ?? f.totale_lordo) || 0),
-      0
-    )
+    const residui = await residuiFatture(fattAttive ?? [])
+    const daIncassare = Object.values(residui).reduce((sum, r) => sum + r, 0)
 
     setPeriodo({
       pratiche_chiuse: countChiuse ?? 0,
@@ -406,7 +463,7 @@ export default function AvvocatoDashboard() {
     const fineGiorno = new Date(oggi); fineGiorno.setHours(23, 59, 59, 999)
     const fra7gg = new Date(oggi); fra7gg.setDate(fra7gg.getDate() + 7)
     const fra3gg = new Date(oggi); fra3gg.setDate(fra3gg.getDate() + 3); fra3gg.setHours(23, 59, 59, 999)
-    const fra14gg = new Date(oggi); fra14gg.setDate(fra14gg.getDate() + 14)
+    const fra14gg = new Date(oggi); fra14gg.setDate(fra14gg.getDate() + 14); fra14gg.setHours(23, 59, 59, 999)
 
     // OGGI
     const { data: appOggi } = await supabase
@@ -437,8 +494,10 @@ export default function AvvocatoDashboard() {
             `)
       .eq('avvocato_id', profile.id)
       .eq('stato', 'aperta')
-      .or(`prossima_udienza.gte.${oggi.toISOString()},prossima_udienza.lte.${fra14gg.toISOString()}`)
-      .order('prossima_udienza', { ascending: true, nullsFirst: false })
+      // udienza da oggi a fra 14 giorni (prima con .or() passavano tutte le date)
+      .gte('prossima_udienza', inizioGiorno.toISOString())
+      .lte('prossima_udienza', fra14gg.toISOString())
+      .order('prossima_udienza', { ascending: true })
       .limit(5)
 
     // FATTURE in attesa (scadute + in scadenza 3gg) - NO range, è agenda
@@ -462,22 +521,14 @@ export default function AvvocatoDashboard() {
       if (dataScad < inizioGiorno) scadute.push(f)
       else if (dataScad <= fra3gg) inScadenza.push(f)
     }
-    scadute = scadute.slice(0, 5)
-    inScadenza = inScadenza.slice(0, 4)
+    // quanto resta da incassare di ognuna (meno pagamenti parziali e note di credito)
+    const residuiAgenda = await residuiFatture([...scadute, ...inScadenza])
+    const conResiduo = f => ({ ...f, _residuo: residuiAgenda[f.id] ?? 0 })
+    scadute = scadute.map(conResiduo).filter(f => f._residuo > 0.01).slice(0, 5)
+    inScadenza = inScadenza.map(conResiduo).filter(f => f._residuo > 0.01).slice(0, 4)
 
     // MESSAGGI
-    const { data: tickets } = await supabase
-      .from('ticket_assistenza')
-      .select(`
-                id, oggetto, ultimo_messaggio_at, stato,
-                cliente:cliente_id(nome, cognome, ragione_sociale, tipo_soggetto),
-                ultimo_messaggio_autore_id
-            `)
-      .eq('avvocato_id', profile.id)
-      .neq('ultimo_messaggio_autore_id', profile.id)
-      .in('stato', ['aperto', 'in_lavorazione'])
-      .order('ultimo_messaggio_at', { ascending: false })
-      .limit(5)
+    const tickets = await messaggiNonLetti(profile.id)
 
     setEventiOggi(appOggi ?? [])
     setEventiSettimana(appSettimana ?? [])
@@ -675,7 +726,7 @@ export default function AvvocatoDashboard() {
                       key={f.id}
                       icon={FileText}
                       titolo={`Fattura ${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_netto ?? f.totale_lordo))}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f._residuo))}`}
                       badge={badgeUrgenza(gg)}
                       link={`/fatturazione/${f.id}`}
                       accent="red"
@@ -694,7 +745,7 @@ export default function AvvocatoDashboard() {
                       key={f.id}
                       icon={FileText}
                       titolo={`Fattura ${f.numero}`}
-                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f.totale_netto ?? f.totale_lordo))}`}
+                      sottotitolo={`${nomeCliente(f.cliente)} - ${formatPrezzo(Math.round(f._residuo))}`}
                       badge={badgeUrgenza(gg)}
                       link={`/fatturazione/${f.id}`}
                       accent="oro"
