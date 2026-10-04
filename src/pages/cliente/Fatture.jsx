@@ -2,11 +2,12 @@
 //
 // 04-10-2026: importo = il NETTO che il cliente paga (con la ritenuta d'acconto
 // il lordo non e' quanto deve versare); le scadute contano tra quelle da pagare;
-// le note di credito si vedono come tali e riducono il dovuto.
+// le note di credito si vedono come tali e riducono il dovuto; il PDF si
+// scarica (policy fatture_pdf_select_cliente).
 
 import { useState, useEffect } from 'react'
 import { PageHeader, Badge } from '@/components/shared'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useTipoStudio } from '@/hooks/useTipoStudio'
 import { formatImporto } from '@/lib/prezzi'
@@ -27,6 +28,8 @@ export default function ClienteFatture() {
     const [fatture, setFatture] = useState([])
     const [loading, setLoading] = useState(true)
     const [statoF, setStatoF] = useState('')
+    const [scaricando, setScaricando] = useState(null)
+    const [errore, setErrore] = useState('')
 
     useEffect(() => {
         async function carica() {
@@ -34,7 +37,7 @@ export default function ClienteFatture() {
             if (!user) return
             const { data } = await supabase
                 .from('fatture')
-                .select('id, numero, descrizione, importo, totale_netto, stato, tipo_documento, fattura_origine_id, data_emissione, data_scadenza, data_pagamento, pratica:pratica_id(titolo)')
+                .select('id, numero, descrizione, importo, totale_netto, stato, tipo_documento, fattura_origine_id, data_emissione, data_scadenza, data_pagamento, pdf_storage_path, pratica:pratica_id(titolo)')
                 .eq('cliente_id', user.id)
                 .order('data_emissione', { ascending: false })
             setFatture(data ?? [])
@@ -50,9 +53,33 @@ export default function ClienteFatture() {
         .filter(f => !isNC(f) && (f.stato === 'in_attesa' || f.stato === 'scaduta'))
         .reduce((a, f) => a + Math.max(0, netto(f) - (notePer[f.id] ?? 0)), 0)
 
+    async function scaricaPdf(f) {
+        setErrore(''); setScaricando(f.id)
+        try {
+            const { data, error } = await supabase.storage.from('fatture').createSignedUrl(f.pdf_storage_path, 3600)
+            if (error || !data?.signedUrl) throw new Error('Download non riuscito, riprova.')
+            window.open(data.signedUrl, '_blank')
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setScaricando(null)
+        }
+    }
+
+    const bottonePdf = f => f.pdf_storage_path ? (
+        <button onClick={() => scaricaPdf(f)} disabled={scaricando === f.id}
+            className="inline-flex items-center gap-1.5 min-h-[36px] font-body text-xs text-oro border border-oro/30 px-2.5 py-1 hover:bg-oro/10 transition-colors disabled:opacity-40">
+            <Download size={12} /> PDF
+        </button>
+    ) : null
+
     return (
         <div className="space-y-5">
             <PageHeader label="Portale cliente" title="Fatture" />
+
+            {errore && (
+                <div className="font-body text-xs text-red-400 p-3 bg-red-900/10 border border-red-500/20">{errore}</div>
+            )}
 
             {totaleAperto > 0 && (
                 <div className="bg-amber-900/10 border border-amber-500/20 p-4 flex items-center gap-3">
@@ -120,6 +147,7 @@ export default function ClienteFatture() {
                                                 {f.data_emissione ? new Date(f.data_emissione).toLocaleDateString('it-IT') : '—'}
                                             </span>
                                         </div>
+                                        {bottonePdf(f)}
                                     </div>
                                 )
                             })}
@@ -130,7 +158,7 @@ export default function ClienteFatture() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/5">
-                                    {['Numero', 'Descrizione', 'Importo', 'Emissione', 'Scadenza', 'Stato'].map(h => (
+                                    {['Numero', 'Descrizione', 'Importo', 'Emissione', 'Scadenza', 'Stato', 'PDF'].map(h => (
                                         <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                                     ))}
                                 </tr>
@@ -154,6 +182,7 @@ export default function ClienteFatture() {
                                                 {f.data_scadenza ? new Date(f.data_scadenza).toLocaleDateString('it-IT') : '—'}
                                             </td>
                                             <td className="px-4 py-3"><Badge label={st.label} variant={st.variant} /></td>
+                                            <td className="px-4 py-3">{bottonePdf(f) ?? <span className="font-body text-xs text-nebbia/25">—</span>}</td>
                                         </tr>
                                     )
                                 })}
