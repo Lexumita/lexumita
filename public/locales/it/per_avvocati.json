@@ -246,11 +246,11 @@
     "title": "Sistema di, <hl>Fatturazione.</hl>",
     "subtitle": "Le fatture, si emettono in pochi click. La contabilita dello studio assieme a clienti, pratiche e documenti, vivono all'interno dello stesso ambiente.",
     "feature_title": "Fatture professionali, gia pronte.",
-    "feature_text": "Ogni fattura nasce collegata a una pratica e a un cliente. Lexum calcola automaticamente IVA, CPA forense e ritenuta d'acconto. La numerazione e progressiva per anno. Il PDF e generato in formato compatibile SDI, pronto per il tuo commercialista o per il Sistema di Interscambio.",
+    "feature_text": "Ogni fattura nasce collegata a una pratica e a un cliente. Lexum calcola automaticamente IVA, CPA forense e ritenuta d'acconto. La numerazione e progressiva per anno. Il PDF è pronto per il cliente e il file XML FatturaPA per il Sistema di Interscambio o per il tuo commercialista.",
     "points": [
       "Calcoli automatici IVA, CPA, ritenuta",
       "Numerazione progressiva annuale",
-      "PDF compatibile SDI",
+      "XML FatturaPA pronto per lo SDI",
       "Archiviazione automatica nell archivio dello studio"
     ],
     "visual_label": "Fattura 2026/048 - Mario Rossi",
@@ -293,7 +293,7 @@
     ],
     "total_label": "Totale netto da pagare",
     "total": "2.672,00 €",
-    "sdi_note": "PDF generato in formato SDI - archiviato in <hl>Archivio > Fatture > 2026</hl>",
+    "sdi_note": "XML FatturaPA pronto per lo SDI, PDF archiviato in <hl>Archivio > Fatture > 2026</hl>",
     "scadenzario": {
       "title": "Scadenzario sotto controllo",
       "text": "Vedi a colpo d occhio chi deve pagare, cosa e scaduto, cosa e in arrivo. Stati colorati per fattura: in attesa, pagata, scaduta.",

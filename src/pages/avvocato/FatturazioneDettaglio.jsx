@@ -11,7 +11,7 @@ import { BackButton, Badge } from '@/components/shared'
 import {
     FileText, Download, Trash2, Plus, Check, AlertCircle, X,
     Building2, User, Calendar, CreditCard, Edit2, Loader2,
-    FileSignature, Wallet, Archive, Undo2
+    FileSignature, Wallet, Archive, Undo2, FileCode
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
@@ -530,6 +530,9 @@ export default function AvvocatoFatturazioneDettaglio() {
 
     const [generandoPdf, setGenerandoPdf] = useState(false)
     const [scaricandoPdf, setScaricandoPdf] = useState(false)
+    const [scaricandoXml, setScaricandoXml] = useState(false)
+    const [mancaXml, setMancaXml] = useState([])
+    const [xmlScaricato, setXmlScaricato] = useState(false)
     const [modalPagamento, setModalPagamento] = useState(false)
     const [modalElimina, setModalElimina] = useState(false)
     const [modalScollega, setModalScollega] = useState(false)
@@ -593,6 +596,38 @@ export default function AvvocatoFatturazioneDettaglio() {
             setErrore(err.message)
         } finally {
             setScaricandoPdf(false)
+        }
+    }
+
+    // XML FatturaPA (04-10-2026): da caricare su «Fatture e Corrispettivi» o da dare
+    // al commercialista. Se mancano dati, la funzione dice quali.
+    async function scaricaXml() {
+        setScaricandoXml(true); setErrore(''); setMancaXml([]); setXmlScaricato(false)
+        try {
+            const { data, error } = await supabase.functions.invoke('genera-fattura-xml', {
+                body: { fattura_id: id }
+            })
+            if (error || !data?.ok) {
+                let corpo = data
+                if (!corpo) {
+                    try { corpo = await error?.context?.json?.() } catch { /* corpo non JSON */ }
+                }
+                if (corpo?.mancano?.length) { setMancaXml(corpo.mancano); return }
+                throw new Error(corpo?.error ?? error?.message ?? 'Generazione XML non riuscita')
+            }
+            const url = URL.createObjectURL(new Blob([data.xml], { type: 'application/xml' }))
+            const a = document.createElement('a')
+            a.href = url
+            a.download = data.nome_file
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+            setXmlScaricato(true)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setScaricandoXml(false)
         }
     }
 
@@ -716,6 +751,18 @@ export default function AvvocatoFatturazioneDettaglio() {
                     </>
                 )}
 
+                <button
+                    onClick={scaricaXml}
+                    disabled={scaricandoXml}
+                    className="flex items-center gap-2 px-4 py-2 border border-white/10 text-nebbia/60 hover:border-oro/30 hover:text-oro font-body text-sm transition-colors disabled:opacity-40"
+                    title="File XML FatturaPA da caricare su Fatture e Corrispettivi dell'Agenzia delle Entrate"
+                >
+                    {scaricandoXml
+                        ? <><Loader2 size={14} className="animate-spin" /> Preparo l'XML...</>
+                        : <><FileCode size={14} /> XML FatturaPA</>
+                    }
+                </button>
+
                 <div className="hidden lg:block flex-1" />
 
                 {stornabile && (
@@ -737,6 +784,25 @@ export default function AvvocatoFatturazioneDettaglio() {
                     </button>
                 )}
             </div>
+
+            {mancaXml.length > 0 && (
+                <div className="bg-amber-900/10 border border-amber-500/30 p-4 space-y-2">
+                    <p className="font-body text-sm text-amber-400">Per preparare l'XML sistema prima:</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                        {mancaXml.map(m => <li key={m} className="font-body text-xs text-amber-400/80">{m}</li>)}
+                    </ul>
+                    <p className="font-body text-xs text-nebbia/40">
+                        I dati dello studio sono nel <Link to="/profilo" className="underline hover:text-oro">Profilo</Link>,
+                        quelli del cliente nella sua <Link to={`/clienti/${fattura.cliente?.id}`} className="underline hover:text-oro">scheda</Link>.
+                    </p>
+                </div>
+            )}
+
+            {xmlScaricato && (
+                <p className="font-body text-xs text-salvia/80 -mt-2">
+                    XML scaricato: caricalo su «Fatture e Corrispettivi» dell'Agenzia delle Entrate (Fatturazione elettronica, Trasmissione) oppure mandalo al tuo commercialista.
+                </p>
+            )}
 
             {emessa && !isNC && fattura.stato !== 'annullata' && (
                 <p className="font-body text-xs text-nebbia/35 -mt-2">
