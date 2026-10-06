@@ -26,8 +26,8 @@
   "fonti": {
     "label": "Banca dati",
     "title": "Una banca dati verificata, <hl>aggiornata ogni settimana.</hl>",
-    "weekly_badge": "Aggiornamento settimanale al testo vigente",
-    "anti_noise": "Fonti verificate. Niente ricerca web casuale, niente fonti generaliste."
+    "weekly_badge": "Ogni settimana: normativa italiana ed europea allineata al testo vigente, nuove sentenze e nuova prassi delle autorità.",
+    "anti_noise": "Lex AI consulta oltre 4,5 milioni di documenti verificati, suddivisi tra giurisprudenza, normativa italiana ed europea, prassi delle autorità e contributi professionali. Niente ricerca web casuale, niente fonti generaliste."
   },
   "database_card": {
     "label": "Banca dati",

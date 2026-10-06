@@ -7,7 +7,7 @@ import LexAnimatedDemo from '@/components/LexAnimatedDemo'
 import {
   ArrowRight, Sparkles, ChevronDown, ChevronLeft, ChevronRight,
   Check, Search, Briefcase, FileText, MessageSquare, Brain,
-  BookOpen, Users, Bookmark, Library, X
+  BookOpen, Users, Bookmark, Library, RefreshCw, X
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation, Trans } from 'react-i18next'
@@ -157,6 +157,22 @@ function HeroDatabaseCard() {
           <p className="font-body text-sm text-oro/80 leading-relaxed">
             {t('database_card.open_access')}
           </p>
+
+          {/* Aggiornamento settimanale e claim anti-rumore, sotto «aperti a chiunque» (come su CH) */}
+          <div className="mt-5 space-y-3">
+            <div className="bg-salvia/5 border border-salvia/20 p-4 flex items-start gap-3">
+              <RefreshCw size={15} className="text-salvia shrink-0 mt-0.5" />
+              <p className="font-body text-sm text-salvia/90 font-medium leading-relaxed">
+                {t('fonti.weekly_badge')}
+              </p>
+            </div>
+            <div className="bg-oro/5 border border-oro/15 p-4 flex items-start gap-3">
+              <Library size={15} className="text-oro shrink-0 mt-0.5" />
+              <p className="font-body text-sm text-nebbia/55 leading-relaxed">
+                {t('fonti.anti_noise')}
+              </p>
+            </div>
+          </div>
         </div>
         <div className="space-y-2">
           {t('database_card.items', { returnObjects: true }).map(({ t: titolo, s }) => (
@@ -334,18 +350,9 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-12 max-w-2xl mx-auto">
             <SectionLabel>{t('fonti.label')}</SectionLabel>
-            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-5">
+            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia">
               <Trans t={t} i18nKey="fonti.title" components={{ hl: <span className="text-oro" /> }} />
             </h2>
-            <div className="flex justify-center mb-4">
-              <span className="inline-flex items-center gap-2 font-body text-xs px-3 py-1.5 bg-salvia/10 border border-salvia/25 text-salvia">
-                <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-                {t('fonti.weekly_badge')}
-              </span>
-            </div>
-            <p className="font-body text-sm text-oro/80 leading-relaxed">
-              {t('fonti.anti_noise')}
-            </p>
           </FadeIn>
 
           <FadeIn delay={0.1}>
