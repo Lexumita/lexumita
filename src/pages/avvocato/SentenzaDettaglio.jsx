@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext'
 import { BackButton, PageHeader, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import EtichetteAssegnate from '@/components/EtichetteAssegnate'
+import AttiCollegati from '@/components/AttiCollegati'
 import {
     FileText, Calendar, Gavel, BookOpen, Scale,
     AlertCircle, CheckCircle, Lock, Search, Save,
@@ -32,7 +33,11 @@ function labelTipoProvvedimento(t) {
         sentenza: 'Sentenza',
         ordinanza: 'Ordinanza',
         ordinanza_interlocutoria: 'Ord. interlocutoria',
+        decreto: 'Decreto',
         decreto_presidenziale: 'Decreto presidenziale',
+        parere: 'Parere',
+        decisione: 'Decisione',
+        dispositivo: 'Dispositivo',
         rassegna: 'Rassegna',
         relazione: 'Relazione',
     }
@@ -674,6 +679,9 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     </div>
                 </div>
             )}
+
+            {/* Ordinanze dello stesso orientamento (05/10/2026: ordinanze 2000-2009 raggruppate) */}
+            {fonte === 'lexum' && <AttiCollegati tipo="ordinanze" id={s.id} />}
 
             {/* Testo integrale (dietro paywall) */}
             {mostraTestoIntegrale && s.testo_integrale && (

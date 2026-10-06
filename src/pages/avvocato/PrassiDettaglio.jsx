@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { BackButton, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import EtichetteAssegnate from '@/components/EtichetteAssegnate'
+import AttiCollegati from '@/components/AttiCollegati'
 import {
     FileText, Calendar, BookOpen, Scale,
     AlertCircle, CheckCircle, Search, Save,
@@ -303,6 +304,9 @@ export default function PrassiDettaglio() {
                     </p>
                 </div>
             )}
+
+            {/* Decisioni ABF dello stesso orientamento (05/10/2026) */}
+            {p.fonte === 'abf' && <AttiCollegati tipo="abf" id={p.id} />}
 
             {/* Categorie Lex */}
             {(p.categorie_lex ?? []).length > 0 && (
