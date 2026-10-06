@@ -22,6 +22,36 @@ const SOGLIA_CREDITI_BASSI = 0.20    // 20%
 const SOGLIA_STORAGE_PIENO = 0.90    // 90%
 const GIORNI_AVVISO_STORAGE = 7
 
+// Collaboratori: il database risponde con un codice (funzioni studio_*), qui la frase.
+const ERRORI_STUDIO = {
+    NON_AUTENTICATO: 'Sessione scaduta: accedi di nuovo.',
+    NON_PROFESSIONISTA: 'Solo un professionista può invitare collaboratori.',
+    SEI_COLLABORATORE: 'Fai parte di uno studio: solo il titolare può invitare collaboratori.',
+    EMAIL_MANCANTE: 'Email obbligatoria',
+    NON_TROVATO: 'Nessuna persona con il tuo stesso ruolo è iscritta a Lexum con questa email.',
+    TE_STESSO: 'Questa è la tua email: inserisci quella della persona da invitare.',
+    GIA_IN_STUDIO: 'Questa persona fa già parte di uno studio.',
+    HA_UN_SUO_STUDIO: 'Questa persona ha già dei collaboratori nel suo studio.',
+    GIA_INVITATO: "Hai già invitato questa persona: l'invito aspetta una risposta.",
+    POSTI_ESAURITI: 'Non hai posti liberi: aggiungi accessi per invitare altri collaboratori.',
+    INVITO_NON_TROVATO: 'Invito non trovato.',
+    INVITO_CHIUSO: 'A questo invito è già stata data una risposta.',
+    INVITO_SCADUTO: "L'invito è scaduto: chiedi di mandartene uno nuovo.",
+    STUDIO_NON_DISPONIBILE: 'Questo studio non accetta più collaboratori.',
+    RUOLO_DIVERSO: 'Puoi entrare solo nello studio di un professionista con il tuo stesso ruolo.',
+    HAI_COLLABORATORI: 'Hai dei collaboratori nel tuo studio: per entrare in un altro studio devi prima toglierli.',
+    STUDIO_PIENO: 'Lo studio non ha più posti liberi: chiedi al titolare di aggiungerne.',
+    HAI_CLIENTI: 'Hai già dei clienti tuoi: per ora può entrare in uno studio solo un account senza clienti.',
+    SENZA_STUDIO: 'Per invitare collaboratori serve un piano attivo con più accessi.',
+    NON_COLLABORATORE: 'Questa persona non fa parte dello studio.',
+    ACCESSO_NEGATO: 'Operazione non consentita.',
+    ERRORE: 'Qualcosa è andato storto: riprova.',
+}
+
+function testoErrore(esito, ripiego = ERRORI_STUDIO.ERRORE) {
+    return (esito?.codice && ERRORI_STUDIO[esito.codice]) || ripiego
+}
+
 function giorniAllaScadenza(dataStr) {
     if (!dataStr) return null
     return Math.ceil((new Date(dataStr) - new Date()) / (1000 * 60 * 60 * 24))
@@ -435,8 +465,13 @@ function CollaboRow({ collabo, isTitolare, meId, onRefresh }) {
     const isMe = collabo.id === meId
 
     async function rimuovi() {
-        if (!confirm(`Rimuovere ${collabo.nome} ${collabo.cognome} dallo studio?`)) return
-        await supabase.from('profiles').update({ titolare_id: null, tipo_account: 'singolo' }).eq('id', collabo.id)
+        if (!confirm(`Rimuovere ${collabo.nome} ${collabo.cognome} dallo studio? Quello che ha registrato nello studio (clienti, pratiche, documenti) resta allo studio.`)) return
+        // Dal server: il browser non può scrivere sul profilo di un altro utente
+        const { data, error } = await supabase.rpc('studio_rimuovi_collaboratore', { p_collaboratore: collabo.id })
+        if (error || !data?.ok) {
+            alert(testoErrore(data))
+            return
+        }
         onRefresh()
     }
 
@@ -565,7 +600,7 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
 // PAGINA PRINCIPALE — dual role: user + avvocato
 // ─────────────────────────────────────────────────────────────
 export default function AvvocatoStudio() {
-    const { profile: authProfile } = useAuth()
+    const { profile: authProfile, refreshProfile } = useAuth()
     const isUser = authProfile?.role === 'user'
 
     // ── HOOKS ─────────────────────────────────────────────────
@@ -580,6 +615,10 @@ export default function AvvocatoStudio() {
     const [emailInvito, setEmailInvito] = useState('')
     const [inviando, setInviando] = useState(false)
     const [erroreInvito, setErroreInvito] = useState('')
+    // Collaboratori, inviti e posti: li decide e li racconta il database
+    const [squadra, setSquadra] = useState(null)
+    const [erroreSquadra, setErroreSquadra] = useState('')
+    const [inRisposta, setInRisposta] = useState(false)
     const [editNome, setEditNome] = useState(false)
     const [nomeStudio, setNomeStudio] = useState('')
 
@@ -604,11 +643,10 @@ export default function AvvocatoStudio() {
         setNomeStudio(p?.studio ?? '')
 
         if (!isUser) {
-            const { data: cl } = await supabase
-                .from('profiles')
-                .select('id, nome, cognome, email')
-                .eq('titolare_id', meId)
-            setCollaboratori(cl ?? [])
+            // Collaboratori, inviti spediti e ricevuti, posti: una sola fonte, il database
+            const { data: stato } = await supabase.rpc('studio_stato_collaboratori')
+            setSquadra(stato ?? null)
+            setCollaboratori(stato?.collaboratori ?? [])
 
             // Quota crediti AI (somma per tipo)
             const now = new Date().toISOString()
@@ -721,7 +759,7 @@ export default function AvvocatoStudio() {
                 }
             )
             const json = await res.json()
-            if (!json.ok) throw new Error(json.error ?? 'Errore invio invito')
+            if (!json.ok) throw new Error(testoErrore(json, 'Errore invio invito'))
             setInviatoOk(true)
             setEmailInvito('')
             setShowInvita(false)
@@ -730,6 +768,45 @@ export default function AvvocatoStudio() {
             setErroreInvito(err.message)
         } finally {
             setInviando(false)
+        }
+    }
+
+    async function rispondiInvito(invitoId, accetta) {
+        if (!accetta && !confirm("Rifiutare l'invito?")) return
+        setErroreSquadra('')
+        setInRisposta(true)
+        try {
+            const { data, error } = await supabase.rpc('studio_rispondi_invito', { p_invito: invitoId, p_accetta: accetta })
+            if (error || !data?.ok) return setErroreSquadra(testoErrore(data))
+            // Entrando cambiano titolare e studio: menu, quote e archivio seguono lo studio
+            if (accetta) await refreshProfile?.()
+            carica()
+        } finally {
+            setInRisposta(false)
+        }
+    }
+
+    async function annullaInvito(invitoId) {
+        setErroreSquadra('')
+        const { data, error } = await supabase.rpc('studio_annulla_invito', { p_invito: invitoId })
+        if (error || !data?.ok) return setErroreSquadra(testoErrore(data))
+        carica()
+    }
+
+    async function lasciaStudio() {
+        const tit = squadra?.titolare
+        if (!tit) return
+        const nome = `${tit.nome ?? ''} ${tit.cognome ?? ''}`.trim()
+        if (!confirm(`Lasciare lo studio di ${nome}? Quello che hai registrato nello studio (clienti, pratiche, documenti) resta allo studio.`)) return
+        setErroreSquadra('')
+        setInRisposta(true)
+        try {
+            const { data, error } = await supabase.rpc('studio_rimuovi_collaboratore', { p_collaboratore: meId })
+            if (error || !data?.ok) return setErroreSquadra(testoErrore(data))
+            await refreshProfile?.()
+            carica()
+        } finally {
+            setInRisposta(false)
         }
     }
 
@@ -749,6 +826,8 @@ export default function AvvocatoStudio() {
     const postiAcquistati = profilo?.posti_acquistati ?? 0
     const postiUsati = profilo?.posti_usati ?? 0
     const postiLiberi = postiAcquistati - postiUsati
+    // Per invitare conta il database: anche gli inviti in attesa tengono un posto
+    const postiPerInviti = squadra?.posti?.liberi ?? Math.max(0, postiLiberi)
     const haStudio = !isUser && postiAcquistati > 1
     const isTitolare = profilo?.tipo_account === 'titolare' || profilo?.tipo_account === 'singolo'
     const hasPiano = !!profilo?.piano_id
@@ -791,8 +870,60 @@ export default function AvvocatoStudio() {
             {inviatoOk && (
                 <div className="flex items-center gap-2 p-3 bg-salvia/5 border border-salvia/20">
                     <CheckCircle size={14} className="text-salvia shrink-0" />
-                    <p className="font-body text-sm text-salvia">Operazione completata con successo.</p>
+                    <p className="font-body text-sm text-salvia">Invito inviato: diventa effettivo quando viene accettato.</p>
                     <button onClick={() => setInviatoOk(false)} className="ml-auto text-nebbia/30 hover:text-nebbia"><X size={14} /></button>
+                </div>
+            )}
+
+            {erroreSquadra && (
+                <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+                    <AlertCircle size={14} className="shrink-0" /> {erroreSquadra}
+                    <button onClick={() => setErroreSquadra('')} className="ml-auto text-nebbia/30 hover:text-nebbia"><X size={14} /></button>
+                </div>
+            )}
+
+            {/* Inviti ricevuti: in uno studio si entra solo accettando */}
+            {(squadra?.inviti_ricevuti ?? []).map(inv => (
+                <div key={inv.id} className="bg-slate border border-oro/25 p-5 space-y-4">
+                    <div className="flex items-start gap-3">
+                        <UserPlus size={16} className="text-oro shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                            <p className="font-body text-sm font-medium text-nebbia">Invito in uno studio</p>
+                            <p className="font-body text-sm text-nebbia/70">
+                                {`${inv.nome ?? ''} ${inv.cognome ?? ''}`.trim()}{inv.studio ? ` (${inv.studio})` : ''} ti invita a lavorare nel suo studio su Lexum.
+                            </p>
+                            <p className="font-body text-xs text-nebbia/45 leading-relaxed">
+                                Se accetti, lavorerai nello studio: vedrai i suoi clienti e il suo lavoro, e quello che registri da quel momento (clienti, pratiche, documenti) sarà dello studio e conterà nel piano del titolare. Potrai lasciare lo studio quando vuoi.
+                            </p>
+                            <p className="font-body text-xs text-nebbia/30">
+                                Vale fino al {new Date(inv.scade_il).toLocaleDateString('it-IT')}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <button onClick={() => rispondiInvito(inv.id, true)} disabled={inRisposta}
+                            className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40">
+                            <Check size={13} /> Accetta
+                        </button>
+                        <button onClick={() => rispondiInvito(inv.id, false)} disabled={inRisposta}
+                            className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-40">
+                            <X size={13} /> Rifiuta
+                        </button>
+                    </div>
+                </div>
+            ))}
+
+            {/* Collaboratore di uno studio */}
+            {squadra?.titolare && (
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-salvia/5 border border-salvia/20">
+                    <CheckCircle size={14} className="text-salvia shrink-0" />
+                    <p className="font-body text-sm text-nebbia/70 flex-1 min-w-0">
+                        Fai parte dello studio di {`${squadra.titolare.nome ?? ''} ${squadra.titolare.cognome ?? ''}`.trim()}{squadra.titolare.studio ? ` (${squadra.titolare.studio})` : ''}.
+                    </p>
+                    <button onClick={lasciaStudio} disabled={inRisposta}
+                        className="font-body text-xs text-nebbia/40 hover:text-red-400 transition-colors whitespace-nowrap disabled:opacity-40">
+                        Lascia lo studio
+                    </button>
                 </div>
             )}
 
@@ -1044,16 +1175,16 @@ export default function AvvocatoStudio() {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="font-body text-sm text-nebbia/40">
-                            {collaboratori.length} {collaboratori.length === 1 ? 'collaboratore' : 'collaboratori'} · {postiLiberi} posti liberi
+                            {collaboratori.length} {collaboratori.length === 1 ? 'collaboratore' : 'collaboratori'} · {postiPerInviti} {postiPerInviti === 1 ? 'posto libero' : 'posti liberi'}
                         </p>
-                        {isTitolare && postiLiberi > 0 && (
+                        {isTitolare && postiPerInviti > 0 && (
                             <button onClick={() => setShowInvita(v => !v)} className="btn-primary text-sm flex items-center gap-2">
                                 <UserPlus size={14} /> Invita collaboratore
                             </button>
                         )}
                     </div>
 
-                    {postiLiberi === 0 && (
+                    {postiPerInviti === 0 && (
                         <div className="flex items-center gap-3 p-3 bg-oro/5 border border-oro/15">
                             <CreditCard size={14} className="text-oro/60 shrink-0" />
                             <p className="font-body text-xs text-nebbia/50 flex-1">Hai esaurito gli accessi.</p>
@@ -1092,6 +1223,30 @@ export default function AvvocatoStudio() {
                             <CollaboRow key={c.id} collabo={c} isTitolare={isTitolare} meId={meId} onRefresh={carica} />
                         ))}
                     </div>
+
+                    {/* Inviti spediti: tengono il posto finché non arriva una risposta */}
+                    {(squadra?.inviti_inviati ?? []).length > 0 && (
+                        <div className="space-y-2">
+                            <p className="section-label">Inviti in attesa di risposta</p>
+                            {squadra.inviti_inviati.map(inv => (
+                                <div key={inv.id} className="border border-white/5 p-4 flex items-center gap-4">
+                                    <Clock size={14} className="text-amber-400/70 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-body text-sm text-nebbia">{inv.nome} {inv.cognome}</p>
+                                        <p className="font-body text-xs text-nebbia/40">
+                                            {inv.email} · Vale fino al {new Date(inv.scade_il).toLocaleDateString('it-IT')}
+                                        </p>
+                                    </div>
+                                    {isTitolare && (
+                                        <button onClick={() => annullaInvito(inv.id)}
+                                            className="font-body text-xs text-nebbia/25 hover:text-red-400 transition-colors whitespace-nowrap">
+                                            Ritira invito
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
