@@ -236,7 +236,7 @@ export function UserVerifica() {
                         <p className="font-body text-sm font-medium text-nebbia">Quello che stai già usando</p>
                     </div>
                     <ul className="space-y-1.5 font-body text-xs text-nebbia/50 leading-relaxed">
-                        <li>· Banca dati: 4 milioni di documenti giuridici</li>
+                        <li>· Banca dati: oltre 4,5 milioni di documenti giuridici</li>
                         <li>· Lex AI: ricerca ragionata sulle fonti</li>
                         <li>· Ricerche salvate ed etichette</li>
                     </ul>

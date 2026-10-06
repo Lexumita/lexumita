@@ -80,7 +80,7 @@ export default function Login() {
             </p>
             <div className="space-y-2 max-w-md">
               {[
-                { t: 'Lex AI e banca dati', s: 'Oltre 4 milioni di documenti giuridici e fiscali, con le fonti verificate' },
+                { t: 'Lex AI e banca dati', s: 'Oltre 4,5 milioni di documenti giuridici e fiscali, con le fonti verificate' },
                 { t: 'Agenda e scadenze', s: 'Udienze, appuntamenti e termini, sincronizzati con Google Calendar' },
                 { t: 'Pratiche e clienti', s: 'Fascicoli, documenti e portale cliente in un posto solo' },
                 { t: 'Fatturazione', s: 'Parcelle sui parametri forensi e fatture in pochi passaggi' },

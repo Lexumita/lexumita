@@ -1,16 +1,16 @@
 {
   "meta": {
     "title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
-    "description": "Lex AI: l'AI italiana su banca dati verificata, oltre 4 milioni di documenti giuridici e fiscali, per avvocati e commercialisti. Ragionamento strutturato, fonti verificate, dentro una piattaforma completa.",
+    "description": "Lex AI: l'AI italiana su banca dati verificata, oltre 4,5 milioni di documenti giuridici e fiscali, per avvocati e commercialisti. Ragionamento strutturato, fonti verificate, dentro una piattaforma completa.",
     "og_title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
-    "og_description": "Banca dati verificata, oltre 4 milioni di documenti, ragionamento strutturato. Per avvocati e commercialisti italiani.",
+    "og_description": "Banca dati verificata, oltre 4,5 milioni di documenti, ragionamento strutturato. Per avvocati e commercialisti italiani.",
     "twitter_title": "Lex AI — L'AI italiana per il diritto e il fisco | Lexum",
-    "twitter_description": "Banca dati verificata, oltre 4 milioni di documenti, per avvocati e commercialisti italiani."
+    "twitter_description": "Banca dati verificata, oltre 4,5 milioni di documenti, per avvocati e commercialisti italiani."
   },
   "hero": {
     "badge": "Lex AI · V2",
     "title": "L'AI italiana che ragiona su <br/><hl>diritto e fisco.</hl>",
-    "subtitle": "Fonti verificate, oltre 4 milioni di documenti giuridici e fiscali, ragionamento strutturato. Dentro una piattaforma completa per avvocati e commercialisti.",
+    "subtitle": "Fonti verificate, oltre 4,5 milioni di documenti giuridici e fiscali, ragionamento strutturato. Dentro una piattaforma completa per avvocati e commercialisti.",
     "carousel": {
       "prev": "Sessione precedente",
       "next": "Sessione successiva",
@@ -31,7 +31,7 @@
   },
   "database_card": {
     "label": "Banca dati",
-    "count": "4.000.000",
+    "count": "4.500.000",
     "count_plus": "+",
     "headline": "tra documenti giuridici, italiani ed europei.",
     "description": "Lavoriamo in modo continuo per ampliare ed aggiornare la Banca Dati.",
@@ -40,6 +40,10 @@
       {
         "t": "Normativa italiana",
         "s": "Costituzione, codici, leggi e decreti (vigenti e storici)"
+      },
+      {
+        "t": "Corte costituzionale e Cassazione",
+        "s": "Sentenze della Corte costituzionale, pronunce e principi di diritto della Corte di Cassazione"
       },
       {
         "t": "Giurisprudenza amministrativa e contabile",
@@ -51,7 +55,7 @@
       },
       {
         "t": "Prassi delle autorità",
-        "s": "Agenzia delle Entrate, MEF, INPS, Dogane, Garante Privacy, Corte dei Conti"
+        "s": "Agenzia delle Entrate, MEF, INPS, INAIL, Dogane, Ministero del Lavoro, INL, Garante Privacy, ANAC, AGCM, AGCOM, ARERA, IVASS, Arbitro Bancario Finanziario, Corte dei Conti"
       },
       {
         "t": "Diritto dell'Unione Europea",
