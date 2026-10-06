@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { useAuth } from '@/context/AuthContext'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
+import BadgeDocumentoOrigine from '@/components/BadgeDocumentoOrigine'
+import { COLONNE_DOCUMENTO_ORIGINE } from '@/lib/documentoOrigine'
 import {
     Tag, Search, Loader2, BookOpen, Sparkles, Landmark, ScrollText,
     Trash2, X, ExternalLink, MessageSquare, ArrowLeft, AlertCircle,
@@ -104,7 +106,7 @@ export default function EtichettaDettaglio() {
             if (TIPI_RICERCA.includes(rel.tipo)) {
                 const { data } = await supabase
                     .from('ricerche')
-                    .select('id, titolo, contenuto, metadati, tipo, created_at, pratica_id, pratica:pratica_id(id, titolo)')
+                    .select(`id, titolo, contenuto, metadati, tipo, created_at, pratica_id, pratica:pratica_id(id, titolo), ${COLONNE_DOCUMENTO_ORIGINE}`)
                     .eq('id', rel.elemento_id)
                     .maybeSingle()
                 return data ? { ...rel, dati: data, kindFiltro: 'ricerca_ai' } : null
@@ -359,6 +361,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
                                     <FolderOpen size={10} /> {c.dati.pratica.titolo}
                                 </Link>
                             )}
+                            <span className="text-xs"><BadgeDocumentoOrigine ricerca={c.dati} /></span>
                         </div>
                         {!aperto && (
                             <p className="font-body text-xs text-nebbia/40 mt-1 line-clamp-2">

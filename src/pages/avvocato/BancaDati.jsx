@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { campiDocumentoOrigine } from '@/lib/documentoOrigine'
 import { escapeHtml } from '@/lib/escapeHtml'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { useAuth } from '@/context/AuthContext'
@@ -434,7 +435,7 @@ function LexAnimazione({ faseAttiva }) {
 // AGGIUNGI A PRATICA — popover inline con cerca
 // Stesso pattern di AggiungiAEtichetta
 // ═══════════════════════════════════════════════════════════════
-function AggiungiAPratica({ ricerca, onRicercaSalvata, ricercaSalvataId, setRicercaSalvataId, variant = 'default' }) {
+function AggiungiAPratica({ ricerca, onRicercaSalvata, ricercaSalvataId, setRicercaSalvataId, variant = 'default', documentoOrigine = null }) {
     const { profile } = useAuth()
     const [aperto, setAperto] = useState(false)
     const [cerca, setCerca] = useState('')
@@ -505,7 +506,8 @@ function AggiungiAPratica({ ricerca, onRicercaSalvata, ricercaSalvataId, setRice
                             sentenze: ricerca.sentenze ?? false,
                             codice: ricerca.codice ?? null,
                             ts: new Date().toISOString(),
-                        }
+                        },
+                        ...(ricerca.tipo === 'ricerca_ai' ? campiDocumentoOrigine(documentoOrigine) : {}),
                     })
                     .select('id')
                     .single()
@@ -638,6 +640,9 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
     // Riga `ricerche` condivisa tra "Salva in pratica" e "Aggiungi a etichetta"
     const [ricercaSalvataId, setRicercaSalvataId] = useState(null)
+    // 07-10-2026: il documento allegato quando la conversazione è stata salvata (per collegarle il documento
+    // dell'archivio se lo si salva dopo)
+    const documentoRicercaRef = useRef(null)
 
     const abortControllerRef = useRef(null)
 
@@ -831,6 +836,14 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             })
             daSalvareRef.current = null
             setDocumento(d => (d ? { ...d, origine: 'archivio', archivioId: doc.id } : d))
+            // 07-10-2026: la conversazione era già salvata con questo documento: ora punta al documento dell'archivio
+            if (ricercaSalvataId && documento?.id && documentoRicercaRef.current === documento.id) {
+                const { error } = await supabase
+                    .from('ricerche')
+                    .update({ archivio_documento_id: doc.id })
+                    .eq('id', ricercaSalvataId)
+                if (error) console.warn('collegamento ricerca-documento non salvato:', error.message)
+            }
             setSalvataggio({
                 fase: 'salvato',
                 categoria: scelta.categorie.find(c => c.id === scelta.categoriaId)?.nome ?? 'Senza categoria',
@@ -1047,8 +1060,17 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         setMeta(null)
         setClientConversationId(crypto.randomUUID())
         setRicercaSalvataId(null)
+        documentoRicercaRef.current = null
         if (onAggiornaMessaggi) onAggiornaMessaggi([])
     }
+
+    // Conversazione salvata (in una pratica o in un'etichetta): si ricorda quale documento era allegato
+    function ricercaSalvata(id) {
+        setRicercaSalvataId(id)
+        documentoRicercaRef.current = documento?.id ?? null
+    }
+
+    const documentoOrigine = documento ? { archivioId: documento.archivioId ?? null, nome: documento.nome } : null
 
     function approfondisci(filtro_key, label, subagent_source) {
         cerca(`Approfondisci: ${label}`, {
@@ -1283,9 +1305,11 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                         }}
                         onRicercaSalvata={onRicercaSalvata}
                         ricercaSalvataId={ricercaSalvataId}
-                        setRicercaSalvataId={setRicercaSalvataId}
+                        setRicercaSalvataId={ricercaSalvata}
+                        documentoOrigine={documentoOrigine}
                     />
                     <AggiungiAEtichetta
+                        key={clientConversationId}
                         elemento={{ tipo: 'ricerca_ai' }}
                         domanda={conversazione[0]?.content ?? ''}
                         risposta={conversazione
@@ -1299,7 +1323,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             ts: new Date().toISOString(),
                         }}
                         ricercaIdEsterno={ricercaSalvataId}
-                        onRicercaCreata={setRicercaSalvataId}
+                        onRicercaCreata={ricercaSalvata}
+                        documentoOrigine={documentoOrigine}
                     />
                 </div>
             )}

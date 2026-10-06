@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { campiDocumentoOrigine } from '@/lib/documentoOrigine'
 import { Tag, Check, Plus, X, Loader2, Search, AlertCircle } from 'lucide-react'
 
 const PALETTE = [
@@ -61,6 +62,7 @@ export default function AggiungiAEtichetta({
     onCambio,
     ricercaIdEsterno = null,
     onRicercaCreata = null,
+    documentoOrigine = null,   // 07-10-2026: { archivioId, nome } del documento allegato da cui è nata la risposta
 }) {
     const [aperto, setAperto] = useState(false)
     const [etichette, setEtichette] = useState([])
@@ -202,6 +204,7 @@ export default function AggiungiAEtichetta({
                 titolo: domanda,
                 contenuto: risposta,
                 metadati,
+                ...campiDocumentoOrigine(documentoOrigine),
             })
             .select('id')
             .single()

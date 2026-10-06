@@ -13,6 +13,8 @@ import {
     BookOpen, Landmark, ScrollText, ExternalLink,
 } from 'lucide-react'
 import AggiungiAPratica from '@/components/AggiungiAPratica'
+import BadgeDocumentoOrigine from '@/components/BadgeDocumentoOrigine'
+import { COLONNE_DOCUMENTO_ORIGINE } from '@/lib/documentoOrigine'
 import PacchettoLampo from '@/components/PacchettoLampo'
 
 const PALETTE = [
@@ -162,7 +164,7 @@ export default function Ricerche() {
             ] = await Promise.all([
                 supabase
                     .from('ricerche')
-                    .select('id, tipo, titolo, contenuto, metadati, pratica_id, created_at, autore:autore_id(nome, cognome), pratica:pratica_id(id, titolo)')
+                    .select(`id, tipo, titolo, contenuto, metadati, pratica_id, created_at, autore:autore_id(nome, cognome), pratica:pratica_id(id, titolo), ${COLONNE_DOCUMENTO_ORIGINE}`)
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('etichette')
@@ -226,6 +228,9 @@ export default function Ricerche() {
                     pratica: ric.pratica,
                     autore: ric.autore,
                     created_at: ric.created_at,
+                    archivio_documento_id: ric.archivio_documento_id,
+                    documento_origine: ric.documento_origine,
+                    archivio_documento: ric.archivio_documento,
                 })
             }
             for (const n of normeRes.data ?? []) {
@@ -1041,6 +1046,7 @@ function CardElemento({
                             </Link>
                             : <span className="font-body text-nebbia/30 italic">Senza pratica</span>
                         }
+                        <BadgeDocumentoOrigine ricerca={el} />
                         {el.autore && (
                             <span className="font-body text-nebbia/30 truncate">
                                 {el.autore.nome} {el.autore.cognome}
