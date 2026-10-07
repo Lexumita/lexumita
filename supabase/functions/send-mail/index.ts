@@ -1,3 +1,4 @@
+// 07-10-2026 (controllo di sicurezza): le azioni admin vogliono la verifica in due passaggi completata (aal2).
 // supabase/functions/send-mail/index.ts
 //
 // Wrapper generico per invio email tramite Postmark Templates.
@@ -17,21 +18,13 @@
 //      (stripe-webhook fa esattamente cosi': non si rompe nulla)
 //   2. un admin autenticato dal pannello
 //
+// verify_jwt resta false DI PROPOSITO: il progetto usa il nuovo formato di
+// chiavi API, che non sono JWT; attivarlo farebbe rifiutare dal gateway le
+// chiamate server-to-server. Il controllo vero e' qui sotto ed e' completo.
+//
 // Il CORS resta '*' DI PROPOSITO: non e' mai stato lui la falla. Il CORS
 // impedisce a un browser di LEGGERE la risposta, non a un programma di fare
 // la chiamata. Stringerlo avrebbe rotto il pannello senza chiudere niente.
-//
-// Input:
-//   {
-//     to: "user@example.com" | ["a@x.it", "b@y.it"],
-//     templateAlias: "verifica-email",
-//     templateModel: { nome: "Mario", ... },
-//     from?: "noreply@lexum.it",   // solo per chiamate server-to-server
-//     replyTo?: "info@lexum.it",
-//     tipo?: "verifica_email",
-//     origine?: "stripe-webhook",
-//     toUserId?: "uuid"
-//   }
 //
 // Versione: 2.1.0 — aggiunto messageStream (outbound | broadcast)
 
@@ -120,6 +113,17 @@ async function risolviUserId(email: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+// Il livello della sessione dal token (già verificato da getUser): «aal1» o «aal2».
+function livelloDelToken(token: string): string {
+  try {
+    const parte = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(parte.padEnd(Math.ceil(parte.length / 4) * 4, "=")));
+    return typeof payload.aal === "string" ? payload.aal : "aal1";
+  } catch {
+    return "aal1";
+  }
+}
+
 // ─── HANDLER ────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -156,6 +160,9 @@ Deno.serve(async (req) => {
         .from("profiles").select("role").eq("id", user.id).maybeSingle();
       if (profilo?.role !== "admin") {
         return jsonResponse({ ok: false, error: "Riservato agli amministratori" }, 403);
+      }
+      if (livelloDelToken(chiave) !== "aal2") {
+        return jsonResponse({ ok: false, error: "Serve la verifica in due passaggi" }, 403);
       }
       chiamanteId = user.id;
     }
