@@ -17,6 +17,7 @@ import { slugDa, firmaAutore, fmtDataLunga } from '@/lib/novita'
 const VUOTO = {
     titolo: '', slug: '', sommario: '', contenuto: '',
     autore: '', categoria: '', copertina_url: '', stato: 'bozza',
+    instagram_url: '', tiktok_url: '',
 }
 
 const CAMPO = 'w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 transition-colors'
@@ -45,6 +46,13 @@ export default function AdminNovita() {
 
     useEffect(() => {
         carica()
+        // ?apri=<id>: arriva dal report della normativa con una bozza appena creata
+        const apri = new URLSearchParams(window.location.search).get('apri')
+        if (apri) {
+            supabase.from('novita').select('*').eq('id', apri).maybeSingle()
+                .then(({ data }) => { if (data) setForm({ ...VUOTO, ...data, instagram_url: data.instagram_url ?? '', tiktok_url: data.tiktok_url ?? '' }) })
+            window.history.replaceState(null, '', window.location.pathname)
+        }
         supabase.from('impostazioni_sito').select('valore').eq('chiave', 'vercel_deploy_hook').maybeSingle()
             .then(({ data }) => setHook(data?.valore ?? ''))
     }, [])
@@ -73,6 +81,8 @@ export default function AdminNovita() {
             autore: form.autore?.trim() || null,
             categoria: form.categoria?.trim() || null,
             copertina_url: form.copertina_url?.trim() || null,
+            instagram_url: form.instagram_url?.trim() || null,
+            tiktok_url: form.tiktok_url?.trim() || null,
             stato: pubblica ? 'pubblicato' : form.stato,
         }
 
@@ -82,7 +92,9 @@ export default function AdminNovita() {
 
         setSalvando(false)
         if (error) {
-            setErrore(error.code === '23505' ? 'Esiste già un articolo con questo indirizzo: cambia il titolo o lo slug.' : error.message)
+            setErrore(error.code === '23505' ? 'Esiste già un articolo con questo indirizzo: cambia il titolo o lo slug.'
+                : error.code === '23514' ? 'Il collegamento al post non è valido: deve iniziare con https://www.instagram.com/ o https://www.tiktok.com/.'
+                    : error.message)
             return
         }
 
@@ -202,6 +214,28 @@ export default function AdminNovita() {
                         />
                     </div>
 
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                            <label className={ETICHETTA}>Post su Instagram (facoltativo)</label>
+                            <input
+                                className={CAMPO}
+                                value={form.instagram_url ?? ''}
+                                onChange={e => setForm(f => ({ ...f, instagram_url: e.target.value }))}
+                                placeholder="https://www.instagram.com/p/…"
+                            />
+                        </div>
+                        <div>
+                            <label className={ETICHETTA}>Post su TikTok (facoltativo)</label>
+                            <input
+                                className={CAMPO}
+                                value={form.tiktok_url ?? ''}
+                                onChange={e => setForm(f => ({ ...f, tiktok_url: e.target.value }))}
+                                placeholder="https://www.tiktok.com/@lexum.it/video/…"
+                            />
+                        </div>
+                        <p className="lg:col-span-2 font-body text-xs text-nebbia/30 -mt-2">Se metti il collegamento, l'articolo mostra il pulsante per vedere il post; se lo lasci vuoto, niente.</p>
+                    </div>
+
                     <div>
                         <label className={ETICHETTA}>Testo</label>
                         <textarea
@@ -292,7 +326,7 @@ export default function AdminNovita() {
                                 </p>
                             </div>
                             <div className="grid grid-cols-2 lg:flex gap-2">
-                                <button type="button" onClick={() => { setForm({ ...VUOTO, ...a }); setErrore(''); setMsg('') }} className={BOTTONE}>
+                                <button type="button" onClick={() => { setForm({ ...VUOTO, ...a, instagram_url: a.instagram_url ?? '', tiktok_url: a.tiktok_url ?? '' }); setErrore(''); setMsg('') }} className={BOTTONE}>
                                     Modifica
                                 </button>
                                 {a.stato === 'pubblicato' ? (

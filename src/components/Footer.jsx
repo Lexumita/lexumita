@@ -3,6 +3,7 @@ import { Mail, Shield, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import logo from '@/assets/logo.png'
 import { NOVITA_ATTIVA } from '@/lib/novita'
+import { SOCIAL, IconaInstagram, IconaTikTok } from '@/components/Social'
 
 export default function Footer() {
   const { t } = useTranslation('comp_footer')
@@ -21,6 +22,19 @@ export default function Footer() {
             <div className="flex items-center gap-1.5 mt-5">
               <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
               <span className="font-body text-xs text-nebbia/25">{t('brand.status')}</span>
+            </div>
+            {/* Social */}
+            <p className="font-body text-xs text-nebbia/30 tracking-[0.25em] uppercase mt-8 mb-3">{t('social.title')}</p>
+            <div className="flex items-center gap-2">
+              {[
+                { href: SOCIAL.instagram, key: 'instagram', Icona: IconaInstagram },
+                { href: SOCIAL.tiktok, key: 'tiktok', Icona: IconaTikTok },
+              ].map(({ href, key, Icona }) => (
+                <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={t(`social.${key}`)} title={t(`social.${key}`)}
+                  className="w-9 h-9 flex items-center justify-center border border-white/10 text-nebbia/50 hover:text-oro hover:border-oro/30 transition-colors">
+                  <Icona size={16} />
+                </a>
+              ))}
             </div>
           </div>
 

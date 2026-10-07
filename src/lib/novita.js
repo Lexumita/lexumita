@@ -24,7 +24,7 @@ export async function elencoNovita(limite = 60) {
 export async function articoloDaSlug(slug) {
     const { data } = await supabase
         .from('novita')
-        .select('slug, titolo, sommario, contenuto, copertina_url, autore, categoria, pubblicato_il')
+        .select('slug, titolo, sommario, contenuto, copertina_url, autore, categoria, pubblicato_il, instagram_url, tiktok_url')
         .eq('slug', slug)
         .eq('stato', 'pubblicato')
         .maybeSingle()

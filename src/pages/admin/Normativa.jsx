@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { PageHeader, StatCard } from '@/components/shared'
 import {
     Upload, Cpu, RefreshCw, ChevronRight, Trash2,
-    AlertCircle, BookOpen, Flag, Globe, Archive, Scale, History
+    AlertCircle, BookOpen, Flag, Globe, Archive, Scale, History, ClipboardList
 } from 'lucide-react'
 import NormativaAggiornamenti from './NormativaAggiornamenti'
+import NormativaReport from './NormativaReport'
 
 // ─── CONFIG TAB ITALIANA / UE ────────────────────────────────────
 const CONFIG_IT = {
@@ -38,7 +39,8 @@ const CONFIG_UE = {
 
 // ─── COMPONENTE PRINCIPALE ────────────────────────────────────
 export default function AdminNormativa() {
-    const [tab, setTab] = useState('it')
+    // ?tab=report apre direttamente il report settimanale
+    const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'it')
 
     return (
         <div className="space-y-5">
@@ -64,6 +66,10 @@ export default function AdminNormativa() {
                     className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'aggiornamenti' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
                     <History size={13} /> Aggiornamenti
                 </button>
+                <button onClick={() => setTab('report')}
+                    className={`flex items-center gap-2 px-4 py-2 font-body text-sm transition-colors ${tab === 'report' ? 'bg-oro/10 text-oro border border-oro/30' : 'text-nebbia/40 hover:text-nebbia'}`}>
+                    <ClipboardList size={13} /> Report settimanale
+                </button>
             </div>
 
             {tab === 'it' && <VistaCodici config={CONFIG_IT} titolo="Normativa Italiana" />}
@@ -71,6 +77,7 @@ export default function AdminNormativa() {
             {tab === 'archivio' && <VistaArchivio />}
             {tab === 'sentenze' && <VistaSentenze />}
             {tab === 'aggiornamenti' && <NormativaAggiornamenti />}
+            {tab === 'report' && <NormativaReport />}
         </div>
     )
 }

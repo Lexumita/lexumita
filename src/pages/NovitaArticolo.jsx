@@ -9,6 +9,7 @@ import { Helmet } from 'react-helmet-async'
 import ReactMarkdown from 'react-markdown'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { articoloDaSlug, firmaAutore, fmtDataLunga } from '@/lib/novita'
+import { IconaInstagram, IconaTikTok } from '@/components/Social'
 
 const SITO = 'https://www.lexum.it'
 
@@ -124,6 +125,27 @@ export default function NovitaArticolo() {
                 )}
 
                 <ReactMarkdown components={TESTO}>{articolo.contenuto ?? ''}</ReactMarkdown>
+
+                {/* Il post collegato: compare solo se l'admin ha messo il collegamento */}
+                {(articolo.instagram_url || articolo.tiktok_url) && (
+                    <div className="mt-12 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <p className="font-body text-sm text-nebbia/40">Ne parliamo anche sui social:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {articolo.instagram_url && (
+                                <a href={articolo.instagram_url} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 border border-oro/30 text-oro font-body text-sm hover:bg-oro/10 transition-colors">
+                                    <IconaInstagram size={15} /> Guarda il post su Instagram
+                                </a>
+                            )}
+                            {articolo.tiktok_url && (
+                                <a href={articolo.tiktok_url} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 border border-oro/30 text-oro font-body text-sm hover:bg-oro/10 transition-colors">
+                                    <IconaTikTok size={15} /> Guarda il video su TikTok
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-14 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="font-body text-sm text-nebbia/40">Vuoi provare Lexum nel tuo studio?</p>
