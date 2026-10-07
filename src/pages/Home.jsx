@@ -193,16 +193,22 @@ function HeroDatabaseCard() {
 // ─── Carosello demo Lex (hero) ───
 const DEMO_VARIANTS = ['avvocato', 'commercialista']
 function LexDemoBox({ variant }) {
+  // Finestra già aperta alla sua altezza finale, aspetto «chat»: il campo per scrivere
+  // in basso, la conversazione che scorre sopra. La pagina non si muove mai.
   return (
-    <div className="bg-slate border border-oro/20 overflow-hidden shadow-2xl shadow-oro/5 h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-petrolio/60">
-        <div className="flex items-center gap-2">
-          <Sparkles size={13} className="text-salvia" />
-          <span className="font-body text-xs text-salvia">Lex AI</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse ml-1" />
+    <div className="bg-slate/80 border border-oro/15 overflow-hidden shadow-2xl shadow-black/30 flex flex-col h-[480px] sm:h-[540px] lg:h-[600px]"
+      style={{ backgroundImage: 'radial-gradient(600px 300px at 100% 0%, rgba(201,164,92,0.06), transparent 70%)' }}>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Sparkles size={13} className="text-oro" />
+          <span className="font-display text-lg text-nebbia/90 leading-none">Lex</span>
+          <span className="font-body text-[10px] uppercase tracking-[0.22em] text-nebbia/30 mt-0.5">AI</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
         </div>
       </div>
-      <div className="p-5"><LexAnimatedDemo variant={variant} /></div>
+      <div className="flex-1 min-h-0"><LexAnimatedDemo variant={variant} aspetto="chat" /></div>
     </div>
   )
 }
@@ -279,26 +285,40 @@ export default function Home() {
           }} />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-6 w-full" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
-              <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
-              <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">{t('hero.badge')}</span>
+        <div className="relative max-w-7xl mx-auto px-6 w-full" style={{ animation: 'heroIn 1s cubic-bezier(.4,0,.2,1) both' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+
+            {/* Sinistra: titolo, sottotitolo, pulsanti */}
+            <div className="lg:col-span-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
+                <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
+                <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">{t('hero.badge')}</span>
+              </div>
+
+              <h1 className="font-display text-5xl md:text-6xl xl:text-7xl font-light text-nebbia leading-[1.08] mb-6">
+                <Trans t={t} i18nKey="hero.title"
+                  components={{ br: <br className="hidden md:block" />, hl: <span className="text-oro-shimmer" /> }} />
+              </h1>
+
+              <p className="font-body text-base md:text-lg text-nebbia/50 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-10">
+                {t('hero.subtitle')}
+              </p>
+
+              <div className="hidden lg:block">
+                <div className="flex items-center gap-4 mb-5">
+                  <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
+                    {t('hero.cta_primary')} <ArrowRight size={15} />
+                  </Link>
+                  <a href="#differenza" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
+                    {t('hero.cta_secondary')}
+                  </a>
+                </div>
+                <p className="font-body text-xs text-nebbia/25">{t('hero.no_card')}</p>
+              </div>
             </div>
 
-            <h1 className="font-display text-5xl md:text-7xl font-light text-nebbia leading-[1.1] mb-6">
-              <Trans t={t} i18nKey="hero.title"
-                components={{ br: <br className="hidden md:block" />, hl: <span className="text-oro-shimmer" /> }} />
-            </h1>
-
-            <p className="font-body text-base md:text-lg text-nebbia/50 leading-relaxed max-w-2xl mx-auto mb-10">
-              {t('hero.subtitle')}
-            </p>
-          </div>
-
-          {/* CAROSELLO Lex — una sessione alla volta con frecce (larghezza piena come CH) */}
-          <FadeIn delay={0.1}>
-            <div className="mb-10 max-w-5xl mx-auto">
+            {/* Destra: la chat di Lex, già aperta */}
+            <div className="lg:col-span-6 w-full max-w-[560px] mx-auto lg:mr-0">
               <div className="relative" onTouchStart={onToccoInizio} onTouchEnd={onToccoFine}
                 style={{ touchAction: 'pan-y pinch-zoom' }}>
                 <div key={DEMO_VARIANTS[demoIdx]} style={{ animation: `${demoDir === 'next' ? 'demoSlideNext' : 'demoSlidePrev'} 450ms cubic-bezier(.4,0,.2,1) both` }}>
@@ -322,21 +342,19 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          </FadeIn>
 
-          {/* CTA */}
-          <div className="text-center">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-              <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all hover:scale-[1.02] shadow-lg shadow-oro/20">
-                {t('hero.cta_primary')} <ArrowRight size={15} />
-              </Link>
-              <a href="#differenza" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
-                {t('hero.cta_secondary')}
-              </a>
+            {/* Telefono: i pulsanti sotto la chat */}
+            <div className="lg:hidden text-center">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                <Link to="/registrati" className="flex items-center gap-2.5 px-8 py-4 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-all shadow-lg shadow-oro/20">
+                  {t('hero.cta_primary')} <ArrowRight size={15} />
+                </Link>
+                <a href="#differenza" className="flex items-center gap-2 px-8 py-4 border border-white/10 text-nebbia/50 font-body text-sm hover:border-white/25 hover:text-nebbia transition-colors">
+                  {t('hero.cta_secondary')}
+                </a>
+              </div>
+              <p className="font-body text-xs text-nebbia/25">{t('hero.no_card')}</p>
             </div>
-            <p className="font-body text-xs text-nebbia/25">
-              {t('hero.no_card')}
-            </p>
           </div>
         </div>
 

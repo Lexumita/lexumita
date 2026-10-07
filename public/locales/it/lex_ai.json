@@ -47,7 +47,8 @@
       }
     ],
     "action": "Aggiungi alla pratica",
-    "action_etichetta": "Aggiungi a etichetta"
+    "action_etichetta": "Aggiungi a etichetta",
+    "vuoto_titolo": "Chiedi a Lex"
   },
   "anim_commercialista": {
     "input_placeholder": "Es. Detrazione IVA sulle spese di rappresentanza...",

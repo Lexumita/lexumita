@@ -44,6 +44,7 @@ const ECCEZIONI = new Set([
   'Lexum',            // alt del logo: è il marchio
   'Lex',              // nome del prodotto dentro le demo animate
   'Lex AI',
+  'AI',               // testata della chat in home: «Lex» col carattere dei titoli, «AI» piccolo
 ])
 
 // Attributi JSX che finiscono a schermo (o ai lettori di schermo).
