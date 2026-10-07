@@ -27,6 +27,9 @@
   "social": {
     "title": "Seguici",
     "instagram": "Lexum su Instagram",
-    "tiktok": "Lexum su TikTok"
+    "tiktok": "Lexum su TikTok",
+    "instagram_nome": "Instagram",
+    "tiktok_nome": "TikTok",
+    "profilo": "@lexum.it"
   }
 }

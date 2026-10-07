@@ -142,7 +142,7 @@ async function novitaPubblicate() {
     return []
   }
   const query =
-    'select=slug,titolo,sommario,copertina_url&stato=eq.pubblicato&order=pubblicato_il.desc&limit=200'
+    'select=slug,titolo,sommario,copertina_url,pubblicato_il,updated_at&stato=eq.pubblicato&order=pubblicato_il.desc&limit=200'
   try {
     const res = await fetch(`${url}/rest/v1/novita?${query}`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
@@ -158,8 +158,8 @@ async function novitaPubblicate() {
   }
 }
 
-// Sezione spenta per ora: stesso interruttore di src/lib/novita.js
-const NOVITA_ATTIVA = false
+// Stesso interruttore di src/lib/novita.js (acceso il 07/10/2026)
+const NOVITA_ATTIVA = true
 const articoli = NOVITA_ATTIVA ? await novitaPubblicate() : []
 
 if (NOVITA_ATTIVA) scriviTestata('novita/index.html', `${SITE}/novita`, {
@@ -182,6 +182,28 @@ for (const a of articoli) {
     image: a.copertina_url || undefined,
   })
   count++
+}
+
+// Sitemap: public/sitemap.xml ha le pagine fisse; il blog ci entra qui, a ogni
+// rilascio (pubblicare un articolo fa ripartire il rilascio), così Google trova
+// /novita e ogni articolo senza aggiornare il file a mano.
+if (NOVITA_ATTIVA) {
+  const sitemapPath = resolve(DIST, 'sitemap.xml')
+  if (existsSync(sitemapPath)) {
+    const giorno = d => (d ? new Date(d) : new Date()).toISOString().slice(0, 10)
+    const voce = (loc, lastmod, freq, prio) =>
+      `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${prio}</priority>\n  </url>\n`
+    let voci = voce(`${SITE}/novita`, giorno(articoli[0]?.pubblicato_il), 'weekly', '0.8')
+    for (const a of articoli) {
+      if (!a?.slug) continue
+      voci += voce(`${SITE}/novita/${a.slug}`, giorno(a.updated_at || a.pubblicato_il), 'monthly', '0.7')
+    }
+    const xml = readFileSync(sitemapPath, 'utf8')
+    if (!xml.includes(`${SITE}/novita<`)) {
+      writeFileSync(sitemapPath, xml.replace('</urlset>', `\n${voci}</urlset>`))
+      console.log(`[seo] sitemap: aggiunte /novita e ${articoli.length} articoli`)
+    }
+  }
 }
 
 console.log(`[seo] fatto: ${count} pagine con testata dedicata (${articoli.length} articoli Novità).`)
