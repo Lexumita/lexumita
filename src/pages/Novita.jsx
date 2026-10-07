@@ -26,7 +26,7 @@ export default function Novita() {
                 <title>Novità — Lexum</title>
                 <meta
                     name="description"
-                    content="Le novità di Lexum: funzioni nuove, migliorie e aggiornamenti della piattaforma per avvocati e commercialisti."
+                    content="Cosa cambia: le norme nuove, le sentenze e le novità di Lexum, ogni settimana."
                 />
                 <link rel="canonical" href="https://www.lexum.it/novita" />
 
@@ -35,14 +35,14 @@ export default function Novita() {
                 <meta property="og:title" content="Novità — Lexum" />
                 <meta
                     property="og:description"
-                    content="Funzioni nuove, migliorie e aggiornamenti della piattaforma Lexum."
+                    content="Le norme nuove, le sentenze e le novità di Lexum, ogni settimana."
                 />
                 <meta property="og:image" content="https://www.lexum.it/logo.png" />
                 <meta property="og:locale" content="it_IT" />
 
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:title" content="Novità — Lexum" />
-                <meta name="twitter:description" content="Funzioni nuove, migliorie e aggiornamenti di Lexum." />
+                <meta name="twitter:description" content="Le norme nuove, le sentenze e le novità di Lexum, ogni settimana." />
                 <meta name="twitter:image" content="https://www.lexum.it/logo.png" />
             </Helmet>
 
@@ -58,10 +58,10 @@ export default function Novita() {
                         <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">Novità</span>
                     </div>
                     <h1 className="font-display text-4xl md:text-6xl font-light leading-[1.1] mb-5">
-                        Cosa cambia in <span className="text-oro-shimmer">Lexum</span>.
+                        Cosa <span className="text-oro-shimmer">cambia</span>.
                     </h1>
                     <p className="font-body text-base text-nebbia/45 leading-relaxed max-w-2xl mx-auto">
-                        Funzioni nuove, migliorie e appunti dal lavoro di tutti i giorni con avvocati e commercialisti.
+                        Le norme nuove, le sentenze e le novità di Lexum, ogni settimana.
                     </p>
                 </div>
             </section>

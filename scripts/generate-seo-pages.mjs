@@ -164,10 +164,9 @@ const articoli = NOVITA_ATTIVA ? await novitaPubblicate() : []
 
 if (NOVITA_ATTIVA) scriviTestata('novita/index.html', `${SITE}/novita`, {
   title: 'Novità — Lexum',
-  description:
-    'Le novità di Lexum: funzioni nuove, migliorie e aggiornamenti della piattaforma per avvocati e commercialisti.',
+  description: 'Cosa cambia: le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
   ogTitle: 'Novità — Lexum',
-  ogDescription: 'Funzioni nuove, migliorie e aggiornamenti della piattaforma Lexum.',
+  ogDescription: 'Le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
 })
 if (NOVITA_ATTIVA) count++
 
