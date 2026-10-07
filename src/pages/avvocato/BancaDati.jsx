@@ -640,9 +640,13 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
 
     // Riga `ricerche` condivisa tra "Salva in pratica" e "Aggiungi a etichetta"
     const [ricercaSalvataId, setRicercaSalvataId] = useState(null)
-    // 07-10-2026: il documento allegato quando la conversazione è stata salvata (per collegarle il documento
-    // dell'archivio se lo si salva dopo)
+    // 07-10-2026: il documento che la conversazione salvata ricorda (per collegarle il documento dell'archivio
+    // se lo si salva dopo)
     const documentoRicercaRef = useRef(null)
+    // 07-10-2026: il documento mandato a Lex con l'ultima domanda: è quello che la conversazione salvata ricorda,
+    // come nell'app. Un documento allegato senza farci domande non conta; uno tolto dalla chat dopo la risposta
+    // resta.
+    const [documentoUsato, setDocumentoUsato] = useState(null)   // { id, nome, archivioId }
 
     const abortControllerRef = useRef(null)
 
@@ -836,6 +840,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             })
             daSalvareRef.current = null
             setDocumento(d => (d ? { ...d, origine: 'archivio', archivioId: doc.id } : d))
+            // se è il documento delle risposte, quella che si salverà punterà all'archivio
+            setDocumentoUsato(u => (u && u.id === documento?.id ? { ...u, archivioId: doc.id } : u))
             // 07-10-2026: la conversazione era già salvata con questo documento: ora punta al documento dell'archivio
             if (ricercaSalvataId && documento?.id && documentoRicercaRef.current === documento.id) {
                 const { error } = await supabase
@@ -877,6 +883,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         setFaseCorrente(null)
         setStreamingTesto('')
         setMeta(null)
+        // la domanda parte con il documento allegato: è l'ultimo documento usato
+        if (documento) setDocumentoUsato({ id: documento.id, nome: documento.nome, archivioId: documento.archivioId ?? null })
 
         const nuovaConv = [...conversazione, { role: 'user', content: domandaCorrente }]
         setConversazione(nuovaConv)
@@ -1061,16 +1069,17 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         setClientConversationId(crypto.randomUUID())
         setRicercaSalvataId(null)
         documentoRicercaRef.current = null
+        setDocumentoUsato(null)
         if (onAggiornaMessaggi) onAggiornaMessaggi([])
     }
 
-    // Conversazione salvata (in una pratica o in un'etichetta): si ricorda quale documento era allegato
+    // Conversazione salvata (in una pratica o in un'etichetta): si ricorda quale documento ha registrato
     function ricercaSalvata(id) {
         setRicercaSalvataId(id)
-        documentoRicercaRef.current = documento?.id ?? null
+        documentoRicercaRef.current = documentoUsato?.id ?? null
     }
 
-    const documentoOrigine = documento ? { archivioId: documento.archivioId ?? null, nome: documento.nome } : null
+    const documentoOrigine = documentoUsato ? { archivioId: documentoUsato.archivioId ?? null, nome: documentoUsato.nome } : null
 
     function approfondisci(filtro_key, label, subagent_source) {
         cerca(`Approfondisci: ${label}`, {
