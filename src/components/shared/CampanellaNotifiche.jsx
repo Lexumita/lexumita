@@ -6,7 +6,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Check, X, AlertTriangle, Calendar, FileText, MessageCircle, User, CreditCard, Gavel, Receipt, FolderOpen } from 'lucide-react'
+import { Bell, Check, X, AlertTriangle, Calendar, FileText, MessageCircle, MessageSquareText, User, CreditCard, Gavel, Receipt, FolderOpen } from 'lucide-react'
 import { useNotifiche } from '@/hooks/useNotifiche'
 
 // ─── Icona per tipo notifica ─────────────────────────────────
@@ -27,6 +27,9 @@ function iconaTipo(tipo) {
         termine_T7: { Icon: AlertTriangle, color: 'text-amber-400' },
         termine_T3: { Icon: AlertTriangle, color: 'text-amber-400' },
         termine_T1: { Icon: AlertTriangle, color: 'text-red-400' },
+        // Lex ha finito mentre l'utente era via (risposte recuperate)
+        lex_risposta_recuperata: { Icon: MessageSquareText, color: 'text-oro' },
+        lex_documento_recuperato: { Icon: FileText, color: 'text-oro' },
     }
     return map[tipo] ?? { Icon: FileText, color: 'text-nebbia/40' }
 }

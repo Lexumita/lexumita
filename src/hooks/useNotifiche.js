@@ -10,6 +10,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
+// Evento sulla finestra: chi cambia le notifiche fuori da questo hook (es. il
+// popup RisposteRecuperate che le segna lette) chiede alle campanelle di rileggere.
+export const EVENTO_NOTIFICHE = 'lexum:notifiche-cambiate'
+
 export function useNotifiche({ limit = 10 } = {}) {
     const [notifiche, setNotifiche] = useState([])
     const [loading, setLoading] = useState(true)
@@ -46,6 +50,13 @@ export function useNotifiche({ limit = 10 } = {}) {
     }, [limit])
 
     useEffect(() => { carica() }, [carica])
+
+    // ─── Rilettura chiesta da altri componenti ───────────────
+    useEffect(() => {
+        const rileggi = () => { carica() }
+        window.addEventListener(EVENTO_NOTIFICHE, rileggi)
+        return () => window.removeEventListener(EVENTO_NOTIFICHE, rileggi)
+    }, [carica])
 
     // ─── Subscribe realtime ──────────────────────────────────
     useEffect(() => {

@@ -9,6 +9,8 @@ import {
   Home, Search, ShieldCheck, CreditCard, Headphones, User, ChevronRight,
   Clock, CheckCircle, XCircle, Archive
 } from 'lucide-react'
+import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
+import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
 
 export default function UserLayout({ children }) {
   const { profile, signOut } = useAuth()
@@ -167,6 +169,9 @@ export default function UserLayout({ children }) {
         <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-white/5 bg-slate">
           <div /> {/* spacer */}
           <div className="flex items-center gap-4">
+            {/* Campanella notifiche */}
+            <CampanellaNotifiche />
+
             <Link to="/area/acquista"
               title="Acquista crediti AI"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-petrolio border border-salvia/20 hover:border-salvia/40 transition-colors group">
@@ -186,12 +191,16 @@ export default function UserLayout({ children }) {
             <Menu size={20} />
           </button>
           <img src={logo} alt="Lexum" className="h-10 w-auto" />
-          <Link to="/area/acquista"
-            className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-petrolio border border-salvia/20">
-            <Sparkles size={12} className="text-salvia" />
-            <span className="font-body text-xs text-nebbia/80">{crediti}</span>
-            <Plus size={9} className="text-nebbia/40" />
-          </Link>
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            <Link to="/area/acquista"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-petrolio border border-salvia/20">
+              <Sparkles size={12} className="text-salvia" />
+              <span className="font-body text-xs text-nebbia/80">{crediti}</span>
+              <Plus size={9} className="text-nebbia/40" />
+            </Link>
+            {/* Campanella notifiche mobile: in fondo a destra, così il pannello sta nello schermo */}
+            <CampanellaNotifiche />
+          </div>
         </div>
 
         {/* Banner contestuale */}
@@ -217,6 +226,9 @@ export default function UserLayout({ children }) {
         {/* Contenuto pagina */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
+
+      {/* Popup «Mentre eri via, Lex ha finito» (risposte recuperate) */}
+      <RisposteRecuperate area="privato" />
     </div>
   )
 }

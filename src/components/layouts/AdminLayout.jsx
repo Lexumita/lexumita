@@ -8,6 +8,7 @@ import {
   LogOut, Menu, ChevronRight, Activity, Languages
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
+import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
 
 export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false)
@@ -109,6 +110,9 @@ export default function AdminLayout({ children }) {
 
         <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
+
+      {/* Popup «Mentre eri via, Lex ha finito» (risposte recuperate) */}
+      <RisposteRecuperate />
     </div>
   )
 }
