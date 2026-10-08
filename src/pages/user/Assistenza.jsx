@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { idSupporto } from '@/lib/supporto'
 import { PageHeader, BackButton, Badge } from '@/components/shared'
 import { Plus, Send, Search, Loader2, AlertCircle } from 'lucide-react'
 
@@ -177,9 +178,8 @@ export function UserAssistenzaNuovo() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error('Utente non autenticato')
 
-            const { data: admins } = await supabase
-                .from('profiles').select('id').eq('role', 'admin').limit(1)
-            const adminId = admins?.[0]?.id ?? null
+            // 08-10-2026: dal database solo l'id del supporto (i profili admin non si leggono)
+            const adminId = await idSupporto()
 
             const { data: ticket, error } = await supabase
                 .from('ticket_assistenza')

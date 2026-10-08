@@ -5,6 +5,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/components/shared'
 import { Plus, Send, Search, AlertCircle, X, User, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { idSupporto, idsSupporto } from '@/lib/supporto'
 
 const ALIAS_ADMIN_NOME = 'Lexum'
 const ALIAS_ADMIN_INIZIALE = 'L'
@@ -299,11 +300,13 @@ export function AvvocatoAssistenza() {
         // - Lexum = quando uno dei nostri avvocati interagisce con un admin
         //   (sia come mittente verso admin, sia come destinatario di un admin)
         // - Clienti = tutto il resto che coinvolge un cliente
+        // 08-10-2026: l'admin si riconosce dall'id (i profili admin non si leggono più)
+        const supporto = await idsSupporto()
         const cl = []
         const lx = []
         for (const t of (tuttiTicket ?? [])) {
-            const mittRole = t.mittente?.role
-            const destRole = t.destinatario?.role
+            const mittRole = supporto.has(t.mittente_id) ? 'admin' : t.mittente?.role
+            const destRole = supporto.has(t.destinatario_id) ? 'admin' : t.destinatario?.role
             const idsSet = new Set(ids)
 
             // Lexum (uscente): avvocato dello studio scrive all'admin
@@ -496,11 +499,12 @@ export function AvvocatoAssistenzaNuovo() {
         setSalvando(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
-            const { data: admin } = await supabase.from('profiles').select('id').eq('role', 'admin').limit(1).single()
+            // 08-10-2026: dal database solo l'id del supporto (i profili admin non si leggono)
+            const adminId = await idSupporto()
 
             const { data: ticket, error } = await supabase.from('ticket_assistenza').insert({
                 mittente_id: user.id,
-                destinatario_id: admin?.id ?? null,
+                destinatario_id: adminId,
                 oggetto: titolo.trim(),
                 mittente_ruolo: 'avvocato',
                 stato: 'aperto',
@@ -574,6 +578,7 @@ export function AvvocatoAssistenzaDettaglio() {
     const [messaggi, setMessaggi] = useState([])
     const [loading, setLoading] = useState(true)
     const [isLexum, setIsLexum] = useState(false)
+    const [mittenteSupporto, setMittenteSupporto] = useState(false)
     const [msg, setMsg] = useState('')
     const [inviando, setInviando] = useState(false)
     const [errore, setErrore] = useState('')
@@ -582,18 +587,21 @@ export function AvvocatoAssistenzaDettaglio() {
         async function init() {
             const { data: { user } } = await supabase.auth.getUser()
             setMeId(user.id)
-            const [{ data: tk }, { data: msgs }] = await Promise.all([
+            const [{ data: tk }, { data: msgs }, supporto] = await Promise.all([
                 supabase.from('ticket_assistenza')
                     .select('*, mittente:mittente_id(nome, cognome, role), destinatario:destinatario_id(nome, cognome, role)')
                     .eq('id', id).single(),
                 supabase.from('messaggi_ticket')
                     .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
                     .eq('ticket_id', id).order('created_at'),
+                idsSupporto(),
             ])
             setTicket(tk)
             setMessaggi(msgs ?? [])
             // È un ticket "Supporto Lexum" solo se una delle due parti è admin
-            setIsLexum(tk?.mittente?.role === 'admin' || tk?.destinatario?.role === 'admin')
+            // (08-10-2026: riconosciuto dall'id, i profili admin non si leggono più)
+            setIsLexum(supporto.has(tk?.mittente_id) || supporto.has(tk?.destinatario_id))
+            setMittenteSupporto(supporto.has(tk?.mittente_id))
             setLoading(false)
         }
         init()
@@ -629,9 +637,11 @@ export function AvvocatoAssistenzaDettaglio() {
     if (!ticket) return <div className="space-y-5"><BackButton to="/assistenza" label="Assistenza" /><p className="font-body text-sm text-nebbia/40">Ticket non trovato.</p></div>
 
     // Mostra "Lexum" se il mittente è un admin (alias unificato del supporto)
-    const mittente = ticket.mittente
-        ? displayNome(ticket.mittente, ticket.mittente_ruolo)
-        : 'Sconosciuto'
+    const mittente = mittenteSupporto
+        ? ALIAS_ADMIN_NOME
+        : ticket.mittente
+            ? displayNome(ticket.mittente, ticket.mittente_ruolo)
+            : 'Sconosciuto'
 
     return (
         <div className="space-y-5">
