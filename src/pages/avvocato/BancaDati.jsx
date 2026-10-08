@@ -1179,7 +1179,18 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2 break-words">
                                     {/* 08-10-2026: l'utente ha chiesto di scrivere un documento: foglio con Word, PDF e Copia */}
                                     {m.meta?.documento ? (
-                                        <DocumentoLex markdown={m.content} tipo={m.meta.documento.tipo} />
+                                        <DocumentoLex markdown={m.content} tipo={m.meta.documento.tipo}
+                                            onModifica={(nuovo) => {
+                                                // Il testo corretto vale anche per Lex: la cronologia che riceve sono i messaggi
+                                                const vecchio = m.content
+                                                setConversazione((c) => c.map((x, k) => (k === i ? { ...x, content: nuovo } : x)))
+                                                onAggiornaMessaggi?.((lista) => {
+                                                    const elenco = lista ?? []
+                                                    let j = elenco.length - 1
+                                                    while (j >= 0 && !(elenco[j].role === 'assistant' && elenco[j].content === vecchio)) j--
+                                                    return j < 0 ? elenco : elenco.map((x, k) => (k === j ? { ...x, content: nuovo } : x))
+                                                })
+                                            }} />
                                     ) : (
                                         <MarkdownMemo components={markdownComponents}>
                                             {m.content}

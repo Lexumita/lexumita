@@ -6,13 +6,17 @@
 // Sempre per avvocati e commercialisti: «Compila con i dati di una pratica / di un mandato». I dati inseriti
 // sono in verde nel foglio, si possono togliere uno per uno o tutti con Annulla, e Word, PDF e Copia usano il
 // testo compilato. Dentro una pratica o un mandato (`corrente`) si compila con quello, senza scegliere.
+// Correzioni gratis per tutti (decisione dell'utente dell'08-10): «Modifica il testo» a mano e «Correggi un
+// dettaglio» con Haiku (lex-correggi-documento, solo sostituzioni precise); ogni riscrittura di Lex costa 1
+// credito. Il testo corretto torna al contenitore con onModifica, così Lex lo vede nella conversazione.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { FileDown, FileText, Copy, Check, Loader2, ChevronDown, ChevronRight, Undo2, X } from 'lucide-react'
+import { FileDown, FileText, Copy, Check, Loader2, ChevronDown, ChevronRight, Undo2, X, Pencil, Wand2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { separaNote, blocchiDaMarkdown, numeraSegnaposti, blocchiCompilati, nomeFileDocumento, testoDi } from '@/lib/documento/testoDocumento'
+import { separaNote, blocchiDaMarkdown, numeraSegnaposti, blocchiCompilati, nomeFileDocumento, testoDi, ricomponi, cuociValori } from '@/lib/documento/testoDocumento'
+import { correggiDocumento } from '@/lib/documento/correzioni'
 import { cartaIntestata, RUOLI_CARTA_INTESTATA } from '@/lib/documento/cartaIntestata'
 import { creaDocx } from '@/lib/documento/docx'
 import CompilaDocumentoLex from '@/components/CompilaDocumentoLex'
@@ -122,9 +126,13 @@ function perAppunti(blocchi) {
     return { html: h.join('\n'), testo: t.join('\n\n') }
 }
 
-export default function DocumentoLex({ markdown, tipo, corrente = null }) {
+export default function DocumentoLex({ markdown, tipo, corrente = null, onModifica }) {
     const { profile } = useAuth()
-    const { corpo, note } = useMemo(() => separaNote(markdown), [markdown])
+    // Il testo mostrato: quello di Lex, poi quello corretto qui
+    const [testo, setTesto] = useState(markdown)
+    const [storia, setStoria] = useState([])          // testi precedenti, per «Annulla l'ultima modifica»
+    const ultimoTesto = useRef(markdown)
+    const { corpo, note, coda } = useMemo(() => separaNote(testo), [testo])
     const blocchi = useMemo(() => blocchiDaMarkdown(corpo), [corpo])
     const { blocchi: numerati, segnaposti } = useMemo(() => numeraSegnaposti(blocchi), [blocchi])
     const carta = useMemo(() => cartaIntestata(profile), [profile])
@@ -137,9 +145,24 @@ export default function DocumentoLex({ markdown, tipo, corrente = null }) {
     // { valori: { [n]: testo }, gruppi: [{ segnaposto, valore, numeri }], origine: { ambito, id, titolo } }
     const [compilazione, setCompilazione] = useState(null)
     const [datiAperti, setDatiAperti] = useState(false)
+    const [modificaManuale, setModificaManuale] = useState(false)
+    const [bozza, setBozza] = useState('')
+    const [richiesta, setRichiesta] = useState('')
+    const [correggendo, setCorreggendo] = useState(false)
+    const [esito, setEsito] = useState(null)          // { tipo: 'ok' | 'info' | 'errore', testo }
 
-    // Un altro documento: si riparte dai segnaposto
-    useEffect(() => { setCompilazione(null); setDatiAperti(false) }, [markdown])
+    // Un altro documento: si riparte da capo. Se il testo è quello appena corretto qui e tornato dal
+    // contenitore con onModifica, non cambia niente.
+    useEffect(() => {
+        if (markdown === ultimoTesto.current) return
+        ultimoTesto.current = markdown
+        setTesto(markdown)
+        setStoria([])
+        setCompilazione(null)
+        setDatiAperti(false)
+        setModificaManuale(false)
+        setEsito(null)
+    }, [markdown])
 
     const valori = useMemo(() => compilazione?.valori ?? {}, [compilazione])
     const finali = useMemo(() => blocchiCompilati(numerati, valori), [numerati, valori])
@@ -156,6 +179,64 @@ export default function DocumentoLex({ markdown, tipo, corrente = null }) {
             const gruppi = c.gruppi.filter((g) => g !== gruppo)
             return gruppi.length ? { ...c, valori: v, gruppi } : null
         })
+    }
+
+    // Il documento cambia: i dati in verde restano nel testo, si può tornare indietro
+    function aggiorna(nuovoCorpo) {
+        const nuovo = ricomponi(nuovoCorpo, coda)
+        setStoria([...storia.slice(-9), testo])
+        ultimoTesto.current = nuovo
+        setTesto(nuovo)
+        setCompilazione(null)
+        setDatiAperti(false)
+        onModifica?.(nuovo)
+    }
+
+    function annullaUltima() {
+        if (!storia.length) return
+        const precedente = storia[storia.length - 1]
+        setStoria(storia.slice(0, -1))
+        ultimoTesto.current = precedente
+        setTesto(precedente)
+        setCompilazione(null)
+        setEsito(null)
+        onModifica?.(precedente)
+    }
+
+    function apriModifica() {
+        setBozza(cuociValori(corpo, segnaposti, valori))
+        setModificaManuale(true)
+        setEsito(null)
+    }
+
+    function salvaModifica() {
+        if (bozza.trim() && bozza.trim() !== corpo.trim()) aggiorna(bozza)
+        setModificaManuale(false)
+    }
+
+    async function correggi(e) {
+        e?.preventDefault()
+        const r = richiesta.trim()
+        if (!r || correggendo) return
+        setCorreggendo(true)
+        setEsito(null)
+        try {
+            const { testo: nuovo, applicate, scartate, messaggio } = await correggiDocumento({ testo: cuociValori(corpo, segnaposti, valori), richiesta: r })
+            if (applicate > 0) {
+                aggiorna(nuovo)
+                setRichiesta('')
+                const parti = [applicate === 1 ? '1 correzione fatta.' : `${applicate} correzioni fatte.`]
+                if (scartate > 0) parti.push(scartate === 1 ? 'Una non si è potuta applicare: controlla il testo.' : `${scartate} non si sono potute applicare: controlla il testo.`)
+                if (messaggio) parti.push(messaggio)
+                setEsito({ tipo: 'ok', testo: parti.join(' ') })
+            } else {
+                setEsito({ tipo: 'info', testo: messaggio || 'Non ho trovato niente da correggere: prova a dirlo con altre parole o modifica il testo a mano.' })
+            }
+        } catch (err) {
+            setEsito({ tipo: 'errore', testo: err?.message || 'Non sono riuscito a fare la correzione. Riprova tra qualche istante.' })
+        } finally {
+            setCorreggendo(false)
+        }
     }
 
     async function scaricaWord() {
@@ -219,7 +300,7 @@ export default function DocumentoLex({ markdown, tipo, corrente = null }) {
                 )}
             </div>
 
-            {professionista && segnaposti.length > 0 && (
+            {professionista && segnaposti.length > 0 && !modificaManuale && (
                 <div className="space-y-2">
                     <CompilaDocumentoLex
                         ruolo={profile?.role}
@@ -271,6 +352,20 @@ export default function DocumentoLex({ markdown, tipo, corrente = null }) {
                 </div>
             )}
 
+            {modificaManuale ? (
+                <div className="space-y-2">
+                    <textarea value={bozza} onChange={(e) => setBozza(e.target.value)} rows={22}
+                        className="w-full bg-white text-neutral-900 font-display text-[0.95rem] leading-relaxed p-4 sm:p-6 border border-neutral-300 outline-none focus:border-oro/60" />
+                    <p className="font-body text-[11px] text-nebbia/40">
+                        Il testo usa il Markdown: ** prima e dopo le parole in grassetto, # all&apos;inizio della riga per i titoli.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={salvaModifica} className={pulsante}><Check size={12} /> Salva le modifiche</button>
+                        <button type="button" onClick={() => setModificaManuale(false)} className={pulsante}><X size={12} /> Annulla</button>
+                    </div>
+                </div>
+            ) : (
+            <>
             <Foglio blocchi={numerati} carta={cartaUsata} valori={valori} />
 
             <div className="flex flex-wrap items-center gap-2">
@@ -296,6 +391,30 @@ export default function DocumentoLex({ markdown, tipo, corrente = null }) {
                 </p>
             )}
             {avviso && <p className="font-body text-xs text-red-400/80">{avviso}</p>}
+
+            {/* Correzioni gratis: con Haiku o a mano. Le riscritture si chiedono a Lex (1 credito) */}
+            <div className="space-y-1.5">
+                <form onSubmit={correggi} className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                    <input value={richiesta} onChange={(e) => setRichiesta(e.target.value)} disabled={correggendo} maxLength={2000}
+                        placeholder="Es. il conduttore è Marco, non Mario"
+                        className="w-full sm:w-auto sm:flex-1 bg-petrolio border border-white/10 text-nebbia font-body text-xs px-3 py-2 outline-none focus:border-oro/50 placeholder:text-nebbia/30 disabled:opacity-50" />
+                    <button type="submit" disabled={correggendo || !richiesta.trim()} className={pulsante}>
+                        {correggendo ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Correggi
+                    </button>
+                </form>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={apriModifica} disabled={correggendo} className={pulsante}><Pencil size={12} /> Modifica il testo</button>
+                    {storia.length > 0 && (
+                        <button type="button" onClick={annullaUltima} disabled={correggendo} className={pulsante}><Undo2 size={12} /> Annulla l&apos;ultima modifica</button>
+                    )}
+                    <span className="font-body text-[11px] text-nebbia/35">Correzioni e modifiche a mano sono gratis. Per riscrivere una parte chiedilo a Lex nella chat: 1 credito.</span>
+                </div>
+                {esito && (
+                    <p className={`font-body text-xs ${esito.tipo === 'errore' ? 'text-red-400/80' : esito.tipo === 'ok' ? 'text-emerald-300/80' : 'text-nebbia/60'}`}>{esito.testo}</p>
+                )}
+            </div>
+            </>
+            )}
 
             {note && (
                 <div className="border border-white/10 bg-petrolio/40">

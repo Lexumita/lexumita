@@ -9,16 +9,20 @@ import { marked } from 'marked'
 const RE_TITOLO_NOTE = /^\s{0,3}(?:#{1,6}\s*)?(?:\*\*)?\s*Note per la revisione\b/i
 const RE_LINEA = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/
 
-// { corpo, note }: le note non finiscono nel file da firmare
+// { corpo, note, coda }: le note non finiscono nel file da firmare; coda è la parte delle note com'era
+// (riga «---» e titolo compresi), per ricomporre il testo dopo una modifica del documento
 export function separaNote(markdown) {
     const righe = String(markdown ?? '').split('\n')
     const i = righe.findIndex((r) => RE_TITOLO_NOTE.test(r))
-    if (i < 0) return { corpo: righe.join('\n').trim(), note: '' }
+    if (i < 0) return { corpo: righe.join('\n').trim(), note: '', coda: '' }
     let fine = i
     while (fine > 0 && /^\s*$/.test(righe[fine - 1])) fine--
     if (fine > 0 && RE_LINEA.test(righe[fine - 1])) fine--
-    return { corpo: righe.slice(0, fine).join('\n').trim(), note: righe.slice(i + 1).join('\n').trim() }
+    return { corpo: righe.slice(0, fine).join('\n').trim(), note: righe.slice(i + 1).join('\n').trim(), coda: righe.slice(fine).join('\n').trim() }
 }
+
+// Il testo intero dopo una modifica del documento: documento nuovo e note di prima
+export const ricomponi = (corpo, coda) => (coda ? `${corpo.trim()}\n\n${coda}\n` : corpo.trim())
 
 // Segnaposto da completare: [NOME E COGNOME DEL CONDUTTORE], [IMPORTO]... In maiuscolo e con almeno una
 // lettera: «[Luogo]» o «[12]» non lo sono.
@@ -161,4 +165,45 @@ export function nomeFileDocumento(tipo, estensione) {
     const base = String(tipo || 'Documento').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
     const oggi = new Date().toLocaleDateString('it-IT').replace(/\//g, '-')
     return `${base.charAt(0).toUpperCase()}${base.slice(1)} - ${oggi}.${estensione}`
+}
+
+// ── Correzioni e modifiche a mano (08-10-2026) ──
+// Prima di correggere, i dati della compilazione (in verde) entrano nel testo al posto dei loro segnaposto.
+// I segnaposto si contano sul testo come sui pezzi del foglio; se i due conti non coincidono (un segnaposto
+// spezzato da un grassetto) si scrivono solo quelli che hanno lo stesso valore in tutti i punti.
+const proteggi = (v) => String(v).replace(/([\\`*_[\]])/g, '\\$1')
+
+export function cuociValori(corpo, segnaposti, valori = {}) {
+    if (!segnaposti.some((s) => valori[s.n] != null)) return corpo
+    const trovati = [...corpo.matchAll(RE_SEGNAPOSTO)].filter((m) => eSegnaposto(m[0]))
+    if (trovati.length === segnaposti.length && trovati.every((m, i) => m[0] === segnaposti[i].segnaposto)) {
+        let out = ''
+        let ultimo = 0
+        trovati.forEach((m, i) => {
+            const v = valori[segnaposti[i].n]
+            out += corpo.slice(ultimo, m.index) + (v != null ? proteggi(v) : m[0])
+            ultimo = m.index + m[0].length
+        })
+        return out + corpo.slice(ultimo)
+    }
+    let out = corpo
+    for (const testo of new Set(segnaposti.map((s) => s.segnaposto))) {
+        const punti = segnaposti.filter((s) => s.segnaposto === testo)
+        const v = valori[punti[0].n]
+        if (v != null && punti.every((s) => valori[s.n] === v)) out = out.split(testo).join(proteggi(v))
+    }
+    return out
+}
+
+// Le sostituzioni della correzione una dopo l'altra (come in lex-correggi-documento); quelle il cui testo
+// non c'è più si saltano
+export function applicaSostituzioni(testo, sostituzioni = []) {
+    let t = testo
+    let applicate = 0
+    for (const s of sostituzioni) {
+        if (!s?.trova || !t.includes(s.trova)) continue
+        t = s.tutte ? t.split(s.trova).join(s.sostituisci ?? '') : t.replace(s.trova, () => s.sostituisci ?? '')
+        applicate++
+    }
+    return { testo: t, applicate }
 }
