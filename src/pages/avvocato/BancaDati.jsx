@@ -11,6 +11,7 @@ import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
+import DocumentoLex from '@/components/DocumentoLex'
 import { rottaSentenza } from '@/lib/rotte'
 import PacchettoLampo, {
     salvaRicercaInSospeso, prendiRicercaInSospeso, leggiEsitoLampo, leggiSaldoCrediti,
@@ -1176,11 +1177,16 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 <p className="font-body text-sm text-nebbia/60 leading-relaxed break-words">{m.content}</p>
                             ) : (
                                 <div className="font-body text-sm text-nebbia/80 leading-relaxed space-y-2 break-words">
-                                    <MarkdownMemo components={markdownComponents}>
-                                        {m.content}
-                                    </MarkdownMemo>
+                                    {/* 08-10-2026: l'utente ha chiesto di scrivere un documento: foglio con Word, PDF e Copia */}
+                                    {m.meta?.documento ? (
+                                        <DocumentoLex markdown={m.content} tipo={m.meta.documento.tipo} />
+                                    ) : (
+                                        <MarkdownMemo components={markdownComponents}>
+                                            {m.content}
+                                        </MarkdownMemo>
+                                    )}
 
-                                    {m.meta?.sentenze_marketplace?.length > 0 && (
+                                    {!m.meta?.documento && m.meta?.sentenze_marketplace?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <BookOpen size={12} className="text-oro" />
@@ -1212,7 +1218,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                         </div>
                                     )}
 
-                                    {m.meta?.approfondimenti_disponibili?.length > 0 && (
+                                    {!m.meta?.documento && m.meta?.approfondimenti_disponibili?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <Sparkles size={12} className="text-salvia" />
@@ -1247,7 +1253,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                         </div>
                                     )}
 
-                                    {m.content && !m.interrotta && m.tipo_risposta !== 'rigettata' && m.tipo_risposta !== 'messaggio_standard' && (
+                                    {m.content && !m.interrotta && !m.meta?.documento && m.tipo_risposta !== 'rigettata' && m.tipo_risposta !== 'messaggio_standard' && (
                                         <div className="mt-5 flex flex-wrap items-center gap-3">
                                             <button
                                                 onClick={() => scaricaPdf(i)}
