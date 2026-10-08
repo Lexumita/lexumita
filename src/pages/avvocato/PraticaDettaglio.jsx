@@ -7,6 +7,7 @@ import {
     Download, Gavel, ChevronRight, Clock, MapPin, ArrowLeft, StickyNote, Trash2, Check
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 import ReactMarkdown from 'react-markdown'
 import UdienzaModal from '@/components/UdienzaModal'
 import ContropartiBox from '@/components/ContropartiBox'
@@ -370,12 +371,11 @@ export default function PraticaDettaglio() {
         setLoadingDocs(false)
     }
 
-    async function scaricaDocumento(doc) {
+    // 08-10-2026: il documento si apre con l'accesso dell'utente, senza collegamento
+    // temporaneo (lib/fileSpazio). Se non si apre, come prima non succede niente.
+    function scaricaDocumento(doc) {
         const bucket = doc.bucket ?? 'documenti'
-        const { data } = await supabase.storage
-            .from(bucket)
-            .createSignedUrl(doc.storage_path, 3600)
-        if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+        apriFile({ bucket, percorso: doc.storage_path, nome: doc.nome_file }).catch(() => { })
     }
 
     async function eliminaDocumento(doc) {

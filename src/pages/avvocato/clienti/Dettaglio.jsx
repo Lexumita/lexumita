@@ -11,6 +11,7 @@ import {
     Copy, RefreshCw, CheckCircle, ShieldOff, Wallet, Landmark
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 import { useAuth } from '@/context/AuthContext'
 import GestioneMandati from '@/components/commercialista/GestioneMandati'
 import DocumentiPortale from '@/components/shared/DocumentiPortale'
@@ -423,17 +424,19 @@ function TabDocumenti({ clienteId }) {
         setLoading(false)
     }
 
-    async function apriAnteprima(doc) {
-        const { data } = await supabase
-            .from('archivio_documenti')
-            .select('storage_path')
-            .eq('id', doc.id)
-            .single()
-        if (!data?.storage_path) return
-        const { data: signed } = await supabase.storage
-            .from('archivio')
-            .createSignedUrl(data.storage_path, 3600)
-        if (signed?.signedUrl) window.open(signed.signedUrl, '_blank')
+    // 08-10-2026: il documento si apre con l'accesso dell'utente, senza collegamento
+    // temporaneo (lib/fileSpazio); la scheda si apre subito, nel clic, e il percorso
+    // si legge dopo. Se non si apre, come prima non succede niente.
+    function apriAnteprima(doc) {
+        apriFile(async () => {
+            const { data } = await supabase
+                .from('archivio_documenti')
+                .select('storage_path')
+                .eq('id', doc.id)
+                .single()
+            if (!data?.storage_path) return null
+            return { bucket: 'archivio', percorso: data.storage_path, nome: doc.titolo }
+        }).catch(() => { })
     }
 
     return (

@@ -4,11 +4,14 @@
 // il lordo non e' quanto deve versare); le scadute contano tra quelle da pagare;
 // le note di credito si vedono come tali e riducono il dovuto; il PDF si
 // scarica (policy fatture_pdf_select_cliente).
+// 08-10-2026: il PDF si apre con l'accesso del cliente, senza collegamento
+// temporaneo con l'indirizzo del server (lib/fileSpazio).
 
 import { useState, useEffect } from 'react'
 import { PageHeader, Badge } from '@/components/shared'
 import { CreditCard, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 import { useTipoStudio } from '@/hooks/useTipoStudio'
 import { formatImporto } from '@/lib/prezzi'
 
@@ -56,11 +59,9 @@ export default function ClienteFatture() {
     async function scaricaPdf(f) {
         setErrore(''); setScaricando(f.id)
         try {
-            const { data, error } = await supabase.storage.from('fatture').createSignedUrl(f.pdf_storage_path, 3600)
-            if (error || !data?.signedUrl) throw new Error('Download non riuscito, riprova.')
-            window.open(data.signedUrl, '_blank')
-        } catch (err) {
-            setErrore(err.message)
+            await apriFile({ bucket: 'fatture', percorso: f.pdf_storage_path })
+        } catch {
+            setErrore('Download non riuscito, riprova.')
         } finally {
             setScaricando(null)
         }

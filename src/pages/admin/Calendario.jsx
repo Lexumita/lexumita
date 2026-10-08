@@ -7,6 +7,7 @@ import {
     Paperclip, Upload, Trash2, FileText, Send
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 
 const MESI = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 const GIORNI = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
@@ -160,11 +161,10 @@ function ModalAllegatiDefault({ open, onClose }) {
         }
     }
 
-    async function scaricaFile(allegato) {
-        const { data } = await supabase.storage
-            .from('allegati-appuntamenti')
-            .createSignedUrl(allegato.storage_path, 60)
-        if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+    // 08-10-2026: l'allegato si apre con l'accesso dell'admin, senza collegamento
+    // temporaneo (lib/fileSpazio). Se non si apre, come prima non succede niente.
+    function scaricaFile(allegato) {
+        apriFile({ bucket: 'allegati-appuntamenti', percorso: allegato.storage_path, nome: allegato.nome_file }).catch(() => { })
     }
 
     if (!open) return null

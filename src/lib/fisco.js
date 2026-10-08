@@ -6,6 +6,7 @@
 
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
+import { apriFile } from '@/lib/fileSpazio'
 
 export const FORMATI_ACCETTATI = 'application/pdf,image/jpeg,image/png,image/webp'
 
@@ -244,25 +245,22 @@ export async function eliminaDocumentoFiscale(doc) {
     if (error) throw new Error('Eliminazione non riuscita: riprova.')
 }
 
-// La finestra si apre subito (gesto dell'utente), poi riceve l'indirizzo
-// firmato: così i blocchi dei popup non la fermano.
-export async function apriDocumento(archivioDocumentoId) {
+// La finestra si apre subito (gesto dell'utente), poi riceve il file: così i
+// blocchi dei popup non la fermano. 08-10-2026: il file si scarica con l'accesso
+// dell'utente, senza collegamento temporaneo (lib/fileSpazio); se il browser
+// blocca la finestra, il file si salva invece di aprirsi al posto di Lexum.
+// Se il file non c'è, la finestra si chiude come prima.
+export function apriDocumento(archivioDocumentoId) {
     if (!archivioDocumentoId) return
-    const finestra = window.open('', '_blank')
-    const { data } = await supabase
-        .from('archivio_documenti')
-        .select('storage_path, metadati')
-        .eq('id', archivioDocumentoId)
-        .maybeSingle()
-    const { data: firmato } = data?.storage_path
-        ? await supabase.storage.from(data.metadati?.bucket ?? 'archivio').createSignedUrl(data.storage_path, 3600)
-        : { data: null }
-    if (!firmato?.signedUrl) {
-        finestra?.close()
-        return
-    }
-    if (finestra) finestra.location.href = firmato.signedUrl
-    else window.location.href = firmato.signedUrl
+    apriFile(async () => {
+        const { data } = await supabase
+            .from('archivio_documenti')
+            .select('storage_path, metadati, titolo')
+            .eq('id', archivioDocumentoId)
+            .maybeSingle()
+        if (!data?.storage_path) return null
+        return { bucket: data.metadati?.bucket ?? 'archivio', percorso: data.storage_path, nome: data.titolo }
+    }).catch(() => { })
 }
 
 // ─── DALL'ARCHIVIO ───

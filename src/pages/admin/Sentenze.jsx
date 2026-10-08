@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
+import { useAnteprimaFile } from '@/lib/fileSpazio'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -410,7 +411,10 @@ export function AdminSentenzeDettaglio() {
   const [loading, setLoading] = useState(true)
   const [guadagno, setGuadagno] = useState(0)
   const [nAccessi, setNAccessi] = useState(0)
-  const [pdfUrl, setPdfUrl] = useState(null)
+  // 08-10-2026: il PDF si scarica con l'accesso dell'admin e si mostra da un indirizzo locale
+  // del browser, senza collegamento temporaneo (lib/fileSpazio); la pagina non lo aspetta
+  const { anteprima: pdf, caricando: caricandoPdf, carica: caricaPdf } = useAnteprimaFile()
+  const pdfUrl = pdf?.url ?? null
   const [cambiando, setCambiando] = useState(false)
   const [errore, setErrore] = useState('')
   const [notaRifiuto, setNotaRifiuto] = useState('')
@@ -429,10 +433,7 @@ export function AdminSentenzeDettaglio() {
         setS(sentenza)
 
         if (sentenza.pdf_storage_path) {
-          const { data } = await supabase.storage
-            .from('sentenze')
-            .createSignedUrl(sentenza.pdf_storage_path, 3600)
-          setPdfUrl(data?.signedUrl ?? null)
+          caricaPdf({ bucket: 'sentenze', percorso: sentenza.pdf_storage_path }).catch(() => { })
         }
 
         const { data: acc } = await supabase
@@ -680,7 +681,11 @@ export function AdminSentenzeDettaglio() {
             </a>
           )}
         </div>
-        {pdfUrl ? (
+        {caricandoPdf ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
+          </div>
+        ) : pdfUrl ? (
           <iframe src={pdfUrl} title={s.oggetto ?? 'Sentenza'}
             className="w-full border border-white/5" style={{ height: 700 }} />
         ) : (

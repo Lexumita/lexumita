@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
+import { useAnteprimaFile } from '@/lib/fileSpazio'
 
 // ─────────────────────────────────────────────────────────────
 // HOOK — carica codici_lex raggruppati per macro-area
@@ -1187,7 +1188,10 @@ export function AvvocatoSentenzeDettaglio() {
   const { id } = useParams()
   const [s, setS] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [pdfUrl, setPdfUrl] = useState(null)
+  // 08-10-2026: il PDF si scarica con l'accesso dell'utente e si mostra da un indirizzo locale
+  // del browser, senza collegamento temporaneo (lib/fileSpazio); la pagina non lo aspetta
+  const { anteprima: pdf, caricando: caricandoPdf, carica: caricaPdf } = useAnteprimaFile()
+  const pdfUrl = pdf?.url ?? null
   const [accessi, setAccessi] = useState(0)
   const [guadagno, setGuadagno] = useState(0)
 
@@ -1198,8 +1202,7 @@ export function AvvocatoSentenzeDettaglio() {
       if (sentenza) {
         setS(sentenza)
         if (sentenza.pdf_storage_path) {
-          const { data } = await supabase.storage.from('sentenze').createSignedUrl(sentenza.pdf_storage_path, 3600)
-          setPdfUrl(data?.signedUrl ?? null)
+          caricaPdf({ bucket: 'sentenze', percorso: sentenza.pdf_storage_path }).catch(() => { })
         }
         const { data: acc } = await supabase.from('accessi_sentenze').select('quota_autore').eq('sentenza_id', id)
         const tot = (acc ?? []).reduce((a, c) => a + parseFloat(c.quota_autore ?? 0), 0)
@@ -1276,7 +1279,11 @@ export function AvvocatoSentenzeDettaglio() {
 
       <div className="bg-slate border border-white/5 p-5">
         <p className="section-label mb-4">Documento</p>
-        {pdfUrl ? (
+        {caricandoPdf ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="animate-spin w-5 h-5 border-2 border-oro border-t-transparent rounded-full" />
+          </div>
+        ) : pdfUrl ? (
           <div className="space-y-3">
             <iframe src={pdfUrl} className="w-full rounded h-[420px] lg:h-[600px]" title={s.oggetto ?? 'Sentenza'} />
             <a href={pdfUrl} target="_blank" rel="noreferrer" className="btn-secondary text-sm inline-flex items-center gap-2">

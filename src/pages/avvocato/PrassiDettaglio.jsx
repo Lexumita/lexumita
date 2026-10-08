@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAnteprimaFile } from '@/lib/fileSpazio'
 import { useAuth } from '@/context/AuthContext'
 import { BackButton, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
@@ -152,7 +153,10 @@ export default function PrassiDettaglio() {
     const [ente, setEnte] = useState(null)
     const [loading, setLoading] = useState(true)
     const [errore, setErrore] = useState(null)
-    const [pdfUrl, setPdfUrl] = useState(null)
+    // 08-10-2026: il PDF si scarica con l'accesso dell'utente e si mostra da un indirizzo locale
+    // del browser, senza collegamento temporaneo (lib/fileSpazio)
+    const { anteprima: pdf, carica: caricaPdf } = useAnteprimaFile()
+    const pdfUrl = pdf?.url ?? null
     const [refreshEtichette, setRefreshEtichette] = useState(0)
 
     useEffect(() => {
@@ -181,7 +185,7 @@ export default function PrassiDettaglio() {
                     setEnte(enteData)
                 }
 
-                // Signed URL PDF (se presente e file esiste)
+                // PDF (se presente e file esiste): la pagina non lo aspetta
                 if (data.pdf_storage_path) {
                     const lastSlash = data.pdf_storage_path.lastIndexOf('/')
                     const folder = lastSlash > 0 ? data.pdf_storage_path.slice(0, lastSlash) : ''
@@ -194,10 +198,7 @@ export default function PrassiDettaglio() {
                     const fileExists = listData && listData.some(f => f.name === filename)
 
                     if (fileExists) {
-                        const { data: signed } = await supabase.storage
-                            .from('prassi-pdf')
-                            .createSignedUrl(data.pdf_storage_path, 3600)
-                        setPdfUrl(signed?.signedUrl ?? null)
+                        caricaPdf({ bucket: 'prassi-pdf', percorso: data.pdf_storage_path }).catch(() => { })
                     }
                 }
             } catch (e) {

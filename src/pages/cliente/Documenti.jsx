@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { PageHeader, Badge } from '@/components/shared'
 import { Upload, FileText, Eye, Lock, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 
 function formatSize(bytes) {
     if (!bytes) return '—'
@@ -76,9 +77,10 @@ export default function ClienteDocumenti() {
         finally { setUploading(false) }
     }
 
-    async function apriDoc(doc) {
-        const { data } = await supabase.storage.from('documenti').createSignedUrl(doc.storage_path, 60)
-        if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+    // 08-10-2026: il documento si apre con l'accesso del cliente, senza collegamento
+    // temporaneo (lib/fileSpazio). Se non si apre, come prima non succede niente.
+    function apriDoc(doc) {
+        apriFile({ bucket: 'documenti', percorso: doc.storage_path, nome: doc.nome }).catch(() => { })
     }
 
     return (

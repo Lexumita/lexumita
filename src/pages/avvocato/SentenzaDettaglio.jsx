@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAnteprimaFile } from '@/lib/fileSpazio'
 import { useAuth } from '@/context/AuthContext'
 import { BackButton, PageHeader, Badge } from '@/components/shared'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
@@ -273,8 +274,10 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
     const [prezzo, setPrezzo] = useState(15)
     const [prodottoId, setProdottoId] = useState(null)
 
-    // PDF signed URL
-    const [pdfUrl, setPdfUrl] = useState(null)
+    // PDF: 08-10-2026 si scarica con l'accesso dell'utente e si mostra da un indirizzo locale
+    // del browser, senza collegamento temporaneo (lib/fileSpazio)
+    const { anteprima: pdf, carica: caricaPdf, svuota: svuotaPdf } = useAnteprimaFile()
+    const pdfUrl = pdf?.url ?? null
 
     // Notifica acquisto appena completato (da redirect Stripe)
     const [appenaAcquistata, setAppenaAcquistata] = useState(false)
@@ -314,10 +317,13 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
 
                 // 2. Logica di accesso
                 const { data: { user } } = await supabase.auth.getUser()
+                // chi vede il testo integrale vede anche il PDF: solo per lui il PDF si scarica
+                let accessoPdf = false
 
                 if (fonte === 'lexum') {
                     // Corpus Lexum: accesso libero per utenti autenticati
                     setHaAccesso(true)
+                    accessoPdf = true
                 } else {
                     // Sentenza avvocato: check se autore o acquirente
                     const amIAutore = user && sentenzaData.autore_id === user.id
@@ -339,6 +345,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     if (amIAutore || amIStudioMembro) {
                         setIsAutore(true)
                         setHaAccesso(true)
+                        accessoPdf = true
                     } else {
                         // Check accessi_sentenze
                         const { data: accesso } = await supabase
@@ -349,6 +356,7 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                             .maybeSingle()
 
                         setHaAccesso(!!accesso)
+                        accessoPdf = !!accesso
                     }
 
                     // Carica prezzo e prodotto per eventuale checkout
@@ -364,11 +372,10 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     }
                 }
 
-                // 3. Signed URL del PDF (solo se ha accesso e il file esiste davvero)
-                // 3. Signed URL del PDF (solo se ha accesso e il file esiste davvero)
-                if (sentenzaData.pdf_storage_path) {
+                // 3. PDF (solo se ha accesso e il file esiste davvero): la pagina non lo aspetta
+                if (accessoPdf && sentenzaData.pdf_storage_path) {
                     const bucket = fonte === 'lexum' ? 'giurisprudenza-pdf' : 'sentenze'
-                    // Verifica esistenza prima di chiedere la signed URL (evita 404 in console)
+                    // Verifica esistenza prima di scaricarlo (evita 404 in console)
                     const lastSlash = sentenzaData.pdf_storage_path.lastIndexOf('/')
                     const folder = lastSlash > 0 ? sentenzaData.pdf_storage_path.slice(0, lastSlash) : ''
                     const filename = lastSlash > 0 ? sentenzaData.pdf_storage_path.slice(lastSlash + 1) : sentenzaData.pdf_storage_path
@@ -380,12 +387,9 @@ export default function SentenzaDettaglio({ fonte = 'lexum' }) {
                     const fileExists = listData && listData.some(f => f.name === filename)
 
                     if (fileExists) {
-                        const { data: signed } = await supabase.storage
-                            .from(bucket)
-                            .createSignedUrl(sentenzaData.pdf_storage_path, 3600)
-                        setPdfUrl(signed?.signedUrl ?? null)
+                        caricaPdf({ bucket, percorso: sentenzaData.pdf_storage_path }).catch(() => { })
                     } else {
-                        setPdfUrl(null)
+                        svuotaPdf()
                     }
                 }
 

@@ -7,13 +7,14 @@
 // tabella (cliente_id = auth.uid() AND visibile_cliente).
 //
 // Storage: bucket 'documenti', path `${clienteId}/<timestamp>.<ext>` così che il
-// cliente (auth.uid() = clienteId) possa generare il signed URL sul proprio file.
+// cliente (auth.uid() = clienteId) possa scaricare il proprio file.
 //
 // Props: clienteId (string, uuid del cliente/profilo)
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { apriFile } from '@/lib/fileSpazio'
 import { Upload, FileText, Eye, Trash2, AlertCircle, Share2 } from 'lucide-react'
 
 function formatSize(bytes) {
@@ -72,9 +73,10 @@ export default function DocumentiPortale({ clienteId }) {
         finally { setUploading(false) }
     }
 
-    async function apri(doc) {
-        const { data } = await supabase.storage.from('documenti').createSignedUrl(doc.storage_path, 60)
-        if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+    // 08-10-2026: il file si apre con l'accesso dell'utente, senza collegamento temporaneo
+    // (lib/fileSpazio). Se non si apre, come prima non succede niente.
+    function apri(doc) {
+        apriFile({ bucket: 'documenti', percorso: doc.storage_path, nome: doc.nome }).catch(() => { })
     }
 
     async function rimuovi(doc) {
