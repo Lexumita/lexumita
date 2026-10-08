@@ -5,7 +5,7 @@
 // più la carta intestata presa dal profilo (decisione dell'utente dell'08-10); i privati scaricano senza.
 // Sempre per avvocati e commercialisti: «Compila con i dati di una pratica / di un mandato». I dati inseriti
 // sono in verde nel foglio, si possono togliere uno per uno o tutti con Annulla, e Word, PDF e Copia usano il
-// testo compilato. Dentro una pratica (`praticaCorrente`) si compila con quella, senza scegliere.
+// testo compilato. Dentro una pratica o un mandato (`corrente`) si compila con quello, senza scegliere.
 
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -122,7 +122,7 @@ function perAppunti(blocchi) {
     return { html: h.join('\n'), testo: t.join('\n\n') }
 }
 
-export default function DocumentoLex({ markdown, tipo, praticaCorrente = null }) {
+export default function DocumentoLex({ markdown, tipo, corrente = null }) {
     const { profile } = useAuth()
     const { corpo, note } = useMemo(() => separaNote(markdown), [markdown])
     const blocchi = useMemo(() => blocchiDaMarkdown(corpo), [corpo])
@@ -226,7 +226,7 @@ export default function DocumentoLex({ markdown, tipo, praticaCorrente = null })
                         profilo={profile}
                         numerati={numerati}
                         segnaposti={segnaposti}
-                        praticaCorrente={praticaCorrente}
+                        corrente={corrente}
                         onCompilato={(c) => { setCompilazione(c); setDatiAperti(false) }}
                         classePulsante={pulsante}
                     />
@@ -236,7 +236,7 @@ export default function DocumentoLex({ markdown, tipo, praticaCorrente = null })
                                 <p className="font-body text-xs text-nebbia/70">
                                     {compilazione.origine.titolo
                                         ? `Compilato con ${compilazione.origine.ambito === 'mandato' ? 'il mandato' : 'la pratica'} «${compilazione.origine.titolo}»: `
-                                        : 'Compilato con i dati di questa pratica: '}
+                                        : `Compilato con i dati ${compilazione.origine.ambito === 'mandato' ? 'di questo mandato' : 'di questa pratica'}: `}
                                     {inseriti === 1 ? '1 dato inserito' : `${inseriti} dati inseriti`}, in verde nel foglio. Controllali prima di firmare.
                                 </p>
                                 <button type="button" onClick={() => setDatiAperti((v) => !v)}

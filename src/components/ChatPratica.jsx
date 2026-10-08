@@ -837,7 +837,7 @@ export default function ChatPratica({ praticaId, titoloPratica }) {
                             <p className="font-body text-sm text-nebbia/60 leading-relaxed">{m.content}</p>
                         ) : m.tipo === 'documento_lex' ? (
                             <div>
-                                <DocumentoLex markdown={m.content} tipo={m.tipo_nome} praticaCorrente={{ id: praticaId, titolo: titoloPratica }} />
+                                <DocumentoLex markdown={m.content} tipo={m.tipo_nome} corrente={{ id: praticaId, titolo: titoloPratica }} />
                                 {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
                                 <p className="mt-3 font-body text-xs lg:text-[11px] text-nebbia/35 leading-relaxed">
                                     Documento scritto con intelligenza artificiale. Lex può commettere errori:

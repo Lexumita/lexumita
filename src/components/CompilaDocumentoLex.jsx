@@ -3,8 +3,8 @@
 // 08-10-2026: «Compila con i dati di una pratica» (avvocati) e «di un mandato» (commercialisti) per i
 // documenti scritti da Lex. Si sceglie la pratica o il mandato; il sito legge i dati con l'accesso
 // dell'utente, la funzione lex-compila-documento dice quali segnaposto si completano con quali dati
-// (senza vederne i valori) e qui si mettono i valori. Dentro una pratica la scelta non serve:
-// `praticaCorrente` è già quella.
+// (senza vederne i valori) e qui si mettono i valori. Dentro una pratica o un mandato la scelta non
+// serve: `corrente` ({ id, titolo }) è già quello giusto.
 
 import { useEffect, useMemo, useState } from 'react'
 import { FolderInput, Loader2, Search, X } from 'lucide-react'
@@ -13,7 +13,7 @@ import { elencoPratiche, elencoMandati, datiPratica, datiMandato, abbinaSegnapos
 
 const MSG_ERRORE = 'Non sono riuscito a compilare il documento. Riprova tra qualche istante.'
 
-export default function CompilaDocumentoLex({ ruolo, profilo, numerati, segnaposti, praticaCorrente = null, onCompilato, classePulsante }) {
+export default function CompilaDocumentoLex({ ruolo, profilo, numerati, segnaposti, corrente = null, onCompilato, classePulsante }) {
     const ambito = ruolo === 'commercialista' ? 'mandato' : 'pratica'
     const [aperto, setAperto] = useState(false)
     const [elenco, setElenco] = useState(null)
@@ -45,7 +45,7 @@ export default function CompilaDocumentoLex({ ruolo, profilo, numerati, segnapos
             const dati = ambito === 'mandato' ? await datiMandato(voce.id, profilo) : await datiPratica(voce.id, profilo)
             const { valori, gruppi } = await abbinaSegnaposti({ ambito, numerati, segnaposti, dati })
             if (!gruppi.length) {
-                const quale = voce.titolo ? `${ambito === 'mandato' ? 'del mandato' : 'della pratica'} «${voce.titolo}»` : 'della pratica'
+                const quale = `${ambito === 'mandato' ? 'del mandato' : 'della pratica'}${voce.titolo ? ` «${voce.titolo}»` : ''}`
                 setAvviso(`Nessun dato ${quale} corrisponde ai dati da completare di questo documento.`)
                 return
             }
@@ -67,12 +67,12 @@ export default function CompilaDocumentoLex({ ruolo, profilo, numerati, segnapos
         </>
     )
 
-    // Dentro la pratica: un solo pulsante, nessuna scelta
-    if (praticaCorrente) {
+    // Dentro la pratica o il mandato: un solo pulsante, nessuna scelta
+    if (corrente) {
         return (
             <div className="space-y-1.5">
-                <button type="button" onClick={() => compila(praticaCorrente)} disabled={!!lavoro} className={classePulsante}>
-                    {icona(!!lavoro)} Compila con i dati di questa pratica
+                <button type="button" onClick={() => compila(corrente)} disabled={!!lavoro} className={classePulsante}>
+                    {icona(!!lavoro)} {ambito === 'mandato' ? 'Compila con i dati di questo mandato' : 'Compila con i dati di questa pratica'}
                 </button>
                 {messaggi}
             </div>

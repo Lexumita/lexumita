@@ -379,8 +379,8 @@ export default function MandatoDettaglio() {
                 {/* RIGA 7 — Assistente Lex del mandato */}
                 <ChatMandato
                     mandatoId={mandato.id}
+                    titoloMandato={mandato.titolo}
                     onRicercaSalvata={() => setRefreshRicerche(k => k + 1)}
-                    onDocumentoSalvato={() => setRefreshDocumenti(k => k + 1)}
                 />
 
                 {/* RIGA 8 — Ricerche */}

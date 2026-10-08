@@ -1,23 +1,29 @@
 // src/components/commercialista/ChatMandato.jsx
 //
-// Assistente AI sul mandato: chat contestuale + generazione documenti fiscali.
-// - Chat: chiama lex-mandato (JSON), che conosce cliente, scadenze, conto
-//   economico e personale del mandato.
-// - Genera documento: selezionato un tipo (parere fiscale, rendiconto, ...),
-//   lex-mandato delega a lex-genera-documento e lo stream SSE arriva qui
-//   (eventi stato/chunk/done, stesso pattern di ChatPratica).
-// Le risposte e i documenti si possono salvare tra le Ricerche del mandato.
+// Lex del commercialista sul mandato.
+// 08-10-2026: la chat passa dal Lead come la pratica dell'avvocato (lex-mandato → lex-lead con i dati
+// del mandato): le risposte cercano nelle fonti quando serve (norme, prassi dell'Agenzia delle Entrate,
+// giurisprudenza) e i documenti li scrive lo stesso Lex della Banca Dati, in qualsiasi forma, non più i
+// 5 modelli fissi. Il documento si apre nel foglio (DocumentoLex): Scarica Word e PDF, Copia, carta
+// intestata e «Compila con i dati di questo mandato». Le risposte e i documenti si possono salvare tra
+// le Ricerche del mandato.
+//
+// Stream SSE di lex-mandato (risposta del Lead):
+//   event: fase  -> { fase, descrizione }   («Scrittura del documento» quando scrive un documento)
+//   event: chunk -> { text }
+//   event: done  -> { crediti_rimasti, tipo_risposta, meta: { documento: { tipo } | null } }
+//   event: error -> { error }
 //
 // Props:
-//   mandatoId  (string)
-//   onRicercaSalvata()    - notifica al box ricerche (refresh)
-//   onDocumentoSalvato()  - notifica al box documenti (refresh dopo salvataggio PDF)
+//   mandatoId (string), titoloMandato (string)
+//   onRicercaSalvata() - notifica al box ricerche (refresh)
 
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, Send, Loader2, Save, AlertCircle, Check, FileText, X } from 'lucide-react'
+import { Sparkles, Send, Loader2, Save, AlertCircle, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import ReactMarkdown from 'react-markdown'
+import DocumentoLex from '@/components/DocumentoLex'
 
 const SUGGERIMENTI = [
     'Quali scadenze fiscali ho aperte su questo mandato?',
@@ -26,13 +32,12 @@ const SUGGERIMENTI = [
     'Quali adempimenti IVA mi aspettano nel prossimo trimestre?',
 ]
 
-// Tipi documento fiscali (allineati a lex-genera-documento, categoria 'fiscale')
-const TIPI_DOCUMENTO = [
-    { codice: 'parere_fiscale', nome: 'Parere fiscale' },
-    { codice: 'rendiconto_contabile', nome: 'Rendiconto contabile' },
-    { codice: 'lettera_cliente', nome: 'Lettera al cliente' },
-    { codice: 'comunicazione_scadenze', nome: 'Comunicazione scadenze' },
-    { codice: 'relazione_bilancio', nome: 'Relazione situazione contabile' },
+// Esempi di documenti: riempiono la casella, poi si completa la richiesta. Lex scrive qualsiasi documento.
+const ESEMPI_DOCUMENTI = [
+    { nome: 'Lettera al cliente', testo: 'Scrivi una lettera al cliente con le scadenze fiscali del prossimo mese' },
+    { nome: 'Parere fiscale', testo: 'Prepara un parere fiscale su ' },
+    { nome: 'Relazione contabile', testo: 'Scrivi una relazione sulla situazione contabile del mandato per il cliente' },
+    { nome: 'Risposta all\'Agenzia', testo: 'Scrivi la risposta alla comunicazione dell\'Agenzia delle Entrate che ' },
 ]
 
 const MD = {
@@ -44,67 +49,35 @@ const MD = {
     ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
     li: ({ children }) => <li className="font-body text-sm text-nebbia/70">{children}</li>,
     p: ({ children }) => <p className="font-body text-sm text-nebbia/70 leading-relaxed mb-1.5">{children}</p>,
+    a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-oro/80 hover:text-oro underline">{children}</a>,
 }
 
-export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSalvato }) {
-    const [messaggi, setMessaggi] = useState([])   // { role, content, salvata?, documento?, tipo_nome? }
+export default function ChatMandato({ mandatoId, titoloMandato, onRicercaSalvata }) {
+    const [messaggi, setMessaggi] = useState([])   // { role, content, tipo?: 'documento_lex', tipo_nome?, salvata? }
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [errore, setErrore] = useState('')
     const [salvandoIdx, setSalvandoIdx] = useState(null)
-    const [salvandoPdfIdx, setSalvandoPdfIdx] = useState(null)
-    const [tipoDocSel, setTipoDocSel] = useState('')          // codice tipo documento | ''
-    const [statoGenerazione, setStatoGenerazione] = useState('')
-    const [chunkLive, setChunkLive] = useState('')
+    const [fase, setFase] = useState('')
+    const [testoLive, setTestoLive] = useState('')
     const fondoRef = useRef(null)
+    const inputRef = useRef(null)
 
-    useEffect(() => { fondoRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messaggi, loading, chunkLive])
+    useEffect(() => { fondoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, [messaggi, loading])
 
     async function invia(domanda) {
-        if (tipoDocSel) { generaDocumento(); return }
         const q = (domanda ?? input).trim()
         if (!q || loading) return
         setErrore('')
-        const nuoviMsg = [...messaggi, { role: 'user', content: q }]
-        setMessaggi(nuoviMsg)
+        const precedenti = messaggi
+        setMessaggi([...precedenti, { role: 'user', content: q }])
         setInput('')
         setLoading(true)
+        setFase('')
+        setTestoLive('')
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lex-mandato`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                body: JSON.stringify({ mandato_id: mandatoId, domanda: q, messaggi: nuoviMsg.slice(0, -1) }),
-            })
-            const json = await res.json()
-            if (!json.ok) {
-                if (res.status === 402 || json.crediti_esauriti) {
-                    throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
-                }
-                throw new Error(sanitizzaErrore(json.error) ?? 'Risposta non disponibile')
-            }
-            setMessaggi(m => [...m, { role: 'assistant', content: json.risposta }])
-        } catch (e) {
-            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    // ─── Generazione documento: SSE (stato/chunk/done/error) ───
-    async function generaDocumento() {
-        if (loading) return
-        const tipo = TIPI_DOCUMENTO.find(t => t.codice === tipoDocSel)
-        if (!tipo) return
-        const istruzione = input.trim()
-        setErrore('')
-        setMessaggi(m => [...m, { role: 'user', content: `Genera: ${tipo.nome}${istruzione ? ` — ${istruzione}` : ''}` }])
-        setInput('')
-        setLoading(true)
-        setStatoGenerazione('Avvio la generazione…')
-        setChunkLive('')
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) throw new Error('Sessione scaduta. Ricarica la pagina.')
             const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lex-mandato`, {
                 method: 'POST',
                 headers: {
@@ -112,85 +85,55 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                     'Accept': 'text/event-stream',
                     'Authorization': `Bearer ${session.access_token}`,
                 },
-                body: JSON.stringify({ mandato_id: mandatoId, domanda: istruzione, tipo_documento: tipoDocSel }),
+                // Anche i documenti già scritti vanno nella storia: così si possono chiedere modifiche
+                body: JSON.stringify({ mandato_id: mandatoId, domanda: q, messaggi: precedenti.map(m => ({ role: m.role, content: m.content })) }),
             })
-
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}))
                 if (res.status === 402 || json.crediti_esauriti) {
                     throw new Error('Crediti Lex esauriti. Acquista un pacchetto crediti dalla sezione Acquista per continuare.')
                 }
-                throw new Error(sanitizzaErrore(json.error) ?? `Il servizio non ha risposto (codice ${res.status}). Riprova tra qualche istante.`)
+                throw new Error(sanitizzaErrore(json.error) ?? 'Risposta non disponibile')
             }
 
-            // Reader SSE (stesso pattern di ChatPratica)
             const reader = res.body.getReader()
             const decoder = new TextDecoder()
             let buffer = ''
-            let eventName = ''
-            let documentoFinale = null
-            let tipoNomeFinale = tipo.nome
-            let tipoCodiceFinale = tipo.codice
-            let accumulo = ''
-
+            let evento = null
+            let testo = ''
+            let documento = null
+            let erroreStream = null
             while (true) {
-                const { done, value } = await reader.read()
+                const { value, done } = await reader.read()
                 if (done) break
                 buffer += decoder.decode(value, { stream: true })
                 const righe = buffer.split('\n')
                 buffer = righe.pop() ?? ''
                 for (const riga of righe) {
-                    if (riga.startsWith('event:')) { eventName = riga.slice(6).trim(); continue }
+                    if (riga.startsWith('event:')) { evento = riga.slice(6).trim(); continue }
                     if (!riga.startsWith('data:')) continue
-                    let data
-                    try { data = JSON.parse(riga.slice(5).trim()) } catch { continue }
-                    if (eventName === 'stato' && data.messaggio) setStatoGenerazione(data.messaggio)
-                    else if (eventName === 'chunk' && data.text) { accumulo += data.text; setChunkLive(accumulo) }
-                    else if (eventName === 'done') {
-                        documentoFinale = data.documento_markdown ?? accumulo
-                        tipoNomeFinale = data.tipo_nome ?? tipo.nome
-                        tipoCodiceFinale = data.tipo_documento ?? tipo.codice
-                    }
-                    else if (eventName === 'error') throw new Error(sanitizzaErrore(data.error) ?? 'Errore nella generazione')
+                    let dati
+                    try { dati = JSON.parse(riga.slice(5).trim()) } catch { continue }
+                    if (evento === 'fase' && dati.descrizione) setFase(dati.descrizione)
+                    else if (evento === 'chunk') { testo += dati.text ?? ''; setTestoLive(testo) }
+                    else if (evento === 'done' && dati.meta?.documento) documento = dati.meta.documento
+                    else if (evento === 'error') erroreStream = sanitizzaErrore(dati.error) ?? 'La risposta si è interrotta. Riprova tra qualche istante.'
                 }
             }
-
-            if (!documentoFinale) throw new Error('Generazione interrotta: nessun documento ricevuto.')
-            setMessaggi(m => [...m, { role: 'assistant', content: documentoFinale, documento: true, tipo_nome: tipoNomeFinale, tipo_codice: tipoCodiceFinale }])
-            setTipoDocSel('')
+            if (!testo.trim()) {
+                setMessaggi(precedenti)
+                throw new Error(erroreStream ?? 'La risposta non è stata generata. Riprova tra qualche istante.')
+            }
+            setMessaggi([...precedenti, { role: 'user', content: q }, documento
+                ? { role: 'assistant', tipo: 'documento_lex', content: testo, tipo_nome: documento.tipo ?? 'documento' }
+                : { role: 'assistant', content: testo }])
+            if (erroreStream) setErrore(erroreStream)
         } catch (e) {
             setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
         } finally {
             setLoading(false)
-            setStatoGenerazione('')
-            setChunkLive('')
-        }
-    }
-
-    // Salva il documento generato come PDF nell'archivio del mandato
-    // (edge salva-documento-pdf, ramo mandato_id → archivio_documenti).
-    async function salvaPdf(idx) {
-        const msg = messaggi[idx]
-        if (!msg || !msg.documento) return
-        setSalvandoPdfIdx(idx)
-        setErrore('')
-        try {
-            const { data, error } = await supabase.functions.invoke('salva-documento-pdf', {
-                body: {
-                    mandato_id: mandatoId,
-                    template_codice: msg.tipo_codice ?? 'documento',
-                    template_nome: msg.tipo_nome ?? 'Documento',
-                    markdown_finale: msg.content,
-                },
-            })
-            if (error) throw new Error(error.message ?? 'Salvataggio PDF non riuscito')
-            if (!data?.ok) throw new Error(data?.error ?? 'Salvataggio PDF non riuscito')
-            setMessaggi(m => m.map((x, i) => i === idx ? { ...x, pdf_salvato: true, pdf_url: data.url ?? null } : x))
-            onDocumentoSalvato?.()
-        } catch (e) {
-            setErrore(sanitizzaErrore(e) ?? 'Si è verificato un errore temporaneo. Riprova tra qualche istante.')
-        } finally {
-            setSalvandoPdfIdx(null)
+            setFase('')
+            setTestoLive('')
         }
     }
 
@@ -200,18 +143,20 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
         setSalvandoIdx(idx)
         try {
             const { data: { user } } = await supabase.auth.getUser()
-            const titolo = msg.documento
-                ? (msg.tipo_nome ?? 'Documento generato')
+            const documento = msg.tipo === 'documento_lex'
+            const titolo = documento
+                ? (msg.tipo_nome ? msg.tipo_nome.charAt(0).toUpperCase() + msg.tipo_nome.slice(1) : 'Documento')
                 : (messaggi[idx - 1]?.content ?? 'Chat Lex')
-            await supabase.from('ricerche').insert({
+            const { error } = await supabase.from('ricerche').insert({
                 mandato_id: mandatoId,
                 user_id: user.id,
                 autore_id: user.id,
                 tipo: 'chat_lex',
                 titolo: titolo.slice(0, 80),
                 contenuto: msg.content,
-                metadati: { ts: new Date().toISOString(), documento: !!msg.documento },
+                metadati: { ts: new Date().toISOString(), documento },
             })
+            if (error) throw new Error(error.message)
             setMessaggi(m => m.map((x, i) => i === idx ? { ...x, salvata: true } : x))
             onRicercaSalvata?.()
         } catch (e) {
@@ -221,7 +166,12 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
         }
     }
 
-    const tipoSelezionato = TIPI_DOCUMENTO.find(t => t.codice === tipoDocSel)
+    function usaEsempio(testo) {
+        setInput(testo)
+        inputRef.current?.focus()
+    }
+
+    const scriveDocumento = fase === 'Scrittura del documento'
 
     return (
         <div className="bg-slate border border-white/5 flex flex-col">
@@ -232,10 +182,14 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
             </div>
 
             {/* Conversazione */}
-            <div className="px-6 py-4 space-y-4 max-h-[460px] overflow-y-auto">
+            <div className="px-6 py-4 space-y-4 max-h-[720px] overflow-y-auto">
                 {messaggi.length === 0 && !loading ? (
-                    <div className="py-4">
-                        <p className="font-body text-sm text-nebbia/40 mb-3">Chiedi qualcosa sul mandato, oppure genera un documento fiscale (parere, rendiconto, lettera al cliente…).</p>
+                    <div className="py-4 space-y-4">
+                        <p className="font-body text-sm text-nebbia/40">
+                            Chiedi qualcosa sul mandato: Lex conosce cliente, regime, scadenze, conti, personale e documenti
+                            dell&apos;archivio, e quando serve cerca nelle norme e nella prassi. Può anche scrivere lettere,
+                            pareri, relazioni e qualsiasi altro documento con i dati del mandato.
+                        </p>
                         <div className="flex flex-wrap gap-2">
                             {SUGGERIMENTI.map((s, i) => (
                                 <button key={i} onClick={() => invia(s)}
@@ -249,24 +203,30 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                     m.role === 'user' ? (
                         <div key={i} className="flex justify-end">
                             <div className="bg-oro/10 border border-oro/20 px-3 py-2 max-w-[80%]">
-                                <p className="font-body text-sm text-nebbia">{m.content}</p>
+                                <p className="font-body text-sm text-nebbia whitespace-pre-wrap">{m.content}</p>
                             </div>
                         </div>
                     ) : (
                         <div key={i} className="flex flex-col gap-1.5">
-                            {m.documento && (
-                                <div className="flex items-center gap-1.5 font-body text-[11px] text-oro/70">
-                                    <FileText size={12} /> {m.tipo_nome ?? 'Documento generato'}
+                            {m.tipo === 'documento_lex' ? (
+                                <div>
+                                    <DocumentoLex markdown={m.content} tipo={m.tipo_nome} corrente={{ id: mandatoId, titolo: titoloMandato }} />
+                                    {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
+                                    <p className="mt-3 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                        Documento scritto con intelligenza artificiale. Lex può commettere errori:
+                                        rileggilo e verifica dati e fonti prima di firmarlo.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="px-4 py-3 border bg-petrolio/50 border-white/5">
+                                    <ReactMarkdown components={MD}>{m.content}</ReactMarkdown>
+                                    {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
+                                    <p className="mt-4 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
+                                        Contenuto generato con intelligenza artificiale. Lex può commettere errori:
+                                        verifica sempre le fonti citate prima dell&apos;uso professionale.
+                                    </p>
                                 </div>
                             )}
-                            <div className={`px-4 py-3 border ${m.documento ? 'bg-petrolio/70 border-oro/20' : 'bg-petrolio/50 border-white/5'}`}>
-                                <ReactMarkdown components={MD}>{m.content}</ReactMarkdown>
-                                {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
-                                <p className="mt-4 pt-3 border-t border-white/5 font-body text-[11px] text-nebbia/35 leading-relaxed">
-                                    Contenuto generato con intelligenza artificiale. Lex può commettere errori:
-                                    verifica sempre le fonti citate prima dell'uso professionale.
-                                </p>
-                            </div>
                             <div className="flex items-center gap-3 flex-wrap">
                                 <button onClick={() => salvaInRicerche(i)} disabled={m.salvata || salvandoIdx === i}
                                     className="flex items-center gap-1.5 font-body text-[11px] text-nebbia/40 hover:text-oro transition-colors disabled:opacity-60">
@@ -274,20 +234,6 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                                         : m.salvata ? <><Check size={11} className="text-salvia" /> Salvato nelle ricerche</>
                                             : <><Save size={11} /> Salva nelle ricerche</>}
                                 </button>
-                                {m.documento && (
-                                    <button onClick={() => salvaPdf(i)} disabled={m.pdf_salvato || salvandoPdfIdx === i}
-                                        className="flex items-center gap-1.5 font-body text-[11px] text-nebbia/40 hover:text-oro transition-colors disabled:opacity-60">
-                                        {salvandoPdfIdx === i ? <Loader2 size={11} className="animate-spin" />
-                                            : m.pdf_salvato ? <><Check size={11} className="text-salvia" /> PDF salvato nel mandato</>
-                                                : <><FileText size={11} /> Salva PDF nel mandato</>}
-                                    </button>
-                                )}
-                                {m.pdf_salvato && m.pdf_url && (
-                                    <a href={m.pdf_url} target="_blank" rel="noreferrer"
-                                        className="font-body text-[11px] text-oro/70 hover:text-oro underline underline-offset-2">
-                                        Scarica PDF
-                                    </a>
-                                )}
                             </div>
                         </div>
                     )
@@ -295,11 +241,14 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                 {loading && (
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-nebbia/40 font-body text-sm">
-                            <Loader2 size={14} className="animate-spin text-oro" /> {statoGenerazione || "L'assistente sta elaborando…"}
+                            <Loader2 size={14} className="animate-spin text-oro" />
+                            {scriveDocumento ? 'Lex sta scrivendo il documento…' : fase || "L'assistente sta elaborando…"}
                         </div>
-                        {chunkLive && (
-                            <div className="bg-petrolio/40 border border-white/5 px-4 py-3 max-h-48 overflow-y-auto">
-                                <p className="font-body text-xs text-nebbia/50 whitespace-pre-wrap">{chunkLive.slice(-1500)}</p>
+                        {testoLive && (
+                            <div className={`px-4 py-3 border max-h-[420px] overflow-y-auto ${scriveDocumento ? 'bg-white text-neutral-900 border-neutral-300' : 'bg-petrolio/40 border-white/5'}`}>
+                                {scriveDocumento
+                                    ? <div className="font-display text-sm leading-relaxed whitespace-pre-wrap">{testoLive}</div>
+                                    : <ReactMarkdown components={MD}>{testoLive}</ReactMarkdown>}
                             </div>
                         )}
                     </div>
@@ -308,38 +257,33 @@ export default function ChatMandato({ mandatoId, onRicercaSalvata, onDocumentoSa
                 <div ref={fondoRef} />
             </div>
 
-            {/* Barra genera documento + input */}
+            {/* Esempi di documenti + input */}
             <div className="px-6 py-4 border-t border-white/5 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Genera documento</span>
-                    {TIPI_DOCUMENTO.map(t => (
-                        <button key={t.codice}
-                            onClick={() => setTipoDocSel(v => v === t.codice ? '' : t.codice)}
-                            disabled={loading}
-                            className={`font-body text-[11px] px-2.5 py-1 border transition-colors disabled:opacity-40 ${tipoDocSel === t.codice ? 'bg-oro/15 border-oro/40 text-oro' : 'border-white/10 text-nebbia/50 hover:border-oro/25 hover:text-nebbia/80'}`}>
-                            {t.nome}
+                    <span className="font-body text-[10px] text-nebbia/30 uppercase tracking-widest">Scrivi un documento</span>
+                    {ESEMPI_DOCUMENTI.map(e => (
+                        <button key={e.nome} onClick={() => usaEsempio(e.testo)} disabled={loading}
+                            className="font-body text-[11px] px-2.5 py-1 border border-white/10 text-nebbia/50 hover:border-oro/25 hover:text-nebbia/80 transition-colors disabled:opacity-40">
+                            {e.nome}
                         </button>
                     ))}
-                    {tipoSelezionato && (
-                        <button onClick={() => setTipoDocSel('')} disabled={loading} className="text-nebbia/30 hover:text-red-400 transition-colors" title="Annulla selezione">
-                            <X size={13} />
-                        </button>
-                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <input
+                        ref={inputRef}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); invia() } }}
-                        placeholder={tipoSelezionato ? `Istruzioni per: ${tipoSelezionato.nome} (opzionale)…` : 'Scrivi una domanda sul mandato…'}
+                        placeholder="Scrivi una domanda sul mandato o chiedi un documento…"
                         disabled={loading}
                         className="flex-1 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25 disabled:opacity-50"
                     />
-                    <button onClick={() => invia()} disabled={loading || (!input.trim() && !tipoSelezionato)}
+                    <button onClick={() => invia()} disabled={loading || !input.trim()}
                         className="flex items-center gap-1.5 px-4 py-2.5 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                        {loading ? <Loader2 size={14} className="animate-spin" /> : tipoSelezionato ? <><FileText size={14} /> Genera</> : <Send size={14} />}
+                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                     </button>
                 </div>
+                <p className="font-body text-[11px] text-nebbia/35">Ogni risposta e ogni documento consumano 1 credito.</p>
             </div>
         </div>
     )
