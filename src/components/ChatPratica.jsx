@@ -1,6 +1,14 @@
 // src/components/ChatPratica.jsx
-// Lex per la pratica — VERSIONE 3 (anteprima PDF reale, foglio unico)
+// Lex per la pratica — VERSIONE 4 (08-10-2026)
 //
+// NOVITA' della v4: i documenti li scrive Lex in modalità atto, come in Banca Dati (lex-pratica →
+// Lead → scrittore dedicato, con i dati della pratica), non più il generatore a 12 modelli. La bolla è
+// DocumentoLex: foglio con i segnaposto, Scarica Word, Scarica PDF, Copia, carta intestata e «Compila con
+// i dati di questa pratica». Tolti l'anteprima PDF e il salvataggio nella pratica del generatore vecchio.
+// Il documento si riconosce da done.meta.documento; mentre si scrive (fase «Scrittura del documento»)
+// il testo compare sul foglio A4.
+//
+// Storia della v3:
 // NOVITA' rispetto alla v2:
 // - ANTEPRIMA = PDF reale (stesso identico render di salva-documento-pdf,
 //   chiamato con solo_anteprima:true). Pagine impaginate vere, fedeli al salvato.
@@ -9,19 +17,20 @@
 // - Modifica markdown -> "Rigenera anteprima" -> nuovo PDF.
 // - Dopo il salva: la modifica resta possibile (operazione edge, niente Claude).
 //
-// CONTRATTO SSE (invariato da lex-pratica):
-//   event: fase   -> { fase }
+// CONTRATTO SSE (lex-pratica, risposta del Lead):
+//   event: fase   -> { fase, descrizione }
 //   event: chunk  -> { text }
-//   event: done   -> { crediti_rimasti, tipo_risposta, documento_markdown?, tipo_documento?, tipo_nome?, credito_scalato? }
+//   event: done   -> { crediti_rimasti, tipo_risposta, meta: { documento: { tipo } | null, ... } }
 //   event: error  -> { error }
 
 import { useState, useEffect, useRef, cloneElement, isValidElement, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import ReactMarkdown from 'react-markdown'
+import DocumentoLex from '@/components/DocumentoLex'
 import {
     Sparkles, Send, Save, Plus, AlertCircle, X, CheckCircle,
-    Loader2, FileText, HelpCircle, Edit2, Eye, Download, Info
+    Loader2, HelpCircle
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────
@@ -29,8 +38,7 @@ import {
 // ─────────────────────────────────────────────────────────────
 const ENDPOINT_PRATICA = '/functions/v1/lex-pratica'
 
-// Lista 12 tipi documento per popover UI-C (solo display).
-// Allineata ai codici di lex-pratica / lex-genera-documento.
+// Esempi di atti per il popover «Cosa posso chiederti?»: solo esempi, Lex scrive qualsiasi documento.
 const TIPI_DOCUMENTO_UI = [
     {
         categoria: 'Atti stragiudiziali', tipi: [
@@ -218,7 +226,7 @@ function LexAnimazione({ frasi }) {
 // ─────────────────────────────────────────────────────────────
 function trascriviConversazione(messaggi) {
     return messaggi.map(m => {
-        if (m.tipo === 'documento') {
+        if (m.tipo === 'documento' || m.tipo === 'documento_lex') {
             const ts = m.ts ? new Date(m.ts).toLocaleString('it-IT', {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
@@ -235,12 +243,14 @@ function trascriviConversazione(messaggi) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// EVIDENZIA SEGNAPOSTO — [DATO MANCANTE: ...] e [VERIFICARE: ...]
+// EVIDENZIA SEGNAPOSTO — [DATO MANCANTE: ...], [VERIFICARE: ...] e quelli in maiuscolo della
+// modalità atto ([NOME E COGNOME DEL CONDUTTORE], 08-10-2026)
 // Cammina i children resi da ReactMarkdown e avvolge i segnaposto in
 // un <mark> giallo, anche dentro grassetti/corsivi. Usato nel foglio A4
 // di SCRITTURA LIVE (durante lo streaming). Nel PDF i marcatori restano testo.
 // ─────────────────────────────────────────────────────────────
-const RE_SEGNAPOSTO = /\[(?:DATO MANCANTE|VERIFICARE)[^\]]*\]/g
+const RE_SEGNAPOSTO = /\[(?:DATO MANCANTE|VERIFICARE)[^\]]*\]|\[[A-ZÀ-Ý0-9][^[\]\n]{1,150}\]/g
+const eSegnaposto = (s) => /^\[(?:DATO MANCANTE|VERIFICARE)/.test(s) || (s === s.toLocaleUpperCase('it-IT') && /[A-ZÀ-Ý]/.test(s))
 
 function evidenziaSegnaposto(children) {
     function processa(node, key) {
@@ -252,6 +262,7 @@ function evidenziaSegnaposto(children) {
             let i = 0
             RE_SEGNAPOSTO.lastIndex = 0
             while ((m = RE_SEGNAPOSTO.exec(node)) !== null) {
+                if (!eSegnaposto(m[0])) continue
                 if (m.index > last) out.push(node.slice(last, m.index))
                 out.push(
                     <mark key={`${key}-${i++}`} className="bg-yellow-200 text-yellow-900 px-1 rounded-[2px]">
@@ -366,10 +377,11 @@ function PopoverCapacita({ onClose, onEsempio }) {
                     </div>
 
                     <div>
-                        <p className="font-body text-xs text-oro uppercase tracking-widest mb-2">Generazione di atti</p>
+                        <p className="font-body text-xs text-oro uppercase tracking-widest mb-2">Atti e documenti</p>
                         <p className="font-body text-xs text-nebbia/40 leading-relaxed mb-3">
-                            Lex può redigere 12 tipi di atti usando i dati della pratica. Scrivi semplicemente cosa ti serve.
-                            Ogni atto generato consuma 1 credito.
+                            Lex scrive qualsiasi atto o documento con i dati della pratica: questi sono solo esempi.
+                            Scrivi cosa ti serve; poi lo scarichi in Word o PDF con la tua carta intestata e lo
+                            completi con i dati della pratica. Ogni documento consuma 1 credito.
                         </p>
                         <div className="space-y-3">
                             {TIPI_DOCUMENTO_UI.map(gruppo => (
@@ -404,314 +416,15 @@ function PopoverCapacita({ onClose, onEsempio }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// BOLLA DOCUMENTO GENERATO — anteprima PDF reale + modifica + salva
-//
-// Flusso:
-//  - al mount genera AUTOMATICAMENTE il PDF (solo_anteprima:true, no credito)
-//  - vista 'preview' = PDF reale in <iframe> (pagine vere, fedeli al salvato)
-//  - vista 'edit'    = textarea markdown grezzo
-//  - "Rigenera anteprima" dopo una modifica = nuovo PDF
-//  - "Salva" archivia il PDF nella pratica
-//  - dopo il salva la modifica resta possibile (operazione edge, niente Claude)
-// ─────────────────────────────────────────────────────────────
-function BollaDocumento({ messaggio, praticaId, onDocumentoSalvato }) {
-    const [vista, setVista] = useState('preview') // 'preview' | 'edit'
-    const [markdown, setMarkdown] = useState(messaggio.content)
-    const [markdownAnteprima, setMarkdownAnteprima] = useState(null) // markdown effettivamente reso nel PDF corrente
-    const [nomeFile, setNomeFile] = useState(
-        `${messaggio.tipo_nome ?? 'Documento'} - ${new Date().toLocaleDateString('it-IT')}`
-    )
-
-    // Anteprima PDF
-    const [pdfUrl, setPdfUrl] = useState(null)
-    const [generandoPdf, setGenerandoPdf] = useState(false)
-    const [errorePdf, setErrorePdf] = useState('')
-
-    // Salvataggio
-    const [salvando, setSalvando] = useState(false)
-    const [errore, setErrore] = useState('')
-    const [salvato, setSalvato] = useState(null) // { url, nome_file }
-
-    const objectUrlRef = useRef(null)
-
-    // Genera il PDF di anteprima (stesso render del salvataggio, ma non archivia)
-    async function generaAnteprima(markdownDaRendere) {
-        setGenerandoPdf(true)
-        setErrorePdf('')
-        try {
-            const { data, error } = await supabase.functions.invoke('salva-documento-pdf', {
-                body: {
-                    pratica_id: praticaId,
-                    template_codice: messaggio.tipo_documento ?? 'documento',
-                    template_nome: messaggio.tipo_nome ?? 'Documento',
-                    markdown_finale: markdownDaRendere,
-                    solo_anteprima: true,
-                }
-            })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore generazione anteprima')
-            if (!data.pdf_base64) throw new Error('Anteprima non disponibile')
-
-            // base64 -> Blob -> object URL per l'iframe
-            const bin = atob(data.pdf_base64)
-            const bytes = new Uint8Array(bin.length)
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-            const blob = new Blob([bytes], { type: 'application/pdf' })
-
-            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-            const url = URL.createObjectURL(blob)
-            objectUrlRef.current = url
-
-            setPdfUrl(url)
-            setMarkdownAnteprima(markdownDaRendere)
-        } catch (err) {
-            setErrorePdf(sanitizzaErrore(err) ?? 'Anteprima non disponibile. Riprova tra qualche istante.')
-        } finally {
-            setGenerandoPdf(false)
-        }
-    }
-
-    // Auto-genera l'anteprima al mount (documento appena prodotto da Lex)
-    useEffect(() => {
-        generaAnteprima(messaggio.content)
-        return () => {
-            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    // C'e' una modifica non ancora riflessa nel PDF mostrato?
-    const modificheNonRiflesse = vista === 'edit' && markdown !== markdownAnteprima
-
-    async function salvaPdf() {
-        if (!nomeFile.trim()) { setErrore('Inserisci un nome per il file'); return }
-        setSalvando(true)
-        setErrore('')
-        try {
-            const { data, error } = await supabase.functions.invoke('salva-documento-pdf', {
-                body: {
-                    pratica_id: praticaId,
-                    template_codice: messaggio.tipo_documento ?? 'documento',
-                    template_nome: messaggio.tipo_nome ?? 'Documento',
-                    markdown_finale: markdown,
-                    nome_file_personalizzato: nomeFile.trim(),
-                }
-            })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore salvataggio PDF')
-
-            setSalvato({ url: data.url, nome_file: data.nome_file })
-            if (onDocumentoSalvato) onDocumentoSalvato()
-        } catch (err) {
-            setErrore(sanitizzaErrore(err) ?? 'Salvataggio non riuscito. Riprova tra qualche istante.')
-        } finally {
-            setSalvando(false)
-        }
-    }
-
-    function scarica() {
-        if (salvato?.url) window.open(salvato.url, '_blank')
-    }
-
-    return (
-        <div className="border border-oro/30 bg-petrolio/40">
-            {/* Header bolla documento */}
-            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-oro/15 flex-wrap">
-                <div className="flex items-center gap-2 min-w-0">
-                    <FileText size={14} className="text-oro shrink-0" />
-                    <p className="font-body text-sm font-medium text-oro truncate">
-                        {messaggio.tipo_nome ?? 'Documento generato'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                        onClick={() => setVista('preview')}
-                        className={`flex items-center justify-center gap-1 min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'preview'
-                            ? 'bg-oro/10 border-oro/30 text-oro'
-                            : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}
-                    >
-                        <Eye size={11} /> Anteprima
-                    </button>
-                    <button
-                        onClick={() => setVista('edit')}
-                        className={`flex items-center justify-center gap-1 min-h-[40px] lg:min-h-0 px-3 lg:px-2.5 py-1 font-body text-xs border transition-colors ${vista === 'edit'
-                            ? 'bg-oro/10 border-oro/30 text-oro'
-                            : 'border-white/10 text-nebbia/40 hover:text-nebbia'}`}
-                        title="Modifica il testo dell'atto"
-                    >
-                        <Edit2 size={11} /> Modifica
-                    </button>
-                </div>
-            </div>
-
-            {/* Avviso "salva ora" — solo prima del primo salvataggio */}
-            {!salvato && (
-                <div className="px-4 py-2 bg-amber-500/5 border-b border-amber-500/20">
-                    <p className="font-body text-xs text-amber-400/90 flex items-start gap-1.5">
-                        <Info size={11} className="shrink-0 mt-0.5" />
-                        <span>Questo documento non viene conservato. Salvalo in PDF ora per archiviarlo nella pratica.</span>
-                    </p>
-                </div>
-            )}
-
-            {/* Corpo: anteprima PDF reale o editor markdown */}
-            <div className="max-h-[620px] overflow-y-auto">
-                {vista === 'preview' ? (
-                    <div className="bg-neutral-300/70 p-3">
-                        {generandoPdf ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <Loader2 size={22} className="animate-spin text-oro/70 mb-3" />
-                                <p className="font-body text-sm text-nebbia/60">Genero l'anteprima impaginata...</p>
-                            </div>
-                        ) : errorePdf ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-                                <AlertCircle size={20} className="text-red-400" />
-                                <p className="font-body text-xs text-red-400 max-w-sm">{errorePdf}</p>
-                                <button
-                                    onClick={() => generaAnteprima(markdown)}
-                                    className="font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors"
-                                >
-                                    Riprova
-                                </button>
-                            </div>
-                        ) : pdfUrl ? (
-                            <>
-                                {/* Mobile: il PDF blob dentro un iframe non e' affidabile nel
-                                    browser di Capacitor — si apre in una scheda esterna */}
-                                <div className="lg:hidden">
-                                    <a
-                                        href={pdfUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-white text-petrolio font-body text-sm font-medium px-4 py-3 border border-neutral-400 shadow-xl"
-                                    >
-                                        <Eye size={16} /> Apri anteprima PDF
-                                    </a>
-                                    <p className="font-body text-xs text-neutral-700 text-center mt-2">
-                                        L'atto impaginato si apre in una nuova scheda.
-                                    </p>
-                                </div>
-
-                                {/* Desktop: anteprima inline invariata */}
-                                <iframe
-                                    src={pdfUrl}
-                                    title="Anteprima atto"
-                                    className="hidden lg:block w-full bg-white shadow-xl"
-                                    style={{ height: '560px', border: 'none' }}
-                                />
-                            </>
-                        ) : null}
-                    </div>
-                ) : (
-                    <div className="bg-petrolio">
-                        <textarea
-                            value={markdown}
-                            onChange={e => setMarkdown(e.target.value)}
-                            disabled={salvando}
-                            className="w-full bg-petrolio text-nebbia font-mono text-xs p-4 outline-none resize-none border-0 disabled:opacity-50"
-                            style={{ minHeight: '420px' }}
-                        />
-                        {/* Barra modifica: rigenera l'anteprima col testo aggiornato */}
-                        <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-white/10 bg-petrolio/60 flex-wrap">
-                            <p className="font-body text-xs text-nebbia/40">
-                                {modificheNonRiflesse
-                                    ? 'Hai modifiche non ancora in anteprima.'
-                                    : 'Markdown grezzo dell\'atto.'}
-                            </p>
-                            <button
-                                onClick={async () => { await generaAnteprima(markdown); setVista('preview') }}
-                                disabled={generandoPdf || !markdown.trim()}
-                                className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[40px] lg:min-h-0 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors disabled:opacity-40"
-                            >
-                                {generandoPdf
-                                    ? <><Loader2 size={11} className="animate-spin" /> Rigenero...</>
-                                    : <><Eye size={11} /> Rigenera anteprima</>
-                                }
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Errore salvataggio */}
-            {errore && (
-                <div className="mx-4 mb-3 mt-3 p-2.5 bg-red-900/10 border border-red-500/30 flex items-start gap-2">
-                    <AlertCircle size={12} className="text-red-400 shrink-0 mt-0.5" />
-                    <p className="font-body text-xs text-red-400">{errore}</p>
-                </div>
-            )}
-
-            {/* Footer azioni */}
-            <div className="px-4 py-3 border-t border-oro/15 space-y-3">
-                {salvato ? (
-                    <>
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle size={14} className="text-salvia shrink-0" />
-                                <p className="font-body text-xs text-salvia">
-                                    Salvato nei Documenti pratica: <span className="font-mono">{salvato.nome_file}</span>
-                                </p>
-                            </div>
-                            <button
-                                onClick={scarica}
-                                className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[40px] lg:min-h-0 px-3 py-1.5 font-body text-xs text-oro border border-oro/30 hover:bg-oro/10 transition-colors"
-                            >
-                                <Download size={11} /> Scarica PDF
-                            </button>
-                        </div>
-                        {/* Salva di nuovo dopo ulteriori modifiche (nuova versione, nessun credito) */}
-                        <button
-                            onClick={salvaPdf}
-                            disabled={salvando || !nomeFile.trim()}
-                            className="flex items-center justify-center lg:justify-start gap-2 w-full lg:w-auto min-h-[44px] lg:min-h-0 px-4 py-2 border border-oro/30 text-oro font-body text-sm font-medium hover:bg-oro/10 transition-colors disabled:opacity-40"
-                        >
-                            {salvando
-                                ? <><Loader2 size={13} className="animate-spin" /> Salvataggio...</>
-                                : <><Save size={13} /> Salva di nuovo (nuova versione)</>
-                            }
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        <div>
-                            <label className="block font-body text-[11px] text-nebbia/50 tracking-widest uppercase mb-1.5">
-                                Nome file
-                            </label>
-                            <input
-                                type="text"
-                                value={nomeFile}
-                                onChange={e => setNomeFile(e.target.value)}
-                                disabled={salvando}
-                                className="w-full min-h-[44px] lg:min-h-0 bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2 outline-none focus:border-oro/50 disabled:opacity-40"
-                            />
-                        </div>
-                        <button
-                            onClick={salvaPdf}
-                            disabled={salvando || !nomeFile.trim()}
-                            className="flex items-center justify-center lg:justify-start gap-2 w-full lg:w-auto min-h-[44px] lg:min-h-0 px-4 py-2 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors disabled:opacity-40"
-                        >
-                            {salvando
-                                ? <><Loader2 size={13} className="animate-spin" /> Salvataggio...</>
-                                : <><Save size={13} /> Salva PDF nella pratica</>
-                            }
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
-    )
-}
-
-// ─────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPALE
 // ─────────────────────────────────────────────────────────────
-export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
+export default function ChatPratica({ praticaId, titoloPratica }) {
     const [conversazione, setConversazione] = useState([])
     const [domandaLibera, setDomandaLibera] = useState('')
     const [inviando, setInviando] = useState(false)
     const [streamingTesto, setStreamingTesto] = useState('')
-    const [statoGenerazione, setStatoGenerazione] = useState('') // messaggi "stato" da lex-genera-documento
-    const [isDocumentoStreaming, setIsDocumentoStreaming] = useState(false) // true appena arriva uno 'stato'
+    const [statoGenerazione, setStatoGenerazione] = useState('') // fase in corso mentre Lex scrive un documento
+    const [isDocumentoStreaming, setIsDocumentoStreaming] = useState(false) // true dalla fase «Scrittura del documento»
     const [errore, setErrore] = useState('')
 
     const [crediti, setCrediti] = useState(null)
@@ -793,10 +506,8 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
 
             const url = `${import.meta.env.VITE_SUPABASE_URL}${ENDPOINT_PRATICA}`
 
-            // Storia: solo messaggi testuali (chat), non le bolle documento
-            const storia = conversazione
-                .filter(m => m.tipo !== 'documento')
-                .map(m => ({ role: m.role, content: m.content }))
+            // Storia: anche i documenti scritti da Lex, così si possono chiedere modifiche
+            const storia = conversazione.map(m => ({ role: m.role, content: m.content }))
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -831,10 +542,8 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
             let eventoCorrente = null   // FUORI dal while: deve persistere tra le reader.read()
             let erroreStream = null     // messaggio dell'evento 'error', se arriva
 
-            // Variabili per riconoscere il tipo di risposta finale
-            let documentoMarkdown = null
-            let tipoDocumento = null
-            let tipoNome = null
+            // La risposta è un documento (modalità atto): done.meta.documento = { tipo }
+            let documento = null
 
             while (true) {
                 const { value, done } = await reader.read()
@@ -857,9 +566,9 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                         try {
                             const data = JSON.parse(payload)
 
-                            // event: stato (solo da lex-genera-documento) -> e' un documento
-                            if (eventoCorrente === 'stato') {
-                                setStatoGenerazione(data.messaggio ?? '')
+                            // event: fase — «Scrittura del documento»: il testo va sul foglio
+                            if (eventoCorrente === 'fase' && data.descrizione === 'Scrittura del documento') {
+                                setStatoGenerazione('Lex sta scrivendo il documento')
                                 setIsDocumentoStreaming(true)
                             }
 
@@ -872,11 +581,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                             // event: done
                             if (eventoCorrente === 'done') {
                                 if (data.crediti_rimasti !== undefined) creditiRimasti = data.crediti_rimasti
-                                if (data.documento_markdown) {
-                                    documentoMarkdown = data.documento_markdown
-                                    tipoDocumento = data.tipo_documento ?? null
-                                    tipoNome = data.tipo_nome ?? null
-                                }
+                                if (data.meta?.documento) documento = data.meta.documento
                             }
 
                             if (eventoCorrente === 'error') {
@@ -890,7 +595,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
 
             // Niente testo e niente documento: nessuna bolla vuota. Se il server
             // ha mandato un errore e' gia' a schermo, altrimenti lo diciamo qui.
-            if (!documentoMarkdown && !testoAccumulato.trim()) {
+            if (!testoAccumulato.trim()) {
                 if (!erroreStream) setErrore('La risposta non è stata generata. Riprova tra qualche istante.')
                 setConversazione(conversazione)
                 setStreamingTesto('')
@@ -899,26 +604,10 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                 return
             }
 
-            // Costruzione messaggio finale: documento o chat normale
-            let messaggioFinale
-            if (documentoMarkdown) {
-                // Bolla documento: usa il markdown finale dell'evento done (autorevole)
-                messaggioFinale = {
-                    role: 'assistant',
-                    tipo: 'documento',
-                    content: documentoMarkdown,
-                    tipo_documento: tipoDocumento,
-                    tipo_nome: tipoNome,
-                    ts: new Date().toISOString(),
-                }
-            } else {
-                // Chat normale (Lead, predefinita, o tipo non supportato)
-                messaggioFinale = {
-                    role: 'assistant',
-                    content: testoAccumulato,
-                    ts: new Date().toISOString(),
-                }
-            }
+            // Messaggio finale: documento scritto da Lex o risposta normale
+            const messaggioFinale = documento
+                ? { role: 'assistant', tipo: 'documento_lex', content: testoAccumulato, tipo_nome: documento.tipo ?? 'documento', ts: new Date().toISOString() }
+                : { role: 'assistant', content: testoAccumulato, ts: new Date().toISOString() }
 
             setConversazione([...nuovaConv, messaggioFinale])
             setStreamingTesto('')
@@ -1142,21 +831,19 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                             <span className={`font-body text-xs font-medium ${m.role === 'user' ? 'text-oro/70' : 'text-salvia/70'}`}>
                                 {m.role === 'user' ? 'Tu' : 'Lex'}
                             </span>
-                            {m.tipo === 'documento' && (
-                                <span className="font-body text-[10px] text-oro/60 border border-oro/20 px-1.5 py-0.5 uppercase tracking-wider">
-                                    Documento
-                                </span>
-                            )}
                         </div>
 
                         {m.role === 'user' ? (
                             <p className="font-body text-sm text-nebbia/60 leading-relaxed">{m.content}</p>
-                        ) : m.tipo === 'documento' ? (
-                            <BollaDocumento
-                                messaggio={m}
-                                praticaId={praticaId}
-                                onDocumentoSalvato={onDocumentoSalvato}
-                            />
+                        ) : m.tipo === 'documento_lex' ? (
+                            <div>
+                                <DocumentoLex markdown={m.content} tipo={m.tipo_nome} praticaCorrente={{ id: praticaId, titolo: titoloPratica }} />
+                                {/* Trasparenza AI — art. 50 AI Act / art. 13 L. 132/2025 */}
+                                <p className="mt-3 font-body text-xs lg:text-[11px] text-nebbia/35 leading-relaxed">
+                                    Documento scritto con intelligenza artificiale. Lex può commettere errori:
+                                    rileggilo e verifica dati e fonti prima di firmarlo.
+                                </p>
+                            </div>
                         ) : (
                             <div className="font-body text-sm text-nebbia/80 leading-relaxed">
                                 <ReactMarkdown components={markdownComponents}>
@@ -1257,7 +944,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                         disabled={inviando || creditiZero}
                         placeholder={creditiZero
                             ? "Crediti esauriti — acquista crediti per continuare"
-                            : "Chiedi a Lex un'analisi o di generare un atto... (Ctrl+Enter per inviare)"
+                            : "Chiedi a Lex un'analisi o di scrivere un atto... (Ctrl+Enter per inviare)"
                         }
                         className="flex-1 min-w-0 min-h-[44px] bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
                         style={{ minHeight: '60px', maxHeight: '200px' }}
@@ -1278,7 +965,7 @@ export default function ChatPratica({ praticaId, onDocumentoSalvato }) {
                 {/* Hint UI-C */}
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                     <p className="font-body text-xs text-nebbia/55">
-                        Posso analizzare la pratica o generare 12 tipi di atti. Ogni atto consuma 1 credito.
+                        Posso analizzare la pratica o scrivere atti e documenti con i suoi dati. Ogni risposta consuma 1 credito.
                     </p>
                     <button
                         onClick={() => setMostraPopover(true)}

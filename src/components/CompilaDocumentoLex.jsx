@@ -45,7 +45,8 @@ export default function CompilaDocumentoLex({ ruolo, profilo, numerati, segnapos
             const dati = ambito === 'mandato' ? await datiMandato(voce.id, profilo) : await datiPratica(voce.id, profilo)
             const { valori, gruppi } = await abbinaSegnaposti({ ambito, numerati, segnaposti, dati })
             if (!gruppi.length) {
-                setAvviso(`Nessun dato ${ambito === 'mandato' ? 'del mandato' : 'della pratica'} «${voce.titolo}» corrisponde ai dati da completare di questo documento.`)
+                const quale = voce.titolo ? `${ambito === 'mandato' ? 'del mandato' : 'della pratica'} «${voce.titolo}»` : 'della pratica'
+                setAvviso(`Nessun dato ${quale} corrisponde ai dati da completare di questo documento.`)
                 return
             }
             onCompilato({ valori, gruppi, origine: { ambito, id: voce.id, titolo: voce.titolo } })

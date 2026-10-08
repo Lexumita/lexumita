@@ -868,7 +868,7 @@ export default function PraticaDettaglio() {
 
             {/* ═══════════════ SEZIONE 2 — Lex per la pratica (box unico) ═══════════════ */}
             <div>
-                <ChatPratica praticaId={id} onDocumentoSalvato={caricaDocumenti} />
+                <ChatPratica praticaId={id} titoloPratica={pratica.titolo} />
             </div>
 
             {/* ═══════════ ZONA PERICOLOSA ═══════════ */}

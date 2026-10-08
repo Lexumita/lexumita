@@ -234,7 +234,9 @@ export default function DocumentoLex({ markdown, tipo, praticaCorrente = null })
                         <div className="border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 space-y-2">
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                                 <p className="font-body text-xs text-nebbia/70">
-                                    Compilato con {compilazione.origine.ambito === 'mandato' ? 'il mandato' : 'la pratica'} «{compilazione.origine.titolo}»:{' '}
+                                    {compilazione.origine.titolo
+                                        ? `Compilato con ${compilazione.origine.ambito === 'mandato' ? 'il mandato' : 'la pratica'} «${compilazione.origine.titolo}»: `
+                                        : 'Compilato con i dati di questa pratica: '}
                                     {inseriti === 1 ? '1 dato inserito' : `${inseriti} dati inseriti`}, in verde nel foglio. Controllali prima di firmare.
                                 </p>
                                 <button type="button" onClick={() => setDatiAperti((v) => !v)}
