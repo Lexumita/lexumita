@@ -1,10 +1,11 @@
 -- 08-10-2026 (controllo di sicurezza, fase 2): tetti d'uso per utente contati in modo ATOMICO.
 --
--- Le funzioni di Lex senza credito (impaginazione del PDF, ricerca col ragionamento, assistente
--- dello studio, pagamenti, analisi di un documento) avevano un tetto contato sul registro lex_logs:
--- si leggeva quante chiamate c'erano state e poi si chiamava il modello. Una raffica di richieste
--- in parallelo leggeva lo stesso numero e passava tutta. consuma_limite_uso conta e controlla
--- nella stessa istruzione: oltre il tetto risponde false e la funzione non chiama il modello.
+-- Le funzioni di Lex senza credito non reggevano le raffiche: lex-impagina contava le chiamate sul
+-- registro lex_logs e lex-search-pensiero su una sua tabella, poi chiamavano il modello (richieste in
+-- parallelo leggevano lo stesso numero e passavano tutte); assistente dello studio, pagamenti e analisi
+-- di un documento non avevano tetti (correzione del commento: 08-10-2026, dopo la revisione).
+-- consuma_limite_uso conta e controlla nella stessa istruzione: oltre il tetto risponde false e la
+-- funzione non chiama il modello.
 -- Finestre fisse: p_finestra_secondi = 86400 vuol dire «al giorno», dalle 00:00 UTC.
 -- La chiama solo il server (service_role); la tabella non ha regole per gli utenti.
 
