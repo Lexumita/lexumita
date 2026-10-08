@@ -19,3 +19,5 @@ create policy doc_eff_chunk_proprio_lettura on public.documenti_effimeri_chunk
                    and d.user_id = (select auth.uid())));
 
 revoke insert, update, delete on public.documenti_effimeri, public.documenti_effimeri_chunk from anon, authenticated;
+-- e nemmeno TRUNCATE (non è soggetto alle regole RLS), REFERENCES e TRIGGER: in CH c'erano ancora
+revoke truncate, references, trigger on public.documenti_effimeri, public.documenti_effimeri_chunk from anon, authenticated;
