@@ -10,15 +10,25 @@ import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared'
 import {
     Plus, Save, Send, Eye, Trash2, Loader2, ArrowLeft,
-    RefreshCw, AlertCircle, CheckCircle, Newspaper, Link2,
+    RefreshCw, AlertCircle, CheckCircle, Newspaper, Link2, CalendarClock,
 } from 'lucide-react'
 import { slugDa, firmaAutore, fmtDataLunga } from '@/lib/novita'
 
 const VUOTO = {
     titolo: '', slug: '', sommario: '', contenuto: '',
     autore: '', categoria: '', copertina_url: '', stato: 'bozza',
-    instagram_url: '', tiktok_url: '',
+    instagram_url: '', tiktok_url: '', programmato_il: '',
 }
+
+// Data e ora per <input type="datetime-local"> (ora locale) e ritorno in ISO
+const aCampoOra = iso => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    const z = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`
+}
+const daCampoOra = v => (v ? new Date(v).toISOString() : null)
+const fmtProgrammato = iso => new Date(iso).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 
 const CAMPO = 'w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-2.5 outline-none focus:border-oro/50 transition-colors'
 const ETICHETTA = 'block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-1.5'
@@ -64,9 +74,15 @@ export default function AdminNovita() {
         return null
     }
 
-    async function salva(pubblica) {
+    // modo: 'bozza' (salva com'è), 'pubblica' (subito), 'programma' (al giorno e ora scelti)
+    async function salva(modo) {
+        const pubblica = modo === 'pubblica'
         if (!form.titolo.trim()) {
             setErrore('Manca il titolo.')
+            return
+        }
+        if (modo === 'programma' && (!form.programmato_il || new Date(form.programmato_il) <= new Date())) {
+            setErrore('Scegli un giorno e un\'ora nel futuro per la pubblicazione programmata.')
             return
         }
         setSalvando(true)
@@ -83,7 +99,9 @@ export default function AdminNovita() {
             copertina_url: form.copertina_url?.trim() || null,
             instagram_url: form.instagram_url?.trim() || null,
             tiktok_url: form.tiktok_url?.trim() || null,
-            stato: pubblica ? 'pubblicato' : form.stato,
+            stato: pubblica ? 'pubblicato' : modo === 'programma' ? 'programmato' : form.stato,
+            programmato_il: (modo === 'programma' || (!pubblica && form.stato === 'programmato'))
+                ? daCampoOra(form.programmato_il) : null,
         }
 
         const { error } = form.id
@@ -98,7 +116,9 @@ export default function AdminNovita() {
             return
         }
 
-        setMsg(pubblica ? 'Articolo pubblicato. Il sito si sta rigenerando.' : 'Bozza salvata.')
+        setMsg(pubblica ? 'Articolo pubblicato. Il sito si sta rigenerando.'
+            : riga.stato === 'programmato' ? `Articolo programmato: esce ${fmtProgrammato(riga.programmato_il)}.`
+                : 'Bozza salvata.')
         setForm(null)
         carica()
         if (pubblica) {
@@ -108,8 +128,13 @@ export default function AdminNovita() {
     }
 
     async function cambiaStato(a, stato) {
-        await supabase.from('novita').update({ stato }).eq('id', a.id)
+        await supabase.from('novita').update({ stato, programmato_il: stato === 'bozza' ? null : a.programmato_il }).eq('id', a.id)
         carica()
+        // Il sito si rigenera solo se cambia quello che si vede: un programmato riportato in bozza non era online
+        if (stato !== 'pubblicato' && a.stato !== 'pubblicato') {
+            setMsg('Programmazione annullata: l\'articolo è tornato in bozza.')
+            return
+        }
         const problema = await rigeneraSito()
         setMsg(problema ? '' : stato === 'pubblicato' ? 'Articolo pubblicato.' : 'Articolo ritirato dalla vetrina.')
         if (problema) setErrore(problema)
@@ -257,14 +282,41 @@ export default function AdminNovita() {
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                        <button type="button" onClick={() => salva(true)} disabled={salvando} className="btn-primary text-sm justify-center">
+                        <button type="button" onClick={() => salva('pubblica')} disabled={salvando} className="btn-primary text-sm justify-center">
                             {salvando ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                             {form.stato === 'pubblicato' ? 'Aggiorna e ripubblica' : 'Pubblica'}
                         </button>
-                        <button type="button" onClick={() => salva(false)} disabled={salvando} className={BOTTONE}>
-                            <Save size={15} /> Salva bozza
+                        <button type="button" onClick={() => salva('bozza')} disabled={salvando} className={BOTTONE}>
+                            <Save size={15} /> {form.stato === 'programmato' ? 'Salva' : form.stato === 'pubblicato' ? 'Salva senza ripubblicare' : 'Salva bozza'}
                         </button>
                     </div>
+
+                    {/* Pubblicazione programmata: esce da sola nel giorno scelto */}
+                    {form.stato !== 'pubblicato' && (
+                        <div className="border-t border-white/5 pt-4 space-y-2">
+                            <label className={ETICHETTA}>Pubblicazione programmata</label>
+                            {form.stato === 'programmato' && form.programmato_il && (
+                                <p className="flex items-center gap-2 font-body text-sm text-oro">
+                                    <CalendarClock size={14} /> Programmato: esce {fmtProgrammato(form.programmato_il)}
+                                </p>
+                            )}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="datetime-local"
+                                    className={`${CAMPO} sm:max-w-xs [color-scheme:dark]`}
+                                    value={form.programmato_il ? aCampoOra(form.programmato_il) : ''}
+                                    onChange={e => setForm(f => ({ ...f, programmato_il: e.target.value ? new Date(e.target.value).toISOString() : '' }))}
+                                />
+                                <button type="button" onClick={() => salva('programma')} disabled={salvando} className={`${BOTTONE} !text-oro !border-oro/30`}>
+                                    <CalendarClock size={15} /> {form.stato === 'programmato' ? 'Sposta la data' : 'Programma'}
+                                </button>
+                            </div>
+                            <p className="font-body text-xs text-nebbia/30">
+                                L'articolo resta invisibile fino al giorno scelto. Il controllo passa 5 volte al giorno
+                                (alle 3, 8, 13, 18 e 23): esce al primo passaggio dopo l'orario, e il sito si rigenera da solo.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         )
@@ -313,9 +365,10 @@ export default function AdminNovita() {
                                     <p className="font-body text-sm text-nebbia break-words">{a.titolo}</p>
                                     <span className={`font-body text-xs px-2 py-0.5 border ${a.stato === 'pubblicato'
                                         ? 'border-salvia/30 text-salvia bg-salvia/10'
-                                        : 'border-white/10 text-nebbia/40'}`}
+                                        : a.stato === 'programmato' ? 'border-oro/30 text-oro bg-oro/10'
+                                            : 'border-white/10 text-nebbia/40'}`}
                                     >
-                                        {a.stato === 'pubblicato' ? 'Pubblicato' : 'Bozza'}
+                                        {a.stato === 'pubblicato' ? 'Pubblicato' : a.stato === 'programmato' ? `Programmato · ${fmtProgrammato(a.programmato_il)}` : 'Bozza'}
                                     </span>
                                 </div>
                                 <p className="font-body text-xs text-nebbia/40 mt-1">
@@ -336,6 +389,15 @@ export default function AdminNovita() {
                                         </a>
                                         <button type="button" onClick={() => cambiaStato(a, 'bozza')} className={BOTTONE}>
                                             Ritira
+                                        </button>
+                                    </>
+                                ) : a.stato === 'programmato' ? (
+                                    <>
+                                        <button type="button" onClick={() => cambiaStato(a, 'pubblicato')} className={BOTTONE}>
+                                            <Send size={15} /> Pubblica ora
+                                        </button>
+                                        <button type="button" onClick={() => cambiaStato(a, 'bozza')} className={BOTTONE}>
+                                            Annulla
                                         </button>
                                     </>
                                 ) : (
