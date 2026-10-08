@@ -3,17 +3,19 @@
 // 08-10-2026: un documento scritto da Lex in Banca Dati (modalità atto): foglio con i segnaposto evidenziati,
 // note per chi firma a parte, Scarica Word, Scarica PDF e Copia per tutti. Avvocati e commercialisti hanno in
 // più la carta intestata presa dal profilo (decisione dell'utente dell'08-10); i privati scaricano senza.
+// Sempre per avvocati e commercialisti: «Compila con i dati di una pratica / di un mandato». I dati inseriti
+// sono in verde nel foglio, si possono togliere uno per uno o tutti con Annulla, e Word, PDF e Copia usano il
+// testo compilato. Dentro una pratica (`praticaCorrente`) si compila con quella, senza scegliere.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { FileDown, FileText, Copy, Check, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { FileDown, FileText, Copy, Check, Loader2, ChevronDown, ChevronRight, Undo2, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { separaNote, blocchiDaMarkdown, segnaposti, nomeFileDocumento, testoDi } from '@/lib/documento/testoDocumento'
+import { separaNote, blocchiDaMarkdown, numeraSegnaposti, blocchiCompilati, nomeFileDocumento, testoDi } from '@/lib/documento/testoDocumento'
 import { cartaIntestata, RUOLI_CARTA_INTESTATA } from '@/lib/documento/cartaIntestata'
 import { creaDocx } from '@/lib/documento/docx'
-
-const RE_SEGNAPOSTO = /(\[[^[\]\n]{2,150}\])/g
+import CompilaDocumentoLex from '@/components/CompilaDocumentoLex'
 
 // Note per chi firma: le fonti hanno i loro link (interni alla banca dati o esterni)
 const componentiNote = {
@@ -26,14 +28,17 @@ const componentiNote = {
         : <a href={href} target="_blank" rel="noopener noreferrer" className="text-oro/80 hover:text-oro underline">{children}</a>),
 }
 
-function Pezzi({ pezzi }) {
+const aCapo = (testo) => String(testo).split('\n').flatMap((r, k) => (k ? [<br key={`b${k}`} />, r] : [r]))
+
+// I segnaposto ancora da completare in giallo, i dati inseriti dalla pratica o dal mandato in verde
+function Pezzi({ pezzi, valori }) {
     return pezzi.map((p, i) => {
-        const parti = String(p.testo).split(RE_SEGNAPOSTO)
-        let nodo = parti.map((parte, j) => {
-            const righe = parte.split('\n').flatMap((r, k) => (k ? [<br key={`b${k}`} />, r] : [r]))
-            return /^\[[^[\]\n]{2,150}\]$/.test(parte) && parte === parte.toLocaleUpperCase('it-IT')
-                ? <mark key={j} className="bg-amber-100 text-amber-900 px-0.5 rounded-sm">{righe}</mark>
-                : <span key={j}>{righe}</span>
+        let nodo = (p.segmenti ?? [{ testo: p.testo }]).map((s, j) => {
+            if (s.n == null) return <span key={j}>{aCapo(s.testo)}</span>
+            const valore = valori?.[s.n]
+            return valore != null
+                ? <mark key={j} title={s.segnaposto} className="bg-emerald-100 text-emerald-900 px-0.5 rounded-sm">{valore}</mark>
+                : <mark key={j} className="bg-amber-100 text-amber-900 px-0.5 rounded-sm">{s.segnaposto}</mark>
         })
         if (p.corsivo) nodo = <em>{nodo}</em>
         if (p.grassetto) nodo = <strong className="font-bold">{nodo}</strong>
@@ -41,7 +46,7 @@ function Pezzi({ pezzi }) {
     })
 }
 
-function Foglio({ blocchi, carta }) {
+function Foglio({ blocchi, carta, valori }) {
     return (
         <div className="bg-neutral-300/70 px-2 sm:px-5 py-5">
             <div className="bg-white shadow-xl mx-auto w-full max-w-[680px] text-neutral-900 px-5 sm:px-12 py-8 sm:py-12 font-display">
@@ -56,11 +61,11 @@ function Foglio({ blocchi, carta }) {
                         const classe = b.livello === 1
                             ? 'text-center text-[1.3rem] font-bold uppercase tracking-wide mb-5 mt-1'
                             : b.livello === 2 ? 'text-[1.05rem] font-bold uppercase tracking-wide mt-6 mb-2' : 'text-[1rem] font-semibold italic mt-4 mb-1.5'
-                        return <p key={i} className={classe}><Pezzi pezzi={b.pezzi} /></p>
+                        return <p key={i} className={classe}><Pezzi pezzi={b.pezzi} valori={valori} /></p>
                     }
                     if (b.tipo === 'linea') return <hr key={i} className="my-5 border-neutral-300" />
                     if (b.tipo === 'citazione') {
-                        return <blockquote key={i} className="border-l-2 border-neutral-300 pl-4 my-3 italic text-neutral-700"><Pezzi pezzi={b.pezzi} /></blockquote>
+                        return <blockquote key={i} className="border-l-2 border-neutral-300 pl-4 my-3 italic text-neutral-700"><Pezzi pezzi={b.pezzi} valori={valori} /></blockquote>
                     }
                     if (b.tipo === 'elenco') {
                         return (
@@ -68,13 +73,13 @@ function Foglio({ blocchi, carta }) {
                                 {b.voci.map((v, j) => (
                                     <div key={j} className="flex gap-2 text-[0.98rem] leading-[1.6] text-justify" style={{ paddingLeft: `${v.livello * 1.25}rem` }}>
                                         <span className="w-6 shrink-0 text-right">{v.segno}</span>
-                                        <span className="flex-1"><Pezzi pezzi={v.pezzi} /></span>
+                                        <span className="flex-1"><Pezzi pezzi={v.pezzi} valori={valori} /></span>
                                     </div>
                                 ))}
                             </div>
                         )
                     }
-                    return <p key={i} className="text-[0.98rem] text-justify leading-[1.7] mb-3.5"><Pezzi pezzi={b.pezzi} /></p>
+                    return <p key={i} className="text-[0.98rem] text-justify leading-[1.7] mb-3.5"><Pezzi pezzi={b.pezzi} valori={valori} /></p>
                 })}
             </div>
         </div>
@@ -117,11 +122,11 @@ function perAppunti(blocchi) {
     return { html: h.join('\n'), testo: t.join('\n\n') }
 }
 
-export default function DocumentoLex({ markdown, tipo }) {
+export default function DocumentoLex({ markdown, tipo, praticaCorrente = null }) {
     const { profile } = useAuth()
     const { corpo, note } = useMemo(() => separaNote(markdown), [markdown])
     const blocchi = useMemo(() => blocchiDaMarkdown(corpo), [corpo])
-    const daCompletare = useMemo(() => segnaposti(corpo), [corpo])
+    const { blocchi: numerati, segnaposti } = useMemo(() => numeraSegnaposti(blocchi), [blocchi])
     const carta = useMemo(() => cartaIntestata(profile), [profile])
     const professionista = RUOLI_CARTA_INTESTATA.includes(profile?.role)
     const [conCarta, setConCarta] = useState(true)
@@ -129,15 +134,35 @@ export default function DocumentoLex({ markdown, tipo }) {
     const [avviso, setAvviso] = useState('')
     const [copiato, setCopiato] = useState(false)
     const [noteAperte, setNoteAperte] = useState(false)
+    // { valori: { [n]: testo }, gruppi: [{ segnaposto, valore, numeri }], origine: { ambito, id, titolo } }
+    const [compilazione, setCompilazione] = useState(null)
+    const [datiAperti, setDatiAperti] = useState(false)
+
+    // Un altro documento: si riparte dai segnaposto
+    useEffect(() => { setCompilazione(null); setDatiAperti(false) }, [markdown])
+
+    const valori = useMemo(() => compilazione?.valori ?? {}, [compilazione])
+    const finali = useMemo(() => blocchiCompilati(numerati, valori), [numerati, valori])
+    const daCompletare = useMemo(() => new Set(segnaposti.filter((s) => valori[s.n] == null).map((s) => s.segnaposto)).size, [segnaposti, valori])
 
     const cartaUsata = professionista && conCarta ? carta : null
     const titolo = tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : 'Documento'
+
+    function togliDato(gruppo) {
+        setCompilazione((c) => {
+            if (!c) return c
+            const v = { ...c.valori }
+            gruppo.numeri.forEach((n) => { delete v[n] })
+            const gruppi = c.gruppi.filter((g) => g !== gruppo)
+            return gruppi.length ? { ...c, valori: v, gruppi } : null
+        })
+    }
 
     async function scaricaWord() {
         setAvviso('')
         setLavoro('word')
         try {
-            salva(creaDocx({ blocchi, carta: cartaUsata, titolo }), nomeFileDocumento(tipo, 'docx'))
+            salva(creaDocx({ blocchi: finali, carta: cartaUsata, titolo }), nomeFileDocumento(tipo, 'docx'))
         } catch {
             setAvviso('Non sono riuscito a creare il file Word. Riprova tra qualche istante.')
         } finally {
@@ -150,7 +175,7 @@ export default function DocumentoLex({ markdown, tipo }) {
         setLavoro('pdf')
         try {
             const { creaPdfDocumento } = await import('@/lib/documento/pdfDocumento')
-            salva(await creaPdfDocumento({ blocchi, carta: cartaUsata, titolo }), nomeFileDocumento(tipo, 'pdf'))
+            salva(await creaPdfDocumento({ blocchi: finali, carta: cartaUsata, titolo }), nomeFileDocumento(tipo, 'pdf'))
         } catch (e) {
             setAvviso(e?.message || 'Non sono riuscito a creare il PDF. Riprova tra qualche istante.')
         } finally {
@@ -160,7 +185,7 @@ export default function DocumentoLex({ markdown, tipo }) {
 
     async function copia() {
         setAvviso('')
-        const { html: h, testo } = perAppunti(blocchi)
+        const { html: h, testo } = perAppunti(finali)
         try {
             if (window.ClipboardItem && navigator.clipboard?.write) {
                 await navigator.clipboard.write([new window.ClipboardItem({
@@ -178,6 +203,7 @@ export default function DocumentoLex({ markdown, tipo }) {
     }
 
     const pulsante = 'flex items-center gap-1.5 font-body text-xs text-nebbia/60 hover:text-oro border border-white/10 hover:border-oro/40 px-3 py-1.5 transition-colors disabled:opacity-40'
+    const inseriti = compilazione?.gruppi.length ?? 0
 
     return (
         <div className="space-y-3">
@@ -186,14 +212,64 @@ export default function DocumentoLex({ markdown, tipo }) {
                     <FileText size={11} /> Documento
                 </span>
                 <span className="font-body text-xs text-nebbia/50">{titolo}</span>
-                {daCompletare.length > 0 && (
+                {daCompletare > 0 && (
                     <span className="font-body text-xs text-amber-400/80">
-                        {daCompletare.length === 1 ? '1 dato da completare' : `${daCompletare.length} dati da completare`}, evidenziati nel foglio
+                        {daCompletare === 1 ? '1 dato da completare' : `${daCompletare} dati da completare`}, evidenziati nel foglio
                     </span>
                 )}
             </div>
 
-            <Foglio blocchi={blocchi} carta={cartaUsata} />
+            {professionista && segnaposti.length > 0 && (
+                <div className="space-y-2">
+                    <CompilaDocumentoLex
+                        ruolo={profile?.role}
+                        profilo={profile}
+                        numerati={numerati}
+                        segnaposti={segnaposti}
+                        praticaCorrente={praticaCorrente}
+                        onCompilato={(c) => { setCompilazione(c); setDatiAperti(false) }}
+                        classePulsante={pulsante}
+                    />
+                    {compilazione && (
+                        <div className="border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 space-y-2">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                                <p className="font-body text-xs text-nebbia/70">
+                                    Compilato con {compilazione.origine.ambito === 'mandato' ? 'il mandato' : 'la pratica'} «{compilazione.origine.titolo}»:{' '}
+                                    {inseriti === 1 ? '1 dato inserito' : `${inseriti} dati inseriti`}, in verde nel foglio. Controllali prima di firmare.
+                                </p>
+                                <button type="button" onClick={() => setDatiAperti((v) => !v)}
+                                    className="flex items-center gap-1 font-body text-xs text-emerald-300/80 hover:text-oro transition-colors">
+                                    {datiAperti ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Vedi i dati inseriti
+                                </button>
+                                <button type="button" onClick={() => { setCompilazione(null); setDatiAperti(false) }}
+                                    className="flex items-center gap-1 font-body text-xs text-nebbia/60 hover:text-oro transition-colors">
+                                    <Undo2 size={12} /> Annulla
+                                </button>
+                            </div>
+                            {datiAperti && (
+                                <ul className="space-y-1">
+                                    {compilazione.gruppi.map((g) => (
+                                        <li key={`${g.segnaposto}|${g.valore}`} className="flex items-start gap-2 font-body text-xs">
+                                            <span className="flex-1 min-w-0 break-words">
+                                                <span className="text-amber-300/70">{g.segnaposto}</span>
+                                                <span className="text-nebbia/40"> → </span>
+                                                <span className="text-emerald-200/90">{g.valore}</span>
+                                                {g.numeri.length > 1 && <span className="text-nebbia/40"> ({g.numeri.length} punti)</span>}
+                                            </span>
+                                            <button type="button" onClick={() => togliDato(g)} title="Togli questo dato" aria-label="Togli questo dato"
+                                                className="text-nebbia/40 hover:text-red-300 shrink-0">
+                                                <X size={12} />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <Foglio blocchi={numerati} carta={cartaUsata} valori={valori} />
 
             <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={scaricaWord} disabled={!!lavoro} className={pulsante}>

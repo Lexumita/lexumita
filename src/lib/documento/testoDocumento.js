@@ -20,10 +20,14 @@ export function separaNote(markdown) {
     return { corpo: righe.slice(0, fine).join('\n').trim(), note: righe.slice(i + 1).join('\n').trim() }
 }
 
-// Segnaposto da completare: [NOME E COGNOME DEL CONDUTTORE], [IMPORTO]...
+// Segnaposto da completare: [NOME E COGNOME DEL CONDUTTORE], [IMPORTO]... In maiuscolo e con almeno una
+// lettera: «[Luogo]» o «[12]» non lo sono.
+const RE_SEGNAPOSTO = /\[[A-ZÀ-Ý0-9][^[\]\n]{1,150}\]/g
+const eSegnaposto = (s) => s === s.toLocaleUpperCase('it-IT') && /[A-ZÀ-Ý]/.test(s)
+
 export function segnaposti(markdown) {
-    const trovati = String(markdown ?? '').match(/\[[A-ZÀ-Ý0-9][^[\]\n]{1,150}\]/g) ?? []
-    return [...new Set(trovati.filter((s) => s === s.toLocaleUpperCase('it-IT')))]
+    const trovati = String(markdown ?? '').match(RE_SEGNAPOSTO) ?? []
+    return [...new Set(trovati.filter(eSegnaposto))]
 }
 
 const ENTITA = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': ' ' }
@@ -95,6 +99,62 @@ export function blocchiDaMarkdown(markdown) {
 
 // Testo semplice di un elenco di pezzi (per il titolo del file e per copiare)
 export const testoDi = (lista) => lista.map((p) => p.testo).join('')
+
+// ── Segnaposto numerati: «Compila con i dati di una pratica / di un mandato» (08-10-2026) ──
+// Ogni segnaposto ha il suo numero nell'ordine del documento, perché lo stesso testo può indicare
+// persone diverse in punti diversi: «[NOME E COGNOME]» del legale rappresentante del cliente e quello
+// dell'avvocato che firma. I numeri si danno sui pezzi dei blocchi, gli stessi che si vedono nel foglio
+// e finiscono in Word e PDF: un segnaposto spezzato fra due pezzi non si conta e resta da completare.
+
+const mappaBlocchi = (blocchi, f) => blocchi.map((b) => (b.tipo === 'elenco'
+    ? { ...b, voci: b.voci.map((v) => ({ ...v, pezzi: f(v.pezzi) })) }
+    : b.pezzi ? { ...b, pezzi: f(b.pezzi) } : b))
+
+// { blocchi, segnaposti }: ogni pezzo ha `segmenti` [{ testo } | { segnaposto, n }];
+// segnaposti è l'elenco [{ n, segnaposto }] nell'ordine del documento
+export function numeraSegnaposti(blocchi) {
+    let n = 0
+    const elenco = []
+    const numerati = mappaBlocchi(blocchi, (pezzi) => pezzi.map((p) => {
+        const segmenti = []
+        let ultimo = 0
+        for (const m of p.testo.matchAll(RE_SEGNAPOSTO)) {
+            if (!eSegnaposto(m[0])) continue
+            if (m.index > ultimo) segmenti.push({ testo: p.testo.slice(ultimo, m.index) })
+            n += 1
+            segmenti.push({ segnaposto: m[0], n })
+            elenco.push({ n, segnaposto: m[0] })
+            ultimo = m.index + m[0].length
+        }
+        if (ultimo < p.testo.length) segmenti.push({ testo: p.testo.slice(ultimo) })
+        return { ...p, segmenti }
+    }))
+    return { blocchi: numerati, segnaposti: elenco }
+}
+
+// Il documento come testo semplice con il numero accanto a ogni segnaposto, «[NOME E COGNOME]⟨3⟩»:
+// è quello che legge il modello per decidere gli abbinamenti
+export function testoNumerato(numerati) {
+    const riga = (pezzi) => pezzi.map((p) => p.segmenti.map((s) => s.testo ?? `${s.segnaposto}⟨${s.n}⟩`).join('')).join('')
+    const righe = []
+    for (const b of numerati) {
+        if (b.tipo === 'titolo') righe.push(`${'#'.repeat(b.livello)} ${riga(b.pezzi)}`)
+        else if (b.tipo === 'linea') righe.push('---')
+        else if (b.tipo === 'elenco') {
+            for (const v of b.voci) righe.push(`${'  '.repeat(v.livello)}${v.segno ? `${v.segno} ` : ''}${riga(v.pezzi)}`)
+        } else if (b.tipo === 'citazione') righe.push(`> ${riga(b.pezzi)}`)
+        else righe.push(riga(b.pezzi))
+    }
+    return righe.join('\n\n')
+}
+
+// I blocchi con i valori al posto dei segnaposto compilati ({ [n]: 'Mario Rossi' }), per Word, PDF e copia
+export function blocchiCompilati(numerati, valori = {}) {
+    return mappaBlocchi(numerati, (pezzi) => pezzi.map((p) => ({
+        ...p,
+        testo: p.segmenti ? p.segmenti.map((s) => s.testo ?? valori[s.n] ?? s.segnaposto).join('') : p.testo,
+    })))
+}
 
 // Nome del file: «Diffida al pagamento dei canoni - 08-10-2026»
 export function nomeFileDocumento(tipo, estensione) {
