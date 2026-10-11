@@ -9,6 +9,7 @@ import {
   Plus, X, Trash2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { aspettaRispostaAdmin, segnalaTicketAggiornato } from '@/lib/supporto'
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -291,18 +292,9 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
   useEffect(() => { carica() }, [adminId])
 
   const nAperti = tickets.filter(t => t.stato === 'aperto').length
-  // "Da rispondere" = ticket aperti dove l'ultimo messaggio NON è dell'admin.
-  // Vale sia per ticket entranti (utente scrive, admin deve rispondere)
-  // sia per ticket uscenti (admin ha scritto, utente ha risposto, admin deve replicare).
-  // Eccezione: ticket appena aperti dall'utente senza messaggi (msgs.length === 0)
-  // sono comunque "da rispondere" perché l'admin non ha ancora interagito.
-  const nDaRisp = tickets.filter(t => {
-    if (t.stato !== 'aperto') return false
-    const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    // Nessun messaggio + ticket aperto da non-admin -> da rispondere
-    if (msgs.length === 0) return t.mittente_ruolo !== 'admin'
-    return msgs[0]?.autore_tipo !== 'admin'
-  }).length
+  // "Da rispondere" = ticket aperti dove l'ultimo messaggio NON è dell'admin, entranti o
+  // uscenti; senza messaggi, quelli non aperti dall'admin. Stessa regola del pallino nel menu.
+  const nDaRisp = tickets.filter(aspettaRispostaAdmin).length
 
   const rows = tickets
     .filter(t => {
@@ -400,12 +392,7 @@ function ListaTicketSupporto({ adminId, onNuovoTicket }) {
                   </td>
                 </tr>
               ) : rows.map(t => {
-                const msgs = [...(t.messaggi ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                const daRisp = t.stato === 'aperto' && (
-                  msgs.length === 0
-                    ? t.mittente_ruolo !== 'admin'
-                    : msgs[0]?.autore_tipo !== 'admin'
-                )
+                const daRisp = aspettaRispostaAdmin(t)
 
                 // Direzione e controparte
                 const isUscente = t.mittente_ruolo === 'admin'
@@ -559,6 +546,7 @@ export function AdminAssistenzaDettaglio() {
       await supabase.from('ticket_assistenza').update({ ultimo_mittente: 'admin' }).eq('id', id)
       setMessaggi(prev => [...prev, data])
       setTesto('')
+      segnalaTicketAggiornato()
     } catch (err) {
       setErrore(err.message)
     } finally {
@@ -569,6 +557,7 @@ export function AdminAssistenzaDettaglio() {
   async function aggiornaStato(nuovoStato) {
     await supabase.from('ticket_assistenza').update({ stato: nuovoStato }).eq('id', id)
     setStato(nuovoStato)
+    segnalaTicketAggiornato()
   }
 
   async function eliminaMessaggio(msgId) {
@@ -583,6 +572,7 @@ export function AdminAssistenzaDettaglio() {
       return
     }
     setMessaggi(prev => prev.filter(m => m.id !== msgId))
+    segnalaTicketAggiornato()
   }
 
   if (loading) {
