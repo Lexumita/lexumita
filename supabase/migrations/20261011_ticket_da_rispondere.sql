@@ -4,7 +4,11 @@
 -- Un ticket aperto aspetta la mia risposta quando l'ultimo messaggio è dell'altra
 -- parte; senza messaggi, quando l'ha aperto qualcuno dell'altra parte (si guarda chi
 -- l'ha aperto, mittente_id: mittente_ruolo non basta, c'è un vecchio 'lex_user').
--- La parte di un messaggio è messaggi_ticket.autore_tipo:
+-- Un messaggio è della mia parte se l'ha scritto qualcuno della mia parte (per l'admin
+-- gli amministratori; per gli altri io, i miei collaboratori, il mio titolare) oppure se
+-- il suo autore_tipo è della mia parte. Servono tutte e due: il sito scrive 'avvocato'
+-- per ogni professionista, l'app scrive 'commercialista' / 'fiduciario', o niente per
+-- un ruolo che il vincolo non elenca. Le parti di autore_tipo:
 --   admin           -> 'admin'
 --   avvocato e commercialista, su CH anche fiduciario e progettista (stessa pagina
 --   /assistenza) -> 'avvocato'
@@ -27,7 +31,7 @@ security invoker
 set search_path = public, pg_temp
 as $$
   with io as (
-    select p.id,
+    select p.id, p.titolare_id,
            case when p.role = 'admin' then 'admin'
                 when p.role in ('avvocato', 'commercialista', 'fiduciario', 'progettista') then 'avvocato'
                 else p.role end as lato
@@ -42,13 +46,15 @@ as $$
       from public.profiles p, io
      where io.lato = 'avvocato' and p.titolare_id = io.id
   ),
+  parte_mia as (
+    select s.id from supporto s, io where io.lato = 'admin'
+    union select io.id from io
+    union select c.id from collaboratori c
+    union select io.titolare_id from io where io.lato = 'avvocato' and io.titolare_id is not null
+  ),
   miei as (
     select t.id, io.lato,
-           case when io.lato = 'admin'
-                then t.mittente_id is null or t.mittente_id not in (select id from supporto)
-                else t.mittente_id is distinct from io.id
-                     and (t.mittente_id is null or t.mittente_id not in (select id from collaboratori))
-           end as aperto_da_altri
+           (t.mittente_id is null or t.mittente_id not in (select id from parte_mia)) as aperto_da_altri
       from public.ticket_assistenza t, io
      where t.stato = 'aperto'
        and case when io.lato = 'admin' then
@@ -68,14 +74,19 @@ as $$
   select count(*)::integer
     from miei m
     left join lateral (
-      select mt.autore_tipo
+      select mt.id, mt.autore_id, mt.autore_tipo
         from public.messaggi_ticket mt
        where mt.ticket_id = m.id
        order by mt.created_at desc
        limit 1
     ) ultimo on true
-   where case when ultimo.autore_tipo is null then m.aperto_da_altri
-              else ultimo.autore_tipo <> m.lato end
+   where case when ultimo.id is null then m.aperto_da_altri
+              else not coalesce(
+                     ultimo.autore_id in (select id from parte_mia)
+                     or (case when ultimo.autore_tipo in ('avvocato', 'commercialista', 'fiduciario', 'progettista')
+                              then 'avvocato' else ultimo.autore_tipo end) = m.lato,
+                     false)
+         end
 $$;
 
 revoke all on function public.ticket_da_rispondere() from public, anon;
