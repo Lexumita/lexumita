@@ -6,7 +6,8 @@
 -- l'ha aperto, mittente_id: mittente_ruolo non basta, c'è un vecchio 'lex_user').
 -- La parte di un messaggio è messaggi_ticket.autore_tipo:
 --   admin           -> 'admin'
---   avvocato e commercialista (stessa pagina /assistenza) -> 'avvocato'
+--   avvocato e commercialista, su CH anche fiduciario e progettista (stessa pagina
+--   /assistenza) -> 'avvocato'
 --   privato         -> 'user'
 --   cliente         -> 'cliente'
 -- Quali ticket contano, come nelle pagine del sito:
@@ -15,7 +16,7 @@
 --   gli altri: i ticket in cui sono mittente o destinatario; il titolare di uno
 --          studio anche i ticket dei suoi collaboratori con i clienti.
 -- SECURITY INVOKER: valgono le regole di accesso di chi chiede, quindi ognuno conta
--- solo i ticket che può già vedere. La usano il sito e l'app.
+-- solo i ticket che può già vedere. La usano il sito e l'app. Stesso testo su IT e CH.
 -- ============================================================================
 
 create or replace function public.ticket_da_rispondere()
@@ -28,7 +29,7 @@ as $$
   with io as (
     select p.id,
            case when p.role = 'admin' then 'admin'
-                when p.role in ('avvocato', 'commercialista') then 'avvocato'
+                when p.role in ('avvocato', 'commercialista', 'fiduciario', 'progettista') then 'avvocato'
                 else p.role end as lato
       from public.profiles p
      where p.id = auth.uid()
