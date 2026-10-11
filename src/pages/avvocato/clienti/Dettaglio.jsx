@@ -11,6 +11,7 @@ import {
     Copy, RefreshCw, CheckCircle, ShieldOff, Wallet, Landmark
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { segnalaTicketAggiornato } from '@/lib/supporto'
 import { apriFile } from '@/lib/fileSpazio'
 import { useAuth } from '@/context/AuthContext'
 import GestioneMandati from '@/components/commercialista/GestioneMandati'
@@ -1036,12 +1037,14 @@ function TabComunicazioni({ clienteId }) {
             .select().single()
         if (error) return
         setMessaggi(prev => [...prev, data]); setTesto('')
+        segnalaTicketAggiornato()
     }
 
     async function chiudiTicket() {
         await supabase.from('ticket_assistenza').update({ stato: 'chiuso' }).eq('id', ticketAperto.id)
         setTicketAperto(prev => ({ ...prev, stato: 'chiuso' }))
         setTickets(prev => prev.map(t => t.id === ticketAperto.id ? { ...t, stato: 'chiuso' } : t))
+        segnalaTicketAggiornato()
     }
 
     if (ticketAperto) {

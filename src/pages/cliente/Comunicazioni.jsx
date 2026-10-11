@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { segnalaTicketAggiornato } from '@/lib/supporto'
 import { PageHeader, BackButton, Badge } from '@/components/shared'
 import { Plus, Send, Search, MessageSquare, Loader2, AlertCircle } from 'lucide-react'
 
@@ -225,6 +226,7 @@ export function ClienteComunicazioniDettaglio() {
 
             setMessaggi(prev => [...prev, newMsg])
             setMsg('')
+            segnalaTicketAggiornato()
         } catch (err) {
             setErrore(err.message)
         } finally {

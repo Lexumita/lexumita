@@ -5,7 +5,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/components/shared'
 import { Plus, Send, Search, AlertCircle, X, User, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { idSupporto, idsSupporto } from '@/lib/supporto'
+import { idSupporto, idsSupporto, segnalaTicketAggiornato } from '@/lib/supporto'
 
 const ALIAS_ADMIN_NOME = 'Lexum'
 const ALIAS_ADMIN_INIZIALE = 'L'
@@ -619,6 +619,7 @@ export function AvvocatoAssistenzaDettaglio() {
             if (error) throw new Error(error.message)
             await supabase.from('ticket_assistenza').update({ ultimo_mittente: 'avvocato' }).eq('id', ticket.id)
             setMessaggi(prev => [...prev, nuovoMsg]); setMsg('')
+            segnalaTicketAggiornato()
         } catch (err) { setErrore(err.message) }
         finally { setInviando(false) }
     }
@@ -626,11 +627,13 @@ export function AvvocatoAssistenzaDettaglio() {
     async function chiudiTicket() {
         await supabase.from('ticket_assistenza').update({ stato: 'chiuso' }).eq('id', ticket.id)
         setTicket(t => ({ ...t, stato: 'chiuso' }))
+        segnalaTicketAggiornato()
     }
 
     async function riapriTicket() {
         await supabase.from('ticket_assistenza').update({ stato: 'aperto' }).eq('id', ticket.id)
         setTicket(t => ({ ...t, stato: 'aperto' }))
+        segnalaTicketAggiornato()
     }
 
     if (loading) return <div className="flex justify-center py-40"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" /></div>

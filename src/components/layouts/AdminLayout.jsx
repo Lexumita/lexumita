@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { contaTicketDaRispondereAdmin, EVENTO_TICKET_AGGIORNATO } from '@/lib/supporto'
+import { useTicketDaRispondere } from '@/hooks/useTicketDaRispondere'
+import PallinoTicket from '@/components/shared/PallinoTicket'
 import logo from '@/assets/logo.png'
 import {
   LayoutDashboard, Users, Package, Mail, UserCircle,
@@ -15,26 +16,8 @@ export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false)
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
-
   // Pallino su «Assistenza»: ticket aperti in cui l'ultimo messaggio è dell'altra persona.
-  // Si ricalcola cambiando pagina, dopo una risposta, tornando sulla finestra e ogni minuto.
-  const [daRispondere, setDaRispondere] = useState(0)
-  useEffect(() => {
-    let vivo = true
-    const aggiorna = () => contaTicketDaRispondereAdmin().then(n => { if (vivo) setDaRispondere(n) })
-    aggiorna()
-    const timer = setInterval(aggiorna, 60000)
-    window.addEventListener(EVENTO_TICKET_AGGIORNATO, aggiorna)
-    window.addEventListener('focus', aggiorna)
-    return () => {
-      vivo = false
-      clearInterval(timer)
-      window.removeEventListener(EVENTO_TICKET_AGGIORNATO, aggiorna)
-      window.removeEventListener('focus', aggiorna)
-    }
-  }, [pathname])
-  const testoPallino = `${daRispondere} ${daRispondere === 1 ? 'ticket aspetta' : 'ticket aspettano'} una risposta`
+  const daRispondere = useTicketDaRispondere()
 
   const NAV = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -87,9 +70,7 @@ export default function AdminLayout({ children }) {
             >
               <Icon size={16} strokeWidth={1.5} />
               <span className="flex-1">{label}</span>
-              {path === '/admin/assistenza' && daRispondere > 0 && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title={testoPallino} aria-label={testoPallino} />
-              )}
+              {path === '/admin/assistenza' && <PallinoTicket n={daRispondere} />}
               <ChevronRight size={13} className="opacity-0 group-hover:opacity-30 transition-opacity" />
             </NavLink>
           ))}
@@ -121,9 +102,7 @@ export default function AdminLayout({ children }) {
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 pt-safe border-b border-white/5 bg-slate">
           <button onClick={() => setOpen(true)} className="relative text-nebbia/50 hover:text-nebbia p-2 -m-2" aria-label="Apri il menu">
             <Menu size={20} />
-            {daRispondere > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400" title={testoPallino} />
-            )}
+            <PallinoTicket n={daRispondere} className="absolute top-1 right-1" />
           </button>
           <img src={logo} alt="Lexum" className="h-10 w-auto" />
           <div className="ml-auto">

@@ -11,8 +11,12 @@ import {
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
+import PallinoTicket from '@/components/shared/PallinoTicket'
+import { useTicketDaRispondere } from '@/hooks/useTicketDaRispondere'
 
 export default function UserLayout({ children }) {
+  // Pallino su «Domande?»: conversazioni aperte in cui l'ultimo messaggio è dell'altra persona.
+  const daRispondere = useTicketDaRispondere()
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -127,6 +131,7 @@ export default function UserLayout({ children }) {
               }>
               <Icon size={16} strokeWidth={1.5} />
               <span className="flex-1">{label}</span>
+              {path === '/area/assistenza' && <PallinoTicket n={daRispondere} />}
               {badge && (
                 <span className={`font-body text-[10px] px-1.5 py-0.5 border ${badgeColor === 'salvia' ? 'border-salvia/30 text-salvia' : 'border-amber-500/30 text-amber-400'
                   }`}>
@@ -187,8 +192,9 @@ export default function UserLayout({ children }) {
 
         {/* Header mobile */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 pt-safe border-b border-white/5 bg-slate">
-          <button onClick={() => setOpen(true)} className="text-nebbia/50 hover:text-nebbia p-2 -m-2" aria-label="Apri il menu">
+          <button onClick={() => setOpen(true)} className="relative text-nebbia/50 hover:text-nebbia p-2 -m-2" aria-label="Apri il menu">
             <Menu size={20} />
+            <PallinoTicket n={daRispondere} className="absolute top-1 right-1" />
           </button>
           <img src={logo} alt="Lexum" className="h-10 w-auto" />
           <div className="ml-auto flex items-center gap-1.5 shrink-0">

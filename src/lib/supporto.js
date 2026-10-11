@@ -28,19 +28,14 @@ export function aspettaRispostaAdmin(t) {
     return msgs[0]?.autore_tipo !== 'admin'
 }
 
-// Quanti ticket del supporto Lexum aspettano una risposta: gli stessi della pagina
-// Assistenza dell'admin (entranti verso un amministratore o senza destinatario, uscenti
-// aperti da un amministratore). Serve al pallino nel menu.
-export async function contaTicketDaRispondereAdmin() {
-    const admin = [...await idsSupporto()]
-    if (admin.length === 0) return 0
-    const { data, error } = await supabase
-        .from('ticket_assistenza')
-        .select('id, stato, mittente_ruolo, messaggi:messaggi_ticket(autore_tipo, created_at)')
-        .eq('stato', 'aperto')
-        .or(`destinatario_id.is.null,mittente_ruolo.eq.admin,destinatario_id.in.(${admin.join(',')})`)
+// Quanti ticket aperti aspettano la MIA risposta (il pallino nel menu), per qualunque
+// ruolo: lo calcola il database (ticket_da_rispondere, migrazione 20261011), così il
+// sito e l'app contano allo stesso modo. Per l'admin sono i ticket della sua pagina
+// Assistenza, con la stessa regola di aspettaRispostaAdmin.
+export async function contaTicketDaRispondere() {
+    const { data, error } = await supabase.rpc('ticket_da_rispondere')
     if (error) return 0
-    return (data ?? []).filter(aspettaRispostaAdmin).length
+    return data ?? 0
 }
 
 // Dopo una risposta o un cambio di stato il pallino si aggiorna subito.
