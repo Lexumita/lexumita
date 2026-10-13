@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { Shield, AlertCircle, KeyRound, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { messaggioErroreInvoke } from '@/lib/password'
+import { messaggioErroreInvoke, messaggioErrore2FA } from '@/lib/password'
 
 export default function Verifica2FA() {
     const navigate = useNavigate()
@@ -75,7 +75,7 @@ export default function Verifica2FA() {
                 factorId,
                 code: codice,
             })
-            if (error) throw new Error(error.message)
+            if (error) throw new Error(messaggioErrore2FA(error))
             // Sessione promossa a AAL2 -> redirect home
             redirectToHome()
         } catch (e) {

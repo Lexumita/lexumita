@@ -19,7 +19,7 @@ import DocumentiPortale from '@/components/shared/DocumentiPortale'
 import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
 import { formatImporto } from '@/lib/prezzi'
 import { importoDovuto } from '@/lib/fatturazione'
-import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -609,7 +609,7 @@ function TabNoteInterne({ clienteId }) {
                 .select('id, testo, created_at, autore:autore_id(nome, cognome)').single()
             if (error) throw new Error(error.message)
             setNoteList(prev => [data, ...prev]); setNuovaNota('')
-        } catch (err) { setErrore(err.message) } finally { setSalvando(false) }
+        } catch (err) { setErrore(messaggioErroreDatabase(err)) } finally { setSalvando(false) }
     }
 
     async function salvaNota(id) {
@@ -719,7 +719,7 @@ function ModalRegistraPagamento({ fattura, residuo, onClose, onSuccess }) {
             if (error) throw new Error(error.message)
             onSuccess()
         } catch (err) {
-            setErrore(err.message)
+            setErrore(messaggioErroreDatabase(err))
         } finally {
             setSalvando(false)
         }

@@ -6,7 +6,7 @@ import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Shield, ShieldC
 import { supabase } from '@/lib/supabase'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
-import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreInvoke, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 function Campo({ label, value, placeholder = '—', type = 'text', disabled = false, editing, onChange }) {
     if (!editing || disabled) {
@@ -116,7 +116,7 @@ export default function AdminProfilo() {
             if (error) throw new Error(error.message)
             setDatiOriginali(dati); setEditingDati(false); setOkDati(true)
             setTimeout(() => setOkDati(false), 3000)
-        } catch (err) { setErrDati(err.message) }
+        } catch (err) { setErrDati(messaggioErroreDatabase(err)) }
         finally { setSalvandoDati(false) }
     }
 

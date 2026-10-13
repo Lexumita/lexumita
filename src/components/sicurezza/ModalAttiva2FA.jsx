@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, AlertCircle, ShieldCheck, Copy, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { messaggioErroreInvoke } from '@/lib/password'
+import { messaggioErroreInvoke, messaggioErrore2FA } from '@/lib/password'
 
 export default function ModalAttiva2FA({ onClose, onSuccess }) {
     const [step, setStep] = useState(1)
@@ -71,7 +71,7 @@ export default function ModalAttiva2FA({ onClose, onSuccess }) {
 
             if (error) {
                 console.error('[2FA] Enroll error:', error)
-                throw new Error(error.message || 'Errore durante l\'attivazione')
+                throw new Error(messaggioErrore2FA(error))
             }
 
             if (!data?.id || !data?.totp?.qr_code) {
@@ -108,7 +108,7 @@ export default function ModalAttiva2FA({ onClose, onSuccess }) {
             })
             if (error) {
                 console.error('[2FA] Verify error:', error)
-                throw new Error(error.message)
+                throw new Error(messaggioErrore2FA(error))
             }
 
             // Enrollment OK -> il trigger DB ha aggiornato profiles.mfa_attivo

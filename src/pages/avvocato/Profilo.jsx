@@ -9,7 +9,7 @@ import { REGIMI, CASSE, cassaPredefinita, ibanValido } from '@/lib/fatturazione'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
 import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
-import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreInvoke, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 function Campo({ label, value, placeholder = '—', type = 'text', disabled = false, editing, onChange }) {
     if (!editing || disabled) {
@@ -215,7 +215,7 @@ export default function AvvocatoProfilo() {
             if (error) throw new Error(error.message)
             setDatiOriginali(dati); setEditingDati(false); setOkDati(true)
             setTimeout(() => setOkDati(false), 3000)
-        } catch (err) { setErrDati(err.message) }
+        } catch (err) { setErrDati(messaggioErroreDatabase(err)) }
         finally { setSalvandoDati(false) }
     }
 
@@ -234,7 +234,7 @@ export default function AvvocatoProfilo() {
             if (error) throw new Error(error.message)
             setAttiOriginali(atti); setEditingAtti(false); setOkAtti(true)
             setTimeout(() => setOkAtti(false), 3000)
-        } catch (err) { setErrAtti(err.message) }
+        } catch (err) { setErrAtti(messaggioErroreDatabase(err)) }
         finally { setSalvandoAtti(false) }
     }
 
@@ -266,7 +266,7 @@ export default function AvvocatoProfilo() {
             if (error) throw new Error(error.message)
             setFatt(v); setFattOriginali(v); setEditingFatt(false); setOkFatt(true)
             setTimeout(() => setOkFatt(false), 3000)
-        } catch (err) { setErrFatt(err.message) }
+        } catch (err) { setErrFatt(messaggioErroreDatabase(err)) }
         finally { setSalvandoFatt(false) }
     }
 
@@ -324,7 +324,7 @@ export default function AvvocatoProfilo() {
             setMfaAttivo(false)
             setMfaAttivatoAt(null)
             setCodiciRestanti(null)
-        } catch (err) { setErr2FA(err.message) }
+        } catch (err) { setErr2FA(messaggioErroreDatabase(err)) }
         finally { setDisattivando(false) }
     }
 

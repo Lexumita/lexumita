@@ -10,7 +10,7 @@ import { PageHeader, InputField, LoadingSpinner } from '@/components/shared'
 import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
 import BoxSicurezza2FA from '@/components/sicurezza/BoxSicurezza2FA'
 import { Save, AlertCircle, CheckCircle2, Copy, Check, Lock, Landmark } from 'lucide-react'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function CommercialeProfilo() {
   const { profile, user } = useAuth()
@@ -69,7 +69,7 @@ export default function CommercialeProfilo() {
       setOk('Dati aggiornati')
       setTimeout(() => setOk(''), 3000)
     } catch (err) {
-      setErrore(err.message)
+      setErrore(messaggioErroreDatabase(err))
     } finally {
       setSalvando(false)
     }

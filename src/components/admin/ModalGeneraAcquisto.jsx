@@ -14,6 +14,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Search, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, User, Package, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
+import { messaggioErroreInvoke } from '@/lib/password'
 
 const TIPO_PRODOTTO_LABEL = {
     abbonamento: 'Abbonamento',
@@ -154,8 +155,7 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
             }
 
             const { data, error } = await supabase.functions.invoke('admin-attiva-prodotto', { body })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore attivazione')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { senzaTesto: 'Errore attivazione' }))
 
             setSuccesso(true)
             setTimeout(() => {

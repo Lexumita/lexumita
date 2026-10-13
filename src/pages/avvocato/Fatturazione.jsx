@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { ModalEliminaFattura } from './FatturazioneDettaglio'
 import { formatImporto } from '@/lib/prezzi'
+import { messaggioErroreInvoke } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -379,8 +380,7 @@ function TabFatture({ fatture, clienti, onReload }) {
             const { data, error } = await supabase.functions.invoke('lex-pagamenti', {
                 body: { domanda: cerca.trim() }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore Lex')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { senzaTesto: 'Errore Lex' }))
             setIdsLex(data.fatture_ids ?? [])
             setRagionamentoLex(data.ragionamento ?? '')
         } catch (err) {

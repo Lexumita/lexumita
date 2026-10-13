@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, Badge } from '@/components/shared'
 import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, Clock, Loader2 } from 'lucide-react'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function UserProfilo() {
     const { profile } = useAuth()
@@ -69,7 +69,7 @@ export default function UserProfilo() {
             setOkDati(true)
             setTimeout(() => setOkDati(false), 3000)
         } catch (err) {
-            setErrDati(err.message)
+            setErrDati(messaggioErroreDatabase(err))
         } finally {
             setSalvandoDati(false)
         }

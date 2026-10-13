@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useTipoStudio } from '@/hooks/useTipoStudio'
 import { PageHeader, InputField } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function ClienteProfilo() {
     const { profile } = useAuth()
@@ -47,7 +47,7 @@ export default function ClienteProfilo() {
             })
             .eq('id', user.id)
         setSalvando(false)
-        setEsitoProfilo(error ? { ok: false, msg: error.message } : { ok: true, msg: 'Dati salvati.' })
+        setEsitoProfilo(error ? { ok: false, msg: messaggioErroreDatabase(error) } : { ok: true, msg: 'Dati salvati.' })
     }
 
     async function aggiornaPassword() {

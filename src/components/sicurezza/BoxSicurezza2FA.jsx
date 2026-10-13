@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
 import { Shield, AlertCircle } from 'lucide-react'
-import { messaggioErroreInvoke } from '@/lib/password'
+import { messaggioErroreInvoke, messaggioErroreDatabase } from '@/lib/password'
 
 export default function BoxSicurezza2FA() {
     const { user } = useAuth()
@@ -90,7 +90,7 @@ export default function BoxSicurezza2FA() {
             setMfaAttivo(false)
             setMfaAttivatoAt(null)
             setCodiciRestanti(null)
-        } catch (err) { setErr2FA(err.message) }
+        } catch (err) { setErr2FA(messaggioErroreDatabase(err)) }
         finally { setDisattivando(false) }
     }
 

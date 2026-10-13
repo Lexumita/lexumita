@@ -12,7 +12,11 @@
 //   • le classi sono ASCII, come sul server: le lettere accentate non contano
 //     e «€ £ § °» o lo spazio non sono simboli;
 //   • il messaggio inglese di Supabase non si mostra MAI.
+// Qui anche i messaggi d'errore delle funzioni del server, del 2FA e dei
+// salvataggi nel database: italiano del server o messaggio generico, mai inglese.
 // ─────────────────────────────────────────────────────────────
+
+import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 
 const LUNGHEZZA_MINIMA = 8
 const LUNGHEZZA_MASSIMA = 72 // Supabase: 72 byte (UTF-8), cioè 72 caratteri senza accenti
@@ -173,7 +177,9 @@ const PAROLE_INGLESI =
 const PAROLE_ITALIANE =
     /[àèéìòù]|\b(?:non|il|lo|la|le|gli|un|una|uno|di|del|della|dello|dei|degli|delle|da|dal|dalla|al|alla|per|con|che|tra|senza|solo|questo|questa|sono|hai|puoi|serve|esiste|gia|nessun[ao]?|errore|utente|cliente|clienti|accesso|azione|ruolo|codice|piano|studio|permessi|obbligatori[oa]|valid[oa]|trovat[oa]|errat[oa]|scadut[oa]|mancant[ei]|negato|riservato|minimo|almeno|caratteri|nuov[oa]|deve)\b/i
 
-const testoItaliano = t => !!t && PAROLE_ITALIANE.test(t) && !PAROLE_INGLESI.test(t)
+// Presentabile: italiano, senza parole inglesi e senza quello che la rete di
+// sicurezza del sito ferma (nomi dei fornitori AI, rete, dettagli tecnici).
+const testoItaliano = t => !!t && PAROLE_ITALIANE.test(t) && !PAROLE_INGLESI.test(t) && sanitizzaErrore(t) === t
 
 /**
  * Il testo da mostrare per l'errore di una funzione del server: prima il
@@ -215,6 +221,20 @@ export async function messaggioErroreInvoke(error, data, { password, senzaTesto 
     return messaggioErroreFunzione(corpo, password)
 }
 
+// ── Salvataggi diretti nel database ──────────────────────────
+/**
+ * Il testo da mostrare per un salvataggio diretto nel database non riuscito
+ * (supabase.from(…).insert/update/delete): il testo di PostgREST o di Postgres
+ * è tecnico e inglese, quindi il messaggio generico; resta il testo italiano di
+ * un vincolo o di un controllo del database, se c'è.
+ * @param {unknown} err l'errore di supabase-js o un Error
+ * @returns {string}
+ */
+export function messaggioErroreDatabase(err) {
+    const testo = (typeof err === 'string' ? err : typeof err?.message === 'string' ? err.message : '').trim()
+    return testoItaliano(testo) ? testo : ERRORE_GENERICO
+}
+
 // ── Registrazione e reimpostazione (Supabase Auth) ───────────
 // Gli altri rifiuti di Supabase in queste pagine, con gli stessi testi dell'app.
 const TESTO_EMAIL_REGISTRATA = "Con questa email c'è già un account: accedi."
@@ -251,6 +271,25 @@ export function messaggioErroreAccesso(err, password, { link = false } = {}) {
     if (o?.status === 429 || /^over_\w*_limit$/.test(codice) || /rate limit|too many/i.test(testo)) return TESTO_TROPPI_TENTATIVI
     if (codice === 'email_address_invalid' || /invalid.*email|email.*invalid/i.test(testo)) return TESTO_EMAIL_NON_VALIDA
     return testoItaliano(testo) ? testo : ERRORE_GENERICO
+}
+
+// ── Il codice a 6 cifre del 2FA (attivazione e login) ────────
+const TESTO_CODICE_2FA = "Codice non valido. Controlla che l'ora del telefono sia giusta e riprova."
+
+/**
+ * Il testo da mostrare per un errore di Supabase Auth nei passaggi del 2FA
+ * (supabase.auth.mfa: creazione del codice QR, verifica del codice a 6 cifre):
+ * codice sbagliato, troppi tentativi, altrimenti il messaggio generico.
+ * @param {unknown} err l'errore di supabase-js
+ * @returns {string}
+ */
+export function messaggioErrore2FA(err) {
+    const o = err && typeof err === 'object' ? err : null
+    const testo = typeof err === 'string' ? err : typeof o?.message === 'string' ? o.message : ''
+    const codice = String(o?.code ?? '')
+    if (o?.status === 429 || /^over_\w*_limit$/.test(codice) || /rate limit|too many/i.test(testo)) return TESTO_TROPPI_TENTATIVI
+    if (codice === 'mfa_verification_failed' || /invalid totp/i.test(testo)) return TESTO_CODICE_2FA
+    return ERRORE_GENERICO
 }
 
 /**
