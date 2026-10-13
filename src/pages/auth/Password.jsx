@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import { ArrowRight, CheckCircle, AlertCircle } from 'lucide-react'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAccesso, messaggioErroreLink, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export function RecuperaPassword() {
   const [email, setEmail] = useState('')
@@ -22,7 +22,7 @@ export function RecuperaPassword() {
       if (err) throw err
       setSent(true)
     } catch (err) {
-      setError(err.message)
+      setError(messaggioErroreAccesso(err))
     } finally {
       setLoading(false)
     }
@@ -80,7 +80,8 @@ export function RecuperaPassword() {
 
 export function ResetPassword() {
   const [form, setForm] = useState({ password: '', conferma: '' })
-  const [error, setError] = useState('')
+  // Link scaduto o già usato: l'errore arriva nell'indirizzo, si mostra subito.
+  const [error, setError] = useState(() => messaggioErroreLink(window.location.hash, window.location.search))
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -96,7 +97,7 @@ export function ResetPassword() {
       if (err) throw err
       setDone(true)
     } catch (err) {
-      setError(messaggioErroreAuthPassword(err, form.password) ?? err.message)
+      setError(messaggioErroreAccesso(err, form.password, { link: true }))
     } finally {
       setLoading(false)
     }

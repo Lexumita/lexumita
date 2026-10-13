@@ -5,7 +5,7 @@ import logo from '@/assets/logo.png'
 import { ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react'
 import LexAnimatedDemo from '@/components/LexAnimatedDemo'
 import { PREFISSI, staccaPrefisso, componiTelefono, erroreTelefono } from '@/lib/telefono'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreAccesso, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // Professioni dichiarabili in registrazione. I valori corrispondono al vincolo
 // profiles_professione_check sul database.
@@ -83,10 +83,11 @@ export default function Registrati() {
 
       setSuccess(true)
     } catch (err) {
-      // Password rifiutata da Supabase: il testo della regola sotto il campo,
-      // mai il messaggio inglese.
+      // Password rifiutata da Supabase: il testo della regola sotto il campo.
+      // Gli altri rifiuti (email già registrata, troppi tentativi, rete…) in
+      // italiano nel riquadro: mai il messaggio inglese.
       const errPassword = messaggioErroreAuthPassword(err, form.password)
-      setErrors(errPassword ? { password: errPassword } : { global: err.message })
+      setErrors(errPassword ? { password: errPassword } : { global: messaggioErroreAccesso(err) })
     } finally {
       setLoading(false)
     }

@@ -193,6 +193,58 @@ export function messaggioErroreFunzione(err, password) {
     return testoItaliano(testo.trim()) ? testo.trim() : ERRORE_GENERICO
 }
 
+// ── Registrazione e reimpostazione (Supabase Auth) ───────────
+// Gli altri rifiuti di Supabase in queste pagine, con gli stessi testi dell'app.
+const TESTO_EMAIL_REGISTRATA = "Con questa email c'è già un account: accedi."
+const TESTO_TROPPI_TENTATIVI = 'Troppi tentativi. Riprova tra qualche minuto.'
+const TESTO_EMAIL_NON_VALIDA = "L'indirizzo email non è valido."
+const TESTO_LINK_SCADUTO = 'Il link non è più valido. Chiedine uno nuovo.'
+
+/**
+ * Il testo da mostrare per un errore di Supabase Auth nelle pagine di
+ * registrazione, recupero e reimpostazione della password: prima la password,
+ * poi email già registrata, troppi tentativi, email non valida, link scaduto;
+ * il resto (rete compresa) col messaggio generico del sito. Mai l'inglese.
+ * @param {unknown} err errore di supabase-js
+ * @param {string} [password] la password inserita, se c'è
+ * @param {{ link?: boolean }} [opzioni] link: pagina aperta dal link della mail,
+ *   dove la sessione che manca vuol dire che il link non vale più
+ * @returns {string}
+ */
+export function messaggioErroreAccesso(err, password, { link = false } = {}) {
+    const daPassword = messaggioErroreAuthPassword(err, password)
+    if (daPassword) return daPassword
+    const o = err && typeof err === 'object' ? err : null
+    const testo = (typeof err === 'string'
+        ? err
+        : [o?.message, o?.msg, o?.error].find(t => typeof t === 'string') ?? '').trim()
+    const codice = String(o?.code ?? o?.error_code ?? '')
+
+    // Prima del controllo sull'email: «Email link is invalid or has expired».
+    if (codice === 'otp_expired' || /expired/i.test(testo)) return TESTO_LINK_SCADUTO
+    if (link && (o?.name === 'AuthSessionMissingError' || /session missing/i.test(testo))) return TESTO_LINK_SCADUTO
+    if (codice === 'user_already_exists' || codice === 'email_exists' || /already (?:been )?(?:registered|exists)/i.test(testo)) {
+        return TESTO_EMAIL_REGISTRATA
+    }
+    if (o?.status === 429 || /^over_\w*_limit$/.test(codice) || /rate limit|too many/i.test(testo)) return TESTO_TROPPI_TENTATIVI
+    if (codice === 'email_address_invalid' || /invalid.*email|email.*invalid/i.test(testo)) return TESTO_EMAIL_NON_VALIDA
+    return testoItaliano(testo) ? testo : ERRORE_GENERICO
+}
+
+/**
+ * Il link della mail scaduto o già usato: Supabase rimanda alla pagina con
+ * l'errore nell'indirizzo (#error=access_denied&error_code=otp_expired&error_description=…).
+ * @param {string} [hash] window.location.hash
+ * @param {string} [search] window.location.search
+ * @returns {string} il testo da mostrare; '' se l'indirizzo non porta errori
+ */
+export function messaggioErroreLink(hash = '', search = '') {
+    const parametri = [hash, search].map(s => new URLSearchParams(String(s).replace(/^[#?]/, '')))
+    const leggi = k => parametri.map(p => p.get(k)).find(Boolean)
+    if (!leggi('error') && !leggi('error_code') && !leggi('error_description')) return ''
+    return messaggioErroreAccesso({ code: leggi('error_code'), message: leggi('error_description') ?? '' }, undefined, { link: true })
+}
+
 // ── Password generate ────────────────────────────────────────
 // 12 caratteri da un alfabeto senza quelli che si confondono (0/O, 1/l/I),
 // almeno uno per tipo, ciascuno in una posizione a caso; simboli facili da
