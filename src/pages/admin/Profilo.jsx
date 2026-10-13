@@ -6,7 +6,7 @@ import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Shield, ShieldC
 import { supabase } from '@/lib/supabase'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 function Campo({ label, value, placeholder = '—', type = 'text', disabled = false, editing, onChange }) {
     if (!editing || disabled) {
@@ -153,8 +153,7 @@ export default function AdminProfilo() {
             const { data, error } = await supabase.functions.invoke('mfa-backup-codes', {
                 body: { action: 'regenerate' }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data))
             setCodiciDaMostrare(data.codici)
             setCodiciRestanti(data.codici.length)
         } catch (err) {

@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
 import { Shield, AlertCircle } from 'lucide-react'
+import { messaggioErroreInvoke } from '@/lib/password'
 
 export default function BoxSicurezza2FA() {
     const { user } = useAuth()
@@ -69,8 +70,7 @@ export default function BoxSicurezza2FA() {
             const { data, error } = await supabase.functions.invoke('mfa-backup-codes', {
                 body: { action: 'regenerate' },
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data))
             setCodiciDaMostrare(data.codici)
             setCodiciRestanti(data.codici.length)
         } catch (err) { setErr2FA(err.message) }

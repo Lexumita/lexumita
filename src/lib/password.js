@@ -171,7 +171,7 @@ const ERRORE_GENERICO = 'Si è verificato un errore temporaneo. Riprova tra qual
 const PAROLE_INGLESI =
     /\b(?:the|an|is|are|was|were|be|been|has|have|had|not|cannot|can't|could|should|would|must|will|with|from|this|that|of|to|for|by|and|or|please|already|invalid|failed|failure|unable|unexpected|errors?|exceeded|found|registered|exists?|allowed|denied|required|missing|returned|violates|duplicate|network|requests?|function|status|limit|session|expired|timeout|unauthorized|forbidden|unavailable|internal)\b/i
 const PAROLE_ITALIANE =
-    /[àèéìòù]|\b(?:non|il|lo|la|le|gli|un|una|uno|di|del|della|dello|dei|degli|delle|da|dal|dalla|al|alla|per|con|che|tra|senza|questo|questa|sono|hai|puoi|serve|esiste|gia|errore|utente|cliente|clienti|accesso|azione|ruolo|codice|piano|studio|obbligatori[oa]|valid[oa]|trovat[oa]|negato|riservato|minimo|almeno|caratteri|nuov[oa]|deve)\b/i
+    /[àèéìòù]|\b(?:non|il|lo|la|le|gli|un|una|uno|di|del|della|dello|dei|degli|delle|da|dal|dalla|al|alla|per|con|che|tra|senza|solo|questo|questa|sono|hai|puoi|serve|esiste|gia|nessun[ao]?|errore|utente|cliente|clienti|accesso|azione|ruolo|codice|piano|studio|permessi|obbligatori[oa]|valid[oa]|trovat[oa]|errat[oa]|scadut[oa]|mancant[ei]|negato|riservato|minimo|almeno|caratteri|nuov[oa]|deve)\b/i
 
 const testoItaliano = t => !!t && PAROLE_ITALIANE.test(t) && !PAROLE_INGLESI.test(t)
 
@@ -182,15 +182,37 @@ const testoItaliano = t => !!t && PAROLE_ITALIANE.test(t) && !PAROLE_INGLESI.tes
  * @param {unknown} err il corpo della risposta ({ ok: false, error }), il suo
  *   testo o un Error; null se il corpo non si è potuto leggere
  * @param {string} [password] la password inserita, se c'è
+ * @param {string} [senzaTesto] il testo della pagina quando il server non ne
+ *   manda nessuno (di solito il messaggio generico)
  * @returns {string}
  */
-export function messaggioErroreFunzione(err, password) {
+export function messaggioErroreFunzione(err, password, senzaTesto = ERRORE_GENERICO) {
     const daPassword = messaggioErroreAuthPassword(err, password)
     if (daPassword) return daPassword
-    const testo = typeof err === 'string'
+    const testo = (typeof err === 'string'
         ? err
-        : [err?.error, err?.message, err?.msg].find(t => typeof t === 'string') ?? ''
-    return testoItaliano(testo.trim()) ? testo.trim() : ERRORE_GENERICO
+        : [err?.error, err?.message, err?.msg].find(t => typeof t === 'string') ?? '').trim()
+    if (!testo) return senzaTesto
+    return testoItaliano(testo) ? testo : ERRORE_GENERICO
+}
+
+/**
+ * Lo stesso per supabase.functions.invoke: con una risposta non 2xx il testo
+ * vero sta nel corpo (error.context); «Edge Function returned a non-2xx status
+ * code», gli errori di rete e il testo inglese non si mostrano mai.
+ *   const { data, error } = await supabase.functions.invoke(…)
+ *   if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data))
+ * @param {unknown} error l'errore restituito da functions.invoke
+ * @param {unknown} [data] i dati restituiti (una risposta 2xx con ok: false)
+ * @param {{ password?: string, senzaTesto?: string }} [opzioni] la password
+ *   inserita; il testo della pagina per una risposta 2xx senza testo
+ * @returns {Promise<string>}
+ */
+export async function messaggioErroreInvoke(error, data, { password, senzaTesto } = {}) {
+    if (!error) return messaggioErroreFunzione(data, password, senzaTesto)
+    let corpo = null
+    try { corpo = await error.context.json() } catch { corpo = null }
+    return messaggioErroreFunzione(corpo, password)
 }
 
 // ── Registrazione e reimpostazione (Supabase Auth) ───────────

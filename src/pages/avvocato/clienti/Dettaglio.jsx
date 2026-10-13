@@ -19,7 +19,7 @@ import DocumentiPortale from '@/components/shared/DocumentiPortale'
 import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
 import { formatImporto } from '@/lib/prezzi'
 import { importoDovuto } from '@/lib/fatturazione'
-import { problemiPassword, messaggioPassword, messaggioErroreFunzione, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -139,14 +139,7 @@ function ModalCambiaPasswordCliente({ cliente, onClose, onSuccess }) {
                 body.new_password = pwdManuale
             }
             const { data, error } = await supabase.functions.invoke('avvocato-cliente-actions', { body })
-            if (error) {
-                // Il testo vero del server sta nel corpo della risposta d'errore:
-                // error.message («Edge Function returned a non-2xx status code») non si mostra.
-                let corpo = null
-                try { corpo = await error.context.json() } catch { corpo = null }
-                throw new Error(messaggioErroreFunzione(corpo, pwdInviata))
-            }
-            if (!data?.ok) throw new Error(messaggioErroreFunzione(data, pwdInviata))
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { password: pwdInviata }))
             setRisultato(data)
         } catch (err) {
             setErrore(err.message)
@@ -328,8 +321,7 @@ function SezioneStrumentiAssistenza({ cliente }) {
             const { data, error } = await supabase.functions.invoke('avvocato-cliente-actions', {
                 body: { action: 'send-reset-email', cliente_id: cliente.id }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data))
             setSuccesso(data.messaggio)
             setTimeout(() => setSuccesso(''), 5000)
         } catch (err) {
@@ -1367,14 +1359,7 @@ function ModalResetPassword({ cliente, onClose }) {
             const { data, error } = await supabase.functions.invoke('cliente-reset-password', {
                 body: { cliente_id: cliente.id, nuova_password: password }
             })
-            if (error) {
-                // Il testo vero del server sta nel corpo della risposta d'errore:
-                // error.message («Edge Function returned a non-2xx status code») non si mostra.
-                let corpo = null
-                try { corpo = await error.context.json() } catch { corpo = null }
-                throw new Error(messaggioErroreFunzione(corpo, password))
-            }
-            if (!data?.ok) throw new Error(messaggioErroreFunzione(data, password))
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { password }))
             setCompletato(true)
         } catch (err) {
             setErrore(err.message)
@@ -1583,12 +1568,12 @@ export default function AvvocatoClientiDettaglio() {
                 }
             )
             const json = await res.json()
-            if (!json.ok) throw new Error(json.error)
+            if (!json.ok) throw new Error(messaggioErroreFunzione(json))
             setCliente(json.cliente)
             setFormCliente(json.cliente)
             setEditPanoramica(false)
         } catch (err) {
-            setErroreCliente(err.message)
+            setErroreCliente(messaggioErroreFunzione(err))
         } finally {
             setSalvandoCliente(false)
         }

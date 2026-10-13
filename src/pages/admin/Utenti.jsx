@@ -628,10 +628,10 @@ function TabVerifiche({ data, loading, onDecision }) {
         }
       )
       const json = await res.json()
-      if (!json.ok) throw new Error(json.error)
+      if (!json.ok) throw new Error(messaggioErroreFunzione(json))
       onDecision(userId, tipo)
       setSelected(null); setMotivazione('')
-    } catch (err) { setErrore(err.message) } finally { setElaborando(false) }
+    } catch (err) { setErrore(messaggioErroreFunzione(err)) } finally { setElaborando(false) }
   }
 
   if (loading) return <div className="flex items-center justify-center py-20"><span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" /></div>

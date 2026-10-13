@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, AlertCircle, ShieldCheck, Copy, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { messaggioErroreInvoke } from '@/lib/password'
 
 export default function ModalAttiva2FA({ onClose, onSuccess }) {
     const [step, setStep] = useState(1)
@@ -115,8 +116,7 @@ export default function ModalAttiva2FA({ onClose, onSuccess }) {
             const { data, error: errBkp } = await supabase.functions.invoke('mfa-backup-codes', {
                 body: { action: 'generate' }
             })
-            if (errBkp) throw new Error(errBkp.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Errore generazione codici')
+            if (errBkp || !data?.ok) throw new Error(await messaggioErroreInvoke(errBkp, data, { senzaTesto: 'Errore generazione codici' }))
 
             // Marca successo per evitare cleanup unenroll
             successRef.current = true

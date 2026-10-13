@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
 import { apriFile } from '@/lib/fileSpazio'
-import { problemiPassword, messaggioPassword, messaggioErroreFunzione, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -511,9 +511,9 @@ function SezioneUser({ utente, onDecision }) {
         }
       )
       const json = await res.json()
-      if (!json.ok) throw new Error(json.error)
+      if (!json.ok) throw new Error(messaggioErroreFunzione(json))
       setDecisione(tipo); onDecision(tipo)
-    } catch (err) { setErrore(err.message) } finally { setElaborando(false) }
+    } catch (err) { setErrore(messaggioErroreFunzione(err)) } finally { setElaborando(false) }
   }
 
   const isPersonaGiuridica = utente.tipo_soggetto === 'persona_giuridica'
@@ -736,14 +736,14 @@ function BoxCambioRuolo({ utente, onAggiorna }) {
       if (confermaDistacco) body.conferma_distacco = true
 
       const { data, error } = await supabase.functions.invoke('admin-user-actions', { body })
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(await messaggioErroreInvoke(error))
 
       // Il backend chiede conferma se ci sono clienti/pratiche collegate
       if (!data?.ok && data?.richiede_conferma) {
         setConferma({ testo: data.error, n_clienti: data.n_clienti, n_pratiche: data.n_pratiche })
         return
       }
-      if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+      if (!data?.ok) throw new Error(messaggioErroreFunzione(data))
 
       setConferma(null)
       setMsg({ tipo: 'ok', testo: data.messaggio })
@@ -1480,8 +1480,7 @@ function SezioneStrumentiAssistenza({ utente }) {
       const { data, error } = await supabase.functions.invoke('admin-user-actions', {
         body: { action, user_id: utente.id, ...body }
       })
-      if (error) throw new Error(error.message)
-      if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+      if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data))
       return data
     } catch (err) {
       setErrore(err.message)
@@ -1625,14 +1624,7 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
         body.new_password = pwdManuale
       }
       const { data, error } = await supabase.functions.invoke('admin-user-actions', { body })
-      if (error) {
-        // Il testo vero del server sta nel corpo della risposta d'errore:
-        // error.message («Edge Function returned a non-2xx status code») non si mostra.
-        let corpo = null
-        try { corpo = await error.context.json() } catch { corpo = null }
-        throw new Error(messaggioErroreFunzione(corpo, pwdInviata))
-      }
-      if (!data?.ok) throw new Error(messaggioErroreFunzione(data, pwdInviata))
+      if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { password: pwdInviata }))
       setRisultato(data)
     } catch (err) {
       setErrore(err.message)

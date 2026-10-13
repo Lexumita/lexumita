@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { Shield, AlertCircle, KeyRound, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { messaggioErroreInvoke } from '@/lib/password'
 
 export default function Verifica2FA() {
     const navigate = useNavigate()
@@ -95,8 +96,7 @@ export default function Verifica2FA() {
             const { data, error } = await supabase.functions.invoke('mfa-backup-codes', {
                 body: { action: 'verify', code: backupCode.trim() }
             })
-            if (error) throw new Error(error.message)
-            if (!data?.ok) throw new Error(data?.error ?? 'Codice non valido')
+            if (error || !data?.ok) throw new Error(await messaggioErroreInvoke(error, data, { senzaTesto: 'Codice non valido' }))
 
             // MFA resettato. Per pulizia di sessione: signOut e redirect a login
             // L'utente dovra fare login e ri-attivare 2FA dal profilo.
