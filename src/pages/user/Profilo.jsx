@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, Badge } from '@/components/shared'
 import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, Clock, Loader2 } from 'lucide-react'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function UserProfilo() {
     const { profile } = useAuth()
@@ -82,12 +83,13 @@ export default function UserProfilo() {
     async function handleCambiaPwd() {
         setErrPwd('')
         setOkPwd(false)
-        if (pwd.nuova.length < 8) return setErrPwd('Minimo 8 caratteri')
+        const errRegola = messaggioPassword(pwd.nuova)
+        if (errRegola) return setErrPwd(errRegola)
         if (pwd.nuova !== pwd.conferma) return setErrPwd('Le password non corrispondono')
         setSalvandoPwd(true)
         try {
             const { error } = await supabase.auth.updateUser({ password: pwd.nuova })
-            if (error) throw new Error(error.message)
+            if (error) throw new Error(messaggioErroreAuthPassword(error, pwd.nuova) ?? error.message)
             setPwd({ nuova: '', conferma: '' })
             setEditingPwd(false)
             setOkPwd(true)
@@ -189,8 +191,11 @@ export default function UserProfilo() {
                     </button>
                 ) : (
                     <>
-                        <InputField label="Nuova password" type="password" placeholder="Minimo 8 caratteri"
-                            value={pwd.nuova} onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} />
+                        <div>
+                            <InputField label="Nuova password" type="password" placeholder="Almeno 8 caratteri"
+                                value={pwd.nuova} onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} />
+                            <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
+                        </div>
                         <InputField label="Conferma password" type="password" placeholder="Ripeti la nuova password"
                             value={pwd.conferma} onChange={e => setPwd(p => ({ ...p, conferma: e.target.value }))} />
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo.png'
 import { ArrowRight, CheckCircle, AlertCircle } from 'lucide-react'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export function RecuperaPassword() {
   const [email, setEmail] = useState('')
@@ -86,7 +87,8 @@ export function ResetPassword() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (form.password !== form.conferma) { setError('Le password non coincidono'); return }
-    if (form.password.length < 8) { setError('Minimo 8 caratteri'); return }
+    const errPassword = messaggioPassword(form.password)
+    if (errPassword) { setError(errPassword); return }
     setError('')
     setLoading(true)
     try {
@@ -94,7 +96,7 @@ export function ResetPassword() {
       if (err) throw err
       setDone(true)
     } catch (err) {
-      setError(err.message)
+      setError(messaggioErroreAuthPassword(err, form.password) ?? err.message)
     } finally {
       setLoading(false)
     }
@@ -123,6 +125,7 @@ export function ResetPassword() {
                   <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">{l}</label>
                   <input type="password" value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} placeholder="••••••••"
                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25" />
+                  {k === 'password' && <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>}
                 </div>
               ))}
               {error && <p className="font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{error}</p>}

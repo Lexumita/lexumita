@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useTipoStudio } from '@/hooks/useTipoStudio'
 import { PageHeader, InputField } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function ClienteProfilo() {
     const { profile } = useAuth()
@@ -51,12 +52,13 @@ export default function ClienteProfilo() {
 
     async function aggiornaPassword() {
         setEsitoPw(null)
-        if (pw.nuova.length < 8) { setEsitoPw({ ok: false, msg: 'La password deve avere almeno 8 caratteri.' }); return }
+        const errRegola = messaggioPassword(pw.nuova)
+        if (errRegola) { setEsitoPw({ ok: false, msg: errRegola }); return }
         if (pw.nuova !== pw.conferma) { setEsitoPw({ ok: false, msg: 'Le due password non coincidono.' }); return }
         setPwLoading(true)
         const { error } = await supabase.auth.updateUser({ password: pw.nuova })
         setPwLoading(false)
-        if (error) { setEsitoPw({ ok: false, msg: error.message }); return }
+        if (error) { setEsitoPw({ ok: false, msg: messaggioErroreAuthPassword(error, pw.nuova) ?? error.message }); return }
         setPw({ nuova: '', conferma: '' })
         setEsitoPw({ ok: true, msg: 'Password aggiornata.' })
     }
@@ -104,8 +106,11 @@ export default function ClienteProfilo() {
             {/* Password */}
             <div className="bg-slate border border-white/5 p-6 space-y-4">
                 <p className="section-label">Cambia password</p>
-                <InputField label="Nuova password" type="password" placeholder="••••••••"
-                    value={pw.nuova} onChange={e => setPw(p => ({ ...p, nuova: e.target.value }))} />
+                <div>
+                    <InputField label="Nuova password" type="password" placeholder="••••••••"
+                        value={pw.nuova} onChange={e => setPw(p => ({ ...p, nuova: e.target.value }))} />
+                    <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
+                </div>
                 <InputField label="Conferma password" type="password" placeholder="••••••••"
                     value={pw.conferma} onChange={e => setPw(p => ({ ...p, conferma: e.target.value }))} />
                 <div className="flex flex-wrap items-center gap-3">

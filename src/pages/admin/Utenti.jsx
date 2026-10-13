@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { apriFile } from '@/lib/fileSpazio'
 import { caricaContatoriAdmin, riquadriPerRuolo, descriviStati } from '@/lib/contatoriAdmin'
+import { messaggioErroreAuthPassword } from '@/lib/password'
 import UtentiQuestionari from './UtentiQuestionari'
 
 const ROLE_BADGE = {
@@ -119,7 +120,8 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
         }
       )
       const json = await res.json()
-      if (!json.ok) throw new Error(json.error)
+      // La password la genera il server: se Supabase la rifiuta, la regola, mai il messaggio inglese.
+      if (!json.ok) throw new Error(messaggioErroreAuthPassword(json) ?? json.error)
 
       setSuccesso({
         user_id: json.user_id,

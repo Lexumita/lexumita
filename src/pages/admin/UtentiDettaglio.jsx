@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
 import { apriFile } from '@/lib/fileSpazio'
+import { problemiPassword, messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -1614,17 +1615,24 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
 
   async function handleConferma() {
     setErrore(''); setInviando(true)
+    // La password scelta a mano; con «Genera casuale» la crea il server.
+    const pwdInviata = modo === 'manuale' ? pwdManuale : undefined
     try {
       const body = { action: 'set-password', user_id: utente.id }
       if (modo === 'manuale') {
-        if (!pwdManuale || pwdManuale.length < 8) {
-          throw new Error('Password minimo 8 caratteri')
-        }
+        const errRegola = messaggioPassword(pwdManuale)
+        if (errRegola) throw new Error(errRegola)
         body.new_password = pwdManuale
       }
       const { data, error } = await supabase.functions.invoke('admin-user-actions', { body })
-      if (error) throw new Error(error.message)
-      if (!data?.ok) throw new Error(data?.error ?? 'Errore')
+      if (error) {
+        // Il testo del server sta nel corpo della risposta d'errore: se è il
+        // rifiuto di Supabase per la regola delle password (in inglese), lo si traduce.
+        let corpo = null
+        try { corpo = await error.context?.json?.() } catch { corpo = null }
+        throw new Error(messaggioErroreAuthPassword(corpo, pwdInviata) ?? error.message)
+      }
+      if (!data?.ok) throw new Error(messaggioErroreAuthPassword(data, pwdInviata) ?? data?.error ?? 'Errore')
       setRisultato(data)
     } catch (err) {
       setErrore(err.message)
@@ -1749,14 +1757,14 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
           {modo === 'manuale' && (
             <div>
               <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
-                Nuova password (min 8 caratteri)
+                Nuova password
               </label>
               <div className="relative">
                 <input
                   type={showPwd ? 'text' : 'password'}
                   value={pwdManuale}
                   onChange={e => setPwdManuale(e.target.value)}
-                  placeholder="........"
+                  placeholder="Almeno 8 caratteri"
                   autoFocus
                   className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 pr-10 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
                 />
@@ -1765,6 +1773,7 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
                   {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+              <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
             </div>
           )}
 
@@ -1779,7 +1788,7 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
               className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
               Annulla
             </button>
-            <button onClick={handleConferma} disabled={inviando || (modo === 'manuale' && pwdManuale.length < 8)}
+            <button onClick={handleConferma} disabled={inviando || (modo === 'manuale' && problemiPassword(pwdManuale).length > 0)}
               className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
               {inviando
                 ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />

@@ -9,6 +9,7 @@ import { REGIMI, CASSE, cassaPredefinita, ibanValido } from '@/lib/fatturazione'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
 import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 function Campo({ label, value, placeholder = '—', type = 'text', disabled = false, editing, onChange }) {
     if (!editing || disabled) {
@@ -273,12 +274,13 @@ export default function AvvocatoProfilo() {
 
     async function handleCambiaPwd() {
         setErrPwd(''); setOkPwd(false)
-        if (pwd.nuova.length < 8) return setErrPwd('Minimo 8 caratteri')
+        const errRegola = messaggioPassword(pwd.nuova)
+        if (errRegola) return setErrPwd(errRegola)
         if (pwd.nuova !== pwd.conferma) return setErrPwd('Le password non corrispondono')
         setSalvandoPwd(true)
         try {
             const { error } = await supabase.auth.updateUser({ password: pwd.nuova })
-            if (error) throw new Error(error.message)
+            if (error) throw new Error(messaggioErroreAuthPassword(error, pwd.nuova) ?? error.message)
             setPwd({ nuova: '', conferma: '' }); setEditingPwd(false); setOkPwd(true)
             setTimeout(() => setOkPwd(false), 3000)
         } catch (err) { setErrPwd(err.message) }
@@ -618,6 +620,7 @@ export default function AvvocatoProfilo() {
                                         </button>
                                     )}
                                 </div>
+                                {k === 'nuova' && <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>}
                             </div>
                         ))}
                         {errPwd && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errPwd}</div>}

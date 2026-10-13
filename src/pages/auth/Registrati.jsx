@@ -5,6 +5,7 @@ import logo from '@/assets/logo.png'
 import { ArrowRight, AlertCircle, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react'
 import LexAnimatedDemo from '@/components/LexAnimatedDemo'
 import { PREFISSI, staccaPrefisso, componiTelefono, erroreTelefono } from '@/lib/telefono'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // Professioni dichiarabili in registrazione. I valori corrispondono al vincolo
 // profiles_professione_check sul database.
@@ -45,7 +46,8 @@ export default function Registrati() {
     const errTel = erroreTelefono(form.prefisso, form.telefono)
     if (errTel) e.telefono = errTel
     if (!form.professione) e.professione = 'Campo obbligatorio'
-    if (form.password.length < 8) e.password = 'Minimo 8 caratteri'
+    const errPassword = messaggioPassword(form.password)
+    if (errPassword) e.password = errPassword
     if (form.password !== form.conferma) e.conferma = 'Le password non coincidono'
     return e
   }
@@ -81,7 +83,10 @@ export default function Registrati() {
 
       setSuccess(true)
     } catch (err) {
-      setErrors({ global: err.message })
+      // Password rifiutata da Supabase: il testo della regola sotto il campo,
+      // mai il messaggio inglese.
+      const errPassword = messaggioErroreAuthPassword(err, form.password)
+      setErrors(errPassword ? { password: errPassword } : { global: err.message })
     } finally {
       setLoading(false)
     }
@@ -119,8 +124,8 @@ export default function Registrati() {
     </div>
   )
 
-  /* helper campo password con occhio */
-  const pwdField = (key, label, show, toggle) => (
+  /* helper campo password con occhio (hint: il testo sotto il campo) */
+  const pwdField = (key, label, show, toggle, hint) => (
     <div>
       <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">{label}</label>
       <div className="relative">
@@ -140,7 +145,9 @@ export default function Registrati() {
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
-      {errors[key] && <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors[key]}</p>}
+      {errors[key]
+        ? <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors[key]}</p>
+        : hint && <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">{hint}</p>}
     </div>
   )
 
@@ -288,7 +295,7 @@ export default function Registrati() {
             </p>
           </div>
 
-          {pwdField('password', 'Password *', showPwd, () => setShowPwd(v => !v))}
+          {pwdField('password', 'Password *', showPwd, () => setShowPwd(v => !v), TESTO_REGOLA_PASSWORD)}
           {pwdField('conferma', 'Conferma password *', showConferma, () => setShowConferma(v => !v))}
 
           {errors.global && (

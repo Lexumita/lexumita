@@ -10,6 +10,7 @@ import { PageHeader, InputField, LoadingSpinner } from '@/components/shared'
 import BoxGoogleCalendar from '@/components/avvocato/BoxGoogleCalendar'
 import BoxSicurezza2FA from '@/components/sicurezza/BoxSicurezza2FA'
 import { Save, AlertCircle, CheckCircle2, Copy, Check, Lock, Landmark } from 'lucide-react'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function CommercialeProfilo() {
   const { profile, user } = useAuth()
@@ -75,7 +76,8 @@ export default function CommercialeProfilo() {
   }
 
   async function cambiaPassword() {
-    if (pwd.nuova.length < 8) { setPwdErrore('Minimo 8 caratteri'); return }
+    const errRegola = messaggioPassword(pwd.nuova)
+    if (errRegola) { setPwdErrore(errRegola); return }
     if (pwd.nuova !== pwd.conferma) { setPwdErrore('Le password non coincidono'); return }
     setPwdSalvando(true)
     setPwdErrore('')
@@ -87,7 +89,7 @@ export default function CommercialeProfilo() {
       setPwdOk('Password aggiornata')
       setTimeout(() => setPwdOk(''), 3000)
     } catch (err) {
-      setPwdErrore(err.message)
+      setPwdErrore(messaggioErroreAuthPassword(err, pwd.nuova) ?? err.message)
     } finally {
       setPwdSalvando(false)
     }
@@ -226,8 +228,11 @@ export default function CommercialeProfilo() {
           )}
 
           <div className="space-y-4">
-            <InputField label="Nuova password" type="password" value={pwd.nuova}
-              onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} placeholder="••••••••" />
+            <div>
+              <InputField label="Nuova password" type="password" value={pwd.nuova}
+                onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} placeholder="••••••••" />
+              <p className="mt-1.5 font-body text-xs text-nebbia/35 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
+            </div>
             <InputField label="Conferma password" type="password" value={pwd.conferma}
               onChange={e => setPwd(p => ({ ...p, conferma: e.target.value }))} placeholder="••••••••" />
           </div>

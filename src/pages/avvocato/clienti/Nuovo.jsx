@@ -6,6 +6,7 @@ import { PageHeader, BackButton, InputField, TextareaField } from '@/components/
 import { AlertCircle, CheckCircle, User, Building2, Eye, EyeOff, Lock, Users, ShoppingBag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // SWITCHER PF / PG
@@ -255,7 +256,8 @@ export default function AvvocatoClientiNuovo() {
 
         if (form.attiva_portale) {
             if (!form.password_iniziale) return setErrore('Inserisci la password iniziale per attivare il portale')
-            if (form.password_iniziale.length < 8) return setErrore('La password deve essere di almeno 8 caratteri')
+            const errRegola = messaggioPassword(form.password_iniziale)
+            if (errRegola) return setErrore(errRegola)
         }
 
         setLoading(true)
@@ -331,7 +333,8 @@ export default function AvvocatoClientiNuovo() {
                     setErrore('')  // niente errore inline: il banner sopra è già esplicito
                     return
                 }
-                throw new Error(json.error)
+                // Password rifiutata da Supabase: il testo della regola, mai il messaggio inglese.
+                throw new Error(messaggioErroreAuthPassword(json, form.attiva_portale ? form.password_iniziale : undefined) ?? json.error)
             }
 
             setSuccess(true)
@@ -560,6 +563,7 @@ export default function AvvocatoClientiNuovo() {
                                             {mostraPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>
                                     </div>
+                                    <span className="block mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</span>
                                 </label>
                                 <div className="flex items-start gap-2 px-3 py-2 bg-oro/5 border border-oro/15">
                                     <AlertCircle size={11} className="text-oro/70 mt-0.5 shrink-0" />
