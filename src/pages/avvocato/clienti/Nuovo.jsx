@@ -6,7 +6,7 @@ import { PageHeader, BackButton, InputField, TextareaField } from '@/components/
 import { AlertCircle, CheckCircle, User, Building2, Eye, EyeOff, Lock, Users, ShoppingBag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { messaggioPassword, messaggioErroreFunzione, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // SWITCHER PF / PG
@@ -333,14 +333,16 @@ export default function AvvocatoClientiNuovo() {
                     setErrore('')  // niente errore inline: il banner sopra è già esplicito
                     return
                 }
-                // Password rifiutata da Supabase: il testo della regola, mai il messaggio inglese.
-                throw new Error(messaggioErroreAuthPassword(json, form.attiva_portale ? form.password_iniziale : undefined) ?? json.error)
+                // Prima il traduttore delle password, poi il testo del server se è
+                // italiano, altrimenti un messaggio generico: mai l'inglese.
+                throw new Error(messaggioErroreFunzione(json, form.attiva_portale ? form.password_iniziale : undefined))
             }
 
             setSuccess(true)
             setTimeout(() => navigate('/clienti'), 1500)
         } catch (err) {
-            setErrore(err.message)
+            // Anche rete assente o risposta illeggibile: niente testo tecnico inglese.
+            setErrore(messaggioErroreFunzione(err))
         } finally {
             setLoading(false)
         }

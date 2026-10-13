@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────
 
 const LUNGHEZZA_MINIMA = 8
+const LUNGHEZZA_MASSIMA = 72 // Supabase: 72 byte (UTF-8), cioè 72 caratteri senza accenti
 
 // Gli insiemi di Supabase Auth: basta un carattere di ciascuno.
 const MINUSCOLE = 'abcdefghijklmnopqrstuvwxyz'
@@ -35,18 +36,31 @@ export const TESTO_REGOLA_PASSWORD =
     'Almeno 8 caratteri, con una lettera minuscola, una maiuscola, un numero e un simbolo (per esempio ! ? # @).'
 
 const TESTO_CORTA = 'La password è troppo corta: servono almeno 8 caratteri.'
+const TESTO_LUNGA = 'La password è troppo lunga: al massimo 72 caratteri.'
+const TESTO_UGUALE = 'La nuova password deve essere diversa da quella di prima.'
 const TESTO_RUBATA = "Questa password compare negli elenchi di password rubate su internet: scegline un'altra."
 
+// Byte in UTF-8, come li conta il server.
+function byteUtf8(caratteri) {
+    let n = 0
+    for (const ch of caratteri) {
+        const c = ch.codePointAt(0)
+        n += c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4
+    }
+    return n
+}
+
 /**
- * Che cosa manca alla password per rispettare la regola.
+ * Che cosa manca (o avanza) alla password per rispettare la regola.
  * @param {string} p
- * @returns {string[]} solo quelli che mancano, in quest'ordine: 'lunghezza',
- *   'minuscola', 'maiuscola', 'numero', 'simbolo'. Vuoto = la password va bene.
+ * @returns {string[]} solo i problemi che ci sono, in quest'ordine: 'corta' o
+ *   'lunga', poi 'minuscola', 'maiuscola', 'numero', 'simbolo'. Vuoto = va bene.
  */
 export function problemiPassword(p) {
     const caratteri = [...(typeof p === 'string' ? p : '')] // un'emoji conta uno
     const problemi = []
-    if (caratteri.length < LUNGHEZZA_MINIMA) problemi.push('lunghezza')
+    if (caratteri.length < LUNGHEZZA_MINIMA) problemi.push('corta')
+    else if (byteUtf8(caratteri) > LUNGHEZZA_MASSIMA) problemi.push('lunga')
     for (const c of CLASSI) {
         if (!caratteri.some(x => c.caratteri.includes(x))) problemi.push(c.problema)
     }
@@ -61,25 +75,31 @@ function testoMancano(problemi) {
     return `Alla password mancano ${voci.slice(0, -1).join(', ')} e ${voci[voci.length - 1]}.`
 }
 
+// Che cosa manca alla password inserita, se la si ha.
+const mancanoA = password => typeof password === 'string' ? testoMancano(problemiPassword(password)) : null
+
 /**
  * Il testo d'errore da mostrare prima dell'invio, o null se la password va bene.
- * Se è corta e le manca anche qualche tipo di carattere, i due testi uno dopo l'altro.
+ * Se è corta (o lunga) e le manca anche qualche tipo di carattere, i due testi
+ * uno dopo l'altro.
  * @param {string} p
  * @returns {string|null}
  */
 export function messaggioPassword(p) {
     const problemi = problemiPassword(p)
     const testi = []
-    if (problemi.includes('lunghezza')) testi.push(TESTO_CORTA)
+    if (problemi.includes('corta')) testi.push(TESTO_CORTA)
+    if (problemi.includes('lunga')) testi.push(TESTO_LUNGA)
     const mancano = testoMancano(problemi)
     if (mancano) testi.push(mancano)
     return testi.length ? testi.join(' ') : null
 }
 
-// Il messaggio inglese di Supabase, anche dentro il testo di una funzione del
+// I messaggi inglesi di Supabase, anche dentro il testo di una funzione del
 // server («Errore aggiornamento password: Password should contain…»).
-// «New password should be different…» (same_password) non c'entra: minuscola.
 const INGLESE = /\bPassword should\b|known to be weak/
+const INGLESE_LUNGA = /cannot be longer than \d+ characters?/i
+const INGLESE_UGUALE = /should be different from the old password/i
 
 function motiviDalTesto(testo) {
     const motivi = []
@@ -90,8 +110,10 @@ function motiviDalTesto(testo) {
 }
 
 /**
- * Traduce il rifiuto di Supabase per una password debole (codice
- * «weak_password») nei testi della regola. `err` può essere:
+ * Traduce i rifiuti di Supabase per la password nuova nei testi della regola:
+ * password debole (codice «weak_password»: motivi length, characters, pwned),
+ * troppo lunga, uguale a quella di prima (codice «same_password»).
+ * `err` può essere:
  *   • l'errore di supabase-js (AuthWeakPasswordError: motivi in err.reasons
  *     oppure in err.weak_password.reasons);
  *   • il corpo JSON di una funzione del server ({ ok: false, error: '…' }) o il
@@ -99,7 +121,7 @@ function motiviDalTesto(testo) {
  * @param {unknown} err
  * @param {string} [password] la password inserita: serve a dire che cosa manca
  * @returns {string|null} il testo da mostrare; null se l'errore non riguarda la
- *   regola delle password (il chiamante lo gestisce come prima).
+ *   password (il chiamante lo gestisce come prima).
  */
 export function messaggioErroreAuthPassword(err, password) {
     if (!err) return null
@@ -108,7 +130,9 @@ export function messaggioErroreAuthPassword(err, password) {
         ? err
         : [o?.message, o?.msg, o?.error].find(t => typeof t === 'string') ?? ''
     const codice = o?.code ?? o?.error_code
-    if (codice === 'same_password') return null
+
+    if (codice === 'same_password' || INGLESE_UGUALE.test(testo)) return TESTO_UGUALE
+    if (INGLESE_LUNGA.test(testo)) return [TESTO_LUNGA, mancanoA(password)].filter(Boolean).join(' ')
 
     const debole = codice === 'weak_password' || o?.name === 'AuthWeakPasswordError'
     let motivi = Array.isArray(o?.weak_password?.reasons) ? o.weak_password.reasons
@@ -117,22 +141,56 @@ export function messaggioErroreAuthPassword(err, password) {
     if (!debole && !motivi.length && !INGLESE.test(testo)) return null
     if (!motivi.length) motivi = motiviDalTesto(testo)
 
+    const corta = motivi.includes('length')
+    const caratteri = motivi.includes('characters')
+    const mancano = corta || caratteri ? mancanoA(password) : null
     const testi = []
-    // «characters»: che cosa manca, calcolato sulla password inserita. Se non
-    // la si ha, o se qui non manca nulla (il server la vede diversamente), la
-    // regola intera, che dice già anche la lunghezza.
-    const mancano = motivi.includes('characters') && typeof password === 'string'
-        ? testoMancano(problemiPassword(password))
-        : null
-    if (motivi.includes('characters') && !mancano) {
+    if (caratteri && !mancano) {
+        // Senza la password inserita, o se qui non manca nulla (il server la
+        // vede diversamente): la regola intera, che dice anche la lunghezza.
         testi.push(TESTO_REGOLA_PASSWORD)
     } else {
-        if (motivi.includes('length')) testi.push(TESTO_CORTA)
+        if (corta) testi.push(TESTO_CORTA)
         if (mancano) testi.push(mancano)
     }
     if (motivi.includes('pwned')) testi.push(TESTO_RUBATA)
     // Rifiuto riconosciuto ma senza motivi leggibili: la regola intera.
     return testi.length ? testi.join(' ') : TESTO_REGOLA_PASSWORD
+}
+
+// ── Errori delle funzioni del server ─────────────────────────
+// create-cliente, admin-create-user, admin-user-actions, avvocato-cliente-actions
+// e cliente-reset-password rispondono { ok: false, error: '…' } con stato 400.
+// Con functions.invoke il testo vero sta nel corpo della risposta (error.context):
+// error.message è sempre «Edge Function returned a non-2xx status code» e non si
+// mostra. Il testo del server di solito è italiano, ma a volte è quello inglese
+// di Supabase o del database, anche dopo un prefisso italiano («Errore invio
+// email: Email rate limit exceeded»): quello non si mostra.
+const ERRORE_GENERICO = 'Si è verificato un errore temporaneo. Riprova tra qualche istante.'
+
+const PAROLE_INGLESI =
+    /\b(?:the|an|is|are|was|were|be|been|has|have|had|not|cannot|can't|could|should|would|must|will|with|from|this|that|of|to|for|by|and|or|please|already|invalid|failed|failure|unable|unexpected|errors?|exceeded|found|registered|exists?|allowed|denied|required|missing|returned|violates|duplicate|network|requests?|function|status|limit|session|expired|timeout|unauthorized|forbidden|unavailable|internal)\b/i
+const PAROLE_ITALIANE =
+    /[àèéìòù]|\b(?:non|il|lo|la|le|gli|un|una|uno|di|del|della|dello|dei|degli|delle|da|dal|dalla|al|alla|per|con|che|tra|senza|questo|questa|sono|hai|puoi|serve|esiste|gia|errore|utente|cliente|clienti|accesso|azione|ruolo|codice|piano|studio|obbligatori[oa]|valid[oa]|trovat[oa]|negato|riservato|minimo|almeno|caratteri|nuov[oa]|deve)\b/i
+
+const testoItaliano = t => !!t && PAROLE_ITALIANE.test(t) && !PAROLE_INGLESI.test(t)
+
+/**
+ * Il testo da mostrare per l'errore di una funzione del server: prima il
+ * traduttore delle password; poi il testo del server, se è già italiano;
+ * altrimenti un messaggio generico. Non restituisce mai testo inglese.
+ * @param {unknown} err il corpo della risposta ({ ok: false, error }), il suo
+ *   testo o un Error; null se il corpo non si è potuto leggere
+ * @param {string} [password] la password inserita, se c'è
+ * @returns {string}
+ */
+export function messaggioErroreFunzione(err, password) {
+    const daPassword = messaggioErroreAuthPassword(err, password)
+    if (daPassword) return daPassword
+    const testo = typeof err === 'string'
+        ? err
+        : [err?.error, err?.message, err?.msg].find(t => typeof t === 'string') ?? ''
+    return testoItaliano(testo.trim()) ? testo.trim() : ERRORE_GENERICO
 }
 
 // ── Password generate ────────────────────────────────────────

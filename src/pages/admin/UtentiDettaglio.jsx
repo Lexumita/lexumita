@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
 import { apriFile } from '@/lib/fileSpazio'
-import { problemiPassword, messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -1626,13 +1626,13 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
       }
       const { data, error } = await supabase.functions.invoke('admin-user-actions', { body })
       if (error) {
-        // Il testo del server sta nel corpo della risposta d'errore: se è il
-        // rifiuto di Supabase per la regola delle password (in inglese), lo si traduce.
+        // Il testo vero del server sta nel corpo della risposta d'errore:
+        // error.message («Edge Function returned a non-2xx status code») non si mostra.
         let corpo = null
-        try { corpo = await error.context?.json?.() } catch { corpo = null }
-        throw new Error(messaggioErroreAuthPassword(corpo, pwdInviata) ?? error.message)
+        try { corpo = await error.context.json() } catch { corpo = null }
+        throw new Error(messaggioErroreFunzione(corpo, pwdInviata))
       }
-      if (!data?.ok) throw new Error(messaggioErroreAuthPassword(data, pwdInviata) ?? data?.error ?? 'Errore')
+      if (!data?.ok) throw new Error(messaggioErroreFunzione(data, pwdInviata))
       setRisultato(data)
     } catch (err) {
       setErrore(err.message)

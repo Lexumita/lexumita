@@ -19,7 +19,7 @@ import DocumentiPortale from '@/components/shared/DocumentiPortale'
 import TabFiscoCliente from '@/components/fisco/TabFiscoCliente'
 import { formatImporto } from '@/lib/prezzi'
 import { importoDovuto } from '@/lib/fatturazione'
-import { problemiPassword, messaggioPassword, messaggioErroreAuthPassword, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -140,13 +140,13 @@ function ModalCambiaPasswordCliente({ cliente, onClose, onSuccess }) {
             }
             const { data, error } = await supabase.functions.invoke('avvocato-cliente-actions', { body })
             if (error) {
-                // Il testo del server sta nel corpo della risposta d'errore: se è il
-                // rifiuto di Supabase per la regola delle password (in inglese), lo si traduce.
+                // Il testo vero del server sta nel corpo della risposta d'errore:
+                // error.message («Edge Function returned a non-2xx status code») non si mostra.
                 let corpo = null
-                try { corpo = await error.context?.json?.() } catch { corpo = null }
-                throw new Error(messaggioErroreAuthPassword(corpo, pwdInviata) ?? error.message)
+                try { corpo = await error.context.json() } catch { corpo = null }
+                throw new Error(messaggioErroreFunzione(corpo, pwdInviata))
             }
-            if (!data?.ok) throw new Error(messaggioErroreAuthPassword(data, pwdInviata) ?? data?.error ?? 'Errore')
+            if (!data?.ok) throw new Error(messaggioErroreFunzione(data, pwdInviata))
             setRisultato(data)
         } catch (err) {
             setErrore(err.message)
@@ -1368,13 +1368,13 @@ function ModalResetPassword({ cliente, onClose }) {
                 body: { cliente_id: cliente.id, nuova_password: password }
             })
             if (error) {
-                // Il testo del server sta nel corpo della risposta d'errore: se è il
-                // rifiuto di Supabase per la regola delle password (in inglese), lo si traduce.
+                // Il testo vero del server sta nel corpo della risposta d'errore:
+                // error.message («Edge Function returned a non-2xx status code») non si mostra.
                 let corpo = null
-                try { corpo = await error.context?.json?.() } catch { corpo = null }
-                throw new Error(messaggioErroreAuthPassword(corpo, password) ?? error.message)
+                try { corpo = await error.context.json() } catch { corpo = null }
+                throw new Error(messaggioErroreFunzione(corpo, password))
             }
-            if (!data?.ok) throw new Error(messaggioErroreAuthPassword(data, password) ?? data?.error ?? 'Errore reset')
+            if (!data?.ok) throw new Error(messaggioErroreFunzione(data, password))
             setCompletato(true)
         } catch (err) {
             setErrore(err.message)

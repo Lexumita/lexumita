@@ -10,7 +10,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { apriFile } from '@/lib/fileSpazio'
 import { caricaContatoriAdmin, riquadriPerRuolo, descriviStati } from '@/lib/contatoriAdmin'
-import { messaggioErroreAuthPassword } from '@/lib/password'
+import { messaggioErroreFunzione } from '@/lib/password'
 import UtentiQuestionari from './UtentiQuestionari'
 
 const ROLE_BADGE = {
@@ -120,8 +120,9 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
         }
       )
       const json = await res.json()
-      // La password la genera il server: se Supabase la rifiuta, la regola, mai il messaggio inglese.
-      if (!json.ok) throw new Error(messaggioErroreAuthPassword(json) ?? json.error)
+      // La password la genera il server. Prima il traduttore delle password, poi il
+      // testo del server se è italiano, altrimenti un messaggio generico: mai l'inglese.
+      if (!json.ok) throw new Error(messaggioErroreFunzione(json))
 
       setSuccesso({
         user_id: json.user_id,
@@ -132,7 +133,8 @@ function ModalCreaUtente({ open, onClose, onCreated }) {
         role,
       })
     } catch (err) {
-      setErrore(err.message)
+      // Anche rete assente o risposta illeggibile: niente testo tecnico inglese.
+      setErrore(messaggioErroreFunzione(err))
     } finally {
       setLoading(false)
     }
