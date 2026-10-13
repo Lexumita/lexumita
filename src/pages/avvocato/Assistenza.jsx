@@ -9,6 +9,8 @@ import { idSupporto, idsSupporto, segnalaTicketAggiornato } from '@/lib/supporto
 
 const ALIAS_ADMIN_NOME = 'Lexum'
 const ALIAS_ADMIN_INIZIALE = 'L'
+// Il nome del cliente porta alla sua scheda (/clienti/:id); Lexum e lo studio restano testo
+const LINK_NOME = 'underline decoration-white/20 underline-offset-2 hover:text-oro hover:decoration-oro/50 transition-colors'
 
 function displayNome(profilo, ruoloFallback = null) {
     const ruolo = profilo?.role ?? ruoloFallback
@@ -446,7 +448,12 @@ export function AvvocatoAssistenza() {
                                             <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{t.oggetto}</td>
                                             {!isLexum && (
                                                 <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                                                    {t.mittente ? `${t.mittente.nome} ${t.mittente.cognome}` : '—'}
+                                                    {/* Il nome del cliente porta alla sua scheda */}
+                                                    {t.mittente ? (
+                                                        <Link to={`/clienti/${t.mittente.id}`} className={LINK_NOME}>
+                                                            {`${t.mittente.nome} ${t.mittente.cognome}`}
+                                                        </Link>
+                                                    ) : '—'}
                                                 </td>
                                             )}
                                             <td className="px-4 py-3 font-body text-xs text-nebbia/40 whitespace-nowrap">
@@ -592,7 +599,7 @@ export function AvvocatoAssistenzaDettaglio() {
                     .select('*, mittente:mittente_id(nome, cognome, role), destinatario:destinatario_id(nome, cognome, role)')
                     .eq('id', id).single(),
                 supabase.from('messaggi_ticket')
-                    .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
+                    .select('id, testo, autore_id, autore_tipo, created_at, autore:autore_id(nome, cognome)')
                     .eq('ticket_id', id).order('created_at'),
                 idsSupporto(),
             ])
@@ -615,7 +622,7 @@ export function AvvocatoAssistenzaDettaglio() {
         try {
             const { data: nuovoMsg, error } = await supabase.from('messaggi_ticket')
                 .insert({ ticket_id: ticket.id, autore_id: meId, autore_tipo: 'avvocato', testo: msg.trim() })
-                .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)').single()
+                .select('id, testo, autore_id, autore_tipo, created_at, autore:autore_id(nome, cognome)').single()
             if (error) throw new Error(error.message)
             await supabase.from('ticket_assistenza').update({ ultimo_mittente: 'avvocato' }).eq('id', ticket.id)
             setMessaggi(prev => [...prev, nuovoMsg]); setMsg('')
@@ -654,7 +661,12 @@ export function AvvocatoAssistenzaDettaglio() {
                 <div>
                     <p className="section-label mb-2">{isLexum ? 'Supporto Lexum' : 'Ticket cliente'} · #{ticket.id.slice(0, 8)}</p>
                     <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
-                    <p className="font-body text-xs text-nebbia/30 mt-1">{mittente} · {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
+                    <p className="font-body text-xs text-nebbia/30 mt-1">
+                        {/* Se l'ha aperto il cliente, il suo nome porta alla sua scheda (mai nei ticket con Lexum) */}
+                        {!isLexum && ticket.mittente_ruolo === 'cliente' ? (
+                            <Link to={`/clienti/${ticket.mittente_id}`} className={LINK_NOME}>{mittente}</Link>
+                        ) : mittente} · {new Date(ticket.created_at).toLocaleDateString('it-IT')}
+                    </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                     <Badge label={ticket.stato === 'aperto' ? 'Aperto' : 'Chiuso'} variant={ticket.stato === 'aperto' ? 'salvia' : 'gray'} />
@@ -684,7 +696,11 @@ export function AvvocatoAssistenzaDettaglio() {
                     return (
                         <div key={m.id} className={`flex ${isMio ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[75%] p-3 space-y-1 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio/60 border border-white/8'}`}>
-                                <p className={`font-body text-[10px] font-medium ${isMio ? 'text-oro/60' : 'text-nebbia/40'}`}>{nomeAutore}</p>
+                                <p className={`font-body text-[10px] font-medium ${isMio ? 'text-oro/60' : 'text-nebbia/40'}`}>
+                                    {m.autore_tipo === 'cliente' && m.autore_id
+                                        ? <Link to={`/clienti/${m.autore_id}`} className={LINK_NOME}>{nomeAutore}</Link>
+                                        : nomeAutore}
+                                </p>
                                 <p className="font-body text-sm text-nebbia leading-relaxed whitespace-pre-wrap">{m.testo}</p>
                                 <p className="font-body text-[10px] text-nebbia/25">
                                     {new Date(m.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
