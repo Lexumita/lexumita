@@ -1,7 +1,7 @@
 // src/pages/admin/Assistenza.jsx
 
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, StatCard } from '@/components/shared'
 import {
   Send, Search, ChevronUp, ChevronDown,
@@ -522,7 +522,7 @@ export function AdminAssistenzaDettaglio() {
 
     const { data: msgs } = await supabase
       .from('messaggi_ticket')
-      .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
+      .select('id, testo, autore_id, autore_tipo, created_at, autore:autore_id(nome, cognome)')
       .eq('ticket_id', id)
       .order('created_at', { ascending: true })
 
@@ -538,7 +538,7 @@ export function AdminAssistenzaDettaglio() {
       const { data, error } = await supabase
         .from('messaggi_ticket')
         .insert({ ticket_id: id, autore_id: meId, autore_tipo: 'admin', testo: testo.trim() })
-        .select('id, testo, autore_tipo, created_at, autore:autore_id(nome, cognome)')
+        .select('id, testo, autore_id, autore_tipo, created_at, autore:autore_id(nome, cognome)')
         .single()
 
       if (error) throw new Error(error.message)
@@ -609,7 +609,14 @@ export function AdminAssistenzaDettaglio() {
           <h1 className="font-display text-3xl font-light text-nebbia">{ticket.oggetto}</h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <p className="font-body text-xs text-nebbia/40">
-              {isUscente ? 'A: ' : 'Da: '}{controparteNome}
+              {isUscente ? 'A: ' : 'Da: '}
+              {/* Il nome porta alla scheda dell'utente */}
+              {controparteProfile?.id ? (
+                <Link to={`/admin/utenti/${controparteProfile.id}`} title="Apri la scheda dell'utente"
+                  className="underline decoration-white/20 underline-offset-2 hover:text-oro hover:decoration-oro/50 transition-colors">
+                  {controparteNome}
+                </Link>
+              ) : controparteNome}
             </p>
             <Badge label={rb.label} variant={rb.variant} />
             <span className="font-body text-xs text-nebbia/30">·</span>
@@ -656,7 +663,14 @@ export function AdminAssistenzaDettaglio() {
                 )}
                 <div className={`max-w-xl px-4 py-3 ${isMio ? 'bg-oro/15 border border-oro/20' : 'bg-petrolio/60 border border-white/8'}`}>
                   <p className={`font-body text-[10px] font-medium mb-1 ${isMio ? 'text-oro/60 text-right' : 'text-nebbia/40'}`}>
-                    {msg.autore?.nome} {msg.autore?.cognome}
+                    {!isMio && msg.autore_id ? (
+                      <Link to={`/admin/utenti/${msg.autore_id}`} title="Apri la scheda dell'utente"
+                        className="underline decoration-white/20 underline-offset-2 hover:text-oro hover:decoration-oro/50 transition-colors">
+                        {msg.autore?.nome} {msg.autore?.cognome}
+                      </Link>
+                    ) : (
+                      <>{msg.autore?.nome} {msg.autore?.cognome}</>
+                    )}
                   </p>
                   <p className="font-body text-sm text-nebbia leading-relaxed whitespace-pre-wrap">{msg.testo}</p>
                   <p className={`font-body text-[10px] text-nebbia/25 mt-1 ${isMio ? 'text-right' : ''}`}>
