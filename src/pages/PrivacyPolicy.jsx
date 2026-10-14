@@ -1,11 +1,12 @@
 // src/pages/PrivacyPolicy.jsx
+import { useEffect } from 'react'
 import { Shield, Lock, Eye, Server, Mail, FileText } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation, Trans } from 'react-i18next'
 
-function Section({ title, children }) {
+function Section({ id, title, children }) {
     return (
-        <div className="space-y-4">
+        <div id={id} className="space-y-4 scroll-mt-24">
             <h2 className="font-display text-2xl font-light text-nebbia border-b border-white/5 pb-3">{title}</h2>
             <div className="font-body text-sm text-nebbia/60 leading-relaxed space-y-3">
                 {children}
@@ -25,6 +26,17 @@ function Sub({ title, children }) {
 
 export default function PrivacyPolicy() {
     const { t } = useTranslation('privacy')
+
+    // /privacy#elimina-account (link di Google Play per l'eliminazione dell'account): la pagina si apre lì.
+    // ScrollToTop la riporta in cima e la pagina si assesta dopo il primo disegno: si riprova nel primo secondo.
+    useEffect(() => {
+        const id = window.location.hash.slice(1)
+        if (!/^[\w-]+$/.test(id)) return
+        const timer = [0, 200, 600, 1200].map((ms) =>
+            setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' }), ms),
+        )
+        return () => timer.forEach(clearTimeout)
+    }, [])
 
     return (
         <div className="min-h-screen bg-petrolio text-nebbia pt-20">
@@ -154,7 +166,31 @@ export default function PrivacyPolicy() {
                     </p>
                 </Section>
 
-                {/* 7. Sicurezza */}
+                {/* 7. Eliminare l'account (15-10-2026, richiesto da Google Play) */}
+                <Section id="elimina-account" title={t('elimina.title')}>
+                    <p>{t('elimina.intro')}</p>
+                    <Sub title={t('elimina.app_title')}>
+                        <p>{t('elimina.app_text')}</p>
+                    </Sub>
+                    <Sub title={t('elimina.senza_title')}>
+                        <p><Trans t={t} i18nKey="elimina.senza_text" components={{ mail: <a href="mailto:privacy@lexum.it" className="text-oro hover:text-oro/70 transition-colors" /> }} /></p>
+                    </Sub>
+                    <Sub title={t('elimina.pro_title')}>
+                        <p><Trans t={t} i18nKey="elimina.pro_text" components={{ mail: <a href="mailto:privacy@lexum.it" className="text-oro hover:text-oro/70 transition-colors" /> }} /></p>
+                    </Sub>
+                    <Sub title={t('elimina.cancellati_title')}>
+                        <ul className="list-disc list-inside space-y-1 pl-2">
+                            {t('elimina.cancellati_items', { returnObjects: true }).map((voce, i) => (
+                                <li key={i}>{voce}</li>
+                            ))}
+                        </ul>
+                    </Sub>
+                    <Sub title={t('elimina.conservati_title')}>
+                        <p>{t('elimina.conservati_text')}</p>
+                    </Sub>
+                </Section>
+
+                {/* 8. Sicurezza */}
                 <Section title={t('sicurezza.title')}>
                     <p>
                         {t('sicurezza.intro')}
@@ -169,14 +205,14 @@ export default function PrivacyPolicy() {
                     </p>
                 </Section>
 
-                {/* 8. Cookie */}
+                {/* 9. Cookie */}
                 <Section title={t('cookie.title')}>
                     <p>
                         {t('cookie.text')}
                     </p>
                 </Section>
 
-                {/* 9. Modifiche */}
+                {/* 10. Modifiche */}
                 <Section title={t('modifiche.title')}>
                     <p>
                         {t('modifiche.text')}

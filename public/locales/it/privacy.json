@@ -159,8 +159,28 @@
     ],
     "esercizio": "Per esercitare i tuoi diritti scrivi a <mail>privacy@lexum.it</mail>. Risponderemo entro 30 giorni. Per reclami puoi rivolgerti al Garante Privacy italiano (<garante>garanteprivacy.it</garante>) o all'Incaricato federale svizzero della protezione dei dati (IFPDT)."
   },
+  "elimina": {
+    "title": "7. Eliminare l'account",
+    "intro": "Puoi eliminare in qualsiasi momento il tuo account Lexum e i dati collegati, anche senza usare l'app.",
+    "app_title": "Dall'app Lexum",
+    "app_text": "Apri il Profilo, tocca «Elimina account» e conferma. Gli account privati vengono eliminati subito; se hai attivato la verifica in due passaggi ti chiediamo il codice.",
+    "senza_title": "Senza l'app",
+    "senza_text": "Scrivi a <mail>privacy@lexum.it</mail> dall'indirizzo email del tuo account, con oggetto «Eliminazione account». Eliminiamo l'account entro 30 giorni e ti confermiamo la cancellazione.",
+    "pro_title": "Account professionali e di studio",
+    "pro_text": "Per avvocati, commercialisti e studi l'eliminazione passa dall'assistenza, perché l'account contiene dati dei clienti, pratiche e fatture da chiudere o esportare prima. Dall'app, «Elimina account» invia la richiesta all'assistenza; in alternativa scrivi a <mail>privacy@lexum.it</mail>.",
+    "cancellati_title": "Cosa cancelliamo",
+    "cancellati_items": [
+      "Profilo e dati di accesso",
+      "Ricerche, chat salvate ed etichette",
+      "Documenti dell'archivio",
+      "Domande poste a Lex",
+      "Notifiche e richieste di assistenza"
+    ],
+    "conservati_title": "Cosa conserviamo",
+    "conservati_text": "I dati dei pagamenti e di fatturazione, per gli obblighi contabili e fiscali (10 anni), e il registro tecnico delle email inviate, entro i limiti della sezione 5. Questi dati non sono più collegati al tuo account."
+  },
   "sicurezza": {
-    "title": "7. Sicurezza dei dati",
+    "title": "8. Sicurezza dei dati",
     "intro": "Adottiamo misure tecniche e organizzative adeguate per proteggere i dati personali da accessi non autorizzati, perdita, distruzione o divulgazione. In particolare:",
     "items": [
       "Crittografia dei dati in transito (TLS 1.2+) e a riposo",
@@ -173,11 +193,11 @@
     "breach": "In caso di violazione dei dati personali (data breach) che presenti un rischio elevato per i diritti degli interessati, provvederemo alla notifica entro 72 ore all'autorità di controllo competente e, ove necessario, agli interessati coinvolti."
   },
   "cookie": {
-    "title": "8. Cookie e tecnologie di tracciamento",
+    "title": "9. Cookie e tecnologie di tracciamento",
     "text": "La piattaforma Lexum utilizza esclusivamente cookie tecnici strettamente necessari al funzionamento del servizio (es. cookie di sessione per l'autenticazione). Non utilizziamo cookie di profilazione o di terze parti a fini pubblicitari."
   },
   "modifiche": {
-    "title": "9. Modifiche alla presente informativa",
+    "title": "10. Modifiche alla presente informativa",
     "text": "Ci riserviamo il diritto di aggiornare la presente informativa in caso di modifiche normative o del servizio. Le modifiche sostanziali saranno comunicate via email almeno 30 giorni prima dell'entrata in vigore. L'uso continuato della piattaforma dopo tale periodo costituisce accettazione delle modifiche."
   },
   "footer": {
