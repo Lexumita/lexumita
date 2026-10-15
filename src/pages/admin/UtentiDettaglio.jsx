@@ -7,13 +7,13 @@ import {
   ShieldOff, Lock, Clock, FileText,
   FolderOpen, User, KeyRound, Mail, X, Eye, EyeOff, Copy, Check,
   CheckCircle, XCircle, AlertCircle, ArrowRight, RefreshCw, Download,
-  CreditCard, Sparkles, Receipt, CalendarClock
+  CreditCard, Sparkles, Receipt, CalendarClock, Pencil
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatImporto } from '@/lib/prezzi'
 import { apriFile } from '@/lib/fileSpazio'
-import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, TESTO_REGOLA_PASSWORD } from '@/lib/password'
+import { problemiPassword, messaggioPassword, messaggioErroreFunzione, messaggioErroreInvoke, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI
@@ -466,7 +466,7 @@ function CampoRiga({ label, value }) {
   )
 }
 
-function SezioneUser({ utente, onDecision }) {
+function SezioneUser({ utente, onDecision, onModificaAnagrafica }) {
   const [motivazione, setMotivazione] = useState('')
   const [elaborando, setElaborando] = useState(false)
   const [errore, setErrore] = useState('')
@@ -529,7 +529,15 @@ function SezioneUser({ utente, onDecision }) {
       <div className="grid lg:grid-cols-2 gap-4 items-start">
       {/* Anagrafica */}
       <div className="bg-slate border border-white/5 p-5 space-y-3">
-        <p className="section-label mb-3">Anagrafica</p>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="section-label !m-0">Anagrafica</p>
+          {onModificaAnagrafica && (
+            <button onClick={onModificaAnagrafica}
+              className="font-body text-xs text-oro/70 hover:text-oro flex items-center gap-1.5 transition-colors">
+              <Pencil size={12} /> Modifica
+            </button>
+          )}
+        </div>
         <CampoRiga label="Nome completo" value={`${utente.nome ?? ''} ${utente.cognome ?? ''}`.trim() || null} />
         <div className="flex justify-between items-start gap-3 border-b border-white/5 pb-2">
           <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest shrink-0">Email</span>
@@ -1209,6 +1217,9 @@ function SezioneAbbonamento({ utente }) {
     const scaduto = c.periodo_fine && new Date(c.periodo_fine) < ora
     return acc + (res > 0 && !scaduto ? res : 0)
   }, 0)
+  // tutti i crediti consumati, anche quelli di assegnazioni ormai scadute
+  const creditiUsati = dati.crediti.reduce((acc, c) => acc + (c.crediti_usati ?? 0), 0)
+  const creditiAssegnati = dati.crediti.reduce((acc, c) => acc + (c.crediti_totali ?? 0), 0)
   const speso = dati.transazioni
     .filter(t => t.stato === 'completato')
     .reduce((a, t) => a + Number(t.importo ?? 0), 0)
@@ -1240,7 +1251,7 @@ function SezioneAbbonamento({ utente }) {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-petrolio/40 border border-white/5 p-4">
           <p className="font-body text-[10px] text-nebbia/35 uppercase tracking-widest mb-2">Piano</p>
           <p className="font-display text-lg text-nebbia leading-tight">
@@ -1257,6 +1268,13 @@ function SezioneAbbonamento({ utente }) {
           <p className="font-display text-lg text-oro leading-tight">{loading ? '—' : creditiResidui}</p>
           <p className="font-body text-xs text-nebbia/35 mt-1">
             su {dati.crediti.length} assegnazion{dati.crediti.length === 1 ? 'e' : 'i'}
+          </p>
+        </div>
+        <div className="bg-petrolio/40 border border-white/5 p-4">
+          <p className="font-body text-[10px] text-nebbia/35 uppercase tracking-widest mb-2">Crediti utilizzati</p>
+          <p className="font-display text-lg text-nebbia leading-tight">{loading ? '—' : creditiUsati}</p>
+          <p className="font-body text-xs text-nebbia/35 mt-1">
+            su {creditiAssegnati} assegnat{creditiAssegnati === 1 ? 'o' : 'i'} in tutto
           </p>
         </div>
         <div className="bg-petrolio/40 border border-white/5 p-4">
@@ -1363,6 +1381,7 @@ export default function AdminUtentiDettaglio() {
   const { profile: adminProfile } = useAuth()
   const [utente, setUtente] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [modificaAnagrafica, setModificaAnagrafica] = useState(false)
 
   const isSelf = adminProfile?.id === id
 
@@ -1407,6 +1426,11 @@ export default function AdminUtentiDettaglio() {
         <div className="flex flex-col gap-2 items-end">
           <Badge label={rb.label} variant={rb.variant} />
           <button
+            onClick={() => setModificaAnagrafica(true)}
+            className="font-body text-xs text-oro/70 hover:text-oro transition-colors border border-oro/20 hover:border-oro/40 px-3 py-1.5 flex items-center gap-1.5">
+            <Pencil size={12} /> Modifica anagrafica
+          </button>
+          <button
             onClick={() => { if (confirm(`Sospendere l'account di ${utente.nome} ${utente.cognome}?`)) alert('Funzione disponibile prossimamente') }}
             className="font-body text-xs text-red-400/60 hover:text-red-400 transition-colors border border-red-500/20 hover:border-red-500/40 px-3 py-1.5 flex items-center gap-1.5">
             <ShieldOff size={12} /> Sospendi account
@@ -1442,7 +1466,7 @@ export default function AdminUtentiDettaglio() {
       {utente.role === 'avvocato' && <SezioneAvvocato utente={utente} />}
       {utente.role === 'cliente' && <SezioneCliente utente={utente} />}
       {utente.role === 'user' && (
-        <SezioneUser utente={utente} onDecision={(tipo) => setUtente(prev => ({
+        <SezioneUser utente={utente} onModificaAnagrafica={() => setModificaAnagrafica(true)} onDecision={(tipo) => setUtente(prev => ({
           ...prev, verification_status: tipo,
           role: tipo === 'approved' ? 'avvocato' : prev.role,
         }))} />
@@ -1459,6 +1483,14 @@ export default function AdminUtentiDettaglio() {
         <BoxCambioRuolo
           utente={utente}
           onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
+        />
+      )}
+
+      {modificaAnagrafica && (
+        <ModaleAnagrafica
+          utente={utente}
+          onClose={() => setModificaAnagrafica(false)}
+          onSalvato={(patch) => { setUtente(prev => ({ ...prev, ...patch })); setModificaAnagrafica(false) }}
         />
       )}
     </div>
@@ -1785,6 +1817,127 @@ function ModalCambiaPassword({ utente, onClose, onSuccess }) {
               {inviando
                 ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
                 : 'Conferma cambio password'
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+// ─────────────────────────────────────────────────────────────
+// MODIFICA ANAGRAFICA (15-10-2026): l'admin corregge i dati personali di un
+// utente senza passare dal database. Nome, cognome e telefono il database li
+// copia anche nell'account di accesso (sync_profile_to_auth) e il telefono lo
+// rimette in forma compatta da sé. L'email resta fuori: è l'indirizzo con cui
+// si entra, e si cambia con il suo giro di conferma.
+// ─────────────────────────────────────────────────────────────
+const CAMPI_ANAGRAFICA = [
+  { k: 'nome', label: 'Nome' },
+  { k: 'cognome', label: 'Cognome' },
+  { k: 'telefono', label: 'Telefono', placeholder: '+39 333 1234567' },
+  { k: 'cf', label: 'Codice fiscale', maiuscolo: true },
+  { k: 'data_nascita', label: 'Data di nascita', tipo: 'date' },
+  { k: 'luogo_nascita', label: 'Luogo di nascita' },
+  { k: 'indirizzo', label: 'Indirizzo', largo: true },
+  { k: 'comune', label: 'Comune' },
+  { k: 'provincia', label: 'Provincia', maiuscolo: true },
+  { k: 'cap', label: 'CAP' },
+]
+
+function ModaleAnagrafica({ utente, onClose, onSalvato }) {
+  const [valori, setValori] = useState(() =>
+    Object.fromEntries(CAMPI_ANAGRAFICA.map(({ k }) => [k, utente[k] ?? '']))
+  )
+  const [salvando, setSalvando] = useState(false)
+  const [errore, setErrore] = useState('')
+
+  // solo i campi cambiati; vuoto = nessun valore (nome e cognome restano testo vuoto, come alla registrazione)
+  const modifiche = {}
+  for (const { k, maiuscolo } of CAMPI_ANAGRAFICA) {
+    let v = String(valori[k] ?? '').trim()
+    if (maiuscolo) v = v.toUpperCase()
+    const nuovo = v === '' ? (k === 'nome' || k === 'cognome' ? '' : null) : v
+    const prima = utente[k] ?? (k === 'nome' || k === 'cognome' ? '' : null)
+    if (nuovo !== prima) modifiche[k] = nuovo
+  }
+  const daSalvare = Object.keys(modifiche).length > 0
+
+  async function salva() {
+    if (!daSalvare) return
+    if (!String(valori.nome ?? '').trim()) {
+      setErrore('Il nome non può restare vuoto.')
+      return
+    }
+    setSalvando(true)
+    setErrore('')
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(modifiche)
+      .eq('id', utente.id)
+      .select(CAMPI_ANAGRAFICA.map(c => c.k).join(', '))
+      .maybeSingle()
+    setSalvando(false)
+    if (error || !data) {
+      setErrore(error ? messaggioErroreDatabase(error) : 'Salvataggio non riuscito: il profilo non è stato aggiornato.')
+      return
+    }
+    onSalvato(data)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-petrolio/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate border border-white/10 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-white/8">
+          <div className="flex items-center gap-2">
+            <Pencil size={16} className="text-oro" />
+            <h2 className="font-display text-lg text-nebbia">Modifica anagrafica</h2>
+          </div>
+          <button onClick={onClose} className="text-nebbia/40 hover:text-nebbia">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <p className="font-body text-sm text-nebbia/60 leading-relaxed">
+            Stai modificando i dati di <span className="text-nebbia font-medium">{utente.nome} {utente.cognome}</span>.
+            L'email ({utente.email}) qui non si cambia: è l'indirizzo con cui l'utente entra.
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {CAMPI_ANAGRAFICA.map(({ k, label, tipo, placeholder, maiuscolo, largo }) => (
+              <div key={k} className={largo ? 'sm:col-span-2' : ''}>
+                <label htmlFor={`anagrafica-${k}`} className="block font-body text-xs text-nebbia/40 tracking-widest uppercase mb-2">
+                  {label}
+                </label>
+                <input
+                  id={`anagrafica-${k}`}
+                  type={tipo ?? 'text'}
+                  value={valori[k] ?? ''}
+                  placeholder={placeholder}
+                  onChange={e => setValori(v => ({ ...v, [k]: e.target.value }))}
+                  className={`w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25 ${maiuscolo ? 'uppercase' : ''}`}
+                />
+              </div>
+            ))}
+          </div>
+
+          {errore && (
+            <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
+              <AlertCircle size={14} /> {errore}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={onClose} disabled={salvando}
+              className="font-body text-sm text-nebbia/60 hover:text-nebbia border border-white/10 px-4 py-2.5 disabled:opacity-40">
+              Annulla
+            </button>
+            <button onClick={salva} disabled={salvando || !daSalvare}
+              className="btn-primary text-sm flex-1 justify-center disabled:opacity-40">
+              {salvando
+                ? <span className="animate-spin w-4 h-4 border-2 border-petrolio border-t-transparent rounded-full" />
+                : 'Salva le modifiche'
               }
             </button>
           </div>
