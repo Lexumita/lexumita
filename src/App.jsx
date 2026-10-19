@@ -84,6 +84,8 @@ import Fisco from '@/pages/fisco/Fisco'
 import Novita from './pages/Novita'
 import NovitaArticolo from './pages/NovitaArticolo'
 import AdminNovita from './pages/admin/Novita'
+import AdminMetriche from './pages/admin/Metriche'
+import ContaVisite from './components/ContaVisite'
 import { NOVITA_ATTIVA } from './lib/novita'
 import SentenzaDettaglio from './pages/avvocato/SentenzaDettaglio'
 import PrassiDettaglio from './pages/avvocato/PrassiDettaglio'
@@ -124,6 +126,7 @@ function VetrinaLayout({ children }) {
       <main className="flex-1">{children}</main>
       <Footer />
       <Analytics />
+      <ContaVisite />
     </div>
   )
 }
@@ -136,6 +139,7 @@ function AuthLayout({ children }) {
     <>
       {children}
       <Analytics />
+      <ContaVisite />
     </>
   )
 }
@@ -221,6 +225,7 @@ export default function App() {
                 ADMIN
                 ═══════════════════════════════════════════════════════ */}
               <Route path="/admin/dashboard" element={<Adm><AdminDashboard /></Adm>} />
+              <Route path="/admin/metriche" element={<Adm><AdminMetriche /></Adm>} />
               <Route path="/admin/utenti" element={<Adm><AdminUtenti /></Adm>} />
               <Route path="/admin/utenti/:id" element={<Adm><AdminUtentiDettaglio /></Adm>} />
               <Route path="/admin/prodotti" element={<Adm><AdminProdotti /></Adm>} />
