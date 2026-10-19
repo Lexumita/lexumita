@@ -7,7 +7,7 @@ import logo from '@/assets/logo.png'
 import {
   LayoutDashboard, Users, Package, Mail, UserCircle,
   BookOpen, CreditCard, Headphones, Calendar,
-  LogOut, Menu, ChevronRight, Activity, Languages, Newspaper, BarChart3
+  LogOut, Menu, ChevronRight, Activity, Languages, Newspaper
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
@@ -21,7 +21,6 @@ export default function AdminLayout({ children }) {
 
   const NAV = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/admin/metriche', label: 'Metriche', icon: BarChart3 },
     { path: '/admin/calendario', label: 'Calendario', icon: Calendar },
     { path: '/admin/utenti', label: 'Utenti', icon: Users },
     { path: '/admin/prodotti', label: 'Prodotti', icon: Package },

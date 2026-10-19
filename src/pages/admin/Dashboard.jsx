@@ -1,42 +1,102 @@
 // src/pages/admin/Dashboard.jsx
+//
+// In alto i contatori (utenti per ruolo, ticket aperti, revenue), sotto le metriche
+// (blog e sito, percorso dei nuovi iscritti: components/admin/Metriche.jsx).
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, StatCard } from '@/components/shared'
+import Metriche from '@/components/admin/Metriche'
+import { Users, Headphones, CreditCard, AlertCircle } from 'lucide-react'
 import {
-  Users, ShieldCheck, Headphones, CreditCard,
-  BookOpen, Briefcase, AlertCircle, UserCheck
-} from 'lucide-react'
-import {
-  caricaContatoriAdmin, totaliProfessionisti, composizioneIscritti, formattaImporto
+  caricaContatoriAdmin, totaliProfessionisti, descriviStati, formattaImporto
 } from '@/lib/contatoriAdmin'
 
-const QUICK = [
-  {
-    to: '/admin/utenti',
-    label: 'Coda verifiche',
-    desc: 'Approva o rifiuta richieste avvocati',
-    border: 'border-amber-500/30 hover:border-amber-500/50',
-  },
-  {
-    to: '/admin/assistenza',
-    label: 'Assistenza',
-    desc: 'Gestisci i ticket aperti',
-    border: 'border-red-500/30 hover:border-red-500/50',
-  },
-  {
-    to: '/admin/prodotti',
-    label: 'Prodotti',
-    desc: 'Abbonamenti e accessi singoli',
-    border: 'border-oro/30 hover:border-oro/50',
-  },
-  {
-    to: '/admin/pagamenti',
-    label: 'Compensi',
-    desc: 'Revenue sharing avvocati',
-    border: 'border-salvia/30 hover:border-salvia/50',
-  },
+// I box degli utenti registrati, in quest'ordine, ognuno col suo colore.
+// Le classi sono scritte per intero perché Tailwind le trovi.
+const GRUPPI = [
+  { id: 'user', label: 'User', ruoli: ['user'],
+    testo: 'text-sky-300', box: 'border-sky-400/40 bg-sky-400/10', barra: 'bg-sky-400/80' },
+  { id: 'professionisti', label: 'Professionisti', ruoli: ['avvocato', 'commercialista'],
+    testo: 'text-oro', box: 'border-oro/40 bg-oro/10', barra: 'bg-oro/80' },
+  { id: 'commerciale', label: 'Commerciali', ruoli: ['commerciale'],
+    testo: 'text-rose-300', box: 'border-rose-400/40 bg-rose-400/10', barra: 'bg-rose-400/80' },
+  { id: 'cliente', label: 'Clienti degli avvocati', ruoli: ['cliente'],
+    testo: 'text-salvia', box: 'border-salvia/40 bg-salvia/10', barra: 'bg-salvia/80' },
+  { id: 'admin', label: 'Admin', ruoli: ['admin'],
+    testo: 'text-nebbia/80', box: 'border-white/20 bg-white/5', barra: 'bg-nebbia/50' },
 ]
+const ALTRI = { id: 'altri', label: 'Altri', testo: 'text-nebbia/40', box: 'border-white/10', barra: 'bg-nebbia/20' }
+
+// Ogni ruolo finisce in un box; un ruolo nuovo va in «Altri», così la somma fa sempre il totale
+function gruppiUtenti(c) {
+  const perRuolo = c?.per_ruolo ?? {}
+  const ruoliNoti = new Set(GRUPPI.flatMap(g => g.ruoli))
+  const gruppi = GRUPPI.map(g => ({ ...g, n: g.ruoli.reduce((t, r) => t + (perRuolo[r] ?? 0), 0) }))
+  const nAltri = Object.entries(perRuolo).filter(([r]) => !ruoliNoti.has(r)).reduce((t, [, n]) => t + n, 0)
+  return nAltri ? [...gruppi, { ...ALTRI, n: nAltri }] : gruppi
+}
+
+const PROFESSIONI = { avvocato: ['avvocato', 'avvocati'], commercialista: ['commercialista', 'commercialisti'] }
+
+function dettaglioProfessionisti(c) {
+  return Object.entries(c?.professionisti ?? {})
+    .filter(([, s]) => s.totale)
+    .map(([r, s]) => {
+      const [uno, molti] = PROFESSIONI[r] ?? [r, r]
+      return `${s.totale} ${s.totale === 1 ? uno : molti}`
+    })
+    .join(' · ')
+}
+
+function UtentiRegistrati({ c, vuoto }) {
+  const totale = c?.totale ?? 0
+  const gruppi = gruppiUtenti(c)
+  const perc = (n) => (totale ? `${Math.round((n / totale) * 100)}%` : '')
+
+  return (
+    <div className="bg-slate border border-white/5 p-5 h-full">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-3xl font-semibold text-nebbia">{vuoto ? '—' : totale}</p>
+          <p className="font-body text-xs text-nebbia/40 tracking-widest uppercase mt-1">Utenti registrati</p>
+        </div>
+        <Link to="/admin/utenti" className="flex items-center gap-2 font-body text-xs text-nebbia/40 hover:text-oro transition-colors">
+          <Users size={18} className="text-nebbia/15" /> Vedi tutti →
+        </Link>
+      </div>
+
+      {!vuoto && (
+        <>
+          {/* La stessa divisione in una barra: quanto pesa ogni gruppo sul totale */}
+          <div className="flex h-2 mt-4 gap-px overflow-hidden">
+            {gruppi.filter(g => g.n).map(g => (
+              <div key={g.id} className={g.barra} style={{ width: `${(g.n / totale) * 100}%` }} title={`${g.label}: ${g.n}`} />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 mt-4">
+            {gruppi.map(g => {
+              const prof = g.id === 'professionisti'
+              return (
+                <div key={g.id} className={`border p-3 ${g.box}`}>
+                  <p className={`font-display text-2xl font-semibold leading-none ${g.testo}`}>{g.n}</p>
+                  <p className={`font-body text-[11px] tracking-wide uppercase mt-1.5 ${g.testo}`}>{g.label}</p>
+                  <p className="font-body text-[11px] text-nebbia/30 mt-1">
+                    {prof && g.n ? dettaglioProfessionisti(c) : perc(g.n)}
+                  </p>
+                  {prof && g.n > 0 && (
+                    <p className="font-body text-[11px] text-nebbia/30">{descriviStati(totaliProfessionisti(c))}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export default function AdminDashboard() {
   const [c, setC] = useState(null)
@@ -52,66 +112,10 @@ export default function AdminDashboard() {
   }, [])
 
   const vuoto = loading || !c
-  const prof = totaliProfessionisti(c)
   const nVerifiche = c?.verifiche_pendenti ?? 0
   const nTicket = c?.ticket_aperti ?? 0
   const valuta = c?.valuta ?? 'EUR'
   const altreValute = Object.entries(c?.ricavi ?? {}).filter(([v, tot]) => v !== valuta && Number(tot) !== 0)
-
-  const subProfessionisti = [
-    `su ${prof.totale}`,
-    prof.in_grazia ? `${prof.in_grazia} in grazia` : null,
-    prof.scaduti ? `${prof.scaduti} ${prof.scaduti === 1 ? 'scaduto' : 'scaduti'}` : null,
-    prof.senza_piano ? `${prof.senza_piano} senza piano` : null,
-  ].filter(Boolean).join(' · ')
-
-  const STATS = [
-    {
-      label: 'Utenti registrati',
-      value: vuoto ? '—' : c.totale,
-      sub: vuoto ? null : composizioneIscritti(c),
-      colorClass: 'text-nebbia',
-      icon: Users,
-    },
-    {
-      label: 'Professionisti attivi',
-      value: vuoto ? '—' : prof.attivi,
-      sub: vuoto ? null : subProfessionisti,
-      colorClass: 'text-oro',
-      icon: Briefcase,
-    },
-    {
-      label: 'Clienti registrati',
-      value: vuoto ? '—' : c.per_ruolo?.cliente ?? 0,
-      colorClass: 'text-nebbia/60',
-      icon: UserCheck,
-    },
-    {
-      label: 'Verifiche pendenti',
-      value: vuoto ? '—' : nVerifiche,
-      colorClass: nVerifiche > 0 ? 'text-amber-400' : 'text-nebbia/30',
-      icon: ShieldCheck,
-    },
-    {
-      label: 'Ticket aperti',
-      value: vuoto ? '—' : nTicket,
-      colorClass: nTicket > 0 ? 'text-red-400' : 'text-nebbia/30',
-      icon: Headphones,
-    },
-    {
-      label: 'Revenue totale',
-      value: vuoto ? '—' : formattaImporto(c.ricavi?.[valuta], valuta),
-      sub: altreValute.length ? altreValute.map(([v, tot]) => `+ ${formattaImporto(tot, v)}`).join(' · ') : null,
-      colorClass: 'text-salvia',
-      icon: CreditCard,
-    },
-    {
-      label: 'Sentenze in banca dati',
-      value: vuoto ? '—' : c.sentenze_pubbliche ?? 0,
-      colorClass: 'text-oro',
-      icon: BookOpen,
-    },
-  ]
 
   return (
     <div className="space-y-6">
@@ -123,10 +127,25 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {STATS.map(s => (
-          <StatCard key={s.label} {...s} />
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <UtentiRegistrati c={c} vuoto={vuoto} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 content-start">
+          <StatCard
+            label="Ticket aperti"
+            value={vuoto ? '—' : nTicket}
+            colorClass={nTicket > 0 ? 'text-red-400' : 'text-nebbia/30'}
+            icon={Headphones}
+          />
+          <StatCard
+            label="Revenue totale"
+            value={vuoto ? '—' : formattaImporto(c.ricavi?.[valuta], valuta)}
+            sub={altreValute.length ? altreValute.map(([v, tot]) => `+ ${formattaImporto(tot, v)}`).join(' · ') : null}
+            colorClass="text-salvia"
+            icon={CreditCard}
+          />
+        </div>
       </div>
 
       {/* Alert verifiche pendenti */}
@@ -154,6 +173,10 @@ export default function AdminDashboard() {
           </Link>
         </div>
       )}
+
+      <div className="border-t border-white/5 pt-6">
+        <Metriche />
+      </div>
     </div>
   )
 }

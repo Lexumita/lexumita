@@ -1,6 +1,6 @@
-// src/pages/admin/Metriche.jsx
+// src/components/admin/Metriche.jsx
 //
-// 19-10-2026: pannello metriche dell'admin. Per ora due sezioni:
+// 19-10-2026: metriche dell'admin, nella Dashboard sotto i contatori. Per ora due sezioni:
 //   - Blog e sito: visite della vetrina (contatore nostro, lib/visite.js), articoli più letti,
 //     pagine più viste, da dove arrivano le persone;
 //   - Il percorso dei nuovi iscritti: iscritti → email confermata → prima domanda a Lex → acquisto.
@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, StatCard } from '@/components/shared'
+import { StatCard } from '@/components/shared'
 import { Eye, LogIn, Newspaper, CalendarClock, UserPlus, MailCheck, MessageSquare, ShoppingBag, Timer } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -159,7 +159,7 @@ function Imbuto({ tappe }) {
 
 const Spunta = ({ si }) => <span className={si ? 'text-salvia' : 'text-nebbia/20'}>{si ? '✓' : '·'}</span>
 
-export default function AdminMetriche() {
+export default function Metriche() {
   const [giorni, setGiorni] = useState(30)
   const [sito, setSito] = useState(null)
   const [iscritti, setIscritti] = useState(null)
@@ -189,9 +189,8 @@ export default function AdminMetriche() {
 
   return (
     <div className="space-y-8">
-      <PageHeader label="Admin" title="Metriche" subtitle="Blog e sito, e il percorso dei nuovi iscritti" />
-
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-body text-xs text-nebbia/40 tracking-widest uppercase mr-2">Periodo</span>
         {PERIODI.map(p => (
           <button key={p.label} onClick={() => setGiorni(p.giorni)}
             className={`px-4 py-2 font-body text-sm border transition-colors ${giorni === p.giorni

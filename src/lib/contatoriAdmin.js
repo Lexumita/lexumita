@@ -55,18 +55,6 @@ export function descriviStati(s) {
   return parti.join(' · ')
 }
 
-// "7 professionisti · 10 clienti · 1 commerciale · 65 user · 3 admin": la composizione del totale
-export function composizioneIscritti(c) {
-  const prof = c?.professionisti ?? {}
-  const nProf = totaliProfessionisti(c).totale
-  const parti = [`${nProf} ${nProf === 1 ? 'professionista' : 'professionisti'}`]
-  for (const r of riquadriPerRuolo(c)) {
-    if (r.id in prof || !r.n) continue
-    parti.push(`${r.n} ${r.n === 1 ? r.uno : r.molti}`)
-  }
-  return parti.join(' · ')
-}
-
 export function formattaImporto(importo, valuta) {
   const n = Number(importo ?? 0)
   const decimali = Number.isInteger(n) ? 0 : 2
