@@ -20,6 +20,7 @@ import {
     Sparkles, X
 } from 'lucide-react'
 import { formatPrezzo } from '@/lib/prezzi'
+import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -153,8 +154,10 @@ function AggiungiAPratica({ sentenza, sorgente }) {
 function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
     const [processando, setProcessando] = useState(false)
     const [errore, setErrore] = useState(null)
+    const consenso = useConsensoRecesso()
 
     async function acquista() {
+        if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
         if (!prodottoId) {
             setErrore('Prodotto non configurato. Contatta l\'assistenza.')
             return
@@ -174,6 +177,7 @@ function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
                     },
                     body: JSON.stringify({
                         prodotto_id: prodottoId,
+                        ...consenso.campo,
                         metadata: {
                             sentenza_id: sentenza.id,
                             tipo: 'accesso_sentenza',
@@ -217,7 +221,7 @@ function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
                     </div>
                     <button
                         onClick={acquista}
-                        disabled={processando}
+                        disabled={processando || !consenso.ok}
                         className="btn-primary text-sm w-full sm:w-auto justify-center flex items-center gap-2 disabled:opacity-60"
                     >
                         {processando
@@ -226,6 +230,7 @@ function PaywallCard({ sentenza, prezzo, prodottoId, onAcquista }) {
                         }
                     </button>
                 </div>
+                <ConsensoRecesso consenso={consenso} className="mt-4" />
                 {errore && (
                     <p className="font-body text-xs text-red-400 mt-3 flex items-center gap-1.5">
                         <AlertCircle size={11} /> {errore}

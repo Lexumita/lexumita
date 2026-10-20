@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { formatPrezzo } from '@/lib/prezzi'
+import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
 const DURATA_SOSPESA_MS = 60 * 60 * 1000   // una ricerca lasciata per pagare si ritrova entro un'ora
@@ -74,6 +75,7 @@ export async function leggiSaldoCrediti() {
 
 export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', primaDiPagare }) {
     const { profile } = useAuth()
+    const consenso = useConsensoRecesso()
     const [prodotto, setProdotto] = useState(null)
     const [caricando, setCaricando] = useState(false)
     const [pagando, setPagando] = useState(false)
@@ -115,6 +117,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
 
     async function paga() {
         if (!prodotto || pagando) return
+        if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
         setPagando(true)
         setErrore('')
         try {
@@ -128,6 +131,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                 },
                 body: JSON.stringify({
                     prodotto_id: prodotto.id,
+                    ...consenso.campo,
                     success_url: `${ritorno}?lampo=ok`,
                     cancel_url: `${ritorno}?lampo=annullato`,
                 }),
@@ -194,6 +198,8 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                 <p className="font-display text-3xl font-light text-oro whitespace-nowrap">{prezzo}</p>
                             </div>
 
+                            <ConsensoRecesso consenso={consenso} />
+
                             {errore && (
                                 <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
                                     <AlertCircle size={11} className="shrink-0" /> {errore}
@@ -202,7 +208,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
 
                             <button
                                 onClick={paga}
-                                disabled={pagando}
+                                disabled={pagando || !consenso.ok}
                                 className="flex items-center justify-center gap-2 w-full min-h-[44px] py-3 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-50"
                             >
                                 {pagando

@@ -72,14 +72,25 @@
     },
     "rimborsi": {
       "title": "4.5 Rimborsi",
-      "text": "Non sono previsti rimborsi per periodi di abbonamento già fatturati, salvo vizi del servizio imputabili a Lexum. In caso di upgrade di piano, viene calcolata la differenza pro-rata per il periodo residuo."
+      "text": "Fatto salvo il diritto di recesso dei consumatori (punto 4.6), non sono previsti rimborsi per periodi di abbonamento già pagati, salvo vizi del servizio imputabili a Lexum. In caso di upgrade di piano, viene calcolata la differenza pro-rata per il periodo residuo."
+    },
+    "recesso": {
+      "title": "4.6 Diritto di recesso dei consumatori",
+      "intro": "Se acquisti come consumatore, cioè come persona fisica per scopi estranei alla tua attività professionale, puoi recedere entro 14 giorni dall'acquisto senza indicarne il motivo, scrivendo a info@lexum.it (art. 52 e seguenti del Codice del Consumo). Al momento dell'acquisto ti chiediamo se vuoi che quanto acquistato sia attivato subito. Se lo chiedi e confermi di aver compreso le conseguenze:",
+      "items": [
+        "per i crediti AI, i pacchetti a consumo e i contenuti digitali acquistati singolarmente (per esempio una sentenza), il diritto di recesso non si applica dal momento in cui ti vengono messi a disposizione (art. 59, comma 1, lettera o, del Codice del Consumo);",
+        "per gli abbonamenti, se recedi entro 14 giorni paghi solo la parte di servizio già fornita fino al recesso, calcolata in proporzione alla durata del piano, e il resto ti viene rimborsato; il diritto di recesso si perde quando il servizio è stato interamente prestato (artt. 57, comma 3, e 59, comma 1, lettera a)."
+      ],
+      "rimborso": "In caso di recesso, Lexum rimborsa quanto dovuto entro 14 giorni dalla richiesta, con lo stesso mezzo di pagamento usato per l'acquisto.",
+      "conferma": "La tua scelta di attivazione immediata viene registrata e confermata nella ricevuta che ricevi via email.",
+      "professionisti": "Il diritto di recesso non spetta a chi acquista per la propria attività professionale (avvocati, commercialisti, studi e imprese)."
     },
     "crediti": {
-      "title": "4.6 Crediti AI",
-      "text": "I crediti AI acquistati hanno validità indicata al momento dell'acquisto e non sono rimborsabili né trasferibili. I crediti inclusi nell'abbonamento mensile non si accumulano di mese in mese."
+      "title": "4.7 Crediti AI",
+      "text": "I crediti AI acquistati hanno la validità indicata al momento dell'acquisto e, fatto salvo il punto 4.6, non sono rimborsabili né trasferibili. I crediti inclusi nell'abbonamento mensile non si accumulano di mese in mese."
     },
     "prova": {
-      "title": "4.7 Prova gratuita",
+      "title": "4.8 Prova gratuita",
       "intro": "Lexum offre una prova gratuita della durata di 7 giorni (o periodo diverso indicato al momento dell'attivazione) per i nuovi utenti registrati come avvocati. La prova gratuita:",
       "items": [
         "È attivabile una sola volta per account e non è trasferibile",

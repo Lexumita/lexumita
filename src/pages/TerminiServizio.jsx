@@ -125,6 +125,24 @@ export default function TerminiServizio() {
               {t('piani.rimborsi.text')}
             </p>
           </Sub>
+          {/* 4.6 Recesso dei consumatori (20-10-2026) */}
+          <Sub title={t('piani.recesso.title')}>
+            <p>
+              {t('piani.recesso.intro')}
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              {voci('piani.recesso.items')}
+            </ul>
+            <p>
+              {t('piani.recesso.rimborso')}
+            </p>
+            <p>
+              {t('piani.recesso.conferma')}
+            </p>
+            <p>
+              {t('piani.recesso.professionisti')}
+            </p>
+          </Sub>
           <Sub title={t('piani.crediti.title')}>
             <p>
               {t('piani.crediti.text')}

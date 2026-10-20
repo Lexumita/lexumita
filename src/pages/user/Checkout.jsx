@@ -7,6 +7,7 @@ import { AlertCircle, Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
 import { etichettaDurata } from '@/lib/vociPiano'
+import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 export default function UserCheckout() {
     const { profile } = useAuth()
@@ -16,6 +17,7 @@ export default function UserCheckout() {
 
     const [loading, setLoading] = useState(false)
     const [errore, setErrore] = useState('')
+    const consenso = useConsensoRecesso()
 
     if (!prodotto) {
         return (
@@ -30,6 +32,7 @@ export default function UserCheckout() {
 
     async function handlePagamento() {
         setErrore('')
+        if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
         setLoading(true)
 
         try {
@@ -45,6 +48,7 @@ export default function UserCheckout() {
                     },
                     body: JSON.stringify({
                         prodotto_id: prodotto.id,
+                        ...consenso.campo,
                         success_url: `${window.location.origin}/abbonamenti?success=1`,
                         cancel_url: `${window.location.origin}/abbonamenti/checkout`,
                     }),
@@ -125,6 +129,8 @@ export default function UserCheckout() {
                 </p>
             </div>
 
+            <ConsensoRecesso consenso={consenso} className="px-1" />
+
             {/* Errore */}
             {errore && (
                 <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
@@ -135,7 +141,7 @@ export default function UserCheckout() {
             {/* CTA */}
             <button
                 onClick={handlePagamento}
-                disabled={loading}
+                disabled={loading || !consenso.ok}
                 className="btn-primary w-full justify-center text-sm disabled:opacity-60"
             >
                 {loading ? (

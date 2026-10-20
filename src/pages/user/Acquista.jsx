@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
+import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
     Sparkles, ShoppingBag, CreditCard, ArrowRight, CheckCircle,
@@ -34,6 +35,7 @@ export default function Acquista() {
     // Acquisto in corso
     const [acquistando, setAcquistando] = useState(null)
     const [errore, setErrore] = useState('')
+    const consenso = useConsensoRecesso()
 
     // Tab attivo: "crediti" (sempre visibile), "abbonamenti" (profilo completo).
     // A sbloccare i piani sono i DATI DI FATTURAZIONE, non la verifica dei
@@ -170,8 +172,13 @@ export default function Acquista() {
     }
 
     async function acquista(prodottoId, contesto = '') {
-        setAcquistando(prodottoId)
         setErrore('')
+        if (!consenso.ok) {
+            setErrore(ERRORE_CONSENSO_RECESSO)
+            document.getElementById('consenso-recesso')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            return
+        }
+        setAcquistando(prodottoId)
         try {
             const { data: { session } } = await supabase.auth.getSession()
             const res = await fetch(
@@ -184,6 +191,7 @@ export default function Acquista() {
                     },
                     body: JSON.stringify({
                         prodotto_id: prodottoId,
+                        ...consenso.campo,
                         success_url: `${window.location.origin}/area/acquista?success=1`,
                         cancel_url: `${window.location.origin}/area/acquista`,
                     }),
@@ -318,6 +326,11 @@ export default function Acquista() {
                     )}
                 </div>
             )}
+
+            {/* Attivazione immediata e recesso (solo privati) */}
+            <div id="consenso-recesso">
+                <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
+            </div>
 
             {/* Errore acquisto */}
             {errore && (
