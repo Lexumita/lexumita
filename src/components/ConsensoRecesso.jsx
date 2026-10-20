@@ -1,8 +1,9 @@
 // src/components/ConsensoRecesso.jsx
 //
-// La casella del recesso (20-10-2026). Un consumatore che compra crediti, pacchetti, una sentenza o un piano
-// chiede l'attivazione immediata e prende atto di cosa succede al recesso: Termini, punto 4.6; art. 59,
-// comma 1, lettere a e o, del Codice del Consumo. Vale solo per i privati (ruolo «user»): i professionisti
+// La casella del recesso (20-10-2026). Un consumatore che compra crediti, pacchetti o un piano chiede
+// l'attivazione immediata e prende atto di cosa succede al recesso (Termini, punto 4.6): come per Anthropic
+// e OpenAI, entro 14 giorni si rimborsa la parte non usata (crediti non usati, abbonamento in proporzione);
+// il recesso si perde quando il servizio è stato usato tutto (artt. 57 c.3 e 59 lett. a Codice del Consumo). Vale solo per i privati (ruolo «user»): i professionisti
 // non hanno il recesso. Senza la spunta il pagamento non parte; la scelta viaggia con la richiesta di
 // pagamento (consenso_recesso), così il server la registra e la ricevuta la conferma.
 
@@ -36,9 +37,9 @@ export default function ConsensoRecesso({ consenso, className = '' }) {
                 className="mt-0.5 w-4 h-4 shrink-0 accent-[#C9A45C] cursor-pointer"
             />
             <span className="font-body text-xs text-nebbia/60 leading-relaxed">
-                Chiedo che l'acquisto sia attivato subito. So che per crediti, pacchetti e contenuti digitali
-                perdo così il diritto di recesso di 14 giorni e che, per un abbonamento, se recedo pago la parte
-                già fornita (
+                Chiedo che l'acquisto sia attivato subito. So che, se recedo entro 14 giorni, mi vengono
+                rimborsati solo i crediti non ancora usati o la parte di abbonamento non ancora fornita, e che il
+                recesso non è più possibile quando ho usato tutto (
                 <a href="/termini" target="_blank" rel="noopener noreferrer" className="text-oro hover:text-oro/70 underline">
                     Termini, punto 4.6
                 </a>

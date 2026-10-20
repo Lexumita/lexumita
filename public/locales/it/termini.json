@@ -76,10 +76,11 @@
     },
     "recesso": {
       "title": "4.6 Diritto di recesso dei consumatori",
-      "intro": "Se acquisti come consumatore, cioè come persona fisica per scopi estranei alla tua attività professionale, puoi recedere entro 14 giorni dall'acquisto senza indicarne il motivo, scrivendo a info@lexum.it (art. 52 e seguenti del Codice del Consumo). Al momento dell'acquisto ti chiediamo se vuoi che quanto acquistato sia attivato subito. Se lo chiedi e confermi di aver compreso le conseguenze:",
+      "intro": "Se acquisti come consumatore, cioè come persona fisica per scopi estranei alla tua attività professionale, puoi recedere entro 14 giorni dall'acquisto senza indicarne il motivo, scrivendo a info@lexum.it (art. 52 e seguenti del Codice del Consumo). Al momento dell'acquisto ti chiediamo se vuoi che quanto acquistato sia attivato subito. Se lo chiedi e poi recedi entro i 14 giorni:",
       "items": [
-        "per i crediti AI, i pacchetti a consumo e i contenuti digitali acquistati singolarmente (per esempio una sentenza), il diritto di recesso non si applica dal momento in cui ti vengono messi a disposizione (art. 59, comma 1, lettera o, del Codice del Consumo);",
-        "per gli abbonamenti, se recedi entro 14 giorni paghi solo la parte di servizio già fornita fino al recesso, calcolata in proporzione alla durata del piano, e il resto ti viene rimborsato; il diritto di recesso si perde quando il servizio è stato interamente prestato (artt. 57, comma 3, e 59, comma 1, lettera a)."
+        "per i crediti AI e i pacchetti di crediti ti rimborsiamo i crediti non ancora usati; quelli già usati restano a tuo carico;",
+        "per gli abbonamenti paghi solo la parte di servizio già fornita fino al recesso, calcolata in proporzione alla durata del piano, e il resto ti viene rimborsato;",
+        "il diritto di recesso si perde quando il servizio è stato interamente fornito, per esempio quando hai usato tutti i crediti del pacchetto (artt. 57, comma 3, e 59, comma 1, lettera a, del Codice del Consumo)."
       ],
       "rimborso": "In caso di recesso, Lexum rimborsa quanto dovuto entro 14 giorni dalla richiesta, con lo stesso mezzo di pagamento usato per l'acquisto.",
       "conferma": "La tua scelta di attivazione immediata viene registrata e confermata nella ricevuta che ricevi via email.",
