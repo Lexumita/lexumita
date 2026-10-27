@@ -30,6 +30,15 @@ const ROLE_BADGE = {
 const euro = (n) =>
   formatImporto(n)
 
+// peso dei file (documenti di verifica e archivio): senza questa la scheda si rompeva
+// appena l'utente aveva un documento caricato
+function formatSize(bytes) {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const STATI_PRATICA = {
   in_corso: { label: 'In corso', variant: 'salvia' },
   in_udienza: { label: 'In udienza', variant: 'warning' },
