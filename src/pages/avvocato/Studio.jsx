@@ -218,7 +218,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
         setAcquistando(prodottoId)
         setErrore('')
         try {
-            // Cassa Tagadapay. L'upgrade (importo diverso dal listino) va al bonifico con l'importo di oggi.
+            // Cassa Tagadapay: per l'upgrade il server calcola l'importo di oggi e crea l'articolo con quel prezzo.
             await apriCassa({ prodottoId, isUpgrade, importo: isUpgrade ? importo : undefined, ritorno: '/studio?success=1' })
         } catch (err) {
             setErrore(err.message)

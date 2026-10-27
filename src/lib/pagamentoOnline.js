@@ -1,8 +1,8 @@
 // src/lib/pagamentoOnline.js
 //
 // Cassa Tagadapay (27-10-2026), al posto di Stripe. Il server (funzione tagada-checkout) decide il
-// prezzo e risponde con l'indirizzo della pagina di pagamento, oppure con quello del bonifico quando
-// l'importo di oggi non è quello di listino (upgrade di un piano) o la cassa non è disponibile.
+// prezzo, upgrade compresi, e risponde con l'indirizzo della pagina di pagamento. Se la cassa non è
+// disponibile si va al bonifico (src/lib/bonifico.js), che resta come riserva.
 
 import { supabase } from '@/lib/supabase'
 import { paginaBonifico } from '@/lib/bonifico'

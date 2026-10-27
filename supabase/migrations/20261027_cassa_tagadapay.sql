@@ -72,3 +72,21 @@ revoke all on function public.tagada_webhook_segreto_salva(text) from public, an
 revoke all on function public.tagada_webhook_segreto() from public, anon, authenticated;
 grant execute on function public.tagada_webhook_segreto_salva(text) to service_role;
 grant execute on function public.tagada_webhook_segreto() to service_role;
+
+-- 27-10 sera: il catalogo su Tagadapay lo riempie tagada-checkout al momento del pagamento, dal
+-- listino di Lexum (nome, descrizione, prezzo) e per gli upgrade con l'importo esatto di oggi. Qui si
+-- ricorda quale variante Tagadapay corrisponde a ogni combinazione, così non la si ricrea ogni volta.
+-- La chiave cambia se cambiano prezzo, nome o descrizione: un prezzo nuovo crea un articolo nuovo.
+create table if not exists public.tagada_varianti (
+  chiave       text primary key,
+  variant_id   text not null,
+  prodotto_id  uuid references public.prodotti(id) on delete set null,
+  importo      numeric(10,2) not null,
+  creato_il    timestamptz not null default now()
+);
+alter table public.tagada_varianti enable row level security;
+grant all on public.tagada_varianti to service_role;
+revoke all on public.tagada_varianti from anon, authenticated;
+
+-- Non serve più: il collegamento prodotto→variante sta in tagada_varianti.
+alter table public.prodotti drop column if exists tagada_variant_id;
