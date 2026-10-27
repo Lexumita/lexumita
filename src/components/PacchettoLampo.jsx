@@ -1,8 +1,8 @@
 // src/components/PacchettoLampo.jsx
 // ─────────────────────────────────────────────────────────────
 // Pacchetto Lampo (30/09/2026). Quando i crediti di Lex finiscono si propone di
-// continuare la ricerca con un piccolo pacchetto. Dal 27-10-2026 si paga con bonifico
-// (src/lib/bonifico.js): Stripe ha chiuso il conto.
+// continuare la ricerca con un piccolo pacchetto. Dal 27-10-2026 si paga con Tagadapay
+// (src/lib/pagamentoOnline.js): Stripe ha chiuso il conto.
 // Il prodotto si ritrova nel listino con codice = 'lampo': prezzo e numero di
 // crediti si cambiano solo nel database (tabella prodotti).
 //
@@ -15,7 +15,7 @@ import { X, Zap, Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { formatPrezzo } from '@/lib/prezzi'
-import { paginaBonifico } from '@/lib/bonifico'
+import { apriCassa } from '@/lib/pagamentoOnline'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
@@ -119,11 +119,16 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
     async function paga() {
         if (!prodotto || pagando) return
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
-        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
+        // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setPagando(true)
         setErrore('')
         if (primaDiPagare) primaDiPagare()
-        window.location.href = paginaBonifico(prodotto.id)
+        try {
+            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, ritorno: `${window.location.pathname}?lampo=ok` })
+        } catch (err) {
+            setErrore(err.message)
+            setPagando(false)
+        }
     }
 
     return (
@@ -192,12 +197,12 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                 className="flex items-center justify-center gap-2 w-full min-h-[44px] py-3 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-50"
                             >
                                 {pagando
-                                    ? <><Loader2 size={14} className="animate-spin" /> Apro le istruzioni...</>
+                                    ? <><Loader2 size={14} className="animate-spin" /> Apro il pagamento...</>
                                     : <><Zap size={13} /> Continua con {prezzo}</>}
                             </button>
 
                             <p className="font-body text-xs text-nebbia/35 text-center leading-relaxed">
-                                Per ora si paga con bonifico: i crediti si attivano appena riceviamo la ricevuta.
+                                Pagamento con carta in modo sicuro. Poi torni qui e riprendi la ricerca da dove eri.
                             </p>
                         </>
                     ) : (

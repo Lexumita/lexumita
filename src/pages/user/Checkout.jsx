@@ -5,7 +5,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { AlertCircle, Lock } from 'lucide-react'
 import { formatPrezzo } from '@/lib/prezzi'
-import { paginaBonifico } from '@/lib/bonifico'
+import { apriCassa } from '@/lib/pagamentoOnline'
 import { etichettaDurata } from '@/lib/vociPiano'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
@@ -33,9 +33,14 @@ export default function UserCheckout() {
     async function handlePagamento() {
         setErrore('')
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
-        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
+        // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setLoading(true)
-        navigate(paginaBonifico(prodotto.id))
+        try {
+            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, ritorno: '/area/acquista?success=1' })
+        } catch (err) {
+            setErrore(err.message)
+            setLoading(false)
+        }
     }
 
     return (
@@ -96,7 +101,7 @@ export default function UserCheckout() {
             <div className="bg-petrolio/50 border border-white/5 p-4">
                 <p className="font-body text-xs text-nebbia/30 leading-relaxed">
                     Pagamento unico — nessun rinnovo automatico. Riceverai una ricevuta via email.
-                    Ti mostriamo le coordinate per pagare con bonifico.
+                    Sarai reindirizzato alla pagina di pagamento sicura.
                 </p>
             </div>
 
@@ -126,7 +131,7 @@ export default function UserCheckout() {
             </button>
 
             <p className="font-body text-xs text-nebbia/20 text-center flex items-center justify-center gap-1">
-                <Lock size={10} /> Pagamento con bonifico bancario
+                <Lock size={10} /> Pagamento con carta — connessione cifrata
             </p>
         </div>
     )

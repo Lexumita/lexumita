@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo, formatImporto, formatNumero } from '@/lib/prezzi'
-import { paginaBonifico } from '@/lib/bonifico'
+import { apriCassa } from '@/lib/pagamentoOnline'
 import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
 import { useAuth } from '@/context/AuthContext'
 
@@ -105,12 +105,6 @@ function formatGB(bytes) {
 
 function bytesToGB(bytes) {
     return (bytes ?? 0) / (1024 * 1024 * 1024)
-}
-
-// Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js, 27-10-2026).
-// Per l'upgrade la pagina mostra l'importo di oggi (costoCambioPiano), non il listino.
-function apriBonifico(prodottoId, importo) {
-    window.location.href = paginaBonifico(prodottoId, importo)
 }
 
 // Banner riusabile per gli alert dell'header
@@ -224,7 +218,8 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
         setAcquistando(prodottoId)
         setErrore('')
         try {
-            apriBonifico(prodottoId, isUpgrade ? importo : undefined)
+            // Cassa Tagadapay. L'upgrade (importo diverso dal listino) va al bonifico con l'importo di oggi.
+            await apriCassa({ prodottoId, isUpgrade, importo: isUpgrade ? importo : undefined, ritorno: '/studio?success=1' })
         } catch (err) {
             setErrore(err.message)
             setAcquistando(null)

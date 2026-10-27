@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
-import { paginaBonifico } from '@/lib/bonifico'
+import { apriCassa } from '@/lib/pagamentoOnline'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
@@ -15,7 +15,6 @@ import {
 export default function Acquista() {
     const { profile } = useAuth()
     const location = useLocation()
-    const navigate = useNavigate()
 
     // Saldo crediti per tipo
     const [crediti, setCrediti] = useState({
@@ -180,9 +179,14 @@ export default function Acquista() {
             document.getElementById('consenso-recesso')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
             return
         }
-        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
+        // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setAcquistando(prodottoId)
-        navigate(paginaBonifico(prodottoId))
+        try {
+            await apriCassa({ prodottoId, consenso: consenso.campo, ritorno: '/area/acquista?success=1' })
+        } catch (err) {
+            setErrore(err.message)
+            setAcquistando(null)
+        }
     }
 
     return (
@@ -384,7 +388,7 @@ export default function Acquista() {
 
             {/* Footer trust */}
             <p className="font-body text-xs text-nebbia/20 text-center pt-4">
-                Per ora si paga con bonifico: i prodotti si attivano appena riceviamo la ricevuta a info@lexum.it.
+                Pagamento con carta in modo sicuro. I prodotti si attivano subito dopo il pagamento.
             </p>
         </div>
     )
