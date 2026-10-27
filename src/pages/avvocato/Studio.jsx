@@ -258,7 +258,8 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                     <span className="font-body text-xs px-2 py-0.5 bg-salvia/15 border border-salvia/30 text-salvia">Gratuito</span>
                                 </div>
                                 <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                                    Prova Lexum completo per {trialProdotto.durata_mesi ? `${trialProdotto.durata_mesi * 30} giorni` : '7 giorni'} senza inserire dati di pagamento.
+                                    {/* arrotondato: 0.1 × 30 in JavaScript fa 3.0000000000000004 (prova da 3 giorni, 27-10-2026) */}
+                                    Prova Lexum completo per {trialProdotto.durata_mesi ? `${Math.round(trialProdotto.durata_mesi * 30)} giorni` : '3 giorni'} senza inserire dati di pagamento.
                                     Attivabile una sola volta.
                                 </p>
                                 <div className="flex flex-wrap gap-3 pt-1">
