@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
+import { paginaBonifico } from '@/lib/bonifico'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
@@ -14,6 +15,7 @@ import {
 export default function Acquista() {
     const { profile } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
 
     // Saldo crediti per tipo
     const [crediti, setCrediti] = useState({
@@ -178,32 +180,9 @@ export default function Acquista() {
             document.getElementById('consenso-recesso')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
             return
         }
+        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
         setAcquistando(prodottoId)
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const res = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify({
-                        prodotto_id: prodottoId,
-                        ...consenso.campo,
-                        success_url: `${window.location.origin}/area/acquista?success=1`,
-                        cancel_url: `${window.location.origin}/area/acquista`,
-                    }),
-                }
-            )
-            const json = await res.json()
-            if (!json.ok) throw new Error(json.error)
-            window.location.href = json.url
-        } catch (err) {
-            setErrore(err.message)
-            setAcquistando(null)
-        }
+        navigate(paginaBonifico(prodottoId))
     }
 
     return (
@@ -405,7 +384,7 @@ export default function Acquista() {
 
             {/* Footer trust */}
             <p className="font-body text-xs text-nebbia/20 text-center pt-4">
-                Pagamento sicuro tramite Stripe. I prodotti vengono attivati immediatamente dopo il pagamento.
+                Per ora si paga con bonifico: i prodotti si attivano appena riceviamo la ricevuta a info@lexum.it.
             </p>
         </div>
     )

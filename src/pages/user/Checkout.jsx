@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { AlertCircle, Lock } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
+import { paginaBonifico } from '@/lib/bonifico'
 import { etichettaDurata } from '@/lib/vociPiano'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
@@ -33,38 +33,9 @@ export default function UserCheckout() {
     async function handlePagamento() {
         setErrore('')
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
+        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
         setLoading(true)
-
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-
-            const res = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
-                    },
-                    body: JSON.stringify({
-                        prodotto_id: prodotto.id,
-                        ...consenso.campo,
-                        success_url: `${window.location.origin}/abbonamenti?success=1`,
-                        cancel_url: `${window.location.origin}/abbonamenti/checkout`,
-                    }),
-                }
-            )
-
-            const json = await res.json()
-            if (!json.ok) throw new Error(json.error)
-
-            // Redirect a Stripe Checkout
-            window.location.href = json.url
-
-        } catch (err) {
-            setErrore(err.message)
-            setLoading(false)
-        }
+        navigate(paginaBonifico(prodotto.id))
     }
 
     return (
@@ -125,7 +96,7 @@ export default function UserCheckout() {
             <div className="bg-petrolio/50 border border-white/5 p-4">
                 <p className="font-body text-xs text-nebbia/30 leading-relaxed">
                     Pagamento unico — nessun rinnovo automatico. Riceverai una ricevuta via email.
-                    Sarai reindirizzato a Stripe per completare il pagamento in modo sicuro.
+                    Ti mostriamo le coordinate per pagare con bonifico.
                 </p>
             </div>
 
@@ -155,7 +126,7 @@ export default function UserCheckout() {
             </button>
 
             <p className="font-body text-xs text-nebbia/20 text-center flex items-center justify-center gap-1">
-                <Lock size={10} /> Pagamento gestito da Stripe — Connessione cifrata SSL
+                <Lock size={10} /> Pagamento con bonifico bancario
             </p>
         </div>
     )

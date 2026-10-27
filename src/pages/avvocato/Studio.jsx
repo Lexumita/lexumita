@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo, formatImporto, formatNumero } from '@/lib/prezzi'
+import { paginaBonifico } from '@/lib/bonifico'
 import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
 import { useAuth } from '@/context/AuthContext'
 
@@ -106,24 +107,10 @@ function bytesToGB(bytes) {
     return (bytes ?? 0) / (1024 * 1024 * 1024)
 }
 
-async function chiamaStripe(prodottoId, isUpgrade = false) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-            body: JSON.stringify({
-                prodotto_id: prodottoId,
-                is_upgrade: isUpgrade,
-                success_url: `${window.location.origin}/studio?success=1`,
-                cancel_url: `${window.location.origin}/studio`,
-            }),
-        }
-    )
-    const json = await res.json()
-    if (!json.ok) throw new Error(json.error)
-    window.location.href = json.url
+// Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js, 27-10-2026).
+// Per l'upgrade la pagina mostra l'importo di oggi (costoCambioPiano), non il listino.
+function apriBonifico(prodottoId, importo) {
+    window.location.href = paginaBonifico(prodottoId, importo)
 }
 
 // Banner riusabile per gli alert dell'header
@@ -233,11 +220,11 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
         }
     }
 
-    async function acquista(prodottoId, isUpgrade) {
+    async function acquista(prodottoId, isUpgrade, importo) {
         setAcquistando(prodottoId)
         setErrore('')
         try {
-            await chiamaStripe(prodottoId, isUpgrade)
+            apriBonifico(prodottoId, isUpgrade ? importo : undefined)
         } catch (err) {
             setErrore(err.message)
             setAcquistando(null)
@@ -374,7 +361,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                 )}
                             </div>
                             <button
-                                onClick={() => acquista(pianoProposto.id, !!pianoAttualeId)}
+                                onClick={() => acquista(pianoProposto.id, !!pianoAttualeId, costoProposto?.upgrade ? costoProposto.importo : undefined)}
                                 disabled={acquistando === pianoProposto.id || !!costoProposto?.rifiutato}
                                 className="btn-primary text-sm disabled:opacity-40"
                             >

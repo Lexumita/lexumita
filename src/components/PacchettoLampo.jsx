@@ -1,7 +1,8 @@
 // src/components/PacchettoLampo.jsx
 // ─────────────────────────────────────────────────────────────
 // Pacchetto Lampo (30/09/2026). Quando i crediti di Lex finiscono si propone di
-// continuare la ricerca con un piccolo pacchetto, pagato subito con Stripe.
+// continuare la ricerca con un piccolo pacchetto. Dal 27-10-2026 si paga con bonifico
+// (src/lib/bonifico.js): Stripe ha chiuso il conto.
 // Il prodotto si ritrova nel listino con codice = 'lampo': prezzo e numero di
 // crediti si cambiano solo nel database (tabella prodotti).
 //
@@ -13,8 +14,8 @@ import { useEffect, useState } from 'react'
 import { X, Zap, Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { sanitizzaErrore } from '@/lib/sanitizzaErrore'
 import { formatPrezzo } from '@/lib/prezzi'
+import { paginaBonifico } from '@/lib/bonifico'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
@@ -118,32 +119,11 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
     async function paga() {
         if (!prodotto || pagando) return
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
+        // Bonifico al posto della cassa finché non c'è il nuovo processore (src/lib/bonifico.js)
         setPagando(true)
         setErrore('')
-        try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const ritorno = `${window.location.origin}${window.location.pathname}`
-            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({
-                    prodotto_id: prodotto.id,
-                    ...consenso.campo,
-                    success_url: `${ritorno}?lampo=ok`,
-                    cancel_url: `${ritorno}?lampo=annullato`,
-                }),
-            })
-            const json = await res.json().catch(() => ({}))
-            if (!json.ok || !json.url) throw new Error(json.error ?? 'Pagamento non disponibile')
-            if (primaDiPagare) primaDiPagare()
-            window.location.href = json.url
-        } catch (e) {
-            setErrore(sanitizzaErrore(e) ?? 'Non è stato possibile aprire il pagamento. Riprova tra qualche istante.')
-            setPagando(false)
-        }
+        if (primaDiPagare) primaDiPagare()
+        window.location.href = paginaBonifico(prodotto.id)
     }
 
     return (
@@ -186,7 +166,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                 {motivo === 'ultimo'
                                     ? 'Hai usato l’ultima ricerca disponibile.'
                                     : 'Hai usato le ricerche disponibili.'}{' '}
-                                Con il <span className="text-oro">Pacchetto Lampo</span> continui subito con Lex:
+                                Con il <span className="text-oro">Pacchetto Lampo</span> continui con Lex:
                                 {' '}{ricerche} ricerche a {prezzo}. I crediti non scadono.
                             </p>
 
@@ -212,12 +192,12 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                 className="flex items-center justify-center gap-2 w-full min-h-[44px] py-3 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-50"
                             >
                                 {pagando
-                                    ? <><Loader2 size={14} className="animate-spin" /> Apro il pagamento...</>
+                                    ? <><Loader2 size={14} className="animate-spin" /> Apro le istruzioni...</>
                                     : <><Zap size={13} /> Continua con {prezzo}</>}
                             </button>
 
                             <p className="font-body text-xs text-nebbia/35 text-center leading-relaxed">
-                                Pagamento con carta tramite Stripe. Poi torni qui e riprendi la ricerca da dove eri.
+                                Per ora si paga con bonifico: i crediti si attivano appena riceviamo la ricevuta.
                             </p>
                         </>
                     ) : (
