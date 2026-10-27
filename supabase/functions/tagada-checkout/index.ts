@@ -19,6 +19,9 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 
 const API = "https://api.tagada.io/api/public/v1";
 const NEGOZIO = Deno.env.get("TAGADA_STORE_ID") ?? "store_22b27a6974b3";
+// Percorso di cassa pubblicato nel negozio («Simple Checkout»): senza, Tagadapay manda a store-unavailable.
+const PERCORSO = Deno.env.get("TAGADA_FUNNEL_ID") ?? "funnelv2_5b88c7de4255";
+const PAGINA_CASSA = Deno.env.get("TAGADA_CHECKOUT_URL") ?? "https://simple-checkout--store_22b27a6974b3.cdn.tagada.io/checkout";
 const APP_URL = (Deno.env.get("APP_URL") ?? "https://www.lexum.it").replace(/\/+$/, "");
 const CHIAVE = Deno.env.get("TAGADA_API_KEY") ?? "";
 // Logo Lexum già caricato nel negozio Tagadapay (immagine degli articoli)
@@ -169,6 +172,8 @@ Deno.serve(async (req) => {
 
     const q = new URLSearchParams({
       storeId: NEGOZIO,
+      funnelId: PERCORSO,
+      checkoutUrl: PAGINA_CASSA,
       items: JSON.stringify([{ variantId, quantity: 1 }]),
       currency: "EUR",
       locale: "it",
@@ -183,7 +188,7 @@ Deno.serve(async (req) => {
     // negozio chiuso (403) o una cassa non pubblicata si vedono subito invece che nel browser.
     const init = await fetch(`${API}/checkout/init?${q}`, { redirect: "manual" });
     const url = init.headers.get("location");
-    if (init.status >= 300 && init.status < 400 && url) {
+    if (init.status >= 300 && init.status < 400 && url && !url.includes("store-unavailable")) {
       return risposta({ ok: true, url });
     }
     const testo = await init.text().catch(() => "");
