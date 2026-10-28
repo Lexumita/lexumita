@@ -144,7 +144,10 @@ Deno.serve(async (req) => {
 
     // Dati di fatturazione (28-10-2026): Tagadapay vuole l'indirizzo, almeno il paese, e senza si ferma
     // sulla sua pagina. Gli stessi campi li chiede il sito prima del pulsante (src/lib/datiFatturazione.jsx).
-    const CAMPI = [["nome", "Nome"], ["cognome", "Cognome"], ["indirizzo", "Indirizzo"], ["cap", "CAP"], ["comune", "Comune"], ["provincia", "Provincia"]] as const;
+    // Si compra anche da fuori Italia: la provincia serve solo per un indirizzo italiano.
+    const paese = (String(profilo?.paese ?? "").trim().toUpperCase() || "IT").slice(0, 2);
+    const CAMPI = [["nome", "Nome"], ["cognome", "Cognome"], ["indirizzo", "Indirizzo"], ["cap", "CAP"], ["comune", "Comune"],
+      ...(paese === "IT" ? [["provincia", "Provincia"]] : [])] as const;
     // deno-lint-ignore no-explicit-any
     const mancanti = CAMPI.filter(([k]) => !String((profilo as any)?.[k] ?? "").trim()).map(([, l]) => l);
     if (mancanti.length) {
@@ -194,14 +197,13 @@ Deno.serve(async (req) => {
     if (profilo?.cognome) q.set("customerLastName", profilo.cognome);
     if (profilo?.telefono) q.set("customerPhone", profilo.telefono);
     // Indirizzo di fatturazione già compilato (per i prodotti digitali Tagadapay vale anche come fatturazione)
-    const paese = (String(profilo?.paese ?? "").trim().toUpperCase() || "IT").slice(0, 2);
     q.set("shippingCountry", paese);
     q.set("shippingAddress", JSON.stringify({
       firstName: profilo?.nome ?? "",
       lastName: profilo?.cognome ?? "",
       line1: [profilo?.indirizzo, profilo?.numero_civico].filter(Boolean).join(" "),
       city: profilo?.comune ?? "",
-      state: String(profilo?.provincia ?? "").toUpperCase(),
+      state: paese === "IT" ? String(profilo?.provincia ?? "").toUpperCase() : "",
       postalCode: profilo?.cap ?? "",
       country: paese,
       ...(profilo?.telefono ? { phone: profilo.telefono } : {}),

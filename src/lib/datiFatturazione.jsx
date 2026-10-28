@@ -4,6 +4,7 @@
 // (almeno il paese, per le tasse): senza, la sua pagina si ferma con un errore. Li chiediamo noi prima
 // del pulsante «Paga», sul profilo di Lexum, e il server (tagada-checkout) li passa alla cassa già
 // compilati. Stessi campi qui e nel server: se ne cambi uno, cambialo anche là.
+// Si compra anche da fuori Italia (28-10-2026): il paese si sceglie, la provincia serve solo in Italia.
 
 import { Link } from 'react-router-dom'
 import { AlertCircle, ArrowRight } from 'lucide-react'
@@ -14,14 +15,22 @@ export const CAMPI_ACQUISTO = [
     { key: 'indirizzo', label: 'Indirizzo' },
     { key: 'cap',       label: 'CAP' },
     { key: 'comune',    label: 'Comune' },
-    { key: 'provincia', label: 'Provincia' },
+    { key: 'provincia', label: 'Provincia', soloItalia: true },
+    { key: 'paese',     label: 'Paese' },
 ]
+
+/** Il paese dell'indirizzo; vuoto vale Italia (è il valore del database). */
+export const paeseDi = (profile) => (profile?.paese || 'IT').toUpperCase()
 
 const pieno = (v) => typeof v === 'string' ? v.trim().length > 0 : v != null
 
 /** Le etichette dei dati che mancano per pagare (vuoto = si può pagare). */
 export function mancantiAcquisto(profile) {
-    return CAMPI_ACQUISTO.filter(c => !pieno(profile?.[c.key])).map(c => c.label)
+    const italia = paeseDi(profile) === 'IT'
+    return CAMPI_ACQUISTO
+        .filter(c => !(c.soloItalia && !italia))
+        .filter(c => !pieno(c.key === 'paese' ? paeseDi(profile) : profile?.[c.key]))
+        .map(c => c.label)
 }
 
 /** Dove si completano: i privati nella loro area, i professionisti nel profilo dello studio. */

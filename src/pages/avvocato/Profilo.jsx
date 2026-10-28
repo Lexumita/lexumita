@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { PageHeader, Badge } from '@/components/shared'
 import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, ArrowRight, Shield, ShieldCheck, Receipt } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import { REGIMI, CASSE, cassaPredefinita, ibanValido } from '@/lib/fatturazione'
 import ModalAttiva2FA from '@/components/sicurezza/ModalAttiva2FA'
 import ModalBackupCodes from '@/components/sicurezza/ModalBackupCodes'
@@ -62,6 +63,7 @@ const FATT_VUOTO = {
 }
 
 export default function AvvocatoProfilo() {
+    const { refreshProfile } = useAuth()
     const [loading, setLoading] = useState(true)
     const [tipoAccount, setTipoAccount] = useState(null)
     const [verificato, setVerificato] = useState(false)
@@ -265,6 +267,8 @@ export default function AvvocatoProfilo() {
             const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
             if (error) throw new Error(error.message)
             setFatt(v); setFattOriginali(v); setEditingFatt(false); setOkFatt(true)
+            // il profilo in memoria si aggiorna: i pulsanti «Paga» vedono subito l'indirizzo
+            refreshProfile?.()
             setTimeout(() => setOkFatt(false), 3000)
         } catch (err) { setErrFatt(messaggioErroreDatabase(err)) }
         finally { setSalvandoFatt(false) }

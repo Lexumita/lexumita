@@ -3,10 +3,11 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, InputField, Badge } from '@/components/shared'
 import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, Clock, Loader2 } from 'lucide-react'
+import { elencoPaesi } from '@/lib/paesi'
 import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function UserProfilo() {
-    const { profile } = useAuth()
+    const { profile, refreshProfile } = useAuth()
 
     // ── Dati personali ──
     const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function UserProfilo() {
         cap: profile?.cap ?? '',
         comune: profile?.comune ?? '',
         provincia: profile?.provincia ?? '',
+        paese: profile?.paese ?? 'IT',
     })
     const [datiOriginali, setDatiOriginali] = useState({ ...form })
 
@@ -32,6 +34,7 @@ export default function UserProfilo() {
                 cap: profile.cap ?? '',
                 comune: profile.comune ?? '',
                 provincia: profile.provincia ?? '',
+                paese: profile.paese ?? 'IT',
             }
             setForm(init)
             setDatiOriginali(init)
@@ -74,12 +77,16 @@ export default function UserProfilo() {
                     indirizzo: form.indirizzo.trim() || null,
                     cap: form.cap.trim() || null,
                     comune: form.comune.trim() || null,
-                    provincia: form.provincia.trim().toUpperCase() || null,
+                    // la provincia c'è solo in Italia
+                    provincia: form.paese === 'IT' ? (form.provincia.trim().toUpperCase() || null) : null,
+                    paese: form.paese || 'IT',
                 })
                 .eq('id', user.id)
             if (error) throw new Error(error.message)
             setDatiOriginali({ ...form })
             setOkDati(true)
+            // il profilo in memoria si aggiorna: i pulsanti «Paga» vedono subito l'indirizzo
+            refreshProfile?.()
             setTimeout(() => setOkDati(false), 3000)
         } catch (err) {
             setErrDati(messaggioErroreDatabase(err))
@@ -169,12 +176,29 @@ export default function UserProfilo() {
                         <p className="font-body text-sm text-nebbia">Indirizzo di fatturazione</p>
                         <p className="font-body text-xs text-nebbia/40 mt-0.5">Serve per acquistare crediti e piani: compare nella ricevuta.</p>
                     </div>
-                    <InputField label="Indirizzo e numero civico" placeholder="Via Roma 1" {...f('indirizzo')} />
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <InputField label="CAP" placeholder="20121" {...f('cap')} />
-                        <InputField label="Comune" placeholder="Milano" {...f('comune')} />
-                        <InputField label="Provincia" placeholder="MI" maxLength={2} {...f('provincia')} />
+                    <div>
+                        <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Paese</label>
+                        <select
+                            value={form.paese}
+                            onChange={e => { setForm(p => ({ ...p, paese: e.target.value })); setErrDati('') }}
+                            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50"
+                        >
+                            {elencoPaesi('it', 'IT').map(p => <option key={p.codice} value={p.codice}>{p.nome}</option>)}
+                        </select>
                     </div>
+                    <InputField label="Indirizzo e numero civico" placeholder="Via Roma 1" {...f('indirizzo')} />
+                    {form.paese === 'IT' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <InputField label="CAP" placeholder="20121" {...f('cap')} />
+                            <InputField label="Comune" placeholder="Milano" {...f('comune')} />
+                            <InputField label="Provincia" placeholder="MI" maxLength={2} {...f('provincia')} />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <InputField label="Codice postale" {...f('cap')} />
+                            <InputField label="Città" {...f('comune')} />
+                        </div>
+                    )}
                 </div>
 
                 {errDati && (
