@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
-import { Plus, Loader2, X, AlertCircle, CheckCircle } from 'lucide-react'
+import { Plus, Loader2, X, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 
 const MB = 1024 * 1024
 const GB = 1024 * MB
@@ -95,6 +95,25 @@ export async function gestisciAbbonamento(azione, abbonamentoId, prodottoId) {
         body: JSON.stringify({ azione, abbonamento_id: abbonamentoId, prodotto_id: prodottoId }),
     })
     return res.json().catch(() => ({ ok: false, error: 'Non è stato possibile completare l’operazione.' }))
+}
+
+/** Lo stato del rinnovo in un riquadro: verde «Si rinnova il …», ambra se disdetto o non pagato. */
+export function StatoRinnovo({ abbonamento, className = '' }) {
+    const { stato, periodo_fine: fine } = abbonamento
+    if (stato === 'disdetto' || stato === 'in_ritardo') {
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-900/20 border border-amber-500/30 text-amber-400 font-body text-xs ${className}`}>
+                <AlertCircle size={12} className="shrink-0" />
+                {stato === 'disdetto' ? `Disdetto: attivo fino al ${dataLunga(fine)}` : 'Rinnovo non pagato: si riprova nei prossimi giorni'}
+            </span>
+        )
+    }
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 border border-emerald-400/50 text-emerald-300 font-body text-xs font-medium ${className}`}>
+            <RefreshCw size={12} className="shrink-0" />
+            Si rinnova il {dataLunga(fine)}
+        </span>
+    )
 }
 
 function PulsantePiu({ onClick, etichetta }) {
@@ -179,13 +198,7 @@ export function RiquadroConto({ conto, onAggiungiCrediti, onAggiungiArchivio, on
                         <>
                             <p className="font-body text-sm font-medium text-oro">{piano.prodotto?.nome}</p>
                             <p className="font-body text-xs text-nebbia/50 mt-0.5">{formatPrezzo(piano.prodotto?.prezzo)} al mese</p>
-                            <p className={`font-body text-xs mt-1 ${piano.stato === 'in_ritardo' ? 'text-amber-400' : 'text-nebbia/45'}`}>
-                                {piano.stato === 'disdetto'
-                                    ? `Disdetto: attivo fino al ${dataLunga(piano.periodo_fine)}`
-                                    : piano.stato === 'in_ritardo'
-                                        ? 'Il rinnovo non è stato pagato: si riprova nei prossimi giorni'
-                                        : `Si rinnova il ${dataLunga(piano.periodo_fine)}`}
-                            </p>
+                            <StatoRinnovo abbonamento={piano} className="mt-2" />
                             {prossimo && (
                                 <p className="font-body text-xs text-nebbia/45 mt-0.5">
                                     Dal {dataLunga(piano.periodo_fine)}: {prossimo.prodotto?.nome}
@@ -223,6 +236,7 @@ export function SezionePiani({ piani, conto, acquistando, onAcquista, onCambia, 
                     const suo = attuale?.prodotto?.id === p.id
                     const programmato = conto.prossimo?.prodotto?.id === p.id
                     const piuPiccolo = !!attuale && !suo && Number(p.prezzo) < prezzoAttuale
+                    const piuGrande = !!attuale && !suo && Number(p.prezzo) > prezzoAttuale
                     const isLoading = acquistando === p.id
                     return (
                         <div key={p.id} className={`bg-slate p-5 flex flex-col ${suo ? 'border-2 border-oro/60' : 'border border-white/5 hover:border-oro/30'} transition-colors`}>
@@ -238,15 +252,18 @@ export function SezionePiani({ piani, conto, acquistando, onAcquista, onCambia, 
                                     </li>
                                 ))}
                             </ul>
-                            {suo ? (
-                                <p className="font-body text-xs text-nebbia/45 mt-4">
-                                    {attuale.stato === 'disdetto' ? `Disdetto: attivo fino al ${dataLunga(attuale.periodo_fine)}` : `Si rinnova il ${dataLunga(attuale.periodo_fine)}`}
+                            {piuGrande && (
+                                <p className="font-body text-xs text-salvia mt-3">
+                                    +{p.crediti_ai_mensili - (attuale.prodotto?.crediti_ai_mensili ?? 0)} crediti e +{p.spazio_gb - (attuale.prodotto?.spazio_gb ?? 0)} GB ogni mese rispetto al tuo piano
                                 </p>
+                            )}
+                            {suo ? (
+                                <StatoRinnovo abbonamento={attuale} className="mt-4 self-start" />
                             ) : programmato ? (
                                 <p className="font-body text-xs text-salvia mt-4">Parte il {dataLunga(attuale?.periodo_fine)}</p>
                             ) : piuPiccolo ? (
-                                <button onClick={() => onCambia(p)} className="btn-secondary text-sm mt-4 justify-center">
-                                    Passa a {p.nome} dal {dataCorta(attuale.periodo_fine)}
+                                <button onClick={() => onCambia(p)} className="mt-4 self-start font-body text-[11px] text-nebbia/35 hover:text-nebbia/60 transition-colors">
+                                    Passa a questo piano dal {dataCorta(attuale.periodo_fine)}
                                 </button>
                             ) : (
                                 <button onClick={() => onAcquista(p.id)} disabled={isLoading}
@@ -260,7 +277,7 @@ export function SezionePiani({ piani, conto, acquistando, onAcquista, onCambia, 
             </div>
             <p className="font-body text-xs text-nebbia/40 leading-relaxed">
                 Si rinnova ogni mese finché non lo disdici. Disdici quando vuoi da «Gestisci»: resta attivo fino alla fine del
-                mese pagato. Passando a un piano più grande, il nuovo parte subito; a uno più piccolo, dal mese dopo.
+                mese pagato. Passando a un piano più grande, il nuovo parte subito.
             </p>
         </div>
     )
@@ -294,11 +311,12 @@ export function SezioneArchivioInPiu({ prodotti, conto, acquistando, onAcquista,
                 <ul className="space-y-2">
                     {conto.archivioInPiu.map(a => (
                         <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 bg-slate border border-white/5 px-4 py-3">
-                            <span className="font-body text-sm text-nebbia">
-                                +{a.prodotto?.spazio_gb} GB · {formatPrezzo(a.prodotto?.prezzo)} al mese
-                                <span className="text-nebbia/40"> · {a.stato === 'disdetto' ? `disdetto, fino al ${dataLunga(a.periodo_fine)}` : `si rinnova il ${dataLunga(a.periodo_fine)}`}</span>
+                            <span className="flex flex-wrap items-center gap-3">
+                                <span className="font-body text-sm text-nebbia">+{a.prodotto?.spazio_gb} GB · {formatPrezzo(a.prodotto?.prezzo)} al mese</span>
+                                <StatoRinnovo abbonamento={a} />
                             </span>
-                            <button onClick={() => onGestisciUno(a)} className="font-body text-xs text-oro hover:text-oro/70">
+                            <button onClick={() => onGestisciUno(a)}
+                                className={a.stato === 'disdetto' ? 'font-body text-xs text-oro hover:text-oro/70' : 'font-body text-[11px] text-nebbia/35 hover:text-nebbia/60'}>
                                 {a.stato === 'disdetto' ? 'Riattiva' : 'Disdici'}
                             </button>
                         </li>
@@ -342,24 +360,23 @@ export function FinestraGestisci({ conto, aperta, onChiudi, onFatto, onScegliPia
                             {a.genere === 'piano' ? a.prodotto?.nome : `Archivio in più +${a.prodotto?.spazio_gb} GB`}
                             <span className="text-nebbia/40"> · {formatPrezzo(a.prodotto?.prezzo)} al mese</span>
                         </p>
-                        <p className="font-body text-xs text-nebbia/50">
-                            {a.stato === 'disdetto' ? `Disdetto: resta attivo fino al ${dataLunga(a.periodo_fine)}.` : `Si rinnova il ${dataLunga(a.periodo_fine)}.`}
-                        </p>
+                        <StatoRinnovo abbonamento={a} />
                         {a.fornitore === 'apple' ? (
                             <p className="font-body text-xs text-nebbia/50">Preso su iPhone: si gestisce dalle impostazioni dell'iPhone, alla voce Abbonamenti.</p>
                         ) : (
                             <div className="flex flex-wrap gap-2 pt-1">
                                 {a.stato === 'disdetto' ? (
-                                    <button onClick={() => esegui('riattiva', a)} disabled={lavoro === a.id} className="btn-secondary text-xs disabled:opacity-40">
+                                    <button onClick={() => esegui('riattiva', a)} disabled={lavoro === a.id} className="btn-primary text-xs disabled:opacity-40">
                                         {lavoro === a.id ? <Loader2 size={12} className="animate-spin" /> : 'Riattiva'}
                                     </button>
-                                ) : (
-                                    <button onClick={() => esegui('disdici', a)} disabled={lavoro === a.id} className="btn-secondary text-xs disabled:opacity-40">
+                                ) : a.genere === 'piano' && (
+                                    <button onClick={onScegliPiano} className="btn-secondary text-xs">Cambia piano</button>
+                                )}
+                                {a.stato !== 'disdetto' && (
+                                    <button onClick={() => esegui('disdici', a)} disabled={lavoro === a.id}
+                                        className="self-center font-body text-[11px] text-nebbia/35 hover:text-nebbia/60 transition-colors disabled:opacity-40">
                                         {lavoro === a.id ? <Loader2 size={12} className="animate-spin" /> : 'Disdici'}
                                     </button>
-                                )}
-                                {a.genere === 'piano' && a.stato !== 'disdetto' && (
-                                    <button onClick={onScegliPiano} className="btn-secondary text-xs">Cambia piano</button>
                                 )}
                             </div>
                         )}
