@@ -111,6 +111,7 @@ import Ricerche from './pages/user/Ricerche'
 import EtichettaDettaglio from './pages/user/EtichettaDettaglio'
 import Acquista from './pages/user/Acquista'
 import PagamentoBonifico from './pages/PagamentoBonifico'
+import PagamentoEsito from './pages/PagamentoEsito'
 
 import ChatWidget from '@/components/ChatWidget'
 
@@ -220,6 +221,9 @@ export default function App() {
                   <Verifica2FA />
                 </ProtectedRoute>
               } />
+
+              {/* Rientro dalla cassa Tagadapay (28-10-2026): «Custom Thank-You URL» del negozio */}
+              <Route path="/pagamento/esito" element={<PagamentoEsito />} />
 
               {/* Bonifico al posto della cassa (27-10-2026): src/lib/bonifico.js */}
               <Route path="/pagamento/bonifico" element={

@@ -6,12 +6,14 @@
 
 import { supabase } from '@/lib/supabase'
 import { paginaBonifico } from '@/lib/bonifico'
+import { ricordaRitorno } from '@/lib/ritornoCassa'
 
 /**
  * Porta il browser alla cassa per un prodotto. In caso d'errore porta al bonifico.
  * @param {{ prodottoId: string, isUpgrade?: boolean, consenso?: object, ritorno?: string, importo?: number }} opz
  */
 export async function apriCassa({ prodottoId, isUpgrade = false, consenso = {}, ritorno, importo }) {
+    const percorso = ritorno ?? `${window.location.pathname}${window.location.search}`
     try {
         const { data: { session } } = await supabase.auth.getSession()
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tagada-checkout`, {
@@ -24,11 +26,12 @@ export async function apriCassa({ prodottoId, isUpgrade = false, consenso = {}, 
                 prodotto_id: prodottoId,
                 is_upgrade: isUpgrade,
                 ...consenso,
-                ritorno: ritorno ?? `${window.location.pathname}${window.location.search}`,
+                ritorno: percorso,
             }),
         })
         const json = await res.json().catch(() => ({}))
-        if (json.url) { window.location.href = json.url; return }
+        // dopo il pagamento Tagadapay manda a /pagamento/esito, che riporta qui (src/lib/ritornoCassa.js)
+        if (json.url) { ricordaRitorno(percorso); window.location.href = json.url; return }
         if (json.bonifico_url) { window.location.href = json.bonifico_url; return }
         if (json.error && res.status < 500) throw Object.assign(new Error(json.error), { mostrabile: true })
     } catch (e) {
