@@ -42,7 +42,7 @@ export function useContoPrivato(profile) {
                 .or(`periodo_fine.is.null,periodo_fine.gte.${adesso.toISOString()}`),
             supabase.rpc('archivio_spazio', { p_titolare: profile.titolare_id ?? profile.id }),
             supabase.from('abbonamenti')
-                .select('id, fornitore, genere, stato, periodo_fine, prodotto_successivo_id, prodotto:prodotto_id(id, nome, prezzo, crediti_ai_mensili, spazio_gb, codice)')
+                .select('id, fornitore, genere, stato, periodo_fine, prodotto_successivo_id, prodotto:prodotto_id(id, nome, prezzo, crediti_ai_mensili, spazio_gb, codice), successivo:prodotto_successivo_id(id, nome, prezzo, crediti_ai_mensili, spazio_gb, codice)')
                 .eq('user_id', profile.id)
                 .neq('stato', 'chiuso')
                 .order('creato_il'),
@@ -72,7 +72,9 @@ export function useContoPrivato(profile) {
         const inCorso = (a) => a.periodo_fine && new Date(a.periodo_fine) > adesso
         const piano = tutti.find(a => a.genere === 'piano' && inCorso(a)) ?? null
         // un piano più piccolo programmato per il mese dopo: creato, non ancora pagato
-        const prossimo = tutti.find(a => a.genere === 'piano' && !a.periodo_fine && a.stato === 'attivo') ?? null
+        const prossimo = tutti.find(a => a.genere === 'piano' && !a.periodo_fine && a.stato === 'attivo')
+            // su iPhone il piano più piccolo lo programma Apple: è il piano con cui si rinnoverà
+            ?? (piano?.successivo ? { prodotto: piano.successivo } : null)
         const archivioInPiu = tutti.filter(a => a.genere === 'archivio' && inCorso(a))
         // un Piano Personale comprato prima degli abbonamenti (un mese, senza rinnovo)
         const vecchioPiano = !piano && profile.piano_id && profile.abbonamento_scadenza && new Date(profile.abbonamento_scadenza) > adesso

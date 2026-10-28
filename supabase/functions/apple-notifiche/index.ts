@@ -4,6 +4,14 @@
 // (apple-acquisto). Su un rimborso (REFUND) o una revoca (REVOKE) i crediti non ancora usati di
 // quell'acquisto si tolgono e la transazione passa a «rimborsato» (rimborsa_acquisto_store).
 //
+// Abbonamenti (29-10-2026: piani personali e archivio in più, mensili con rinnovo automatico):
+// - un mese pagato (SUBSCRIBED, DID_RENEW, passaggio a un piano più grande, OFFER_REDEEMED) →
+//   abbonamento_apple_pagamento, anche se l'app non ha mandato la ricevuta (l'utente è l'appAccountToken);
+// - lo stato del rinnovo, da ogni avviso (signedRenewalInfo): rinnovo acceso → attivo, spento → disdetto,
+//   Apple riprova a farsi pagare → in_ritardo; il piano con cui si rinnoverà, se più piccolo;
+// - EXPIRED / GRACE_PERIOD_EXPIRED → chiuso (resta quello che era pagato, già finito);
+// - REFUND / REVOKE → se è il mese in corso, via i crediti del piano non usati e lo spazio.
+//
 // Apple accetta UN indirizzo per app, ma l'app serve Italia e Svizzera: l'indirizzo impostato su App Store
 // Connect è quello di Lexum IT; se l'acquisto lì non c'è, la notifica passa così com'è a Lexum CH
 // (che la riverifica da sé: è firmata da Apple, non serve altro segreto).
@@ -24,6 +32,17 @@ const INOLTRO = "https://wotkrgsxjiijakeulxjl.supabase.co/functions/v1/apple-not
 /** Apple Root CA - G3 (DER in base64), da https://www.apple.com/certificateauthority/AppleRootCA-G3.cer */
 const RADICE_APPLE_G3 =
   "MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtfTjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySrMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gAMGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM6BgD56KyKA==";
+
+// Gli abbonamenti dell'App Store: prodotto → codice del listino (come in apple-acquisto).
+const ABBONAMENTI: Record<string, string> = {
+  "ch.lexum.app.piano.personale": "piano_personale",
+  "ch.lexum.app.piano.plus": "piano_personale_plus",
+  "ch.lexum.app.piano.pro": "piano_personale_pro",
+  "ch.lexum.app.archivio.10": "archivio_mese_10",
+  "ch.lexum.app.archivio.25": "archivio_mese_25",
+  "ch.lexum.app.archivio.50": "archivio_mese_50",
+};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OID_INTERMEDIO_APPLE = "1.2.840.113635.100.6.2.1";
 const OID_FOGLIA_APPLE = "1.2.840.113635.100.6.11.1";
 
@@ -89,6 +108,67 @@ async function rpc(funzione: string, corpo: Record<string, unknown>) {
   return testo ? JSON.parse(testo) : null;
 }
 
+/** L'avviso non è di questo paese: passa così com'è all'altro (che lo riverifica da sé). */
+async function inoltra(req: Request, testo: string, motivo: string): Promise<Response | null> {
+  if (!INOLTRO || req.headers.get("x-lexum-inoltro")) return null;
+  const r = await fetch(INOLTRO, { method: "POST", headers: { "Content-Type": "application/json", "x-lexum-inoltro": "1" }, body: testo });
+  console.log(`[apple-notifiche] ${motivo}: non è qui, passata all'altro paese (${r.status})`);
+  // se l'altro paese non risponde, Apple ritenta
+  return new Response(r.ok ? "OK" : "Riprova", { status: r.ok ? 200 : 500 });
+}
+
+/** Un avviso su un abbonamento (piano personale o archivio in più). */
+async function avvisoAbbonamento(
+  req: Request, testo: string, tipo: string, sotto: string,
+  t: Record<string, unknown>, rinnovo: Record<string, unknown> | null, codice: string,
+): Promise<Response> {
+  const originale = String(t.originalTransactionId ?? "");
+  const etichetta = `${tipo}${sotto ? "/" + sotto : ""} ${originale}`;
+  let esito: Record<string, unknown> | null = null;
+
+  if (tipo === "REFUND" || tipo === "REVOKE") {
+    esito = await rpc("abbonamento_apple_stato", { p_originale: originale, p_chiudi: "subito", p_transazione: String(t.transactionId ?? "") });
+  } else if (tipo === "EXPIRED" || tipo === "GRACE_PERIOD_EXPIRED") {
+    esito = await rpc("abbonamento_apple_stato", { p_originale: originale, p_chiudi: "fine" });
+  } else {
+    // un mese pagato: primo acquisto, rinnovo, passaggio a un piano più grande, codice offerta
+    const pagato = ["SUBSCRIBED", "DID_RENEW", "OFFER_REDEEMED"].includes(tipo) ||
+      (tipo === "DID_CHANGE_RENEWAL_PREF" && sotto === "UPGRADE");
+    if (pagato && !t.revocationDate && t.isUpgraded !== true) {
+      const token = String(t.appAccountToken ?? "");
+      esito = await rpc("abbonamento_apple_pagamento", {
+        p_user: UUID.test(token) ? token : null,
+        p_originale: originale,
+        p_transazione: String(t.transactionId ?? ""),
+        p_codice: codice,
+        p_fine: t.expiresDate ? new Date(Number(t.expiresDate)).toISOString() : null,
+        p_ambiente: String(t.environment ?? ""),
+        p_prezzo: typeof t.price === "number" ? Math.round(t.price / 10) / 100 : null,
+        p_valuta: typeof t.currency === "string" ? t.currency : null,
+        p_paese: typeof t.storefront === "string" ? t.storefront : null,
+      });
+    }
+    // lo stato del rinnovo come lo dice Apple adesso, e il piano con cui si rinnoverà
+    if (rinnovo && esito?.esito !== "sconosciuto") {
+      const stato = rinnovo.autoRenewStatus === 1 ? (rinnovo.isInBillingRetryPeriod === true ? "in_ritardo" : "attivo") : "disdetto";
+      const prossimo = String(rinnovo.autoRenewProductId ?? "");
+      const e2 = await rpc("abbonamento_apple_stato", {
+        p_originale: originale,
+        p_stato: stato,
+        p_successivo: prossimo && prossimo !== t.productId ? ABBONAMENTI[prossimo] ?? null : null,
+      });
+      esito = esito ? { ...esito, rinnovo: stato } : e2;
+    }
+  }
+
+  if (esito?.esito === "sconosciuto") {
+    const passata = await inoltra(req, testo, etichetta);
+    if (passata) return passata;
+  }
+  console.log(`[apple-notifiche] ${etichetta}: ${JSON.stringify(esito)}`);
+  return new Response("OK", { status: 200 });
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Metodo non ammesso", { status: 405 });
   const testo = await req.text();
@@ -98,17 +178,28 @@ Deno.serve(async (req) => {
 
   let notifica: Record<string, unknown>;
   let transazione: Record<string, unknown> | null = null;
+  let rinnovo: Record<string, unknown> | null = null;
   try {
     notifica = await verificaApple(firmata);
     const dati = (notifica.data ?? {}) as Record<string, unknown>;
     if (dati.bundleId && dati.bundleId !== BUNDLE) return new Response("Altra app", { status: 200 });
     if (typeof dati.signedTransactionInfo === "string") transazione = await verificaApple(dati.signedTransactionInfo);
+    if (typeof dati.signedRenewalInfo === "string") rinnovo = await verificaApple(dati.signedRenewalInfo);
   } catch (e) {
     console.error("[apple-notifiche] notifica rifiutata:", (e as Error).message);
     return new Response("Firma non valida", { status: 400 });
   }
 
   const tipo = String(notifica.notificationType ?? "");
+  const codice = ABBONAMENTI[String(transazione?.productId ?? "")];
+  if (transazione && codice) {
+    try {
+      return await avvisoAbbonamento(req, testo, tipo, String(notifica.subtype ?? ""), transazione, rinnovo, codice);
+    } catch (e) {
+      console.error("[apple-notifiche]", (e as Error).message);
+      return new Response("Riprova", { status: 500 });
+    }
+  }
   if (tipo !== "REFUND" && tipo !== "REVOKE") {
     console.log(`[apple-notifiche] ${tipo || "?"}: niente da fare`);
     return new Response("OK", { status: 200 });
@@ -118,11 +209,9 @@ Deno.serve(async (req) => {
 
   try {
     const esito = await rpc("rimborsa_acquisto_store", { p_fornitore: "apple", p_transazione: id });
-    if (esito?.esito === "sconosciuto" && INOLTRO && !req.headers.get("x-lexum-inoltro")) {
-      const r = await fetch(INOLTRO, { method: "POST", headers: { "Content-Type": "application/json", "x-lexum-inoltro": "1" }, body: testo });
-      console.log(`[apple-notifiche] ${tipo} ${id}: non è qui, passata all'altro paese (${r.status})`);
-      // se l'altro paese non risponde, Apple ritenta
-      return new Response(r.ok ? "OK" : "Riprova", { status: r.ok ? 200 : 500 });
+    if (esito?.esito === "sconosciuto") {
+      const passata = await inoltra(req, testo, `${tipo} ${id}`);
+      if (passata) return passata;
     }
     console.log(`[apple-notifiche] ${tipo} ${id}: ${JSON.stringify(esito)}`);
     return new Response("OK", { status: 200 });

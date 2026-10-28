@@ -204,10 +204,14 @@ Deno.serve(async (req) => {
     let sostituisce: string | null = null;
     if (prodotto.tipo === "piano_privato" && ricorrente) {
       const { data: inCorso } = await supabase
-        .from("abbonamenti").select("id, prodotto_id, prodotti:prodotto_id(prezzo)")
+        .from("abbonamenti").select("id, fornitore, prodotto_id, prodotti:prodotto_id(prezzo)")
         .eq("user_id", user.id).eq("genere", "piano").neq("stato", "chiuso").gt("periodo_fine", oraIso)
         .order("periodo_fine", { ascending: false }).limit(1).maybeSingle();
       if (inCorso) {
+        // quello di Apple non si chiude da qui: si pagherebbero due abbonamenti
+        if (inCorso.fornitore === "apple") {
+          return risposta({ ok: false, error: "Il tuo abbonamento è stato preso su iPhone: per cambiarlo usa le impostazioni dell'iPhone, alla voce Abbonamenti." }, 400);
+        }
         if (inCorso.prodotto_id === prodotto.id) {
           return risposta({ ok: false, error: "Hai già questo abbonamento: lo trovi in «Gestisci»." }, 400);
         }

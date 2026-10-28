@@ -13,8 +13,14 @@
 // Poi accredita_acquisto_store (ruolo di servizio): l'indice unico (fornitore, transazione) impedisce il
 // doppio accredito. Gli acquisti di prova (Sandbox) accreditano i crediti ma non contano negli incassi.
 //
-// Corpo: { jws }. Risposta: { ok: true, crediti, concludi: true } | { ok: false, errore, codice }.
-// `concludi` dice all'app che può chiudere la transazione con Apple (finishTransaction).
+// Abbonamenti (29-10-2026): i piani personali e l'archivio in più, mensili con rinnovo automatico, arrivano
+// qui allo stesso modo (tipo «Auto-Renewable Subscription»). Il mese pagato lo registra
+// abbonamento_apple_pagamento (abbonamento = originalTransactionId, mese = transactionId, fine = expiresDate):
+// la stessa ricevuta due volte dà un mese solo. I rinnovi, le disdette e i rimborsi li porta apple-notifiche.
+//
+// Corpo: { jws }. Risposta: { ok: true, crediti, concludi: true } | { ok: true, abbonamento: true, concludi: true }
+// | { ok: false, errore, codice }. `concludi` dice all'app che può chiudere la transazione con Apple
+// (finishTransaction).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import * as x509 from "npm:@peculiar/x509@1.14.3";
@@ -33,6 +39,17 @@ const PRODOTTI: Record<string, { crediti: number; nome: string }> = {
   "ch.lexum.app.crediti.500": { crediti: 500, nome: "500 crediti Lex AI (App Store)" },
   "ch.lexum.app.crediti.1000": { crediti: 1000, nome: "1000 crediti Lex AI (App Store)" },
   "ch.lexum.app.crediti.5000": { crediti: 5000, nome: "5000 crediti Lex AI (App Store)" },
+};
+
+// Gli abbonamenti dell'App Store (prezzi decisi da Antonino il 28-10-2026): prodotto → codice del listino.
+// Tre piani in un gruppo (si passa dall'uno all'altro) e l'archivio in più in un altro.
+const ABBONAMENTI: Record<string, string> = {
+  "ch.lexum.app.piano.personale": "piano_personale",
+  "ch.lexum.app.piano.plus": "piano_personale_plus",
+  "ch.lexum.app.piano.pro": "piano_personale_pro",
+  "ch.lexum.app.archivio.10": "archivio_mese_10",
+  "ch.lexum.app.archivio.25": "archivio_mese_25",
+  "ch.lexum.app.archivio.50": "archivio_mese_50",
 };
 
 const intestazioni = {
@@ -124,6 +141,45 @@ async function rpc(funzione: string, corpo: Record<string, unknown>) {
   return testo ? JSON.parse(testo) : null;
 }
 
+/** Un mese di abbonamento pagato su Apple (primo acquisto, rinnovo, passaggio di piano, ripristino). */
+async function abbonamento(t: Record<string, unknown>, codice: string, utente: string) {
+  if (String(t.appAccountToken ?? "").toLowerCase() !== utente.toLowerCase()) {
+    console.error("[apple-acquisto] abbonamento di un altro utente", t.originalTransactionId);
+    return risposta({ ok: false, codice: "utente", errore: "Questo abbonamento non è di questo account." }, 403);
+  }
+  if (t.revocationDate) return risposta({ ok: false, codice: "revocato", errore: "Apple ha annullato questo acquisto.", concludi: true }, 400);
+  // un mese sostituito da un piano più grande: vale la transazione del piano nuovo
+  if (t.isUpgraded === true) return risposta({ ok: true, abbonamento: true, concludi: true });
+
+  try {
+    const esito = await rpc("abbonamento_apple_pagamento", {
+      p_user: utente,
+      p_originale: String(t.originalTransactionId ?? ""),
+      p_transazione: String(t.transactionId ?? ""),
+      p_codice: codice,
+      p_fine: t.expiresDate ? new Date(Number(t.expiresDate)).toISOString() : null,
+      p_ambiente: String(t.environment ?? ""),
+      p_prezzo: typeof t.price === "number" ? Math.round(t.price / 10) / 100 : null,
+      p_valuta: typeof t.currency === "string" ? t.currency : null,
+      p_paese: typeof t.storefront === "string" ? t.storefront : null,
+    });
+    const e = String(esito?.esito ?? "");
+    if (e === "ok" || e === "gia" || e === "scaduto") {
+      console.log(`[apple-acquisto] abbonamento ${codice} di ${utente}: ${e} (${t.environment}, ${t.transactionId})`);
+      return risposta({ ok: true, abbonamento: true, gia_accreditato: e === "gia", concludi: true });
+    }
+    if (e === "utente") {
+      console.error("[apple-acquisto] abbonamento legato a un altro account", t.originalTransactionId);
+      return risposta({ ok: false, codice: "utente", errore: "Questo abbonamento è legato a un altro account." }, 403);
+    }
+    console.error("[apple-acquisto] abbonamento rifiutato:", JSON.stringify(esito), t.transactionId);
+    return risposta({ ok: false, codice: "accredito", errore: esito?.motivo ?? "Abbonamento non registrato." }, 400);
+  } catch (e) {
+    console.error("[apple-acquisto]", (e as Error).message);
+    return risposta({ ok: false, codice: "server", errore: "Il server non ha potuto registrare l'abbonamento: riprova più tardi." }, 500);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: intestazioni });
   if (req.method !== "POST") return risposta({ ok: false, errore: "Metodo non ammesso." }, 405);
@@ -147,6 +203,8 @@ Deno.serve(async (req) => {
   }
 
   if (t.bundleId !== BUNDLE) return risposta({ ok: false, codice: "ricevuta", errore: "Ricevuta di un'altra app." }, 400);
+  const codiceAbbonamento = ABBONAMENTI[String(t.productId ?? "")];
+  if (codiceAbbonamento && t.type === "Auto-Renewable Subscription") return await abbonamento(t, codiceAbbonamento, utente);
   const prodotto = PRODOTTI[String(t.productId ?? "")];
   if (!prodotto || t.type !== "Consumable") {
     return risposta({ ok: false, codice: "prodotto", errore: "Questo acquisto non è un prodotto del listino." }, 400);
