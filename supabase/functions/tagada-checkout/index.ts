@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
     const { data: profilo } = await supabase
       .from("profiles")
-      .select("email, nome, cognome, telefono, role, piano_id, scadenza:abbonamento_scadenza")
+      .select("email, nome, cognome, telefono, role, piano_id, scadenza:abbonamento_scadenza, indirizzo, numero_civico, cap, comune, provincia, paese")
       .eq("id", user.id).single();
 
     if (prodotto.tipo === "piano_privato" && profilo?.role !== "user") {
@@ -140,6 +140,15 @@ Deno.serve(async (req) => {
     // I privati chiedono l'attivazione immediata (Termini, punto 4.6): senza la spunta non si paga.
     if (profilo?.role === "user" && consenso_recesso !== true) {
       return risposta({ ok: false, error: "Per procedere spunta la casella sull'attivazione immediata." }, 400);
+    }
+
+    // Dati di fatturazione (28-10-2026): Tagadapay vuole l'indirizzo, almeno il paese, e senza si ferma
+    // sulla sua pagina. Gli stessi campi li chiede il sito prima del pulsante (src/lib/datiFatturazione.jsx).
+    const CAMPI = [["nome", "Nome"], ["cognome", "Cognome"], ["indirizzo", "Indirizzo"], ["cap", "CAP"], ["comune", "Comune"], ["provincia", "Provincia"]] as const;
+    // deno-lint-ignore no-explicit-any
+    const mancanti = CAMPI.filter(([k]) => !String((profilo as any)?.[k] ?? "").trim()).map(([, l]) => l);
+    if (mancanti.length) {
+      return risposta({ ok: false, error: `Per acquistare completa i dati di fatturazione nel profilo: ${mancanti.join(", ")}.`, campi_mancanti: mancanti }, 400);
     }
 
     // Prezzo di oggi, con le regole di stripe-checkout
@@ -183,6 +192,20 @@ Deno.serve(async (req) => {
     if (profilo?.email ?? user.email) q.set("customerEmail", profilo?.email ?? user.email!);
     if (profilo?.nome) q.set("customerFirstName", profilo.nome);
     if (profilo?.cognome) q.set("customerLastName", profilo.cognome);
+    if (profilo?.telefono) q.set("customerPhone", profilo.telefono);
+    // Indirizzo di fatturazione già compilato (per i prodotti digitali Tagadapay vale anche come fatturazione)
+    const paese = (String(profilo?.paese ?? "").trim().toUpperCase() || "IT").slice(0, 2);
+    q.set("shippingCountry", paese);
+    q.set("shippingAddress", JSON.stringify({
+      firstName: profilo?.nome ?? "",
+      lastName: profilo?.cognome ?? "",
+      line1: [profilo?.indirizzo, profilo?.numero_civico].filter(Boolean).join(" "),
+      city: profilo?.comune ?? "",
+      state: String(profilo?.provincia ?? "").toUpperCase(),
+      postalCode: profilo?.cap ?? "",
+      country: paese,
+      ...(profilo?.telefono ? { phone: profilo.telefono } : {}),
+    }));
 
     // /checkout/init risponde con un rinvio (307) alla pagina di pagamento: lo leggiamo qui, così un
     // negozio chiuso (403) o una cassa non pubblicata si vedono subito invece che nel browser.

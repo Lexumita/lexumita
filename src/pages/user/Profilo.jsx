@@ -13,6 +13,11 @@ export default function UserProfilo() {
         nome: profile?.nome ?? '',
         cognome: profile?.cognome ?? '',
         telefono: profile?.telefono ?? '',
+        // indirizzo di fatturazione: serve per pagare (src/lib/datiFatturazione.jsx)
+        indirizzo: profile?.indirizzo ?? '',
+        cap: profile?.cap ?? '',
+        comune: profile?.comune ?? '',
+        provincia: profile?.provincia ?? '',
     })
     const [datiOriginali, setDatiOriginali] = useState({ ...form })
 
@@ -23,6 +28,10 @@ export default function UserProfilo() {
                 nome: profile.nome ?? '',
                 cognome: profile.cognome ?? '',
                 telefono: profile.telefono ?? '',
+                indirizzo: profile.indirizzo ?? '',
+                cap: profile.cap ?? '',
+                comune: profile.comune ?? '',
+                provincia: profile.provincia ?? '',
             }
             setForm(init)
             setDatiOriginali(init)
@@ -62,6 +71,10 @@ export default function UserProfilo() {
                     nome: form.nome.trim(),
                     cognome: form.cognome.trim(),
                     telefono: form.telefono.trim() || null,
+                    indirizzo: form.indirizzo.trim() || null,
+                    cap: form.cap.trim() || null,
+                    comune: form.comune.trim() || null,
+                    provincia: form.provincia.trim().toUpperCase() || null,
                 })
                 .eq('id', user.id)
             if (error) throw new Error(error.message)
@@ -150,6 +163,19 @@ export default function UserProfilo() {
                     <InputField label="Cognome" {...f('cognome')} />
                 </div>
                 <InputField label="Telefono" placeholder="+39 02 1234567" {...f('telefono')} />
+
+                <div className="pt-2 space-y-4">
+                    <div>
+                        <p className="font-body text-sm text-nebbia">Indirizzo di fatturazione</p>
+                        <p className="font-body text-xs text-nebbia/40 mt-0.5">Serve per acquistare crediti e piani: compare nella ricevuta.</p>
+                    </div>
+                    <InputField label="Indirizzo e numero civico" placeholder="Via Roma 1" {...f('indirizzo')} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <InputField label="CAP" placeholder="20121" {...f('cap')} />
+                        <InputField label="Comune" placeholder="Milano" {...f('comune')} />
+                        <InputField label="Provincia" placeholder="MI" maxLength={2} {...f('provincia')} />
+                    </div>
+                </div>
 
                 {errDati && (
                     <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">

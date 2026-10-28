@@ -5,6 +5,7 @@ import { profiloCompleto, campiMancanti } from '@/lib/profiloCompleto'
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
+import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
@@ -179,6 +180,13 @@ export default function Acquista() {
             document.getElementById('consenso-recesso')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
             return
         }
+        // Dati di fatturazione prima della cassa: Tagadapay li vuole (src/lib/datiFatturazione.jsx)
+        const mancanti = mancantiAcquisto(profile)
+        if (mancanti.length) {
+            setErrore(messaggioDatiMancanti(mancanti))
+            document.getElementById('dati-fatturazione')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            return
+        }
         // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setAcquistando(prodottoId)
         try {
@@ -311,6 +319,8 @@ export default function Acquista() {
             )}
 
             {/* Attivazione immediata e recesso (solo privati) */}
+            <AvvisoDatiFatturazione profile={profile} />
+
             <div id="consenso-recesso">
                 <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
             </div>

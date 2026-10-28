@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { formatPrezzo, formatImporto, formatNumero } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
+import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
 import { useAuth } from '@/context/AuthContext'
 
@@ -139,6 +140,7 @@ function BannerAlert({ tone = 'warning', icon: Icon, titolo, descrizione, ctaLab
 // SEZIONE ACQUISTO — esportata, riusabile
 // ─────────────────────────────────────────────────────────────
 export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, durataAttuale = null, tipoAttuale = null, scadenzaAttuale = null, postiAttuali = 0, isUser = false, pianoScaduto = false }) {
+    const { profile } = useAuth()
     const [piani, setPiani] = useState([])
     const [addons, setAddons] = useState([])
     const [clientiAddons, setClientiAddons] = useState([])
@@ -215,8 +217,15 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
     }
 
     async function acquista(prodottoId, isUpgrade, importo) {
-        setAcquistando(prodottoId)
         setErrore('')
+        // Dati di fatturazione prima della cassa: Tagadapay li vuole (src/lib/datiFatturazione.jsx)
+        const mancanti = mancantiAcquisto(profile)
+        if (mancanti.length) {
+            setErrore(messaggioDatiMancanti(mancanti))
+            document.getElementById('dati-fatturazione')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            return
+        }
+        setAcquistando(prodottoId)
         try {
             // Cassa Tagadapay: per l'upgrade il server calcola l'importo di oggi e crea l'articolo con quel prezzo.
             await apriCassa({ prodottoId, isUpgrade, importo: isUpgrade ? importo : undefined, ritorno: '/studio?success=1' })
@@ -234,6 +243,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
 
     return (
         <div className="space-y-8">
+            <AvvisoDatiFatturazione profile={profile} />
             {errore && (
                 <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
                     <AlertCircle size={14} /> {errore}

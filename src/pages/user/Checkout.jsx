@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { AlertCircle, Lock } from 'lucide-react'
 import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
+import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import { etichettaDurata } from '@/lib/vociPiano'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
@@ -33,6 +34,8 @@ export default function UserCheckout() {
     async function handlePagamento() {
         setErrore('')
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
+        const mancanti = mancantiAcquisto(profile)
+        if (mancanti.length) { setErrore(messaggioDatiMancanti(mancanti)); return }
         // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setLoading(true)
         try {
@@ -105,6 +108,7 @@ export default function UserCheckout() {
                 </p>
             </div>
 
+            <AvvisoDatiFatturazione profile={profile} />
             <ConsensoRecesso consenso={consenso} className="px-1" />
 
             {/* Errore */}

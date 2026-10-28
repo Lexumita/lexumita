@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
+import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
@@ -119,6 +120,8 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
     async function paga() {
         if (!prodotto || pagando) return
         if (!consenso.ok) { setErrore(ERRORE_CONSENSO_RECESSO); return }
+        const mancanti = mancantiAcquisto(profile)
+        if (mancanti.length) { setErrore(messaggioDatiMancanti(mancanti)); return }
         // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setPagando(true)
         setErrore('')
@@ -183,6 +186,8 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                 <p className="font-display text-3xl font-light text-oro whitespace-nowrap">{prezzo}</p>
                             </div>
 
+                            <AvvisoDatiFatturazione profile={profile} />
+
                             <ConsensoRecesso consenso={consenso} />
 
                             {errore && (
@@ -193,7 +198,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
 
                             <button
                                 onClick={paga}
-                                disabled={pagando || !consenso.ok}
+                                disabled={pagando || !consenso.ok || mancantiAcquisto(profile).length > 0}
                                 className="flex items-center justify-center gap-2 w-full min-h-[44px] py-3 bg-oro/15 border border-oro/40 text-oro font-body text-sm hover:bg-oro/25 transition-colors disabled:opacity-50"
                             >
                                 {pagando
