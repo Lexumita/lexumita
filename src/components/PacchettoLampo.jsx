@@ -190,8 +190,6 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
 
                             <AvvisoDatiFatturazione profile={profile} />
 
-                            <ConsensoRecesso consenso={consenso} />
-
                             <CodiceSconto sconto={sconto} perProdotto={prodotto.nome} />
 
                             {errore && (
@@ -207,8 +205,10 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                             >
                                 {pagando
                                     ? <><Loader2 size={14} className="animate-spin" /> Apro il pagamento...</>
-                                    : <><Zap size={13} /> Continua con {prezzo}</>}
+                                    : <><Zap size={13} /> {consenso.pulsante(`Continua con ${prezzo}`)}</>}
                             </button>
+
+                            <ConsensoRecesso consenso={consenso} />
 
                             <p className="font-body text-xs text-nebbia/35 text-center leading-relaxed">
                                 Pagamento con carta in modo sicuro. Poi torni qui e riprendi la ricerca da dove eri.

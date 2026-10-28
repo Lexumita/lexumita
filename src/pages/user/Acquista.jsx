@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
 import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
-import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
+import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO, PULSANTE_ATTIVA_SUBITO } from '@/components/ConsensoRecesso'
 import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
@@ -283,6 +283,16 @@ export default function Acquista() {
                 </div>
             </div>
 
+            {/* Prima dei prodotti: dati di fatturazione, attivazione immediata e recesso (la frase che
+                accompagna i pulsanti «Paga e attiva subito»), codice sconto */}
+            <AvvisoDatiFatturazione profile={profile} />
+
+            <div id="consenso-recesso">
+                <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
+            </div>
+
+            <CodiceSconto sconto={sconto} className="bg-slate border border-white/5 p-4" />
+
             {/* Piano Personale: solo per i privati */}
             {isPrivato && pianoPersonale && (
                 <SezionePianoPersonale
@@ -324,14 +334,6 @@ export default function Acquista() {
                 </div>
             )}
 
-            {/* Attivazione immediata e recesso (solo privati) */}
-            <AvvisoDatiFatturazione profile={profile} />
-
-            <div id="consenso-recesso">
-                <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
-            </div>
-
-            <CodiceSconto sconto={sconto} className="bg-slate border border-white/5 p-4" />
 
             {/* Errore acquisto */}
             {errore && (
@@ -465,7 +467,7 @@ function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, 
                     >
                         {isLoading
                             ? <Loader2 size={14} className="animate-spin" />
-                            : <>{attivo ? 'Aggiungi un mese' : 'Attiva il piano'} <ArrowRight size={12} /></>}
+                            : <>{PULSANTE_ATTIVA_SUBITO} <ArrowRight size={12} /></>}
                     </button>
                     {attivo && (
                         <p className="font-body text-xs text-nebbia/35 mt-2">Il mese in più parte dalla scadenza attuale.</p>
@@ -515,7 +517,7 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista, sconto })
                         >
                             {isLoading
                                 ? <Loader2 size={14} className="animate-spin" />
-                                : <>Acquista <ArrowRight size={12} /></>
+                                : <>{PULSANTE_ATTIVA_SUBITO} <ArrowRight size={12} /></>
                             }
                         </button>
                     </div>
@@ -592,7 +594,7 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
                             >
                                 {isLoading
                                     ? <Loader2 size={14} className="animate-spin" />
-                                    : <>Acquista <ArrowRight size={12} /></>
+                                    : <>{PULSANTE_ATTIVA_SUBITO} <ArrowRight size={12} /></>
                                 }
                             </button>
                         </div>
@@ -647,7 +649,7 @@ function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati
                                 >
                                     {isLoading
                                         ? <Loader2 size={14} className="animate-spin" />
-                                        : <>Acquista <ArrowRight size={12} /></>
+                                        : <>{PULSANTE_ATTIVA_SUBITO} <ArrowRight size={12} /></>
                                     }
                                 </button>
                             </div>
