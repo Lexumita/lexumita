@@ -197,13 +197,8 @@ export default function Acquista() {
                 onGestisci={() => setGestisciAperta(true)}
             />
 
-            {/* Prima dei prodotti: dati di fatturazione, attivazione immediata e recesso (la frase che
-                accompagna i pulsanti «Paga e attiva subito»), codice sconto */}
+            {/* Prima dei prodotti: dati di fatturazione e codice sconto */}
             <AvvisoDatiFatturazione profile={profile} />
-
-            <div id="consenso-recesso">
-                <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
-            </div>
 
             <CodiceSconto sconto={sconto} className="bg-slate border border-white/5 p-4" />
 
@@ -252,6 +247,12 @@ export default function Acquista() {
                     onAcquista={acquista}
                     sconto={sconto}
                 />
+            </div>
+
+            {/* La frase sul recesso accompagna i pulsanti «Paga e attiva subito»: in piccolo, sotto gli acquisti
+                (28-10-2026, deciso da Antonino: prima stava in mezzo alla pagina) */}
+            <div id="consenso-recesso">
+                <ConsensoRecesso consenso={consenso} />
             </div>
 
             {/* Piani per lo studio professionale (solo con i dati di fatturazione) */}

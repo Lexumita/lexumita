@@ -18,6 +18,7 @@ import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
 import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
 import PallinoTicket from '@/components/shared/PallinoTicket'
 import { useTicketDaRispondere } from '@/hooks/useTicketDaRispondere'
+import { useCreditiDisponibili } from '@/hooks/useCreditiDisponibili'
 
 const NAV = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,24 +50,9 @@ export default function CommercialistaLayout({ children }) {
   const [open, setOpen] = useState(false)
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const [crediti, setCrediti] = useState(0)
+  const crediti = useCreditiDisponibili(profile?.id)
   const [storage, setStorage] = useState({ occupato_gb: 0, gb_totali: 0 })
   const [clienti, setClienti] = useState({ conteggio: 0, limite_totale: 0 })
-
-  // Carica somma totale crediti validi
-  useEffect(() => {
-    if (!profile?.id) return
-    supabase
-      .from('crediti_ai')
-      .select('crediti_totali, crediti_usati')
-      .eq('user_id', profile.id)
-      .or(`periodo_fine.is.null,periodo_fine.gte.${new Date().toISOString()}`)
-      .then(({ data }) => {
-        if (!data) return setCrediti(0)
-        const totale = data.reduce((acc, c) => acc + (c.crediti_totali - c.crediti_usati), 0)
-        setCrediti(totale)
-      })
-  }, [profile?.id])
 
   // Carica storage occupato vs disponibile
   useEffect(() => {
