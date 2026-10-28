@@ -40,6 +40,7 @@ import { AdminProdotti, AdminProdottiForm } from './pages/admin/Prodotti'
 import { AdminSentenze, AdminSentenzeDettaglio } from './pages/admin/Sentenze'
 import { AdminPagamenti } from './pages/admin/Pagamenti'
 import AdminCompensi from './pages/admin/Compensi'
+import AdminCodiciSconto from './pages/admin/CodiciSconto'
 import { AdminAssistenza, AdminAssistenzaDettaglio } from './pages/admin/Assistenza'
 import AdminNormativa from './pages/admin/Normativa'
 import AdminNormativaDettaglio from './pages/admin/NormativaDettaglio'
@@ -246,6 +247,7 @@ export default function App() {
               <Route path="/admin/sentenze/:id" element={<Adm><AdminSentenzeDettaglio /></Adm>} />
               <Route path="/admin/pagamenti" element={<Adm><AdminPagamenti /></Adm>} />
               <Route path="/admin/compensi" element={<Adm><AdminCompensi /></Adm>} />
+              <Route path="/admin/codici-sconto" element={<Adm><AdminCodiciSconto /></Adm>} />
               <Route path="/admin/assistenza" element={<Adm><AdminAssistenza /></Adm>} />
               <Route path="/admin/assistenza/:id" element={<Adm><AdminAssistenzaDettaglio /></Adm>} />
               <Route path="/admin/normativa" element={<Adm><AdminNormativa /></Adm>} />

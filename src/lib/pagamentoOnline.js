@@ -10,9 +10,10 @@ import { ricordaRitorno } from '@/lib/ritornoCassa'
 
 /**
  * Porta il browser alla cassa per un prodotto. In caso d'errore porta al bonifico.
- * @param {{ prodottoId: string, isUpgrade?: boolean, consenso?: object, ritorno?: string, importo?: number }} opz
+ * Con un codice sconto il server lo riverifica e toglie la percentuale (src/components/CodiceSconto.jsx).
+ * @param {{ prodottoId: string, isUpgrade?: boolean, consenso?: object, codiceSconto?: string, ritorno?: string, importo?: number }} opz
  */
-export async function apriCassa({ prodottoId, isUpgrade = false, consenso = {}, ritorno, importo }) {
+export async function apriCassa({ prodottoId, isUpgrade = false, consenso = {}, codiceSconto, ritorno, importo }) {
     const percorso = ritorno ?? `${window.location.pathname}${window.location.search}`
     try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -26,6 +27,7 @@ export async function apriCassa({ prodottoId, isUpgrade = false, consenso = {}, 
                 prodotto_id: prodottoId,
                 is_upgrade: isUpgrade,
                 ...consenso,
+                ...(codiceSconto ? { codice_sconto: codiceSconto } : {}),
                 ritorno: percorso,
             }),
         })

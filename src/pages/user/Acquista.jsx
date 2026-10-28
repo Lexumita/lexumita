@@ -7,6 +7,7 @@ import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
 import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
+import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 import { vociPiano, etichettaDurata, periodoPrezzo } from '@/lib/vociPiano'
 import {
     Sparkles, ShoppingBag, CreditCard, ArrowRight, CheckCircle,
@@ -38,6 +39,10 @@ export default function Acquista() {
     const [acquistando, setAcquistando] = useState(null)
     const [errore, setErrore] = useState('')
     const consenso = useConsensoRecesso()
+    // Codice sconto: vale per i prodotti di questa pagina che l'admin ha scelto (src/components/CodiceSconto.jsx)
+    const sconto = useCodiceSconto([
+        pianoPersonale?.id, ...pacchettiCrediti.map(p => p.id), ...abbonamenti.map(p => p.id), ...seatAddon.map(p => p.id),
+    ])
 
     // Tab attivo: "crediti" (sempre visibile), "abbonamenti" (profilo completo).
     // A sbloccare i piani sono i DATI DI FATTURAZIONE, non la verifica dei
@@ -190,7 +195,7 @@ export default function Acquista() {
         // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setAcquistando(prodottoId)
         try {
-            await apriCassa({ prodottoId, consenso: consenso.campo, ritorno: '/area/acquista?success=1' })
+            await apriCassa({ prodottoId, consenso: consenso.campo, codiceSconto: sconto.campo(prodottoId), ritorno: '/area/acquista?success=1' })
         } catch (err) {
             setErrore(err.message)
             setAcquistando(null)
@@ -286,6 +291,7 @@ export default function Acquista() {
                     acquistando={acquistando}
                     onAcquista={acquista}
                     conAbbonamenti={isApproved}
+                    sconto={sconto}
                 />
             )}
 
@@ -325,6 +331,8 @@ export default function Acquista() {
                 <ConsensoRecesso consenso={consenso} className="bg-slate border border-white/5 p-4" />
             </div>
 
+            <CodiceSconto sconto={sconto} className="bg-slate border border-white/5 p-4" />
+
             {/* Errore acquisto */}
             {errore && (
                 <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20">
@@ -339,6 +347,7 @@ export default function Acquista() {
                     loading={loadingProdotti}
                     acquistando={acquistando}
                     onAcquista={acquista}
+                    sconto={sconto}
                 />
             )}
 
@@ -352,6 +361,7 @@ export default function Acquista() {
                     // Il Piano Personale non è un piano professionale e non viene
                     // sostituito: resta valido fino alla sua scadenza
                     piano_attivo={!isPrivato && !!profile?.piano_id}
+                    sconto={sconto}
                 />
             )}
 
@@ -364,6 +374,7 @@ export default function Acquista() {
                     onAcquista={acquista}
                     posti_acquistati={profile?.posti_acquistati}
                     posti_usati={profile?.posti_usati}
+                    sconto={sconto}
                 />
             )}
 
@@ -409,7 +420,7 @@ export default function Acquista() {
 // Pagamento mese per mese, senza rinnovo automatico: chi rinnova prima della
 // scadenza aggiunge un mese da quella data (lo decide il webhook).
 // ═══════════════════════════════════════════════════════════════
-function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, conAbbonamenti }) {
+function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, conAbbonamenti, sconto }) {
     const isLoading = acquistando === prodotto.id
     const attivo = !!attivoFino && new Date(attivoFino) > new Date()
     const mesi = Number(prodotto.durata_mesi ?? 1) || 1
@@ -424,7 +435,7 @@ function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, 
                 <div className="min-w-0">
                     <p className="font-body text-xs text-oro tracking-widest uppercase mb-2">{prodotto.nome}</p>
                     <p className="font-display text-4xl font-light text-oro">
-                        {formatPrezzo(prodotto.prezzo)}
+                        <PrezzoScontato prezzo={prodotto.prezzo} scontato={sconto.prezzo(prodotto.id, prodotto.prezzo)} />
                         <span className="font-body text-sm text-nebbia/40 ml-2">{mesi === 1 ? 'al mese' : `per ${mesi} mesi`}</span>
                     </p>
                     <ul className="mt-4 space-y-2">
@@ -468,7 +479,7 @@ function SezionePianoPersonale({ prodotto, attivoFino, acquistando, onAcquista, 
 // ═══════════════════════════════════════════════════════════════
 // SEZIONE PACCHETTI CREDITI
 // ═══════════════════════════════════════════════════════════════
-function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
+function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista, sconto }) {
     if (loading) return (
         <div className="flex items-center justify-center py-12">
             <Loader2 size={18} className="animate-spin text-salvia" />
@@ -492,7 +503,7 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
                             <Sparkles size={13} className="text-salvia" />
                             <p className="font-body text-sm font-medium text-nebbia">{p.nome}</p>
                         </div>
-                        <p className="font-display text-3xl font-light text-salvia mt-2">{formatPrezzo(p.prezzo)}</p>
+                        <p className="font-display text-3xl font-light text-salvia mt-2"><PrezzoScontato prezzo={p.prezzo} scontato={sconto.prezzo(p.id, p.prezzo)} /></p>
                         <p className="font-body text-xs text-nebbia/40 mt-1">
                             {p.crediti_ai_mensili} crediti · {formatPrezzo(prezzoPerCredito)} a credito
                         </p>
@@ -517,7 +528,7 @@ function SezioneCrediti({ pacchetti, loading, acquistando, onAcquista }) {
 // ═══════════════════════════════════════════════════════════════
 // SEZIONE ABBONAMENTI
 // ═══════════════════════════════════════════════════════════════
-function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_attivo }) {
+function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_attivo, sconto }) {
     if (loading) return (
         <div className="flex items-center justify-center py-12">
             <Loader2 size={18} className="animate-spin text-oro" />
@@ -561,7 +572,7 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
                             </div>
 
                             <p className="font-display text-4xl font-light text-oro mb-4">
-                                {formatPrezzo(p.prezzo)}
+                                <PrezzoScontato prezzo={p.prezzo} scontato={sconto.prezzo(p.id, p.prezzo)} />
                                 {periodo && <span className="font-body text-sm text-nebbia/40 ml-2">{periodo}</span>}
                             </p>
 
@@ -595,7 +606,7 @@ function SezioneAbbonamenti({ piani, loading, acquistando, onAcquista, piano_att
 // ═══════════════════════════════════════════════════════════════
 // SEZIONE SEAT ADDON (avvocati con piano studio)
 // ═══════════════════════════════════════════════════════════════
-function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati, posti_usati }) {
+function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati, posti_usati, sconto }) {
     if (loading) return (
         <div className="flex items-center justify-center py-12">
             <Loader2 size={18} className="animate-spin text-oro" />
@@ -628,7 +639,7 @@ function SezioneSeat({ seats, loading, acquistando, onAcquista, posti_acquistati
                                     <CreditCard size={13} className="text-oro" />
                                     <p className="font-body text-sm font-medium text-nebbia">{s.nome}</p>
                                 </div>
-                                <p className="font-display text-3xl font-light text-oro mt-2 flex-1">{formatPrezzo(s.prezzo)}</p>
+                                <p className="font-display text-3xl font-light text-oro mt-2 flex-1"><PrezzoScontato prezzo={s.prezzo} scontato={sconto.prezzo(s.id, s.prezzo)} /></p>
                                 <button
                                     onClick={() => onAcquista(s.id)}
                                     disabled={isLoading}

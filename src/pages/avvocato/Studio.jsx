@@ -14,6 +14,7 @@ import { formatPrezzo, formatImporto, formatNumero } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
 import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
+import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 import { useAuth } from '@/context/AuthContext'
 
 // ─────────────────────────────────────────────────────────────
@@ -153,6 +154,9 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
     const [trialProdotto, setTrialProdotto] = useState(null)
     const [attivandoTrial, setAttivandoTrial] = useState(false)
     const [trialAttivato, setTrialAttivato] = useState(false)
+    // Codice sconto (28-10-2026): uno per la pagina, vale per i prodotti che l'admin ha scelto
+    const inVendita = [...piani, ...addons, ...clientiAddons, ...pacchettiCrediti, ...pacchettiStorage]
+    const sconto = useCodiceSconto(inVendita.map(p => p.id))
 
     const haPianoAttivo = !!pianoAttualeId && !pianoScaduto
     // 08-10-2026: costo del cambio piano con la regola del server (upgrade a giorni)
@@ -228,7 +232,10 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
         setAcquistando(prodottoId)
         try {
             // Cassa Tagadapay: per l'upgrade il server calcola l'importo di oggi e crea l'articolo con quel prezzo.
-            await apriCassa({ prodottoId, isUpgrade, importo: isUpgrade ? importo : undefined, ritorno: '/studio?success=1' })
+            const codiceSconto = sconto.campo(prodottoId)
+            // l'importo serve solo se la cassa non risponde e si passa al bonifico
+            const scontato = codiceSconto ? sconto.prezzo(prodottoId, importo ?? inVendita.find(p => p.id === prodottoId)?.prezzo) : null
+            await apriCassa({ prodottoId, isUpgrade, codiceSconto, importo: scontato ?? (isUpgrade ? importo : undefined), ritorno: '/studio?success=1' })
         } catch (err) {
             setErrore(err.message)
             setAcquistando(null)
@@ -304,6 +311,12 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                 </div>
             )}
 
+            {/* ── Codice sconto ── */}
+            <div className="bg-slate border border-white/5 p-4 space-y-2">
+                <p className="section-label">Hai un codice sconto?</p>
+                <CodiceSconto sconto={sconto} perProdotto={pianoProposto?.nome} />
+            </div>
+
             {/* ── Piani abbonamento ── */}
             {piani.length > 0 && (
                 <div className="space-y-3">
@@ -318,10 +331,10 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                     className={`text-left p-4 border transition-all ${isSelezionato ? 'border-oro/50 bg-oro/10' : 'border-white/8 hover:border-oro/20'}`}
                                 >
                                     <p className="font-body text-sm font-medium text-nebbia mb-1">{p.nome}</p>
-                                    <p className="font-display text-2xl font-light text-oro mb-1">{formatPrezzo(p.prezzo)}</p>
+                                    <p className="font-display text-2xl font-light text-oro mb-1"><PrezzoScontato prezzo={p.prezzo} scontato={sconto.prezzo(p.id, p.prezzo)} /></p>
                                     {costo?.upgrade && (
                                         <p className="font-body text-xs text-nebbia/40 mb-2">
-                                            Da pagare oggi: <span className="text-amber-400">{formatPrezzo(costo.importo)}</span>
+                                            Da pagare oggi: <span className="text-amber-400"><PrezzoScontato prezzo={costo.importo} scontato={sconto.prezzo(p.id, costo.importo)} /></span>
                                         </p>
                                     )}
                                     <p className="font-body text-xs text-nebbia/40 mb-2">{etichettaDurata(p)}</p>
@@ -354,7 +367,10 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                         <p className="font-body text-xs text-nebbia/40 mt-0.5">
                                             Importo da pagare:{' '}
                                             <span className="text-nebbia/70">
-                                                {formatPrezzo(costoProposto ? costoProposto.importo : pianoProposto.prezzo)}
+                                                <PrezzoScontato
+                                                    prezzo={costoProposto ? costoProposto.importo : pianoProposto.prezzo}
+                                                    scontato={sconto.prezzo(pianoProposto.id, costoProposto ? costoProposto.importo : pianoProposto.prezzo)}
+                                                />
                                             </span>
                                         </p>
                                         {costoProposto && (
@@ -393,7 +409,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                             <div key={a.id} className="bg-slate border border-white/5 p-4 space-y-3">
                                 <p className="font-body text-sm font-medium text-nebbia">{a.nome}</p>
                                 <p className="font-body text-xs text-nebbia/40">+{a.posti} {a.posti === 1 ? 'accesso' : 'accessi'}</p>
-                                <p className="font-display text-2xl font-light text-oro">{formatPrezzo(a.prezzo)}</p>
+                                <p className="font-display text-2xl font-light text-oro"><PrezzoScontato prezzo={a.prezzo} scontato={sconto.prezzo(a.id, a.prezzo)} /></p>
                                 <p className="font-body text-xs text-nebbia/30">Accessi: {postiAttuali} → {postiAttuali + (a.posti ?? 1)}</p>
                                 <button onClick={() => acquista(a.id, false)} disabled={acquistando === a.id}
                                     className="btn-secondary text-sm w-full justify-center disabled:opacity-40">
@@ -417,7 +433,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                             <div key={c.id} className="bg-slate border border-white/5 hover:border-salvia/30 p-4 space-y-3 transition-colors">
                                 <p className="font-body text-sm font-medium text-nebbia">{c.nome}</p>
                                 <p className="font-body text-xs text-nebbia/40">+{c.limite_clienti} clienti</p>
-                                <p className="font-display text-2xl font-light text-oro">{formatPrezzo(c.prezzo)}</p>
+                                <p className="font-display text-2xl font-light text-oro"><PrezzoScontato prezzo={c.prezzo} scontato={sconto.prezzo(c.id, c.prezzo)} /></p>
                                 <p className="font-body text-[10px] text-nebbia/30 italic">Listino · pro-rata applicato al checkout</p>
                                 <button onClick={() => acquista(c.id, false)} disabled={acquistando === c.id}
                                     className="btn-secondary text-sm w-full justify-center disabled:opacity-40">
@@ -443,7 +459,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                     <Sparkles size={13} className="text-salvia" />
                                     <p className="font-body text-sm font-medium text-nebbia">{p.nome}</p>
                                 </div>
-                                <p className="font-display text-2xl font-light text-salvia">{formatPrezzo(p.prezzo)}</p>
+                                <p className="font-display text-2xl font-light text-salvia"><PrezzoScontato prezzo={p.prezzo} scontato={sconto.prezzo(p.id, p.prezzo)} /></p>
                                 <p className="font-body text-xs text-nebbia/40">
                                     {p.crediti_ai_mensili} crediti · {formatPrezzo(Math.round((p.prezzo / p.crediti_ai_mensili) * 100) / 100)} a credito
                                 </p>
@@ -484,7 +500,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
                                             <HardDrive size={13} className="text-salvia" />
                                             <p className="font-body text-sm font-medium text-nebbia">{s.nome}</p>
                                         </div>
-                                        <p className="font-display text-2xl font-light text-salvia">{formatPrezzo(s.prezzo)}</p>
+                                        <p className="font-display text-2xl font-light text-salvia"><PrezzoScontato prezzo={s.prezzo} scontato={sconto.prezzo(s.id, s.prezzo)} /></p>
                                         <p className="font-body text-xs text-nebbia/40">
                                             {s.spazio_gb} GB · {s.durata_mesi} {s.durata_mesi === 1 ? 'mese' : 'mesi'}
                                         </p>

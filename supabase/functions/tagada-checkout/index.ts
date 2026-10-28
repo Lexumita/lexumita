@@ -11,7 +11,10 @@
 //
 // Ogni passaggio alla cassa crea una riga in tagada_ordini; il suo id viaggia nell'indirizzo come
 // lexum_tx e torna nella notifica order/paid (tagada-webhook), che accredita l'acquisto.
-// Corpo: { prodotto_id, is_upgrade?, consenso_recesso?, ritorno? }  →  { ok, url } | { ok, bonifico_url }
+// Codice sconto (28-10-2026): il server lo riverifica (codice_sconto_esito) e toglie la percentuale dal
+// prezzo di oggi, upgrade compreso; l'ordine lo ricorda e a pagamento fatto l'uso si conta da sé
+// (trigger su tagada_ordini).
+// Corpo: { prodotto_id, is_upgrade?, consenso_recesso?, codice_sconto?, ritorno? }  →  { ok, url } | { ok, bonifico_url }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -74,8 +77,9 @@ async function impronta(testo: string): Promise<string> {
 
 // La variante Tagadapay per questo prodotto a questo importo: dalla tabella, oppure creata adesso.
 // deno-lint-ignore no-explicit-any
-async function variante(prodotto: any, importo: number, upgrade: boolean): Promise<string> {
-  const nome = upgrade ? `Upgrade a ${prodotto.nome}` : prodotto.nome;
+async function variante(prodotto: any, importo: number, upgrade: boolean, sconto: { codice: string; percentuale: number } | null): Promise<string> {
+  const conSconto = sconto ? ` · sconto ${sconto.percentuale.toLocaleString("it-IT")}% (${sconto.codice})` : "";
+  const nome = (upgrade ? `Upgrade a ${prodotto.nome}` : prodotto.nome) + conSconto;
   const testo = upgrade
     ? `${descrizione(prodotto)}. Prezzo del nuovo piano meno la parte non usata di quello attuale.`
     : descrizione(prodotto);
@@ -110,6 +114,18 @@ async function variante(prodotto: any, importo: number, upgrade: boolean): Promi
   const { data: registrata } = await supabase.from("tagada_varianti").select("variant_id").eq("chiave", chiave).single();
   return registrata?.variant_id ?? id;
 }
+
+// Perché un codice sconto non vale (motivo di codice_sconto_esito)
+const MOTIVI_SCONTO: Record<string, string> = {
+  inesistente: "Codice sconto non valido.",
+  non_ancora: "Questo codice sconto non è ancora valido.",
+  scaduto: "Questo codice sconto è scaduto.",
+  esaurito: "Questo codice sconto è esaurito.",
+  gia_usato: "Hai già usato questo codice sconto.",
+  non_tuo: "Questo codice sconto è riservato a un'altra persona.",
+  non_per_te: "Questo codice sconto non vale per il tuo account.",
+  non_vale: "Questo codice sconto non vale per questo acquisto.",
+};
 
 // Solo percorsi del sito come ritorno (niente indirizzi esterni).
 function percorsoRitorno(r: unknown): string {
@@ -152,7 +168,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
     if (authErr || !user) return risposta({ ok: false, error: "Accesso scaduto: entra di nuovo." }, 401);
 
-    const { prodotto_id, is_upgrade, consenso_recesso, ritorno } = await req.json().catch(() => ({}));
+    const { prodotto_id, is_upgrade, consenso_recesso, codice_sconto, ritorno } = await req.json().catch(() => ({}));
     if (!prodotto_id) return risposta({ ok: false, error: "Prodotto mancante." }, 400);
 
     const { data: prodotto } = await supabase
@@ -198,9 +214,23 @@ Deno.serve(async (req) => {
       }
     }
     if (!(importo > 0)) return risposta({ ok: false, error: "Importo non valido." }, 400);
-
     const upgrade = importo !== Number(prodotto.prezzo);
-    const variantId = await variante(prodotto, importo, upgrade);
+
+    // Codice sconto: si riverifica qui (la pagina lo ha già controllato, ma decide il server)
+    let sconto: { id: string; codice: string; percentuale: number } | null = null;
+    const importoListino = importo;
+    if (typeof codice_sconto === "string" && codice_sconto.trim()) {
+      const { data: esito, error: scErr } = await supabase.rpc("codice_sconto_esito", {
+        p_user: user.id, p_codice: codice_sconto.trim(), p_prodotti: [prodotto.id],
+      });
+      if (scErr) throw new Error(`Verifica codice sconto: ${scErr.message}`);
+      if (!esito?.valido) return risposta({ ok: false, error: MOTIVI_SCONTO[esito?.motivo] ?? MOTIVI_SCONTO.inesistente, codice_sconto: esito?.motivo ?? "inesistente" }, 400);
+      sconto = { id: esito.codice_id, codice: esito.codice, percentuale: Number(esito.percentuale) };
+      importo = Math.round(importo * (100 - sconto.percentuale)) / 100;
+      if (!(importo > 0)) return risposta({ ok: false, error: "Importo non valido." }, 400);
+    }
+
+    const variantId = await variante(prodotto, importo, upgrade, sconto);
 
     const { data: ordine, error: ordErr } = await supabase.from("tagada_ordini").insert({
       user_id: user.id,
@@ -209,6 +239,9 @@ Deno.serve(async (req) => {
       importo,
       consenso_recesso: consenso_recesso === true,
       consenso_il: consenso_recesso === true ? new Date().toISOString() : null,
+      codice_sconto_id: sconto?.id ?? null,
+      sconto_percentuale: sconto?.percentuale ?? null,
+      importo_listino: sconto ? importoListino : null,
     }).select("id").single();
     if (ordErr || !ordine) throw new Error(`Ordine non creato: ${ordErr?.message}`);
 
@@ -255,7 +288,7 @@ Deno.serve(async (req) => {
     await supabase.from("tagada_ordini").update({ stato: "errore", errore: `init HTTP ${init.status}: ${testo.slice(0, 300)}` }).eq("id", ordine.id);
     console.error("tagada-checkout init:", init.status, testo.slice(0, 300));
     const qb = new URLSearchParams({ prodotto: prodotto.id });
-    if (upgrade) qb.set("importo", String(importo));
+    if (upgrade || sconto) qb.set("importo", String(importo));
     return risposta({ ok: false, error: "Il pagamento online non è disponibile in questo momento.", bonifico_url: `/pagamento/bonifico?${qb}` }, 502);
   } catch (e) {
     console.error("tagada-checkout:", e instanceof Error ? e.message : e);

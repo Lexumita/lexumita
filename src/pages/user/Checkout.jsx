@@ -9,6 +9,7 @@ import { apriCassa } from '@/lib/pagamentoOnline'
 import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import { etichettaDurata } from '@/lib/vociPiano'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
+import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 
 export default function UserCheckout() {
     const { profile } = useAuth()
@@ -19,6 +20,7 @@ export default function UserCheckout() {
     const [loading, setLoading] = useState(false)
     const [errore, setErrore] = useState('')
     const consenso = useConsensoRecesso()
+    const sconto = useCodiceSconto(prodotto ? [prodotto.id] : [])
 
     if (!prodotto) {
         return (
@@ -39,7 +41,7 @@ export default function UserCheckout() {
         // Cassa Tagadapay; il bonifico resta come riserva (src/lib/pagamentoOnline.js)
         setLoading(true)
         try {
-            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, ritorno: '/area/acquista?success=1' })
+            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, codiceSconto: sconto.campo(prodotto.id), ritorno: '/area/acquista?success=1' })
         } catch (err) {
             setErrore(err.message)
             setLoading(false)
@@ -97,7 +99,7 @@ export default function UserCheckout() {
             {/* Totale */}
             <div className="flex justify-between items-center px-1 py-2 border-t border-white/5">
                 <span className="font-body text-sm text-nebbia/50">Totale da pagare</span>
-                <span className="font-display text-3xl font-semibold text-oro">{formatPrezzo(prodotto.prezzo)}</span>
+                <span className="font-display text-3xl font-semibold text-oro"><PrezzoScontato prezzo={prodotto.prezzo} scontato={sconto.prezzo(prodotto.id, prodotto.prezzo)} /></span>
             </div>
 
             {/* Info */}
@@ -110,6 +112,7 @@ export default function UserCheckout() {
 
             <AvvisoDatiFatturazione profile={profile} />
             <ConsensoRecesso consenso={consenso} className="px-1" />
+            <CodiceSconto sconto={sconto} perProdotto={prodotto.nome} className="px-1" />
 
             {/* Errore */}
             {errore && (

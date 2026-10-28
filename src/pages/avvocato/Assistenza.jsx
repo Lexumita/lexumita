@@ -1,7 +1,7 @@
 // src/pages/avvocato/Assistenza.jsx
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { PageHeader, BackButton, Badge, InputField, TextareaField } from '@/components/shared'
 import { Plus, Send, Search, AlertCircle, X, User, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -496,7 +496,9 @@ export function AvvocatoAssistenza() {
 // ─────────────────────────────────────────────────────────────
 export function AvvocatoAssistenzaNuovo() {
     const navigate = useNavigate()
-    const [titolo, setTitolo] = useState('')
+    // Oggetto e messaggio già scritti, per esempio da «Richiedi il tuo codice» (src/components/CodiceSconto.jsx)
+    const [parametri] = useSearchParams()
+    const [titolo, setTitolo] = useState(() => parametri.get('oggetto')?.slice(0, 200) ?? '')
     const [salvando, setSalvando] = useState(false)
     const [errore, setErrore] = useState('')
 
@@ -521,7 +523,8 @@ export function AvvocatoAssistenzaNuovo() {
             if (error) throw new Error(error.message)
 
             // Apri subito la chat con l'admin per il primo messaggio
-            navigate(`/assistenza/${ticket.id}`)
+            // il messaggio proposto si ritrova già scritto nella chat, da rileggere e inviare
+            navigate(`/assistenza/${ticket.id}`, { state: { bozza: parametri.get('messaggio')?.slice(0, 2000) ?? '' } })
         } catch (err) {
             setErrore(err.message)
             setSalvando(false)
@@ -586,7 +589,8 @@ export function AvvocatoAssistenzaDettaglio() {
     const [loading, setLoading] = useState(true)
     const [isLexum, setIsLexum] = useState(false)
     const [mittenteSupporto, setMittenteSupporto] = useState(false)
-    const [msg, setMsg] = useState('')
+    const location = useLocation()
+    const [msg, setMsg] = useState(() => location.state?.bozza ?? '')
     const [inviando, setInviando] = useState(false)
     const [errore, setErrore] = useState('')
 

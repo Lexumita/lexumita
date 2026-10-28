@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { idSupporto, segnalaTicketAggiornato } from '@/lib/supporto'
 import { PageHeader, BackButton, Badge } from '@/components/shared'
@@ -166,7 +166,9 @@ export function UserAssistenza() {
 // ─────────────────────────────────────────────────────────────
 export function UserAssistenzaNuovo() {
     const navigate = useNavigate()
-    const [titolo, setTitolo] = useState('')
+    // Oggetto e messaggio già scritti, per esempio da «Richiedi il tuo codice» (src/components/CodiceSconto.jsx)
+    const [parametri] = useSearchParams()
+    const [titolo, setTitolo] = useState(() => parametri.get('oggetto')?.slice(0, 200) ?? '')
     const [salvando, setSalvando] = useState(false)
     const [errore, setErrore] = useState('')
 
@@ -196,7 +198,8 @@ export function UserAssistenzaNuovo() {
 
             if (error) throw new Error(error.message)
 
-            navigate(`/user/assistenza/${ticket.id}`)
+            // il messaggio proposto si ritrova già scritto nella chat, da rileggere e inviare
+            navigate(`/area/assistenza/${ticket.id}`, { state: { bozza: parametri.get('messaggio')?.slice(0, 2000) ?? '' } })
         } catch (err) {
             setErrore(err.message)
             setSalvando(false)
@@ -259,7 +262,8 @@ export function UserAssistenzaDettaglio() {
     const [ticket, setTicket] = useState(null)
     const [messaggi, setMessaggi] = useState([])
     const [loading, setLoading] = useState(true)
-    const [msg, setMsg] = useState('')
+    const location = useLocation()
+    const [msg, setMsg] = useState(() => location.state?.bozza ?? '')
     const [inviando, setInviando] = useState(false)
     const [errore, setErrore] = useState('')
 

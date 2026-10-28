@@ -18,6 +18,7 @@ import { formatPrezzo } from '@/lib/prezzi'
 import { apriCassa } from '@/lib/pagamentoOnline'
 import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from '@/lib/datiFatturazione'
 import ConsensoRecesso, { useConsensoRecesso, ERRORE_CONSENSO_RECESSO } from '@/components/ConsensoRecesso'
+import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 
 const CHIAVE_SOSPESA = 'lex_ricerca_in_sospeso'
 const DURATA_SOSPESA_MS = 60 * 60 * 1000   // una ricerca lasciata per pagare si ritrova entro un'ora
@@ -82,6 +83,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
     const [caricando, setCaricando] = useState(false)
     const [pagando, setPagando] = useState(false)
     const [errore, setErrore] = useState('')
+    const sconto = useCodiceSconto(prodotto ? [prodotto.id] : [])
 
     useEffect(() => {
         if (!aperto) return
@@ -127,7 +129,7 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
         setErrore('')
         if (primaDiPagare) primaDiPagare()
         try {
-            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, ritorno: `${window.location.pathname}?lampo=ok` })
+            await apriCassa({ prodottoId: prodotto.id, consenso: consenso.campo, codiceSconto: sconto.campo(prodotto.id), ritorno: `${window.location.pathname}?lampo=ok` })
         } catch (err) {
             setErrore(err.message)
             setPagando(false)
@@ -183,12 +185,14 @@ export default function PacchettoLampo({ aperto, onChiudi, motivo = 'esauriti', 
                                     <p className="font-body text-xs text-oro/80 uppercase tracking-widest">Pacchetto Lampo</p>
                                     <p className="font-body text-sm text-nebbia/70 mt-1">{ricerche} ricerche con Lex</p>
                                 </div>
-                                <p className="font-display text-3xl font-light text-oro whitespace-nowrap">{prezzo}</p>
+                                <p className="font-display text-3xl font-light text-oro whitespace-nowrap"><PrezzoScontato prezzo={prodotto.prezzo} scontato={sconto.prezzo(prodotto.id, prodotto.prezzo)} /></p>
                             </div>
 
                             <AvvisoDatiFatturazione profile={profile} />
 
                             <ConsensoRecesso consenso={consenso} />
+
+                            <CodiceSconto sconto={sconto} perProdotto={prodotto.nome} />
 
                             {errore && (
                                 <p className="font-body text-xs text-red-400 flex items-center gap-1.5">
