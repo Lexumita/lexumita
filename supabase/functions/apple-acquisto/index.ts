@@ -30,6 +30,9 @@ const PRODOTTI: Record<string, { crediti: number; nome: string }> = {
   "ch.lexum.app.crediti.30": { crediti: 30, nome: "30 crediti Lex AI (App Store)" },
   "ch.lexum.app.crediti.50": { crediti: 50, nome: "50 crediti Lex AI (App Store)" },
   "ch.lexum.app.crediti.250": { crediti: 250, nome: "250 crediti Lex AI (App Store)" },
+  "ch.lexum.app.crediti.500": { crediti: 500, nome: "500 crediti Lex AI (App Store)" },
+  "ch.lexum.app.crediti.1000": { crediti: 1000, nome: "1000 crediti Lex AI (App Store)" },
+  "ch.lexum.app.crediti.5000": { crediti: 5000, nome: "5000 crediti Lex AI (App Store)" },
 };
 
 const intestazioni = {
