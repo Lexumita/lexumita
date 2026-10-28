@@ -16,7 +16,13 @@ const API = "https://api.tagada.io/api/public/v1";
 const CHIAVE = Deno.env.get("TAGADA_API_KEY") ?? "";
 const NEGOZIO = Deno.env.get("TAGADA_STORE_ID") ?? "store_22b27a6974b3";
 const URL_WEBHOOK = `${Deno.env.get("SUPABASE_URL")}/functions/v1/tagada-webhook`;
-const EVENTI = ["order/paid", "payment/refunded", "order/refunded"];
+// dal 28-10-2026 anche gli avvisi degli abbonamenti dei privati (rinnovi, pagamenti non riusciti, disdette)
+const EVENTI = [
+  "order/paid", "payment/refunded", "order/refunded",
+  "subscription/created", "subscription/rebillSucceeded", "subscription/rebillDeclined",
+  "subscription/rebillCaptureFailed", "subscription/pastDue", "subscription/cancelScheduled",
+  "subscription/canceled", "subscription/resumed",
+];
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -29,7 +35,7 @@ function risposta(corpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(corpo), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 }
 
-async function tagada(metodo: "GET" | "POST", percorso: string, corpo?: unknown) {
+async function tagada(metodo: "GET" | "POST" | "DELETE", percorso: string, corpo?: unknown) {
   const res = await fetch(`${API}${percorso}`, {
     method: metodo,
     headers: { "Authorization": `Bearer ${CHIAVE}`, "Content-Type": "application/json" },
@@ -95,6 +101,24 @@ Deno.serve(async (req) => {
       const { error } = await admin.rpc("tagada_webhook_segreto_salva", { p_segreto: r.dati.secret });
       if (error) throw new Error(`Segreto non salvato nel Vault: ${error.message}`);
       return risposta({ ok: true, id: r.dati.id, eventTypes: r.dati.eventTypes, segreto_nel_vault: true });
+    }
+
+    // Tagadapay non aggiorna gli avvisi di un webhook: per aggiungerne (abbonamenti, 28-10-2026) si cancella
+    // quello registrato e se ne registra uno nuovo, con un segreto nuovo che va nel Vault.
+    if (azione === "webhook_rinnova") {
+      const elenco = await tagada("GET", `/webhooks?storeId=${encodeURIComponent(NEGOZIO)}`);
+      // deno-lint-ignore no-explicit-any
+      const gia = Array.isArray(elenco.dati) ? elenco.dati.find((w: any) => w.url === URL_WEBHOOK) : null;
+      const r = await tagada("POST", "/webhooks", {
+        storeId: NEGOZIO, url: URL_WEBHOOK, eventTypes: EVENTI, description: "Lexum IT: acquisti e abbonamenti",
+      });
+      if (r.status !== 200 || !r.dati?.secret) {
+        return risposta({ ok: false, error: `Registrazione webhook: HTTP ${r.status}`, dettaglio: { ...r.dati, secret: undefined } }, 502);
+      }
+      const { error } = await admin.rpc("tagada_webhook_segreto_salva", { p_segreto: r.dati.secret });
+      if (error) throw new Error(`Segreto non salvato nel Vault: ${error.message}`);
+      if (gia) await tagada("DELETE", `/webhooks/${encodeURIComponent(gia.id)}`);
+      return risposta({ ok: true, id: r.dati.id, eventTypes: r.dati.eventTypes, vecchio_tolto: gia?.id ?? null });
     }
 
     return risposta({ ok: false, error: "Azione sconosciuta" }, 400);

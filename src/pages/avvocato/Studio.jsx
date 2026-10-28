@@ -174,7 +174,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
 
             const { data } = await supabase
                 .from('prodotti')
-                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, include_monetizzazione, crediti_ai_mensili, spazio_gb, limite_clienti')
+                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, include_monetizzazione, crediti_ai_mensili, spazio_gb, limite_clienti, target_role')
                 .eq('attivo', true)
                 .in('tipo', ['abbonamento', 'seat_addon', 'clienti_addon', 'gratuito', 'crediti_ai', 'spazio_archiviazione'])
                 .order('prezzo')
@@ -184,7 +184,8 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
             setAddons(pianoAttualeId ? tutti.filter(p => p.tipo === 'seat_addon') : [])
             setClientiAddons(pianoAttualeId ? tutti.filter(p => p.tipo === 'clienti_addon') : [])
             setPacchettiCrediti(tutti.filter(p => p.tipo === 'crediti_ai'))
-            setPacchettiStorage(tutti.filter(p => p.tipo === 'spazio_archiviazione'))
+            // l'archivio in più al mese dei privati (28-10-2026) non è per lo studio
+            setPacchettiStorage(tutti.filter(p => p.tipo === 'spazio_archiviazione' && p.target_role !== 'user'))
 
             if (!prof?.prova_gratuita_usata && !pianoAttualeId) {
                 setTrialProdotto(tutti.find(p => p.tipo === 'gratuito') ?? null)

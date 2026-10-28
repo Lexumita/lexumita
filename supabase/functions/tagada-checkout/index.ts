@@ -14,6 +14,11 @@
 // Codice sconto (28-10-2026): il server lo riverifica (codice_sconto_esito) e toglie la percentuale dal
 // prezzo di oggi, upgrade compreso; l'ordine lo ricorda e a pagamento fatto l'uso si conta da sé
 // (trigger su tagada_ordini).
+// Abbonamenti dei privati (28-10-2026): un prodotto con rinnovo_automatico si vende con un prezzo
+// ricorrente mensile, così Tagadapay ne fa un abbonamento che si rinnova da sé (tagada-webhook segue
+// rinnovi e disdette). Un piano più grande sostituisce quello in corso (pagato il nuovo, il vecchio si
+// chiude); per uno più piccolo si passa da «Gestisci» (abbonamento-gestisci), che controlla lo spazio.
+// L'archivio in più dei privati si compra solo con un piano attivo.
 // Corpo: { prodotto_id, is_upgrade?, consenso_recesso?, codice_sconto?, ritorno? }  →  { ok, url } | { ok, bonifico_url }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -78,13 +83,14 @@ async function impronta(testo: string): Promise<string> {
 // La variante Tagadapay per questo prodotto a questo importo: dalla tabella, oppure creata adesso.
 // deno-lint-ignore no-explicit-any
 async function variante(prodotto: any, importo: number, upgrade: boolean, sconto: { codice: string; percentuale: number } | null): Promise<string> {
+  const ricorrente = prodotto.rinnovo_automatico === true;
   const conSconto = sconto ? ` · sconto ${sconto.percentuale.toLocaleString("it-IT")}% (${sconto.codice})` : "";
   const nome = (upgrade ? `Upgrade a ${prodotto.nome}` : prodotto.nome) + conSconto;
   const testo = upgrade
     ? `${descrizione(prodotto)}. Prezzo del nuovo piano meno la parte non usata di quello attuale.`
-    : descrizione(prodotto);
+    : ricorrente ? `${descrizione(prodotto)}. Si rinnova ogni mese finché non lo disdici.` : descrizione(prodotto);
   const centesimi = Math.round(importo * 100);
-  const chiave = `${prodotto.id}:${centesimi}:${await impronta(`${nome}\n${testo}`)}`;
+  const chiave = `${prodotto.id}:${centesimi}:${await impronta(`${nome}\n${testo}${ricorrente ? "\nmensile" : ""}`)}`;
 
   const { data: nota } = await supabase.from("tagada_varianti").select("variant_id").eq("chiave", chiave).maybeSingle();
   if (nota?.variant_id) return nota.variant_id;
@@ -101,7 +107,9 @@ async function variante(prodotto: any, importo: number, upgrade: boolean, sconto
       isTaxable: false,
       variants: [{
         name: nome, active: true, default: true, sku: chiave, imageUrl: IMMAGINE, grams: 0,
-        prices: [{ currencyOptions: { EUR: { amount: centesimi } }, recurring: false, default: true }],
+        prices: [ricorrente
+          ? { currencyOptions: { EUR: { amount: centesimi } }, recurring: true, interval: "month", intervalCount: Math.max(1, Math.round(Number(prodotto.durata_mesi ?? 1))), default: true }
+          : { currencyOptions: { EUR: { amount: centesimi } }, recurring: false, default: true }],
       }],
     }),
   });
@@ -110,7 +118,9 @@ async function variante(prodotto: any, importo: number, upgrade: boolean, sconto
   if (!res.ok || !id) throw new Error(`Articolo Tagadapay non creato: HTTP ${res.status} ${JSON.stringify(corpo).slice(0, 300)}`);
 
   // Due pagamenti insieme possono crearlo due volte: vale il primo registrato.
-  await supabase.from("tagada_varianti").insert({ chiave, variant_id: id, prodotto_id: prodotto.id, importo }).select().maybeSingle();
+  // il prezzo mensile serve a abbonamento-gestisci per far partire un piano più piccolo a fine mese
+  const priceId = ricorrente ? (corpo?.variants?.[0]?.prices?.[0]?.id ?? null) : null;
+  await supabase.from("tagada_varianti").insert({ chiave, variant_id: id, prodotto_id: prodotto.id, importo, price_id: priceId }).select().maybeSingle();
   const { data: registrata } = await supabase.from("tagada_varianti").select("variant_id").eq("chiave", chiave).single();
   return registrata?.variant_id ?? id;
 }
@@ -183,6 +193,31 @@ Deno.serve(async (req) => {
     if (prodotto.tipo === "piano_privato" && profilo?.role !== "user") {
       return risposta({ ok: false, error: "Il Piano Personale è riservato agli utenti privati." }, 400);
     }
+    // Abbonamenti dei privati: archivio in più solo con un piano attivo; un piano alla volta
+    const ricorrente = prodotto.rinnovo_automatico === true;
+    const oraIso = new Date().toISOString();
+    if (prodotto.tipo === "spazio_archiviazione" && prodotto.target_role === "user") {
+      if (profilo?.role !== "user") return risposta({ ok: false, error: "L'archivio in più al mese è per gli utenti privati." }, 400);
+      const conPiano = !!profilo?.piano_id && !!profilo?.scadenza && new Date(profilo.scadenza) > new Date();
+      if (!conPiano) return risposta({ ok: false, error: "Per aggiungere archivio serve un abbonamento attivo." }, 400);
+    }
+    let sostituisce: string | null = null;
+    if (prodotto.tipo === "piano_privato" && ricorrente) {
+      const { data: inCorso } = await supabase
+        .from("abbonamenti").select("id, prodotto_id, prodotti:prodotto_id(prezzo)")
+        .eq("user_id", user.id).eq("genere", "piano").neq("stato", "chiuso").gt("periodo_fine", oraIso)
+        .order("periodo_fine", { ascending: false }).limit(1).maybeSingle();
+      if (inCorso) {
+        if (inCorso.prodotto_id === prodotto.id) {
+          return risposta({ ok: false, error: "Hai già questo abbonamento: lo trovi in «Gestisci»." }, 400);
+        }
+        // deno-lint-ignore no-explicit-any
+        if (Number(prodotto.prezzo) < Number((inCorso as any).prodotti?.prezzo ?? 0)) {
+          return risposta({ ok: false, error: "Per passare a un piano più piccolo usa «Gestisci»: parte alla fine del mese già pagato." }, 400);
+        }
+        sostituisce = inCorso.id;
+      }
+    }
     // I privati chiedono l'attivazione immediata (Termini, punto 4.6): senza la spunta non si paga.
     if (profilo?.role === "user" && consenso_recesso !== true) {
       return risposta({ ok: false, error: "Per procedere spunta la casella sull'attivazione immediata." }, 400);
@@ -242,6 +277,7 @@ Deno.serve(async (req) => {
       codice_sconto_id: sconto?.id ?? null,
       sconto_percentuale: sconto?.percentuale ?? null,
       importo_listino: sconto ? importoListino : null,
+      sostituisce_abbonamento_id: sostituisce,
     }).select("id").single();
     if (ordErr || !ordine) throw new Error(`Ordine non creato: ${ordErr?.message}`);
 
