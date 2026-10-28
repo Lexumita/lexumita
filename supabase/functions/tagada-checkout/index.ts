@@ -18,6 +18,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
 const API = "https://api.tagada.io/api/public/v1";
+// Le sessioni di cassa stanno sull'API interna, quella che usa la pagina di pagamento di Tagadapay.
+const API_SESSIONI = "https://api.tagada.io/api/v1/checkout-sessions";
 const NEGOZIO = Deno.env.get("TAGADA_STORE_ID") ?? "store_22b27a6974b3";
 // Percorso di cassa pubblicato nel negozio («Simple Checkout»): senza, Tagadapay manda a store-unavailable.
 const PERCORSO = Deno.env.get("TAGADA_FUNNEL_ID") ?? "funnelv2_5b88c7de4255";
@@ -115,6 +117,34 @@ function percorsoRitorno(r: unknown): string {
   return /^\/[A-Za-z0-9/_\-?=&%.]*$/.test(s) && !s.startsWith("//") ? s : "/";
 }
 
+// Indirizzo di fatturazione sulla sessione di cassa (28-10-2026). Il parametro shippingAddress di
+// /checkout/init non basta: la pagina di Tagadapay lo chiedeva di nuovo («Completa l'indirizzo di
+// fatturazione»). Lo impostiamo come fa la sua pagina: stessa chiamata del kit @tagadapay/headless-sdk
+// (updateAddress), con i suoi nomi dei campi (address1, postal), autorizzata dal token della sessione.
+async function impostaIndirizzo(urlCassa: string, email: string, campi: Record<string, string>): Promise<void> {
+  const u = new URL(urlCassa);
+  const checkoutToken = u.searchParams.get("checkoutToken");
+  const token = u.searchParams.get("token");
+  if (!checkoutToken || !token) throw new Error("sessione senza token");
+  const h = { "Content-Type": "application/json", "x-cms-token": token };
+  const sessione = await fetch(`${API_SESSIONI}/${checkoutToken}/v2?skipAsyncWait=false`, { headers: h }).then((r) => r.json());
+  const id = sessione?.checkoutSession?.id;
+  if (!id) throw new Error("sessione non trovata");
+  const indirizzo = Object.fromEntries(Object.entries(campi).filter(([, v]) => v));
+  const r = await fetch(`${API_SESSIONI}/${id}/customer-and-session-info`, {
+    method: "POST",
+    headers: h,
+    body: JSON.stringify({
+      checkoutSessionId: id,
+      customerData: { email },
+      shippingAddress: indirizzo,
+      billingAddress: indirizzo,
+      differentBillingAddress: false,
+    }),
+  });
+  if (!r.ok) throw new Error(`indirizzo HTTP ${r.status} ${(await r.text()).slice(0, 200)}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   try {
@@ -196,24 +226,29 @@ Deno.serve(async (req) => {
     if (profilo?.nome) q.set("customerFirstName", profilo.nome);
     if (profilo?.cognome) q.set("customerLastName", profilo.cognome);
     if (profilo?.telefono) q.set("customerPhone", profilo.telefono);
-    // Indirizzo di fatturazione già compilato (per i prodotti digitali Tagadapay vale anche come fatturazione)
+    // Il paese anche nell'indirizzo della cassa: l'indirizzo completo lo imposta impostaIndirizzo()
     q.set("shippingCountry", paese);
-    q.set("shippingAddress", JSON.stringify({
-      firstName: profilo?.nome ?? "",
-      lastName: profilo?.cognome ?? "",
-      line1: [profilo?.indirizzo, profilo?.numero_civico].filter(Boolean).join(" "),
-      city: profilo?.comune ?? "",
-      state: paese === "IT" ? String(profilo?.provincia ?? "").toUpperCase() : "",
-      postalCode: profilo?.cap ?? "",
-      country: paese,
-      ...(profilo?.telefono ? { phone: profilo.telefono } : {}),
-    }));
 
     // /checkout/init risponde con un rinvio (307) alla pagina di pagamento: lo leggiamo qui, così un
     // negozio chiuso (403) o una cassa non pubblicata si vedono subito invece che nel browser.
     const init = await fetch(`${API}/checkout/init?${q}`, { redirect: "manual" });
     const url = init.headers.get("location");
     if (init.status >= 300 && init.status < 400 && url && !url.includes("store-unavailable")) {
+      try {
+        await impostaIndirizzo(url, profilo?.email ?? user.email ?? "", {
+          firstName: profilo?.nome ?? "",
+          lastName: profilo?.cognome ?? "",
+          phone: profilo?.telefono ?? "",
+          address1: [profilo?.indirizzo, profilo?.numero_civico].filter(Boolean).join(" "),
+          city: profilo?.comune ?? "",
+          state: paese === "IT" ? String(profilo?.provincia ?? "").toUpperCase() : "",
+          postal: profilo?.cap ?? "",
+          country: paese,
+        });
+      } catch (e) {
+        // Senza indirizzo la pagina di Tagadapay lo chiede: si paga lo stesso, ma lo annotiamo.
+        console.error("tagada-checkout indirizzo:", e instanceof Error ? e.message : e);
+      }
       return risposta({ ok: true, url });
     }
     const testo = await init.text().catch(() => "");
