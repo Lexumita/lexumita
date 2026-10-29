@@ -5,7 +5,7 @@ import { profiloCompleto } from '@/lib/profiloCompleto'
 import logo from '@/assets/logo.png'
 import {
   LogOut, Menu, X, Sparkles, Plus,
-  Home, Search, ShieldCheck, CreditCard, Headphones, User, ChevronRight,
+  Library, Search, ShieldCheck, CreditCard, Headphones, User, ChevronRight,
   Clock, CheckCircle, XCircle, Archive
 } from 'lucide-react'
 import CampanellaNotifiche from '@/components/shared/CampanellaNotifiche'
@@ -13,6 +13,7 @@ import RisposteRecuperate from '@/components/shared/RisposteRecuperate'
 import PallinoTicket from '@/components/shared/PallinoTicket'
 import { useTicketDaRispondere } from '@/hooks/useTicketDaRispondere'
 import { useCreditiDisponibili } from '@/hooks/useCreditiDisponibili'
+import { VoceNuovaChat, EtichetteMenu } from '@/components/layouts/MenuChatEtichette'
 
 export default function UserLayout({ children }) {
   // Pallino su «Domande?»: conversazioni aperte in cui l'ultimo messaggio è dell'altra persona.
@@ -44,7 +45,7 @@ export default function UserLayout({ children }) {
         : { path: '/verifica', label: 'Profilo', icon: ShieldCheck }
 
   const NAV = [
-    { path: '/area', label: 'Banca Dati', icon: Home, end: true },
+    { path: '/area', label: 'Banca Dati', icon: Library, end: true },
     { path: '/area/ricerche', label: 'Ricerche', icon: Search },
     { path: '/area/archivio', label: 'Archivio', icon: Archive },
     { path: '/area/assistenza', label: 'Domande?', icon: Headphones },
@@ -96,15 +97,16 @@ export default function UserLayout({ children }) {
         w-52 bg-slate border-r border-white/5
         transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
+        lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto
       `}>
-        {/* Logo cliccabile → /area */}
-        <Link to="/area" onClick={() => setOpen(false)} className="flex items-center justify-center px-5 py-6 border-b border-white/5 group">
+        {/* Logo cliccabile → la chat, la pagina d'arrivo come nell'app (29-10-2026) */}
+        <Link to="/area/chat" onClick={() => setOpen(false)} className="flex items-center justify-center px-5 py-6 border-b border-white/5 group">
           <img src={logo} alt="Lexum" className="h-16 w-auto transition-transform group-hover:scale-105" />
         </Link>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
+          <VoceNuovaChat to="/area/chat" onClick={() => setOpen(false)} />
           {NAV.map(({ path, label, icon: Icon, badge, badgeColor, end }) => (
             <NavLink key={path} to={path}
               onClick={() => setOpen(false)}
@@ -127,6 +129,7 @@ export default function UserLayout({ children }) {
               <ChevronRight size={13} className="opacity-0 group-hover:opacity-30 transition-opacity" />
             </NavLink>
           ))}
+          <EtichetteMenu userId={profile?.id} base="/area/etichette" onApri={() => setOpen(false)} />
         </nav>
 
         {/* Footer sidebar: avatar + esci */}

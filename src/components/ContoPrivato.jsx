@@ -151,7 +151,6 @@ export function RiquadroConto({ conto, onAggiungiCrediti, onAggiungiArchivio, on
         archivio.extra > 0 && `${misura(archivio.extra)} in più`,
         archivio.gratuiti > 0 && `${misura(archivio.gratuiti)} gratuiti`,
     ].filter(Boolean)
-    const conAbbonamento = !!piano || !!vecchioPiano
 
     return (
         <div className="bg-slate border border-white/5 p-5">
@@ -182,7 +181,8 @@ export function RiquadroConto({ conto, onAggiungiCrediti, onAggiungiArchivio, on
                                 <span className="text-nebbia/40"> di {misura(archivio.quota)}</span>
                             </p>
                         </div>
-                        {conAbbonamento && <PulsantePiu onClick={onAggiungiArchivio} etichetta="Aggiungi archivio" />}
+                        {/* sempre (28-10-2026): senza abbonamento porta all'archivio in più, che dice di scegliere prima un piano */}
+                        <PulsantePiu onClick={onAggiungiArchivio} etichetta="Aggiungi archivio" />
                     </div>
                     <div className="h-2 bg-petrolio border border-white/10 mt-3 overflow-hidden" role="progressbar"
                         aria-valuenow={pieno} aria-valuemin={0} aria-valuemax={100} aria-label="Archivio usato">
@@ -290,10 +290,17 @@ export function SezionePiani({ piani, conto, acquistando, onAcquista, onCambia, 
 
 /** L'archivio in più, ogni mese: solo con un abbonamento attivo. */
 export function SezioneArchivioInPiu({ prodotti, conto, acquistando, onAcquista, onGestisciUno, paga, sconto, PrezzoScontato }) {
-    if (!conto.piano && !conto.vecchioPiano) return null
+    // Si vede anche senza abbonamento (28-10-2026): lo spazio in più si aggiunge a un piano, quindi il pulsante
+    // porta prima ai piani.
+    const conPiano = !!(conto.piano || conto.vecchioPiano)
+    // aspetta anche il conto: se i prodotti arrivano prima (si entra da un'altra pagina), archivioInPiu non c'è ancora
+    if (!prodotti.length || !conto.caricato) return null
     return (
         <div id="archivio-in-piu" className="space-y-3 scroll-mt-24">
             <p className="section-label">Archivio in più · ogni mese</p>
+            {!conPiano && (
+                <p className="font-body text-xs text-nebbia/50">Si aggiunge al tuo abbonamento: scegli prima un piano qui sopra.</p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {prodotti.map(p => {
                     const isLoading = acquistando === p.id
@@ -304,9 +311,13 @@ export function SezioneArchivioInPiu({ prodotti, conto, acquistando, onAcquista,
                                 <PrezzoScontato prezzo={p.prezzo} scontato={sconto.prezzo(p.id, p.prezzo)} />
                                 <span className="font-body text-sm text-nebbia/40 ml-2">al mese</span>
                             </p>
-                            <button onClick={() => onAcquista(p.id)} disabled={isLoading}
+                            <button
+                                onClick={() => (conPiano
+                                    ? onAcquista(p.id)
+                                    : document.getElementById('abbonamenti')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
+                                disabled={isLoading}
                                 className="mt-4 flex items-center justify-center gap-2 py-3 lg:py-2.5 bg-oro/10 border border-oro/30 text-oro font-body text-sm hover:bg-oro/20 transition-colors disabled:opacity-40">
-                                {isLoading ? <Loader2 size={14} className="animate-spin" /> : paga('Aggiungi')}
+                                {isLoading ? <Loader2 size={14} className="animate-spin" /> : conPiano ? paga('Aggiungi') : 'Prima scegli un piano'}
                             </button>
                         </div>
                     )
@@ -328,9 +339,11 @@ export function SezioneArchivioInPiu({ prodotti, conto, acquistando, onAcquista,
                     ))}
                 </ul>
             )}
-            <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                Per togliere archivio, prima i file devono stare nello spazio che resta: cancellane qualcuno se serve.
-            </p>
+            {conPiano && (
+                <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                    Per togliere archivio, prima i file devono stare nello spazio che resta: cancellane qualcuno se serve.
+                </p>
+            )}
         </div>
     )
 }

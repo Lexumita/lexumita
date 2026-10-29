@@ -35,7 +35,7 @@ export function mancantiAcquisto(profile) {
 
 /** Dove si completano: i privati nella loro area, i professionisti nel profilo dello studio. */
 export function paginaDatiFatturazione(profile) {
-    return profile?.role === 'user' ? '/area/profilo' : '/profilo'
+    return profile?.role === 'user' ? '/area/profilo#fatturazione' : '/profilo'
 }
 
 export function messaggioDatiMancanti(mancanti) {

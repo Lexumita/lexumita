@@ -60,7 +60,7 @@ export default function Verifica2FA() {
         else if (role === 'avvocato' || role === 'commercialista') navigate('/dashboard', { replace: true })
         else if (role === 'commerciale') navigate('/commerciale/dashboard', { replace: true })
         else if (role === 'cliente') navigate('/portale', { replace: true })
-        else if (role === 'user') navigate('/area', { replace: true })
+        else if (role === 'user') navigate('/area/chat', { replace: true })
         else navigate('/', { replace: true })
     }
 

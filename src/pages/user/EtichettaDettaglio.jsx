@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import AggiungiAEtichetta from '@/components/AggiungiAEtichetta'
 import BadgeDocumentoOrigine from '@/components/BadgeDocumentoOrigine'
 import { COLONNE_DOCUMENTO_ORIGINE } from '@/lib/documentoOrigine'
+import { segnalaEtichetteCambiate } from '@/hooks/useEtichetteMenu'
 import {
     Tag, Search, Loader2, BookOpen, Sparkles, Landmark, ScrollText,
     Trash2, X, ExternalLink, MessageSquare, ArrowLeft, AlertCircle,
@@ -98,6 +99,7 @@ export default function EtichettaDettaglio() {
             setErrore(e.message)
         } finally {
             setLoading(false)
+            segnalaEtichetteCambiate()   // la barra a sinistra si rilegge (29-10-2026)
         }
     }
 
@@ -163,6 +165,7 @@ export default function EtichettaDettaglio() {
                 .eq('id', rel.id)
             if (error) throw new Error(error.message)
             setContenuti(prev => prev.filter(c => c.id !== rel.id))
+            segnalaEtichetteCambiate()
         } catch (e) {
             setErrore(e.message)
         } finally {

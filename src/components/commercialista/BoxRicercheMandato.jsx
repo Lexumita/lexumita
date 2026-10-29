@@ -150,9 +150,10 @@ export default function BoxRicercheMandato({ mandatoId, refreshTrigger = 0 }) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0 flex-wrap gap-2">
                 <p className="section-label">Ricerche ({ricerche.length})</p>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => navigate('/banca-dati')}
+                    {/* prima portava alla Banca Dati, dove c'era Lex: dal 29-10-2026 Lex ha la sua pagina */}
+                    <button onClick={() => navigate('/chat')}
                         className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1">
-                        <Search size={11} /> Cerca in Banca Dati
+                        <Search size={11} /> Cerca con Lex
                     </button>
                     <button onClick={() => setMostraForm(!mostraForm)}
                         className="flex items-center gap-1.5 font-body text-xs text-oro border border-oro/30 px-3 py-1.5 hover:bg-oro/10 transition-colors">
@@ -201,7 +202,7 @@ export default function BoxRicercheMandato({ mandatoId, refreshTrigger = 0 }) {
                         <Sparkles size={20} className="text-nebbia/20 mb-2" />
                         <p className="font-body text-sm text-nebbia/30">Nessuna ricerca ancora</p>
                         <p className="font-body text-xs text-nebbia/20 mt-1">
-                            Salva ricerche dalla Banca Dati o aggiungi una nota manuale.
+                            Salva le ricerche fatte con Lex o aggiungi una nota manuale.
                         </p>
                     </div>
                 ) : ricerche.map(r => (

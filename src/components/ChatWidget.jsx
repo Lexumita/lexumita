@@ -6,19 +6,19 @@
 // quindi qui il widget si nasconde su tutte le rotte autenticate
 // e su quelle di onboarding (registrazione/login).
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { MessageSquare, X, ArrowRight, Sparkles } from 'lucide-react'
 import { useTranslation, Trans } from 'react-i18next'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 const ROUTE_PROTETTE = [
     // Aree autenticate
     '/dashboard', '/clienti', '/pratiche', '/calendario',
     '/sentenze', '/pagamenti', '/assistenza', '/profilo',
-    '/studio', '/archivio', '/normativa', '/banca-dati',
+    '/studio', '/archivio', '/normativa', '/banca-dati', '/chat',
     '/portale', '/verifica', '/user/', '/admin/',
-    '/area-personale',
+    '/area',   // tutta l'area dei privati (/area, /area/chat, …) e la vecchia /area-personale
     // Onboarding (la CTA del widget porta qui, sarebbe ricorsivo mostrarla)
     '/registrati', '/registrati-lex', '/login',
 ]
@@ -27,15 +27,10 @@ export default function ChatWidget() {
     const { t } = useTranslation('comp_chat_widget')
     const location = useLocation()
     const [aperto, setAperto] = useState(false)
-    const [utente, setUtente] = useState(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUtente(session?.user ?? null)
-            setLoading(false)
-        })
-    }, [])
+    // 29-10-2026: l'accesso lo dice AuthContext, che si aggiorna da solo. Prima la sessione si leggeva una
+    // volta sola all'apertura: chi entrava senza ricaricare restava «visitatore» e vedeva «Parla con noi»
+    // anche dentro l'area.
+    const { user: utente, loading } = useAuth()
 
     // ── DEBUG TEMPORANEO ──
     // Nascondi su route protette/onboarding o se l'utente è già loggato

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator, Lock, Unlock, Sparkles } from 'lucide-react'
-import { CAMPI_FATTURAZIONE, CAMPI_RECAPITO_SDI, campiMancanti, percentualeProfilo, profiloCompleto } from '@/lib/profiloCompleto'
+import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator, Lock, Unlock, Sparkles, ChevronDown, MessageSquare } from 'lucide-react'
+import { campiMancanti, percentualeProfilo } from '@/lib/profiloCompleto'
 
 // ── Config per direzione professionale (avvocato | commercialista) ──
 // Stesse chiavi documento (identita/albo/laurea) per entrambe: cambiano solo
@@ -32,9 +32,92 @@ const PROFILI = {
 }
 
 // ── SCELTA DIREZIONE (se tipo_richiesta non ancora impostato) ──
-function SceltaDirezione({ onScelta, loading }) {
+// Due card a tutta larghezza (28-10-2026, come le vuole Antonino): «Scopri di più» apre la tendina con i
+// vantaggi del piano per lo studio, gli strumenti, il pulsante per andare avanti e «Richiedi una consulenza»
+// (un ticket già scritto, come «Richiedi il tuo codice»). Gli strumenti sono quelli già scritti nella pagina
+// del profilo («Quello che si apre con un abbonamento»). 29-10-2026: fuori Banca Dati e archivio con la ricerca
+// semantica, che ha già anche il privato; pratiche, clienti e portale, chat sulla pratica (e sul mandato) hanno
+// la loro spiegazione (nota), scritta su quello che il sito fa e che lex-pratica e lex-mandato passano davvero a Lex.
+const DIREZIONI = [
+    {
+        chiave: 'avvocato',
+        titolo: 'Avvocato',
+        icona: Scale,
+        descrizione: 'Pratiche, udienze, termini processuali, clienti e generazione di atti con Lex AI.',
+        strumenti: [
+            {
+                testo: 'Pratiche, udienze, scadenze e controparti',
+                nota: 'Un ambiente in cui tieni traccia di tutto: ogni pratica raccoglie cliente, controparti, udienze, scadenze e documenti.',
+            },
+            {
+                testo: 'Calendario dello studio',
+                nota: 'Udienze, scadenze e appuntamenti in un posto solo, anche in videochiamata, sincronizzati con Google Calendar. Il cliente vede i suoi appuntamenti nel portale.',
+            },
+            {
+                testo: 'Clienti e portale dedicato',
+                nota: 'Una scheda per ogni cliente, con le sue pratiche. Il cliente entra nel suo portale con un accesso suo: vede pratiche, appuntamenti e fatture, scambia documenti con lo studio e ti scrive.',
+            },
+            {
+                testo: 'Generazione di atti e chat sulla pratica',
+                nota: 'Chiedi a Lex AI dentro la pratica: risponde tenendo conto di tutto il fascicolo (cliente, controparti, udienze, documenti caricati, ricerche salvate) e, se serve, di norme e sentenze della Banca Dati. Gli atti li scrive con i dati della pratica.',
+            },
+            {
+                testo: 'Fatture con compenso forense (DM 55/2014)',
+                nota: 'Calcoli il compenso sui parametri forensi e la fattura si compila con spese generali, cassa, IVA e ritenuta; scarichi il PDF e il file XML della fattura elettronica. Il cliente la trova nel suo portale e tu tieni traccia di quelle pagate, in attesa e scadute.',
+            },
+            {
+                testo: 'Posta fiscale e deleghe al cassetto fiscale',
+                nota: 'Carichi avvisi e cartelle, anche da una foto: Lexum li legge, trova il cliente dal codice fiscale e calcola la scadenza, che finisce in agenda e nel portale del cliente. Tieni il registro delle deleghe al cassetto fiscale dei clienti, con la loro scadenza.',
+            },
+            'Assistenza prioritaria',
+            'Crediti Lex AI ogni mese',
+        ],
+    },
+    {
+        chiave: 'commercialista',
+        titolo: 'Commercialista',
+        icona: Calculator,
+        descrizione: 'Mandati, scadenzario fiscale, contabilità clienti e documenti con Lex AI per lo studio.',
+        strumenti: [
+            {
+                testo: 'Mandati, clienti e scadenzario fiscale',
+                nota: 'Un ambiente in cui tieni traccia di tutto: ogni mandato raccoglie cliente, scadenze fiscali, entrate e uscite e documenti. I tuoi clienti hanno un portale dove vedono mandati e scadenze e scambiano documenti con lo studio.',
+            },
+            {
+                testo: 'Calendario dello studio',
+                nota: 'Appuntamenti con i clienti, anche in videochiamata, sincronizzati con Google Calendar. Il cliente vede i suoi appuntamenti nel portale.',
+            },
+            {
+                testo: 'Contabilità dei clienti',
+                nota: 'Entrate e uscite con il conto economico mese per mese e il confronto fra gli anni, budget e scostamenti, liquidità prevista a 12 mesi, partita doppia con bilancio e stato patrimoniale, dipendenti con il costo aziendale (lordo, contributi, TFR). Da un documento caricato nel mandato Lexum ricava l’entrata o l’uscita da registrare.',
+            },
+            {
+                testo: 'Generazione di documenti e chat sul mandato',
+                nota: 'Chiedi a Lex AI dentro il mandato: risponde tenendo conto di tutto (cliente, scadenze, entrate e uscite, dipendenti, documenti caricati, ricerche salvate) e, se serve, di norme e prassi della Banca Dati. I documenti li scrive con i dati del mandato.',
+            },
+            {
+                testo: 'Fatture elettroniche',
+                nota: 'Prepari la fattura con il PDF e il file XML della fattura elettronica. Il cliente la trova nel suo portale e tu tieni traccia di quelle pagate, in attesa e scadute.',
+            },
+            {
+                testo: 'Posta fiscale e deleghe al cassetto fiscale',
+                nota: 'Carichi avvisi e cartelle, anche da una foto: Lexum li legge, trova il cliente dal codice fiscale e calcola la scadenza, che finisce in agenda e nel portale del cliente. Tieni il registro delle deleghe al cassetto fiscale dei clienti, con la loro scadenza.',
+            },
+            'Assistenza prioritaria',
+            'Crediti Lex AI ogni mese',
+        ],
+    },
+]
+
+// una voce della lista: solo il testo, o il testo con la sua spiegazione
+const voce = st => (typeof st === 'string' ? { testo: st, nota: null } : st)
+
+export function SceltaDirezione({ onScelta, loading, nuovoTicket }) {
+    // ogni card si apre e si chiude da sola (aprirne una non chiude l'altra)
+    const [aperte, setAperte] = useState([])
+
     return (
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6">
             <div>
                 <p className="section-label mb-3">Completa il profilo</p>
                 <h1 className="font-display text-4xl font-light text-nebbia mb-2">Che professionista sei?</h1>
@@ -43,30 +126,70 @@ function SceltaDirezione({ onScelta, loading }) {
                 </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-                <button
-                    disabled={loading}
-                    onClick={() => onScelta('avvocato')}
-                    className="bg-slate border border-white/5 hover:border-oro/40 p-6 text-left transition-colors group disabled:opacity-40"
-                >
-                    <Scale size={28} className="text-oro mb-4" />
-                    <p className="font-display text-xl text-nebbia mb-2">Avvocato</p>
-                    <p className="font-body text-xs text-nebbia/50 leading-relaxed">
-                        Pratiche, udienze, termini processuali, banca dati giuridica e generazione di atti con Lex AI.
-                    </p>
-                </button>
+            <div className="grid md:grid-cols-2 gap-6 items-start">
+                {DIREZIONI.map(({ chiave, titolo, icona: Icona, descrizione, strumenti }) => {
+                    const apertaQui = aperte.includes(chiave)
+                    const consulenza = new URLSearchParams({
+                        oggetto: 'Richiesta di consulenza',
+                        messaggio: `Buongiorno, sono ${chiave === 'avvocato' ? 'un avvocato' : 'un commercialista'} e sto valutando Lexum per il mio studio: vorrei una consulenza su quale piano scegliere e cosa posso fare con il profilo professionale. Grazie.`,
+                    })
+                    return (
+                        <div key={chiave} className={`bg-slate border transition-colors ${apertaQui ? 'border-oro/40' : 'border-white/5 hover:border-oro/30'}`}>
+                            <div className="p-8">
+                                <Icona size={32} className="text-oro mb-5" />
+                                <p className="font-display text-2xl text-nebbia mb-2">{titolo}</p>
+                                <p className="font-body text-sm text-nebbia/50 leading-relaxed">{descrizione}</p>
+                                <button
+                                    onClick={() => setAperte(a => (apertaQui ? a.filter(k => k !== chiave) : [...a, chiave]))}
+                                    aria-expanded={apertaQui}
+                                    className="mt-6 inline-flex items-center gap-2 font-body text-sm text-oro hover:text-oro/70 transition-colors"
+                                >
+                                    Scopri di più
+                                    <ChevronDown size={15} className={`transition-transform ${apertaQui ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
 
-                <button
-                    disabled={loading}
-                    onClick={() => onScelta('commercialista')}
-                    className="bg-slate border border-white/5 hover:border-oro/40 p-6 text-left transition-colors group disabled:opacity-40"
-                >
-                    <Calculator size={28} className="text-oro mb-4" />
-                    <p className="font-display text-xl text-nebbia mb-2">Commercialista</p>
-                    <p className="font-body text-xs text-nebbia/50 leading-relaxed">
-                        Mandati, scadenzario fiscale, contabilità clienti, banca dati tributaria e Lex AI per lo studio.
-                    </p>
-                </button>
+                            {apertaQui && (
+                                <div className="border-t border-white/5 px-8 py-6 space-y-5">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Sparkles size={15} className="text-oro" />
+                                            <p className="font-body text-sm font-medium text-oro">Quello che si apre con un abbonamento</p>
+                                        </div>
+                                        <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 font-body text-sm text-nebbia/70 leading-relaxed">
+                                            {strumenti.map(voce).map(({ testo, nota }) => (
+                                                <li key={testo} className={`flex gap-2 ${nota ? 'sm:col-span-2' : ''}`}>
+                                                    <CheckCircle size={14} className="text-salvia shrink-0 mt-1" />
+                                                    <span>
+                                                        {testo}
+                                                        {nota && <span className="block mt-0.5 text-xs text-nebbia/45">{nota}</span>}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                                        Completi il profilo con i dati di fatturazione in due minuti e scegli il piano: si attiva subito,
+                                        senza attese né approvazioni. Albo e documento d’identità sono facoltativi e ti danno il
+                                        distintivo di professionista verificato.
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                                        <button
+                                            disabled={loading}
+                                            onClick={() => onScelta(chiave)}
+                                            className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-40"
+                                        >
+                                            {loading ? <Loader2 size={14} className="animate-spin" /> : <>Verifica come {titolo.toLowerCase()} <ArrowRight size={14} /></>}
+                                        </button>
+                                        <Link to={`${nuovoTicket}?${consulenza}`} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
+                                            <MessageSquare size={14} /> Richiedi una consulenza
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
             </div>
         </div>
     )
@@ -83,24 +206,11 @@ export function UserVerifica() {
     const [errore, setErrore] = useState('')
     const [inviato, setInviato] = useState(false)
 
-    // ── Dati di fatturazione: sono LORO a sbloccare la piattaforma ──
-    const campiTutti = [...CAMPI_FATTURAZIONE, ...CAMPI_RECAPITO_SDI]
-    const [dati, setDati] = useState(() =>
-        Object.fromEntries(campiTutti.map(c => [c.key, profile?.[c.key] ?? ''])))
-    const [salvandoDati, setSalvandoDati] = useState(false)
-    const [okDati, setOkDati] = useState(false)
-
-    useEffect(() => {
-        if (profile) setDati(Object.fromEntries(campiTutti.map(c => [c.key, profile[c.key] ?? ''])))
-    }, [profile])
-
-    // Anteprima dal vivo: l'utente vede la barra salire mentre digita, senza
-    // dover salvare per scoprire se ha finito.
-    const profileAnteprima = { ...(profile ?? {}), ...dati }
-    const mancanti = campiMancanti(profileAnteprima)
+    // ── Dati di fatturazione: sono LORO a sbloccare la piattaforma. Dal 28-10-2026 si compilano in un posto
+    // solo, il Profilo (sezione «Dati per la fatturazione»): qui restano l'avanzamento e il collegamento.
+    const mancanti = campiMancanti(profile)
     const completo = mancanti.length === 0
-    const percentuale = percentualeProfilo(profileAnteprima)
-    const giaSalvatoCompleto = profiloCompleto(profile)
+    const percentuale = percentualeProfilo(profile)
 
     async function handleScelta(scelta) {
         setSalvandoDirezione(true)
@@ -120,39 +230,13 @@ export function UserVerifica() {
         }
     }
 
-    async function handleCambiaScelta() {
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            await supabase.from('profiles').update({ tipo_richiesta: null }).eq('id', user.id)
-        } catch { /* non bloccante */ }
-        setDirezione(null)
-    }
-
-    async function handleSalvaDati() {
-        if (salvandoDati) return
-        setSalvandoDati(true)
-        setErrore('')
-        setOkDati(false)
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) throw new Error('Utente non autenticato')
-            const payload = Object.fromEntries(
-                campiTutti.map(c => [c.key, (dati[c.key] ?? '').trim() || null]))
-            const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
-            if (error) throw new Error(error.message)
-            // il profilo in memoria deve rispecchiare il salvataggio, altrimenti
-            // la pagina Acquista continuerebbe a vedere il vecchio stato
-            if (typeof refreshProfile === 'function') await refreshProfile()
-            setOkDati(true)
-            setTimeout(() => setOkDati(false), 4000)
-        } catch (err) {
-            setErrore(err.message)
-        } finally {
-            setSalvandoDati(false)
-        }
-    }
-
-    if (!direzione) return <SceltaDirezione onScelta={handleScelta} loading={salvandoDirezione} />
+    if (!direzione) return (
+        <SceltaDirezione
+            onScelta={handleScelta}
+            loading={salvandoDirezione}
+            nuovoTicket={profile?.role === 'user' ? '/area/assistenza/nuovo' : '/assistenza/nuovo'}
+        />
+    )
 
     const config = PROFILI[direzione] ?? PROFILI.avvocato
 
@@ -202,30 +286,38 @@ export function UserVerifica() {
         </div>
     )
 
-    const campo = (c) => (
-        <div key={c.key}>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">{c.label}</label>
-            <input
-                type="text"
-                value={dati[c.key] ?? ''}
-                onChange={e => setDati(d => ({ ...d, [c.key]: e.target.value }))}
-                className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 transition-colors placeholder:text-nebbia/25"
-            />
-        </div>
-    )
-
     return (
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6">
             <div>
                 <p className="section-label mb-3">Completa il profilo</p>
                 <h1 className="font-display text-4xl font-light text-nebbia mb-2">{config.titolo}</h1>
                 <p className="font-body text-sm text-nebbia/50 leading-relaxed">{config.intro}</p>
-                <button
-                    onClick={handleCambiaScelta}
-                    className="font-body text-xs text-nebbia/30 hover:text-oro transition-colors mt-2"
-                >
-                    ‹ Non sei {direzione === 'avvocato' ? 'un avvocato' : 'un commercialista'}? Cambia scelta
-                </button>
+            </div>
+
+            {/* La professione sempre visibile (28-10-2026): quella scelta evidenziata, l'altra a un clic.
+                Prima si cambiava solo da un link minuscolo («Non sei un avvocato? Cambia scelta»). */}
+            <div className="grid sm:grid-cols-2 gap-4">
+                {DIREZIONI.map(({ chiave, titolo, icona: Icona }) => {
+                    const attiva = chiave === direzione
+                    return (
+                        <button
+                            key={chiave}
+                            disabled={attiva || salvandoDirezione}
+                            onClick={() => handleScelta(chiave)}
+                            aria-pressed={attiva}
+                            className={`flex items-center gap-4 p-5 border text-left transition-colors ${attiva
+                                ? 'bg-slate border-oro/50 cursor-default'
+                                : 'bg-slate/40 border-white/5 hover:border-oro/30 disabled:opacity-40'}`}
+                        >
+                            <Icona size={26} className={attiva ? 'text-oro' : 'text-nebbia/40'} />
+                            <div className="flex-1">
+                                <p className={`font-display text-xl ${attiva ? 'text-nebbia' : 'text-nebbia/60'}`}>{titolo}</p>
+                                <p className="font-body text-xs text-nebbia/40">{attiva ? 'Il profilo che stai completando' : `Passa al profilo da ${titolo.toLowerCase()}`}</p>
+                            </div>
+                            {attiva && <CheckCircle size={18} className="text-oro shrink-0" />}
+                        </button>
+                    )
+                })}
             </div>
 
             {/* Cosa hai ora, cosa si apre — il punto della pagina */}
@@ -238,7 +330,9 @@ export function UserVerifica() {
                     <ul className="space-y-1.5 font-body text-xs text-nebbia/50 leading-relaxed">
                         <li>· Banca dati: oltre 4,5 milioni di documenti giuridici</li>
                         <li>· Lex AI: ricerca ragionata sulle fonti</li>
+                        <li>· Archivio dei tuoi documenti con ricerca semantica</li>
                         <li>· Ricerche salvate ed etichette</li>
+                        <li>· Assistenza: con un abbonamento è prioritaria</li>
                     </ul>
                 </div>
                 <div className="bg-slate border border-oro/25 p-5">
@@ -247,81 +341,60 @@ export function UserVerifica() {
                         <p className="font-body text-sm font-medium text-oro">Quello che si apre con un abbonamento</p>
                     </div>
                     <ul className="space-y-1.5 font-body text-xs text-nebbia/60 leading-relaxed">
-                        <li>· Pratiche, udienze, scadenze e controparti</li>
-                        <li>· Clienti e portale dedicato</li>
-                        <li>· Generazione di atti e chat sulla pratica</li>
-                        <li>· Fatture con compenso forense (DM 55/2014)</li>
-                        <li>· Archivio dello studio con ricerca semantica</li>
+                        {(DIREZIONI.find(d => d.chiave === direzione) ?? DIREZIONI[0]).strumenti.map(voce).map(({ testo, nota }) => (
+                            <li key={testo}>
+                                · {testo}
+                                {nota && <span className="block pl-2.5 text-nebbia/40">{nota}</span>}
+                            </li>
+                        ))}
                     </ul>
                 </div>
             </div>
 
-            {/* Avanzamento */}
-            <div className="bg-slate border border-white/5 p-5">
-                <div className="flex items-center justify-between mb-3">
-                    <p className="font-body text-sm font-medium text-nebbia">
-                        {completo ? 'Profilo completo' : 'Profilo completo al'} {!completo && <span className="text-oro">{percentuale}%</span>}
-                    </p>
-                    {completo
-                        ? <span className="font-body text-xs text-salvia flex items-center gap-1"><CheckCircle size={12} /> tutto pronto</span>
-                        : <span className="font-body text-xs text-nebbia/40">mancano {mancanti.length}</span>}
-                </div>
-                <div className="h-1 w-full bg-petrolio overflow-hidden">
-                    <div className={`h-full transition-all duration-500 ${completo ? 'bg-salvia' : 'bg-oro'}`} style={{ width: `${percentuale}%` }} />
-                </div>
-                {!completo && (
-                    <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed">
-                        Da compilare: {mancanti.join(' · ')}
-                    </p>
-                )}
-            </div>
-
-            {/* Dati di fatturazione — il requisito vero */}
-            <div className="bg-slate border border-white/5 p-6 space-y-4">
-                <div>
-                    <p className="font-body text-sm font-medium text-nebbia mb-1">Dati per la fatturazione</p>
-                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                        Sono gli stessi che servono per emettere la fattura elettronica. Compilandoli sblocchi
-                        subito l'acquisto degli abbonamenti: nessuna attesa e nessuna approvazione da parte nostra.
-                    </p>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                    {CAMPI_FATTURAZIONE.map(campo)}
-                </div>
-
-                <div>
-                    <p className="font-body text-xs text-nebbia/40 mb-3 leading-relaxed">
-                        Per ricevere la fattura elettronica basta uno dei due:
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        {CAMPI_RECAPITO_SDI.map(campo)}
-                    </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <button
-                        onClick={handleSalvaDati}
-                        disabled={salvandoDati}
-                        className="btn-primary justify-center w-full sm:w-auto disabled:opacity-40"
-                    >
-                        {salvandoDati
-                            ? <><Loader2 size={16} className="animate-spin" /> Salvataggio…</>
-                            : <><CheckCircle size={16} /> Salva i dati</>}
-                    </button>
-                    {okDati && <span className="font-body text-xs text-salvia flex items-center gap-1"><CheckCircle size={12} /> Salvato</span>}
-                </div>
-
-                {giaSalvatoCompleto && (
-                    <Link to="/area/acquista" className="flex items-center gap-3 bg-salvia/8 border border-salvia/25 px-4 py-3 group">
-                        <Unlock size={15} className="text-salvia shrink-0" />
-                        <p className="font-body text-xs text-salvia flex-1">
-                            Il tuo profilo è completo: i piani sono sbloccati.
+            {/* Avanzamento e dati di fatturazione uno accanto all'altro (29-10-2026) */}
+            <div className="grid lg:grid-cols-2 gap-4">
+                <div className="bg-slate border border-white/5 p-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="font-body text-sm font-medium text-nebbia">
+                            {completo ? 'Profilo completo' : 'Profilo completo al'} {!completo && <span className="text-oro">{percentuale}%</span>}
                         </p>
-                        <ArrowRight size={13} className="text-salvia group-hover:translate-x-0.5 transition-transform" />
+                        {completo
+                            ? <span className="font-body text-xs text-salvia flex items-center gap-1"><CheckCircle size={12} /> tutto pronto</span>
+                            : <span className="font-body text-xs text-nebbia/40">mancano {mancanti.length}</span>}
+                    </div>
+                    <div className="h-1 w-full bg-petrolio overflow-hidden">
+                        <div className={`h-full transition-all duration-500 ${completo ? 'bg-salvia' : 'bg-oro'}`} style={{ width: `${percentuale}%` }} />
+                    </div>
+                    {!completo && (
+                        <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed">
+                            Da compilare: {mancanti.join(' · ')}
+                        </p>
+                    )}
+                </div>
+
+                {/* Dati di fatturazione — il requisito vero: si compilano nel Profilo, in un posto solo */}
+                <div className="bg-slate border border-white/5 p-5 flex flex-col gap-4">
+                    <div>
+                        <p className="font-body text-sm font-medium text-nebbia mb-1">Dati per la fatturazione</p>
+                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                            Si compilano nel tuo Profilo. Appena completato sblocca subito l'acquisto degli abbonamenti.
+                        </p>
+                    </div>
+                    <Link to="/area/profilo#fatturazione" className="btn-primary text-sm inline-flex items-center gap-2 self-start mt-auto">
+                        {completo ? 'Vedi i dati' : 'Completa i dati nel Profilo'} <ArrowRight size={14} />
                     </Link>
-                )}
+                </div>
             </div>
+
+            {completo && (
+                <Link to="/area/acquista" className="flex items-center gap-3 bg-salvia/8 border border-salvia/25 px-4 py-3 group">
+                    <Unlock size={15} className="text-salvia shrink-0" />
+                    <p className="font-body text-xs text-salvia flex-1">
+                        Il tuo profilo è completo: i piani sono sbloccati.
+                    </p>
+                    <ArrowRight size={13} className="text-salvia group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+            )}
 
             {/* Documenti — ora facoltativi */}
             <div className="bg-slate/40 border border-white/5 p-6 space-y-4">

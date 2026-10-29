@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { PageHeader, InputField, Badge } from '@/components/shared'
-import { Edit2, Check, X, CheckCircle, AlertCircle, Eye, EyeOff, Scale, Clock, Loader2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { PageHeader, InputField } from '@/components/shared'
+import { Check, AlertCircle, Loader2, Unlock, ArrowRight, Receipt } from 'lucide-react'
 import { elencoPaesi } from '@/lib/paesi'
+import { profiloCompleto } from '@/lib/profiloCompleto'
+import { formatImporto } from '@/lib/prezzi'
 import { messaggioPassword, messaggioErroreAuthPassword, messaggioErroreDatabase, TESTO_REGOLA_PASSWORD } from '@/lib/password'
 
 export default function UserProfilo() {
     const { profile, refreshProfile } = useAuth()
+    const { hash } = useLocation()
+
+    // da «Completa i dati» (Acquista, Completa il profilo) si arriva dritti alla sezione della fatturazione
+    useEffect(() => {
+        if (hash === '#fatturazione') document.getElementById('fatturazione')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, [hash])
 
     // ── Dati personali ──
     const [form, setForm] = useState({
@@ -20,6 +29,12 @@ export default function UserProfilo() {
         comune: profile?.comune ?? '',
         provincia: profile?.provincia ?? '',
         paese: profile?.paese ?? 'IT',
+        // dati per la fattura (28-10-2026: tutti qui, in un posto solo; prima stavano solo in «Completa il profilo»)
+        cf: profile?.cf ?? '',
+        ragione_sociale: profile?.ragione_sociale ?? '',
+        partita_iva: profile?.partita_iva ?? '',
+        pec: profile?.pec ?? '',
+        codice_destinatario_sdi: profile?.codice_destinatario_sdi ?? '',
     })
     const [datiOriginali, setDatiOriginali] = useState({ ...form })
 
@@ -35,14 +50,21 @@ export default function UserProfilo() {
                 comune: profile.comune ?? '',
                 provincia: profile.provincia ?? '',
                 paese: profile.paese ?? 'IT',
+                cf: profile.cf ?? '',
+                ragione_sociale: profile.ragione_sociale ?? '',
+                partita_iva: profile.partita_iva ?? '',
+                pec: profile.pec ?? '',
+                codice_destinatario_sdi: profile.codice_destinatario_sdi ?? '',
             }
             setForm(init)
             setDatiOriginali(init)
         }
     }, [profile])
     const [salvandoDati, setSalvandoDati] = useState(false)
-    const [okDati, setOkDati] = useState(false)
+    // la sezione in cui si è salvato o c'è l'errore: «personali» o «fatturazione»
+    const [okDati, setOkDati] = useState('')
     const [errDati, setErrDati] = useState('')
+    const [sezioneErrore, setSezioneErrore] = useState('')
 
     // ── Password ──
     const [pwd, setPwd] = useState({ nuova: '', conferma: '' })
@@ -56,16 +78,18 @@ export default function UserProfilo() {
         onChange: e => { setForm(p => ({ ...p, [k]: e.target.value })); setErrDati('') }
     })
 
-    const isDirty = JSON.stringify(form) !== JSON.stringify(datiOriginali)
+    const CAMPI_PERSONALI = ['nome', 'cognome', 'telefono']
+    const cambiati = Object.keys(form).filter(k => form[k] !== datiOriginali[k])
+    const personaliCambiati = cambiati.some(k => CAMPI_PERSONALI.includes(k))
+    const fatturazioneCambiata = cambiati.some(k => !CAMPI_PERSONALI.includes(k))
+    const italia = form.paese === 'IT'
 
-    const isApproved = profile?.verification_status === 'approved'
-    const isRejected = profile?.verification_status === 'rejected'
-    const isPending = profile?.verification_status === 'pending'
 
-    async function handleSalvaDati() {
+    async function handleSalvaDati(sezione) {
         setSalvandoDati(true)
         setErrDati('')
-        setOkDati(false)
+        setSezioneErrore(sezione)
+        setOkDati('')
         try {
             const { data: { user } } = await supabase.auth.getUser()
             const { error } = await supabase
@@ -80,14 +104,19 @@ export default function UserProfilo() {
                     // la provincia c'è solo in Italia
                     provincia: form.paese === 'IT' ? (form.provincia.trim().toUpperCase() || null) : null,
                     paese: form.paese || 'IT',
+                    cf: form.cf.trim().toUpperCase() || null,
+                    ragione_sociale: form.ragione_sociale.trim() || null,
+                    partita_iva: form.partita_iva.trim().toUpperCase() || null,
+                    pec: form.pec.trim() || null,
+                    codice_destinatario_sdi: form.codice_destinatario_sdi.trim().toUpperCase() || null,
                 })
                 .eq('id', user.id)
             if (error) throw new Error(error.message)
             setDatiOriginali({ ...form })
-            setOkDati(true)
+            setOkDati(sezione)
             // il profilo in memoria si aggiorna: i pulsanti «Paga» vedono subito l'indirizzo
             refreshProfile?.()
-            setTimeout(() => setOkDati(false), 3000)
+            setTimeout(() => setOkDati(''), 3000)
         } catch (err) {
             setErrDati(messaggioErroreDatabase(err))
         } finally {
@@ -95,8 +124,11 @@ export default function UserProfilo() {
         }
     }
 
-    function handleAnnullaDati() {
-        setForm({ ...datiOriginali })
+    // «Annulla» riporta indietro solo la sezione in cui si preme
+    function handleAnnullaDati(sezione) {
+        const personali = sezione === 'personali'
+        setForm(p => Object.fromEntries(Object.keys(p).map(k =>
+            [k, CAMPI_PERSONALI.includes(k) === personali ? datiOriginali[k] : p[k]])))
         setErrDati('')
     }
 
@@ -122,60 +154,75 @@ export default function UserProfilo() {
     }
 
     return (
-        <div className="space-y-5 max-w-2xl">
+        <div className="space-y-5">
             <PageHeader label="Account" title="Il mio profilo" />
 
-            {/* Stato account */}
-            <div className="bg-slate border border-white/5 p-5 space-y-3">
-                <p className="section-label mb-1">Stato account</p>
-                <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Ruolo</span>
-                    <Badge label="User" variant="gray" />
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 border-b border-white/5 pb-2">
-                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Email</span>
-                    <span className="font-body text-sm text-nebbia break-words sm:text-right">{profile?.email ?? '—'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Verifica identità</span>
-                    <div className="flex items-center gap-1.5">
-                        {isApproved && <><CheckCircle size={13} className="text-salvia" /><span className="font-body text-sm text-salvia">Approvata</span></>}
-                        {isRejected && <><AlertCircle size={13} className="text-red-400" /><span className="font-body text-sm text-red-400">Non approvata</span></>}
-                        {isPending && <><Clock size={13} className="text-amber-400" /><span className="font-body text-sm text-amber-400">In corso</span></>}
-                        {!profile?.verification_status && <span className="font-body text-sm text-nebbia/30">Non inviata</span>}
+            {/* Due colonne della stessa altezza (28-10-2026): a sinistra dati personali e pagamenti (lo storico
+                prende lo spazio che avanza), a destra la fatturazione */}
+            <div className="grid lg:grid-cols-2 gap-5">
+                <div className="flex flex-col gap-5">
+                    {/* Dati personali, con l'email dell'account (28-10-2026: un blocco solo; ruolo e verifica
+                        d'identità non si mostrano più a un privato) */}
+                    <div className="bg-slate border border-white/5 p-6 space-y-5">
+                        <div className="flex items-center justify-between">
+                            <p className="section-label">Dati personali</p>
+                            {okDati === 'personali' && (
+                                <span className="flex items-center gap-1 font-body text-xs text-salvia">
+                                    <Check size={12} /> Salvato
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 border-b border-white/5 pb-4">
+                            <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Email</span>
+                            <span className="font-body text-sm text-nebbia break-words sm:text-right">{profile?.email ?? '—'}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <InputField label="Nome"    {...f('nome')} />
+                            <InputField label="Cognome" {...f('cognome')} />
+                        </div>
+                        <InputField label="Telefono" placeholder="+39 02 1234567" {...f('telefono')} />
+
+                        {errDati && sezioneErrore === 'personali' && (
+                            <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
+                                <p className="font-body text-sm text-red-400">{errDati}</p>
+                            </div>
+                        )}
+
+                        {personaliCambiati && (
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button onClick={() => handleAnnullaDati('personali')} className="btn-secondary text-sm flex-1 justify-center">Annulla</button>
+                                <button
+                                    onClick={() => handleSalvaDati('personali')}
+                                    disabled={salvandoDati}
+                                    className="btn-primary text-sm flex-1 justify-center disabled:opacity-40"
+                                >
+                                    {salvandoDati
+                                        ? <><Loader2 size={14} className="animate-spin" /> Salvataggio…</>
+                                        : 'Salva modifiche'
+                                    }
+                                </button>
+                            </div>
+                        )}
                     </div>
+
+                    <StoricoPagamenti userId={profile?.id} />
                 </div>
 
-                {isRejected && profile?.verification_note && (
-                    <div className="mt-2 bg-red-900/10 border border-red-500/20 p-3">
-                        <p className="font-body text-xs text-red-400/80 uppercase tracking-widest mb-1">Motivo del rifiuto</p>
-                        <p className="font-body text-sm text-red-400 leading-relaxed">{profile.verification_note}</p>
+                {/* Dati per la fatturazione (28-10-2026): tutti qui, in un posto solo. Acquista e «Completa il profilo»
+                    rimandano a questa sezione invece di ripetere i campi. */}
+                <div id="fatturazione" className="bg-slate border border-white/5 p-6 space-y-5 scroll-mt-24">
+                    <div className="flex items-center justify-between">
+                        <p className="section-label">Dati per la fatturazione</p>
+                        {okDati === 'fatturazione' && (
+                            <span className="flex items-center gap-1 font-body text-xs text-salvia">
+                                <Check size={12} /> Salvato
+                            </span>
+                        )}
                     </div>
-                )}
-            </div>
+                    <p className="font-body text-xs text-nebbia/40 -mt-2">Servono per acquistare crediti e piani e compaiono nella ricevuta.</p>
 
-            {/* Dati personali */}
-            <div className="bg-slate border border-white/5 p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                    <p className="section-label">Dati personali</p>
-                    {okDati && (
-                        <span className="flex items-center gap-1 font-body text-xs text-salvia">
-                            <Check size={12} /> Salvato
-                        </span>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <InputField label="Nome"    {...f('nome')} />
-                    <InputField label="Cognome" {...f('cognome')} />
-                </div>
-                <InputField label="Telefono" placeholder="+39 02 1234567" {...f('telefono')} />
-
-                <div className="pt-2 space-y-4">
-                    <div>
-                        <p className="font-body text-sm text-nebbia">Indirizzo di fatturazione</p>
-                        <p className="font-body text-xs text-nebbia/40 mt-0.5">Serve per acquistare crediti e piani: compare nella ricevuta.</p>
-                    </div>
                     <div>
                         <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">Paese</label>
                         <select
@@ -187,7 +234,7 @@ export default function UserProfilo() {
                         </select>
                     </div>
                     <InputField label="Indirizzo e numero civico" placeholder="Via Roma 1" {...f('indirizzo')} />
-                    {form.paese === 'IT' ? (
+                    {italia ? (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <InputField label="CAP" placeholder="20121" {...f('cap')} />
                             <InputField label="Comune" placeholder="Milano" {...f('comune')} />
@@ -199,83 +246,287 @@ export default function UserProfilo() {
                             <InputField label="Città" {...f('comune')} />
                         </div>
                     )}
-                </div>
+                    {italia && <InputField label="Codice fiscale" placeholder="RSSMRA80A01H501U" {...f('cf')} />}
 
-                {errDati && (
-                    <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
-                        <p className="font-body text-sm text-red-400">{errDati}</p>
-                    </div>
-                )}
-
-                {isDirty && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button onClick={handleAnnullaDati} className="btn-secondary text-sm flex-1 justify-center">Annulla</button>
-                        <button
-                            onClick={handleSalvaDati}
-                            disabled={salvandoDati}
-                            className="btn-primary text-sm flex-1 justify-center disabled:opacity-40"
-                        >
-                            {salvandoDati
-                                ? <><Loader2 size={14} className="animate-spin" /> Salvataggio…</>
-                                : 'Salva modifiche'
-                            }
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Password */}
-            <div className="bg-slate border border-white/5 p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                    <p className="section-label">Cambia password</p>
-                    {okPwd && (
-                        <span className="flex items-center gap-1 font-body text-xs text-salvia">
-                            <Check size={12} /> Password aggiornata
-                        </span>
-                    )}
-                </div>
-
-                {!editingPwd ? (
-                    <button onClick={() => setEditingPwd(true)} className="btn-secondary text-sm w-full sm:w-auto justify-center">
-                        Modifica password
-                    </button>
-                ) : (
-                    <>
+                    <div className="pt-2 space-y-4">
                         <div>
-                            <InputField label="Nuova password" type="password" placeholder="Almeno 8 caratteri"
-                                value={pwd.nuova} onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} />
-                            <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
+                            <p className="font-body text-sm text-nebbia">Per la fattura alla tua attività</p>
+                            <p className="font-body text-xs text-nebbia/40 mt-0.5">
+                                Servono se vuoi la fattura intestata a uno studio o a una società, e per i piani da professionista.
+                            </p>
                         </div>
-                        <InputField label="Conferma password" type="password" placeholder="Ripeti la nuova password"
-                            value={pwd.conferma} onChange={e => setPwd(p => ({ ...p, conferma: e.target.value }))} />
-
-                        {errPwd && (
-                            <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
-                                <p className="font-body text-sm text-red-400">{errPwd}</p>
+                        <InputField label="Ragione sociale" {...f('ragione_sociale')} />
+                        <InputField label="Partita IVA" {...f('partita_iva')} />
+                        {italia && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <InputField label="PEC" placeholder="studio@pec.it" {...f('pec')} />
+                                <InputField label="Codice destinatario SDI" maxLength={7} {...f('codice_destinatario_sdi')} />
                             </div>
                         )}
+                    </div>
 
+                    {errDati && sezioneErrore === 'fatturazione' && (
+                        <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
+                            <p className="font-body text-sm text-red-400">{errDati}</p>
+                        </div>
+                    )}
+
+                    {fatturazioneCambiata && (
                         <div className="flex flex-col sm:flex-row gap-3">
+                            <button onClick={() => handleAnnullaDati('fatturazione')} className="btn-secondary text-sm flex-1 justify-center">Annulla</button>
                             <button
-                                onClick={() => { setEditingPwd(false); setPwd({ nuova: '', conferma: '' }); setErrPwd('') }}
-                                className="btn-secondary text-sm flex-1 justify-center"
-                            >
-                                Annulla
-                            </button>
-                            <button
-                                onClick={handleCambiaPwd}
-                                disabled={salvandoPwd || !pwd.nuova || !pwd.conferma}
+                                onClick={() => handleSalvaDati('fatturazione')}
+                                disabled={salvandoDati}
                                 className="btn-primary text-sm flex-1 justify-center disabled:opacity-40"
                             >
-                                {salvandoPwd
-                                    ? <><Loader2 size={14} className="animate-spin" /> Aggiornamento…</>
-                                    : 'Aggiorna password'
+                                {salvandoDati
+                                    ? <><Loader2 size={14} className="animate-spin" /> Salvataggio…</>
+                                    : 'Salva modifiche'
                                 }
                             </button>
                         </div>
-                    </>
-                )}
+                    )}
+
+                    {!fatturazioneCambiata && profiloCompleto(profile) && (
+                        <Link to="/area/acquista" className="flex items-center gap-3 bg-salvia/8 border border-salvia/25 px-4 py-3 group">
+                            <Unlock size={15} className="text-salvia shrink-0" />
+                            <p className="font-body text-xs text-salvia flex-1">Dati completi: i piani per lo studio sono sbloccati.</p>
+                            <ArrowRight size={13} className="text-salvia group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                    )}
+                </div>
             </div>
+
+            {/* In fondo, affiancate: password ed eliminazione dell'account */}
+            <div className="grid lg:grid-cols-2 gap-5">
+                {/* Password */}
+                <div className="bg-slate border border-white/5 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <p className="section-label">Cambia password</p>
+                        {okPwd && (
+                            <span className="flex items-center gap-1 font-body text-xs text-salvia">
+                                <Check size={12} /> Password aggiornata
+                            </span>
+                        )}
+                    </div>
+
+                    {!editingPwd ? (
+                        <button onClick={() => setEditingPwd(true)} className="btn-secondary text-sm w-full sm:w-auto justify-center">
+                            Modifica password
+                        </button>
+                    ) : (
+                        <>
+                            <div>
+                                <InputField label="Nuova password" type="password" placeholder="Almeno 8 caratteri"
+                                    value={pwd.nuova} onChange={e => setPwd(p => ({ ...p, nuova: e.target.value }))} />
+                                <p className="mt-1.5 font-body text-xs text-nebbia/40 leading-relaxed">{TESTO_REGOLA_PASSWORD}</p>
+                            </div>
+                            <InputField label="Conferma password" type="password" placeholder="Ripeti la nuova password"
+                                value={pwd.conferma} onChange={e => setPwd(p => ({ ...p, conferma: e.target.value }))} />
+
+                            {errPwd && (
+                                <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
+                                    <p className="font-body text-sm text-red-400">{errPwd}</p>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={() => { setEditingPwd(false); setPwd({ nuova: '', conferma: '' }); setErrPwd('') }}
+                                    className="btn-secondary text-sm flex-1 justify-center"
+                                >
+                                    Annulla
+                                </button>
+                                <button
+                                    onClick={handleCambiaPwd}
+                                    disabled={salvandoPwd || !pwd.nuova || !pwd.conferma}
+                                    className="btn-primary text-sm flex-1 justify-center disabled:opacity-40"
+                                >
+                                    {salvandoPwd
+                                        ? <><Loader2 size={14} className="animate-spin" /> Aggiornamento…</>
+                                        : 'Aggiorna password'
+                                    }
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <EliminaAccount />
+            </div>
+        </div>
+    )
+}
+
+// Lo storico dei pagamenti (28-10-2026): crediti, piani e archivio, sul sito e su iPhone (App Store).
+// Per ogni pagamento arriva anche la ricevuta via email.
+function StoricoPagamenti({ userId }) {
+    const [righe, setRighe] = useState(null)
+    const [tutti, setTutti] = useState(false)
+
+    useEffect(() => {
+        if (!userId) return
+        supabase
+            .from('transazioni')
+            .select('id, prodotto_nome, importo, stato, created_at, metadati')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(50)
+            .then(({ data }) => setRighe(data ?? []))
+    }, [userId])
+
+    return (
+        <div className="flex-1 flex flex-col gap-4 bg-slate border border-white/5 p-6">
+            <div className="flex items-center justify-between">
+                <p className="section-label">Storico pagamenti</p>
+            </div>
+            {righe === null ? (
+                <Loader2 size={16} className="animate-spin text-nebbia/30" />
+            ) : righe.length === 0 ? (
+                <p className="font-body text-sm text-nebbia/40">Nessun pagamento finora.</p>
+            ) : (
+                <ul className="divide-y divide-white/5">
+                    {(tutti ? righe : righe.slice(0, 5)).map(r => {
+                        // gli acquisti su iPhone possono essere in un'altra valuta (quella dell'App Store)
+                        const valuta = r.metadati?.valuta
+                        const importo = valuta && valuta !== 'EUR'
+                            ? `${Number(r.importo).toFixed(2)} ${valuta}`
+                            : formatImporto(r.importo)
+                        return (
+                            <li key={r.id} className="flex items-center justify-between gap-4 py-3">
+                                <div className="min-w-0">
+                                    <p className="font-body text-sm text-nebbia truncate">{r.prodotto_nome}</p>
+                                    <p className="font-body text-xs text-nebbia/40">
+                                        {new Date(r.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="font-body text-sm text-nebbia">{importo}</p>
+                                    {r.stato === 'rimborsato' && <p className="font-body text-xs text-amber-400">Rimborsato</p>}
+                                </div>
+                            </li>
+                        )
+                    })}
+                </ul>
+            )}
+            {righe?.length > 5 && (
+                <button onClick={() => setTutti(t => !t)} className="self-start font-body text-xs text-oro hover:text-oro/70 transition-colors">
+                    {tutti ? 'Mostra solo gli ultimi' : `Mostra tutti (${righe.length})`}
+                </button>
+            )}
+            <p className="mt-auto flex items-start gap-2 font-body text-xs text-nebbia/40 leading-relaxed">
+                <Receipt size={13} className="shrink-0 mt-0.5" />
+                Per ogni pagamento ti arriva la ricevuta via email.
+            </p>
+        </div>
+    )
+}
+
+// Elimina account (28-10-2026, come nell'app): la funzione elimina-account cancella crediti, abbonamento,
+// ricerche, etichette e archivio di questo paese e poi l'utente; i pagamenti restano, per la contabilità.
+// Un abbonamento che si rinnova sul sito va disdetto prima: altrimenti Tagadapay continuerebbe ad addebitarlo.
+// Quello preso su iPhone lo ferma solo Apple, dalle impostazioni dell'iPhone.
+function EliminaAccount() {
+    const { profile, signOut } = useAuth()
+    const navigate = useNavigate()
+    const [aperta, setAperta] = useState(false)
+    const [rinnovi, setRinnovi] = useState({ sito: false, iphone: false })
+    const [eliminando, setEliminando] = useState(false)
+    const [errore, setErrore] = useState('')
+
+    useEffect(() => {
+        if (!aperta || !profile?.id) return
+        supabase
+            .from('abbonamenti')
+            .select('fornitore')
+            .eq('user_id', profile.id)
+            .in('stato', ['attivo', 'in_ritardo'])
+            .then(({ data }) => setRinnovi({
+                sito: (data ?? []).some(a => a.fornitore === 'tagada'),
+                iphone: (data ?? []).some(a => a.fornitore === 'apple'),
+            }))
+    }, [aperta, profile?.id])
+
+    async function elimina() {
+        setEliminando(true)
+        setErrore('')
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elimina-account`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                body: '{}',
+            })
+            const esito = await res.json().catch(() => ({}))
+            if (res.ok && esito.ok) {
+                await signOut()
+                navigate('/', { replace: true })
+                return
+            }
+            if (esito.codice === 'serve_aal2') setErrore('Hai la verifica in due passaggi: esci, rientra con il codice e riprova.')
+            else if (res.status === 409) setErrore('Questo account non si elimina da qui: scrivici dall’assistenza e lo chiudiamo noi.')
+            else setErrore('Eliminazione non riuscita: riprova.')
+        } catch {
+            setErrore('Eliminazione non riuscita: riprova.')
+        } finally {
+            setEliminando(false)
+        }
+    }
+
+    return (
+        <div className="bg-slate border border-white/5 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+                <p className="section-label">Elimina account</p>
+            </div>
+            {!aperta ? (
+                <>
+                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                        Elimini crediti, abbonamento, ricerche, etichette e archivio di Lexum. È definitivo.
+                    </p>
+                    <button onClick={() => setAperta(true)} className="font-body text-sm text-red-400 hover:text-red-300 transition-colors">
+                        Elimina account…
+                    </button>
+                </>
+            ) : (
+                <>
+                    <p className="font-body text-sm text-nebbia/80 leading-relaxed">
+                        Eliminare il tuo account? Elimini crediti, abbonamento, ricerche, etichette e archivio di Lexum. È definitivo.
+                    </p>
+                    <p className="font-body text-xs text-nebbia/40">Prima, se vuoi, scarica i documenti dal tuo archivio.</p>
+                    {rinnovi.sito && (
+                        <div className="flex items-start gap-2 bg-amber-900/10 border border-amber-500/30 px-4 py-3">
+                            <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                            <p className="font-body text-xs text-nebbia/80 leading-relaxed">
+                                Hai un abbonamento che si rinnova: prima disdicilo da{' '}
+                                <Link to="/area/acquista" className="text-oro hover:text-oro/70">Acquista → Gestisci</Link>, poi elimina l’account.
+                            </p>
+                        </div>
+                    )}
+                    {rinnovi.iphone && (
+                        <p className="font-body text-xs text-nebbia/50 leading-relaxed">
+                            L’abbonamento preso su iPhone si disdice dalle impostazioni dell’iPhone, alla voce Abbonamenti:
+                            eliminare l’account non lo ferma.
+                        </p>
+                    )}
+                    {errore && (
+                        <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
+                            <p className="font-body text-sm text-red-400">{errore}</p>
+                        </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button onClick={() => { setAperta(false); setErrore('') }} className="btn-secondary text-sm flex-1 justify-center">
+                            Annulla
+                        </button>
+                        <button
+                            onClick={elimina}
+                            disabled={eliminando || rinnovi.sito}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-900/30 border border-red-500/40 text-red-300 font-body text-sm hover:bg-red-900/50 transition-colors disabled:opacity-40"
+                        >
+                            {eliminando ? <Loader2 size={14} className="animate-spin" /> : 'Elimina l’account'}
+                        </button>
+                    </div>
+                </>
+            )}
         </div>
     )
 }

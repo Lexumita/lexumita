@@ -26,13 +26,25 @@ export const CAMPI_RECAPITO_SDI = [
   { key: 'codice_destinatario_sdi', label: 'Codice destinatario SDI' },
 ]
 
+// Fuori dall'Italia (29-10-2026, deciso da Antonino): provincia, codice fiscale e PEC/SDI non esistono,
+// e il Profilo non li mostra. Bastano telefono, indirizzo e partita IVA.
+export const CAMPI_FATTURAZIONE_ESTERO = [
+  { key: 'telefono',   label: 'Telefono' },
+  { key: 'indirizzo',  label: 'Indirizzo' },
+  { key: 'cap',        label: 'Codice postale' },
+  { key: 'comune',     label: 'Città' },
+  { key: 'partita_iva',label: 'Partita IVA' },
+]
+
 const pieno = (v) => typeof v === 'string' ? v.trim().length > 0 : v != null
+const inItalia = (profile) => (profile?.paese || 'IT') === 'IT'
+const campiRichiesti = (profile) => inItalia(profile) ? CAMPI_FATTURAZIONE : CAMPI_FATTURAZIONE_ESTERO
 
 /** Elenco delle etichette ancora da compilare (vuoto = profilo completo). */
 export function campiMancanti(profile) {
   if (!profile) return [...CAMPI_FATTURAZIONE.map(c => c.label), 'PEC o Codice SDI']
-  const mancanti = CAMPI_FATTURAZIONE.filter(c => !pieno(profile[c.key])).map(c => c.label)
-  if (!CAMPI_RECAPITO_SDI.some(c => pieno(profile[c.key]))) mancanti.push('PEC o Codice SDI')
+  const mancanti = campiRichiesti(profile).filter(c => !pieno(profile[c.key])).map(c => c.label)
+  if (inItalia(profile) && !CAMPI_RECAPITO_SDI.some(c => pieno(profile[c.key]))) mancanti.push('PEC o Codice SDI')
   return mancanti
 }
 
@@ -42,6 +54,6 @@ export function profiloCompleto(profile) {
 
 /** 0-100, per la barra di avanzamento. */
 export function percentualeProfilo(profile) {
-  const totale = CAMPI_FATTURAZIONE.length + 1   // +1 = recapito SDI
+  const totale = campiRichiesti(profile).length + (inItalia(profile) ? 1 : 0)   // +1 = recapito SDI
   return Math.round(((totale - campiMancanti(profile).length) / totale) * 100)
 }

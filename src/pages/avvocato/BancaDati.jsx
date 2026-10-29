@@ -31,6 +31,7 @@ import {
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { formatPrezzo } from '@/lib/prezzi'
+import { segnalaCreditiCambiati } from '@/hooks/useCreditiDisponibili'
 
 // Un messaggio completato non cambia mai: senza memo, OGNI chunk dello
 // streaming ri-analizzava l'INTERA conversazione (costo quadratico — con le
@@ -117,6 +118,12 @@ function useCreditiAI() {
         window.addEventListener('focus', onFocus)
         return () => window.removeEventListener('focus', onFocus)
     }, [])
+
+    // 29-10-2026: quando Lex scala un credito, anche il contatore in alto si rilegge (prima restava indietro
+    // fino al cambio di pagina)
+    useEffect(() => {
+        if (crediti !== null) segnalaCreditiCambiati()
+    }, [crediti])
 
     return { crediti, setCrediti, refreshCrediti: caricaCrediti }
 }
@@ -4941,11 +4948,36 @@ function TabItalianaConSottoTab({ crediti, setCrediti, messaggiConversazione, se
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPALE — "Banca dati"
+// NUOVA CHAT — Lex (29-10-2026, come nell'app): la conversazione con Lex ha la sua pagina,
+// la Banca Dati qui sotto resta la ricerca manuale. Privati: /area/chat; professionisti: /chat.
+// ═══════════════════════════════════════════════════════════════
+export function NuovaChat() {
+    const { crediti, setCrediti } = useCreditiAI()
+    const [messaggiConversazione, setMessaggiConversazione] = useState([])
+
+    return (
+        <div className="space-y-5 pb-24">
+            <PageHeader
+                label="Nuova chat"
+                title="Chiedi a Lex AI"
+                subtitle="Lex cerca nelle norme, nella giurisprudenza e nella prassi e ti risponde citando le fonti"
+            />
+
+            <RicercaAI
+                codice={null}
+                crediti={crediti}
+                setCrediti={setCrediti}
+                messaggi={messaggiConversazione}
+                onAggiornaMessaggi={setMessaggiConversazione}
+            />
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPALE — "Banca dati": la ricerca manuale (Lex sta in NuovaChat)
 // ═══════════════════════════════════════════════════════════════
 export function BancaDati() {
-    const { profile } = useAuth()
-    const isAvvocato = profile?.role === 'avvocato'
     const { crediti, setCrediti } = useCreditiAI()
     const [messaggiConversazione, setMessaggiConversazione] = useState([])
 
@@ -4958,20 +4990,11 @@ export function BancaDati() {
             <PageHeader
                 label="Banca Dati"
                 title="Codici, leggi, sentenze e prassi"
-                subtitle="Ricerca con Lex AI o sfoglia normativa italiana, europea, giurisprudenza e prassi amministrativa"
-            />
-
-            {/* Lex — sempre attivo, cross-fonte */}
-            <RicercaAI
-                codice={null}
-                crediti={crediti}
-                setCrediti={setCrediti}
-                messaggi={messaggiConversazione}
-                onAggiornaMessaggi={setMessaggiConversazione}
+                subtitle="Sfoglia e cerca normativa italiana ed europea, giurisprudenza e prassi amministrativa"
             />
 
             {/* Tab primario Italiana | UE | Sentenze | Prassi */}
-            <div className="!mt-10 pt-6 border-t border-white/5 space-y-5">
+            <div className="space-y-5">
                 <div className="flex items-center gap-3 flex-wrap">
                     <p className="section-label !m-0">Sfoglia</p>
                     <div className="flex gap-1 bg-slate border border-white/5 p-1 w-full lg:w-auto overflow-x-auto">

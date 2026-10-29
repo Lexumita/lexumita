@@ -15,6 +15,7 @@ import {
 import AggiungiAPratica from '@/components/AggiungiAPratica'
 import BadgeDocumentoOrigine from '@/components/BadgeDocumentoOrigine'
 import { COLONNE_DOCUMENTO_ORIGINE } from '@/lib/documentoOrigine'
+import { segnalaEtichetteCambiate } from '@/hooks/useEtichetteMenu'
 import PacchettoLampo from '@/components/PacchettoLampo'
 
 const PALETTE = [
@@ -316,6 +317,7 @@ export default function Ricerche() {
             setErrore(e.message)
         } finally {
             setLoading(false)
+            segnalaEtichetteCambiate()   // la barra a sinistra si rilegge dopo ogni modifica (29-10-2026)
         }
     }
 

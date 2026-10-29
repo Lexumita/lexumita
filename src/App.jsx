@@ -76,7 +76,7 @@ import AvvocatoFatturazione from './pages/avvocato/Fatturazione'
 import AvvocatoFatturazioneNuova from './pages/avvocato/FatturazioneNuova'
 import AvvocatoFatturazioneDettaglio from './pages/avvocato/FatturazioneDettaglio'
 import AvvocatoCalendar from './pages/avvocato/AvvocatoCalendar'
-import { BancaDati } from './pages/avvocato/BancaDati'
+import { BancaDati, NuovaChat } from './pages/avvocato/BancaDati'
 import Archivio from '@/pages/avvocato/Archivio'
 import ArchivioDettaglio from '@/pages/avvocato/ArchivioDettaglio'
 import Fisco from '@/pages/fisco/Fisco'
@@ -304,6 +304,8 @@ export default function App() {
 
               {/* Banca dati avvocato (con pannello pratiche attivo) */}
               <Route path="/banca-dati" element={<BancaDatiSharedAvv><BancaDati /></BancaDatiSharedAvv>} />
+              {/* Lex ha la sua pagina (29-10-2026, come nell'app): in Banca Dati resta la ricerca manuale */}
+              <Route path="/chat" element={<BancaDatiSharedAvv><NuovaChat /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/lexum/:id" element={<BancaDatiSharedAvv><SentenzaDettaglio fonte="lexum" /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/avvocato/:id" element={<BancaDatiSharedAvv><SentenzaDettaglio fonte="avvocato" /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/prassi/:id" element={<BancaDatiSharedAvv><PrassiDettaglio /></BancaDatiSharedAvv>} />
@@ -337,6 +339,7 @@ export default function App() {
                 ═══════════════════════════════════════════════════════ */}
               {/* Home utente = banca dati embedded */}
               <Route path="/area" element={<Usr><BancaDati /></Usr>} />
+              <Route path="/area/chat" element={<Usr><NuovaChat /></Usr>} />
               <Route path="/area/ricerche" element={<Usr><Ricerche /></Usr>} />
               {/* Archivio dei privati (02-10-2026): 50 MB gratuiti, 2 GB con il Piano Personale */}
               <Route path="/area/archivio" element={<Usr><Archivio /></Usr>} />

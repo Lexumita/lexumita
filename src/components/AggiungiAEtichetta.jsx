@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { campiDocumentoOrigine } from '@/lib/documentoOrigine'
+import { segnalaEtichetteCambiate } from '@/hooks/useEtichetteMenu'
 import { Tag, Check, Plus, X, Loader2, Search, AlertCircle } from 'lucide-react'
 
 const PALETTE = [
@@ -256,6 +257,7 @@ export default function AggiungiAEtichetta({
             setErrore(formattaErroreEtichetta(err))
         } finally {
             setSalvando(null)
+            segnalaEtichetteCambiate()   // la barra a sinistra si rilegge (29-10-2026)
         }
     }
 
@@ -301,6 +303,7 @@ export default function AggiungiAEtichetta({
             setErrore(formattaErroreEtichetta(err))
         } finally {
             setCreando(false)
+            segnalaEtichetteCambiate()   // la nuova etichetta compare subito nella barra (29-10-2026)
         }
     }
 

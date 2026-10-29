@@ -731,11 +731,12 @@ export default function PraticaDettaglio() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-0 px-4 py-3 border-b border-white/5 shrink-0">
                         <p className="section-label">Ricerche e descrizione causa ({ricerche.length})</p>
                         <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                            {/* la risposta di Lex si salva qui con «Salva in pratica»: Lex ha la sua pagina dal 29-10-2026 */}
                             <button
-                                onClick={() => navigate('/banca-dati')}
+                                onClick={() => navigate('/chat')}
                                 className="font-body text-xs text-nebbia/40 hover:text-oro transition-colors flex items-center gap-1 py-2 lg:py-0"
                             >
-                                <Search size={11} /> Cerca in Banca Dati
+                                <Search size={11} /> Cerca con Lex
                             </button>
                             <button
                                 onClick={() => setMostraForm(!mostraFormRicerca)}
@@ -797,7 +798,7 @@ export default function PraticaDettaglio() {
                                 <Sparkles size={20} className="text-nebbia/20 mb-2" />
                                 <p className="font-body text-sm text-nebbia/30">Nessuna ricerca</p>
                                 <p className="font-body text-xs text-nebbia/20 mt-1">
-                                    Aggiungi una ricerca manuale o cerca in Banca Dati
+                                    Aggiungi una ricerca manuale o cerca con Lex
                                 </p>
                             </div>
                         ) : ricerche.map(r => (

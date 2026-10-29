@@ -44,10 +44,10 @@ export default function Acquista() {
     ])
 
     // A sbloccare i piani dello studio sono i DATI DI FATTURAZIONE, non la verifica dei documenti: si validano
-    // da soli (una P.IVA errata fa fallire la fattura) e non richiedono approvazione manuale. Chi era già stato
-    // approvato in passato resta sbloccato, altrimenti gli toglieremmo un diritto acquisito.
+    // da soli (una P.IVA errata fa fallire la fattura) e non richiedono approvazione manuale. Dal 28-10-2026 non
+    // basta più essere stati approvati in passato: l'unico privato in quel caso era un account di prova.
     const haProfiloCompleto = profiloCompleto(profile)
-    const isApproved = haProfiloCompleto || profile?.verification_status === 'approved'
+    const isApproved = haProfiloCompleto
     const mancanti = campiMancanti(profile)
     const haPianoStudio = profile?.posti_acquistati > 1
 
@@ -171,7 +171,7 @@ export default function Acquista() {
     const vai = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
     return (
-        <div className="space-y-6 max-w-5xl">
+        <div className="space-y-6">
 
             {/* Header */}
             <div>
@@ -200,7 +200,11 @@ export default function Acquista() {
             {/* Prima dei prodotti: dati di fatturazione e codice sconto */}
             <AvvisoDatiFatturazione profile={profile} />
 
-            <CodiceSconto sconto={sconto} className="bg-slate border border-white/5 p-4" />
+            <CodiceSconto
+                sconto={sconto}
+                nomi={Object.fromEntries([...piani, ...archivioMensile, ...pacchettiCrediti, ...abbonamenti, ...seatAddon].map(p => [p.id, p.nome]))}
+                className="bg-slate border border-white/5 p-4"
+            />
 
             {/* Errore e avvisi */}
             {errore && (
@@ -227,17 +231,6 @@ export default function Acquista() {
                 />
             )}
 
-            <SezioneArchivioInPiu
-                prodotti={archivioMensile}
-                conto={conto}
-                acquistando={acquistando}
-                onAcquista={acquista}
-                onGestisciUno={gestisciArchivio}
-                paga={consenso.pulsante}
-                sconto={sconto}
-                PrezzoScontato={PrezzoScontato}
-            />
-
             <div id="crediti" className="space-y-3 scroll-mt-24">
                 <p className="section-label">Crediti in più · non scadono</p>
                 <SezioneCrediti
@@ -248,6 +241,18 @@ export default function Acquista() {
                     sconto={sconto}
                 />
             </div>
+
+            {/* L'archivio in più dopo i crediti (28-10-2026, deciso da Antonino) */}
+            <SezioneArchivioInPiu
+                prodotti={archivioMensile}
+                conto={conto}
+                acquistando={acquistando}
+                onAcquista={acquista}
+                onGestisciUno={gestisciArchivio}
+                paga={consenso.pulsante}
+                sconto={sconto}
+                PrezzoScontato={PrezzoScontato}
+            />
 
             {/* La frase sul recesso accompagna i pulsanti «Paga e attiva subito»: in piccolo, sotto gli acquisti
                 (28-10-2026, deciso da Antonino: prima stava in mezzo alla pagina) */}
