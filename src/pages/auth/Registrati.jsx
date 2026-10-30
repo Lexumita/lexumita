@@ -29,7 +29,7 @@ export default function Registrati() {
   const [searchParams] = useSearchParams()
   const refIniziale = (searchParams.get('ref') ?? '').trim().toUpperCase()
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', prefisso: '+39', telefono: '', professione: '', studio: '', codice_commerciale: refIniziale, password: '', conferma: '' })
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', prefisso: '+39', telefono: '', professione: '', studio: '', codice_commerciale: refIniziale, fattura: false, ragione_sociale: '', partita_iva: '', password: '', conferma: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -46,6 +46,10 @@ export default function Registrati() {
     const errTel = erroreTelefono(form.prefisso, form.telefono)
     if (errTel) e.telefono = errTel
     if (!form.professione) e.professione = 'Campo obbligatorio'
+    if (form.fattura) {
+      if (!form.ragione_sociale.trim()) e.ragione_sociale = 'Campo obbligatorio per la fattura'
+      if (!form.partita_iva.trim()) e.partita_iva = 'Campo obbligatorio per la fattura'
+    }
     const errPassword = messaggioPassword(form.password)
     if (errPassword) e.password = errPassword
     if (form.password !== form.conferma) e.conferma = 'Le password non coincidono'
@@ -73,6 +77,9 @@ export default function Registrati() {
             // Il trigger lo risolve in commerciale_id; se errato viene ignorato
             // e la registrazione va comunque a buon fine.
             codice_commerciale: form.codice_commerciale.trim() || null,
+            // Dati aziendali per la fattura (30-10-2026): il trigger li copia nel profilo.
+            ragione_sociale: form.fattura ? form.ragione_sociale.trim() : null,
+            partita_iva: form.fattura ? form.partita_iva.trim().toUpperCase() : null,
           },
         },
       })
@@ -276,6 +283,30 @@ export default function Registrati() {
             <p className="mt-1.5 font-body text-xs text-nebbia/25 leading-relaxed">
               Se sei un professionista e lavori in uno studio, inserisci qui il nome.
             </p>
+          </div>
+
+          {/* Fattura — opzionale (30-10-2026): la ricevuta arriva sempre; la fattura a chi dà i dati aziendali */}
+          <div className="border border-white/10 p-4 space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.fattura}
+                onChange={e => setForm(f => ({ ...f, fattura: e.target.checked }))}
+                className="mt-0.5 accent-oro"
+              />
+              <span>
+                <span className="block font-body text-sm text-nebbia">Mi serve la fattura</span>
+                <span className="block font-body text-xs text-nebbia/40 leading-relaxed mt-0.5">
+                  A ogni pagamento ricevi la ricevuta via email. Con i dati aziendali ti arriva anche la fattura; puoi aggiungerli in ogni momento nel Profilo.
+                </span>
+              </span>
+            </label>
+            {form.fattura && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {field('ragione_sociale', 'Ragione sociale *', 'text', 'Studio Rossi S.r.l.')}
+                {field('partita_iva', 'Partita IVA *', 'text', '01234567890')}
+              </div>
+            )}
           </div>
 
           {/* Codice commerciale — opzionale */}

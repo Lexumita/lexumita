@@ -60,11 +60,11 @@
     },
     "fatturazione": {
       "title": "4.2 Fatturazione",
-      "text": "Gli abbonamenti sono fatturati anticipatamente per il periodo selezionato (mensile o annuale). I pagamenti sono elaborati tramite un fornitore di servizi di pagamento certificato. La fattura viene emessa automaticamente al momento del pagamento."
+      "text": "Gli abbonamenti si pagano in anticipo per il periodo scelto (mensile o annuale). I pagamenti sono elaborati tramite un fornitore di servizi di pagamento certificato. A ogni pagamento la ricevuta viene emessa automaticamente e inviata via email. Chi desidera la fattura indica i dati aziendali (ragione sociale e partita IVA) al momento della registrazione o, in seguito, nei dati per la fatturazione del Profilo: da quel momento, a ogni pagamento, riceve anche la fattura via email."
     },
     "durata": {
       "title": "4.3 Durata e rinnovo",
-      "text": "Ogni piano dura il periodo scelto al momento dell'acquisto e si paga in un'unica soluzione: non si rinnova automaticamente e non comporta addebiti successivi. Per continuare a usare il servizio dopo la scadenza occorre acquistare un nuovo periodo dalla sezione Studio della piattaforma. A titolo di cortesia, prima della scadenza Lexum invia un promemoria all'indirizzo email dell'account."
+      "text": "I piani dei professionisti durano il periodo scelto al momento dell'acquisto e si pagano in un'unica soluzione: non si rinnovano automaticamente e non comportano addebiti successivi. Per continuare a usare il servizio dopo la scadenza occorre acquistare un nuovo periodo dalla sezione Studio della piattaforma; prima della scadenza Lexum invia un promemoria all'indirizzo email dell'account. Gli abbonamenti mensili dei privati (piani personali e archivio in più) si rinnovano invece automaticamente ogni mese, con l'addebito sullo stesso metodo di pagamento, fino a disdetta. La disdetta si fa in ogni momento dal riquadro dell'abbonamento, con il pulsante «Gestisci», e vale dalla fine del mese già pagato: fino ad allora il servizio resta attivo e non ci sono altri addebiti. Gli abbonamenti presi sull'iPhone si gestiscono dalle impostazioni dell'iPhone, alla voce Abbonamenti."
     },
     "scadenza": {
       "title": "4.4 Scadenza del piano",
@@ -189,7 +189,7 @@
     "title": "11. Sospensione e risoluzione del contratto",
     "utente": {
       "title": "11.1 Risoluzione da parte dell'Utente",
-      "text": "L'Utente può recedere dal contratto in qualsiasi momento. Poiché i piani non si rinnovano automaticamente, è sufficiente non acquistare un nuovo periodo: il servizio a pagamento termina alla scadenza del periodo già pagato, senza ulteriori addebiti. Per la chiusura dell'account l'Utente può scrivere a info@lexum.it."
+      "text": "L'Utente può recedere dal contratto in qualsiasi momento. Per i piani a periodo è sufficiente non acquistare un nuovo periodo: il servizio a pagamento termina alla scadenza del periodo già pagato, senza ulteriori addebiti. Gli abbonamenti mensili dei privati si disdicono come indicato al punto 4.3. Per la chiusura dell'account l'Utente può scrivere a info@lexum.it."
     },
     "sospensione": {
       "title": "11.2 Sospensione da parte di Lexum",

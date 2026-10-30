@@ -85,6 +85,7 @@ async function inviaPostmark(payload: {
   TemplateId?: number;
   TemplateModel: Record<string, any>;
   MessageStream?: string;
+  Attachments?: { Name: string; Content: string; ContentType: string }[];
 }): Promise<{ MessageID: string; SubmittedAt: string; To: string; ErrorCode: number; Message: string }> {
   const res = await fetch("https://api.postmarkapp.com/email/withTemplate", {
     method: "POST",
@@ -179,6 +180,7 @@ Deno.serve(async (req) => {
       toUserId = null,
       bccInterno = false,
       messageStream = "outbound",
+      attachments = [],
     } = body;
 
     // Il mittente lo sceglie solo chi chiama server-to-server: altrimenti un
@@ -203,6 +205,17 @@ Deno.serve(async (req) => {
     if (!STREAM_AMMESSI.includes(messageStream)) {
       return jsonResponse(
         { ok: false, error: `messageStream non ammesso: ${messageStream}` }, 400);
+    }
+
+    // Allegati (30-10-2026, la fattura PDF con la ricevuta): solo da server a server, solo PDF piccoli.
+    // deno-lint-ignore no-explicit-any
+    let allegati: any[] = [];
+    if (Array.isArray(attachments) && attachments.length) {
+      if (!daServizio) return jsonResponse({ ok: false, error: "Allegati non ammessi" }, 403);
+      allegati = attachments.slice(0, 3).filter((a: any) =>
+        a && typeof a.Name === "string" && typeof a.Content === "string" &&
+        a.ContentType === "application/pdf" && a.Content.length <= 4_000_000)
+        .map((a: any) => ({ Name: a.Name.slice(0, 100), Content: a.Content, ContentType: a.ContentType }));
     }
 
     const destinatari: string[] = Array.isArray(to) ? to : [to];
@@ -230,6 +243,7 @@ Deno.serve(async (req) => {
               da_servizio: daServizio,
               template_id: templateId ?? null,
               message_stream: messageStream,
+              ...(allegati.length ? { allegati: allegati.map((a) => a.Name) } : {}),
             },
           })
           .select("id")
@@ -251,6 +265,7 @@ Deno.serve(async (req) => {
           if (templateAlias) postmarkPayload.TemplateAlias = templateAlias;
           if (templateId) postmarkPayload.TemplateId = templateId;
           if (replyTo) postmarkPayload.ReplyTo = replyTo;
+          if (allegati.length) postmarkPayload.Attachments = allegati;
           if (bccInterno && INTERNAL_BCC) {
             postmarkPayload.Bcc = INTERNAL_BCC;
           }

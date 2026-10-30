@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { PageHeader, InputField } from '@/components/shared'
-import { Check, AlertCircle, Loader2, Unlock, ArrowRight, Receipt } from 'lucide-react'
+import { Check, AlertCircle, Loader2, Unlock, ArrowRight, Receipt, FileText } from 'lucide-react'
 import { elencoPaesi } from '@/lib/paesi'
 import { profiloCompleto } from '@/lib/profiloCompleto'
 import { formatImporto } from '@/lib/prezzi'
@@ -252,7 +252,7 @@ export default function UserProfilo() {
                         <div>
                             <p className="font-body text-sm text-nebbia">Per la fattura alla tua attività</p>
                             <p className="font-body text-xs text-nebbia/40 mt-0.5">
-                                Servono se vuoi la fattura intestata a uno studio o a una società, e per i piani da professionista.
+                                Con questi dati, a ogni pagamento ti arriva via email anche la fattura intestata allo studio o alla società. Servono anche per i piani da professionista.
                             </p>
                         </div>
                         <InputField label="Ragione sociale" {...f('ragione_sociale')} />
@@ -359,10 +359,25 @@ export default function UserProfilo() {
 }
 
 // Lo storico dei pagamenti (28-10-2026): crediti, piani e archivio, sul sito e su iPhone (App Store).
-// Per ogni pagamento arriva anche la ricevuta via email.
+// Per ogni pagamento arriva anche la ricevuta via email; con i dati aziendali anche la fattura (30-10-2026),
+// che si riscarica da qui: il numero sta nei metadati della transazione, il PDF nel bucket fatture-lexum.
 function StoricoPagamenti({ userId }) {
     const [righe, setRighe] = useState(null)
     const [tutti, setTutti] = useState(false)
+    const [scaricando, setScaricando] = useState(null)
+
+    async function scaricaFattura(numero) {
+        setScaricando(numero)
+        try {
+            const { data: f } = await supabase.from('fatture_lexum').select('pdf_path').eq('numero', numero).maybeSingle()
+            const { data } = f?.pdf_path
+                ? await supabase.storage.from('fatture-lexum').createSignedUrl(f.pdf_path, 60)
+                : { data: null }
+            if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener')
+        } finally {
+            setScaricando(null)
+        }
+    }
 
     useEffect(() => {
         if (!userId) return
@@ -403,6 +418,15 @@ function StoricoPagamenti({ userId }) {
                                 <div className="text-right shrink-0">
                                     <p className="font-body text-sm text-nebbia">{importo}</p>
                                     {r.stato === 'rimborsato' && <p className="font-body text-xs text-amber-400">Rimborsato</p>}
+                                    {r.metadati?.fattura && (
+                                        <button
+                                            onClick={() => scaricaFattura(r.metadati.fattura)}
+                                            disabled={scaricando === r.metadati.fattura}
+                                            className="inline-flex items-center gap-1 font-body text-xs text-oro hover:text-oro/70 transition-colors disabled:opacity-40"
+                                        >
+                                            <FileText size={11} /> Fattura
+                                        </button>
+                                    )}
                                 </div>
                             </li>
                         )
@@ -416,7 +440,7 @@ function StoricoPagamenti({ userId }) {
             )}
             <p className="mt-auto flex items-start gap-2 font-body text-xs text-nebbia/40 leading-relaxed">
                 <Receipt size={13} className="shrink-0 mt-0.5" />
-                Per ogni pagamento ti arriva la ricevuta via email.
+                Per ogni pagamento ti arriva la ricevuta via email. Con ragione sociale e partita IVA nei dati per la fatturazione ti arriva anche la fattura.
             </p>
         </div>
     )
