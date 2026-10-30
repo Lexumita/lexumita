@@ -202,7 +202,7 @@ export default function LexLogs() {
             .from('lex_logs')
             .select(`
                 costo_totale_usd, durata_ms, esito, endpoint, user_id, created_at,
-                token_input, token_output,
+                token_input, token_output, request_id,
                 profiles:user_id(nome, cognome, email)
             `)
             .order('created_at', { ascending: false })
@@ -329,6 +329,14 @@ export default function LexLogs() {
             ? data.reduce((sum, l) => sum + (l.durata_ms ?? 0), 0) / data.length
             : 0
 
+        // Costo medio per domanda: una domanda e' una catena (request_id) partita dal lead;
+        // si somma tutta la catena (lead, subagent, synthesizer). Le richieste a parte
+        // (impaginazione PDF) e le vecchie prove dei subagent senza lead restano fuori.
+        const domande = new Set(data.filter(l => l.endpoint === 'lead' && l.request_id).map(l => l.request_id))
+        const costoDomande = data
+            .filter(l => domande.has(l.request_id))
+            .reduce((sum, l) => sum + parseFloat(l.costo_totale_usd ?? 0), 0)
+
         // Spesa per endpoint
         const spesaPerEndpoint = {}
         for (const l of data) {
@@ -375,6 +383,8 @@ export default function LexLogs() {
             errori,
             tassoErrori: totali > 0 ? (errori / totali) * 100 : 0,
             costoTotale,
+            domande: domande.size,
+            costoMedioDomanda: domande.size > 0 ? costoDomande / domande.size : 0,
             durataMedia,
             spesaPerEndpoint,
             topUtenti,
@@ -468,12 +478,19 @@ export default function LexLogs() {
             ) : kpi && (
                 <>
                     {/* KPI cards */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                         <KpiCard
                             icon={DollarSign}
                             label="Spesa totale"
                             value={formatCosto(kpi.costoTotale)}
                             color="text-oro"
+                        />
+                        <KpiCard
+                            icon={TrendingUp}
+                            label="Costo medio per domanda"
+                            value={kpi.domande > 0 ? formatCosto(kpi.costoMedioDomanda) : '—'}
+                            color="text-oro"
+                            sub={`${formatNumero(kpi.domande)} ${kpi.domande === 1 ? 'domanda' : 'domande'}`}
                         />
                         <KpiCard
                             icon={Activity}
