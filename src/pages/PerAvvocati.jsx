@@ -11,6 +11,9 @@ import {
     Library, Receipt,
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
+import SezioneApp from '@/components/SezioneApp'
+import schermataRisposta from '@/assets/app/app-risposta.webp'
+import schermataRicerche from '@/assets/app/app-ricerche.webp'
 import { useTranslation, Trans } from 'react-i18next'
 
 // Valori tecnici legati per POSIZIONE agli elenchi di per_avvocati.json
@@ -859,6 +862,22 @@ export default function PerAvvocati() {
 
                 </div>
             </section>
+
+            {/* 10b. L'APP PER L'AVVOCATO (30-10-2026) */}
+            <SezioneApp
+                etichetta="L'app per l'avvocato"
+                titolo="Tutti i dati del tuo studio"
+                evidenza="a portata di mano."
+                testo="Pratiche, udienze e scadenze, clienti, documenti e fatture: sul telefono, sempre allineati con il sito."
+                punti={[
+                    'Lex dentro la pratica: ne conosce i fatti e i documenti',
+                    'L\'agenda con udienze e scadenze, ovunque tu sia',
+                    'Fotografa un documento e allegalo alla pratica o al cliente',
+                    'Una notifica ti avvisa quando la risposta di Lex è pronta',
+                ]}
+                davanti={{ src: schermataRisposta, alt: 'Una risposta di Lex nell\'app' }}
+                dietro={{ src: schermataRicerche, alt: 'Le ricerche salvate nell\'app' }}
+            />
 
             {/* ══════════════════════════════════════════
           11. CTA FINALE

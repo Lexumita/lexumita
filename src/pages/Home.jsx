@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom'
 import ArchivioAnimatedDemo from '@/components/ArchivioAnimatedDemo'
 import ClientiLexAnimatedDemo from '@/components/ClientiLexAnimatedDemo'
 import LexAnimatedDemo from '@/components/LexAnimatedDemo'
+import { LinkApp } from '@/components/BadgeApp'
+import SezioneApp from '@/components/SezioneApp'
+import schermataRisposta from '@/assets/app/app-risposta.webp'
+import schermataBancaDati from '@/assets/app/app-banca-dati.webp'
 import {
   ArrowRight, Sparkles, ChevronDown, ChevronLeft, ChevronRight,
   Check, Search, Briefcase, FileText, MessageSquare, Brain,
@@ -289,7 +293,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
 
             {/* Sinistra: titolo, sottotitolo, pulsanti */}
-            <div className="lg:col-span-6 text-center lg:text-left">
+            <div className="lg:col-span-6 text-center lg:text-left lg:-mt-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 border border-oro/20 bg-oro/5 mb-8">
                 <div className="w-1.5 h-1.5 rounded-full bg-salvia animate-pulse" />
                 <span className="font-body text-xs text-nebbia/50 tracking-widest uppercase">{t('hero.badge')}</span>
@@ -314,6 +318,8 @@ export default function Home() {
                   </a>
                 </div>
                 <p className="font-body text-xs text-nebbia/25">{t('hero.no_card')}</p>
+                {/* L'app sul telefono (30-10-2026) */}
+                <LinkApp className="mt-8" />
               </div>
             </div>
 
@@ -354,6 +360,7 @@ export default function Home() {
                 </a>
               </div>
               <p className="font-body text-xs text-nebbia/25">{t('hero.no_card')}</p>
+              <LinkApp className="mt-6 flex-wrap justify-center" />
             </div>
           </div>
         </div>
@@ -900,6 +907,21 @@ export default function Home() {
           </div>
         </section>
       </section>
+
+      {/* 6.6 L'APP SUL TELEFONO (30-10-2026) */}
+      <SezioneApp
+        etichetta="Lexum anche sul telefono"
+        titolo="Porta Lexum"
+        evidenza="sempre con te."
+        testo="Fai una domanda a Lex dove sei e ricevi la risposta con le fonti collegate. Si entra con lo stesso account del sito: ricerche, etichette e archivio sono gli stessi."
+        punti={[
+          'Fotografa un documento o condividilo da un\'altra app: Lex lo analizza e tu lo salvi in archivio',
+          'Una notifica ti avvisa quando la risposta di Lex è pronta',
+          'La Banca Dati, con il collegamento alle fonti ufficiali',
+        ]}
+        davanti={{ src: schermataRisposta, alt: 'Una risposta di Lex nell\'app' }}
+        dietro={{ src: schermataBancaDati, alt: 'La Banca Dati nell\'app' }}
+      />
 
       {/* 7. CTA finale */}
       <section className="py-24 px-6 border-t border-white/5 relative overflow-hidden">
