@@ -138,6 +138,118 @@ async function abbonamentoDaOrdine(ordine: any, prodotto: any, riferimento: stri
   return nuovo;
 }
 
+// subscription/created porta solo l'id dell'abbonamento e order/paid non lo porta affatto: arrivano a
+// pochi secondi l'uno dall'altro, in un ordine qualsiasi. Si legano chiedendo a Tagadapay cliente e
+// prezzo dell'abbonamento e confrontandoli con quelli dell'ordine della cassa (il cliente da order/paid,
+// il prezzo dalla variante). 29-10-2026: il primo abbonamento vero era rimasto senza riferimento, cioè
+// senza rinnovi accreditati e senza disdetta. Un errore qui non ferma l'accredito: ci riprova il rinnovo.
+async function clienteEPrezzoTagada(idTagada: string): Promise<{ cliente: string | null; prezzo: string | null } | null> {
+  if (!CHIAVE_API) return null;
+  try {
+    const r = await fetch(`${API}/subscriptions/${encodeURIComponent(idTagada)}`, {
+      headers: { "Authorization": `Bearer ${CHIAVE_API}` },
+    });
+    // deno-lint-ignore no-explicit-any
+    const corpo: any = await r.json().catch(() => null);
+    if (!r.ok) {
+      console.error(`Abbonamento Tagadapay ${idTagada}: HTTP ${r.status} ${JSON.stringify(corpo).slice(0, 200)}`);
+      return null;
+    }
+    const s = corpo?.subscription ?? corpo ?? {};
+    return { cliente: s.customer?.id ?? s.customerId ?? null, prezzo: s.price?.id ?? s.priceId ?? null };
+  } catch (e) {
+    console.error(`Abbonamento Tagadapay ${idTagada}:`, e);
+    return null;
+  }
+}
+
+// Cliente e prezzo di un ordine della cassa: il cliente da order/paid (passato, o letto dal registro).
+// deno-lint-ignore no-explicit-any
+async function clienteEPrezzoOrdine(ordine: any, cliente: string | null = null) {
+  if (!cliente && ordine.order_id) {
+    const { data: ev } = await supabase.from("tagada_eventi").select("payload")
+      .eq("tipo", "order/paid").eq("payload->data->>orderId", ordine.order_id).limit(1).maybeSingle();
+    cliente = ev?.payload?.data?.customer?.id ?? null;
+  }
+  const { data: v } = ordine.variant_id
+    ? await supabase.from("tagada_varianti").select("price_id").eq("variant_id", ordine.variant_id).limit(1).maybeSingle()
+    : { data: null };
+  return { cliente, prezzo: (v?.price_id as string | null) ?? null };
+}
+
+// Stesso cliente e prezzo compatibile (uguale, o non noto da una delle due parti): vince chi ha lo
+// stesso prezzo, altrimenti si lega solo se il candidato è uno.
+function scegli<T>(candidati: { x: T; prezzoUguale: boolean }[]): T | null {
+  const conPrezzo = candidati.find((c) => c.prezzoUguale);
+  if (conPrezzo) return conPrezzo.x;
+  return candidati.length === 1 ? candidati[0].x : null;
+}
+
+// order/paid: l'abbonamento appena nato si lega a un subscription/created già arrivato.
+// deno-lint-ignore no-explicit-any
+async function legaDaOrdine(ab: any, ordine: any, clienteOrdine: string | null) {
+  try {
+    const o = await clienteEPrezzoOrdine(ordine, clienteOrdine);
+    if (!o.cliente) return ab;
+    const { data: eventi } = await supabase.from("tagada_eventi").select("payload")
+      .eq("tipo", "subscription/created").gte("ricevuto_il", new Date(Date.now() - 3_600_000).toISOString())
+      .order("ricevuto_il", { ascending: false }).limit(10);
+    const candidati: { x: string; prezzoUguale: boolean }[] = [];
+    for (const ev of eventi ?? []) {
+      const id = idAbbonamento(ev.payload);
+      if (!id) continue;
+      const { data: usato } = await supabase.from("abbonamenti").select("id").eq("fornitore", "tagada").eq("riferimento", id).maybeSingle();
+      if (usato) continue;
+      const t = await clienteEPrezzoTagada(id);
+      if (!t || t.cliente !== o.cliente) continue;
+      if (t.prezzo && o.prezzo && t.prezzo !== o.prezzo) continue;
+      candidati.push({ x: id, prezzoUguale: !!t.prezzo && t.prezzo === o.prezzo });
+    }
+    const id = scegli(candidati);
+    if (!id) return ab;
+    await supabase.from("abbonamenti").update({ riferimento: id, aggiornato_il: new Date().toISOString() })
+      .eq("id", ab.id).is("riferimento", null);
+    console.log(`Abbonamento ${ab.id} legato a ${id} (cliente ${o.cliente})`);
+    return { ...ab, riferimento: id };
+  } catch (e) {
+    console.error(`Abbonamento ${ab.id}: legame con Tagadapay non riuscito`, e);
+    return ab;
+  }
+}
+
+// subscription/* con un id che Lexum non conosce: si cerca fra gli abbonamenti della cassa ancora senza
+// riferimento (order/paid arrivato prima, oppure un legame mancato: allora lo ritrova il rinnovo).
+async function legaDaAbbonamento(idTagada: string) {
+  try {
+    const { data: senza } = await supabase.from("abbonamenti").select("*")
+      .eq("fornitore", "tagada").is("riferimento", null).not("ordine_id", "is", null).neq("stato", "chiuso")
+      .order("creato_il", { ascending: false }).limit(20);
+    if (!senza?.length) return null;
+    const t = await clienteEPrezzoTagada(idTagada);
+    if (!t?.cliente) return null;
+    // deno-lint-ignore no-explicit-any
+    const candidati: { x: any; prezzoUguale: boolean }[] = [];
+    for (const ab of senza) {
+      const { data: ordine } = await supabase.from("tagada_ordini").select("*").eq("id", ab.ordine_id).maybeSingle();
+      if (!ordine) continue;
+      const o = await clienteEPrezzoOrdine(ordine);
+      if (o.cliente !== t.cliente) continue;
+      if (t.prezzo && o.prezzo && t.prezzo !== o.prezzo) continue;
+      candidati.push({ x: ab, prezzoUguale: !!t.prezzo && o.prezzo === t.prezzo });
+    }
+    const ab = scegli(candidati);
+    if (!ab) return null;
+    const { data: legato } = await supabase.from("abbonamenti")
+      .update({ riferimento: idTagada, aggiornato_il: new Date().toISOString() })
+      .eq("id", ab.id).is("riferimento", null).select().maybeSingle();
+    if (legato) console.log(`Abbonamento ${ab.id} legato a ${idTagada} (cliente ${t.cliente})`);
+    return legato ?? null;
+  } catch (e) {
+    console.error(`Abbonamento Tagadapay ${idTagada}: legame non riuscito`, e);
+    return null;
+  }
+}
+
 async function annullaSuTagada(riferimento: string, aFineMese: boolean) {
   if (!CHIAVE_API) return;
   const r = await fetch(`${API}/subscriptions/cancel`, {
@@ -210,6 +322,7 @@ async function eventoAbbonamento(tipo: string, evento: any, eventId: string): Pr
       if (prodotto?.rinnovo_automatico) ab = await abbonamentoDaOrdine(ordine, prodotto, riferimento);
     }
   }
+  if (!ab && riferimento) ab = await legaDaAbbonamento(riferimento);
   if (!ab) {
     console.error(`${tipo} ${riferimento ?? "?"}: abbonamento Lexum non trovato (evento ${eventId}, nel registro)`);
     return new Response("OK (abbonamento non trovato)", { status: 200 });
@@ -335,7 +448,8 @@ Deno.serve(async (req) => {
 
     // ═══ ABBONAMENTI DEI PRIVATI: primo mese ═══
     if (prodotto.rinnovo_automatico === true) {
-      const ab = await abbonamentoDaOrdine(ordine, prodotto, idAbbonamento(evento));
+      let ab = await abbonamentoDaOrdine(ordine, prodotto, idAbbonamento(evento));
+      if (!ab.riferimento) ab = await legaDaOrdine(ab, ordine, dati?.customer?.id ?? null);
       const { data: esito, error: perErr } = await supabase.rpc("abbonamento_periodo", {
         p_abbonamento: ab.id, p_chiave: `tagada:${orderId || lexumTx}`, p_importo: importoPagato, p_valuta: "EUR",
       });
