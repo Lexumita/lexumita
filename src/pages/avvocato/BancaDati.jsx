@@ -633,6 +633,11 @@ function AggiungiAPratica({ ricerca, onRicercaSalvata, ricercaSalvataId, setRice
 // ═══════════════════════════════════════════════════════════════
 // LEX — RICERCA AI (multi-agent streaming)
 // ═══════════════════════════════════════════════════════════════
+
+// Percorso di un file del computer scritto nella domanda (29-10-2026: un utente ha incollato
+// «/Users/.../atto.pdf» per dare a Lex i suoi documenti). Lex riceve solo il testo del percorso, mai il file.
+const RE_PERCORSO_FILE = /(?:^|[\s"'«(])(?:file:\/\/|~\/|\/(?:Users|home|Volumes|private|mnt|media)\/|[A-Za-z]:\\|\\\\)[^\n]*?\.(?:pdf|docx?|odt|rtf|txt|pages|p7m|eml|msg|jpe?g|png|heic|xlsx?)\b/i
+
 function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggiornaMessaggi, onRicercaSalvata }) {
     const [domanda, setDomanda] = useState('')
     const [cercando, setCercando] = useState(false)
@@ -707,6 +712,8 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     const [caricandoDoc, setCaricandoDoc] = useState(false)
     const [erroreDoc, setErroreDoc] = useState(null)
     const fileInputRef = useRef(null)
+    const [trascinando, setTrascinando] = useState(false)
+    const [notaAllegato, setNotaAllegato] = useState(null)
 
     const { profile } = useAuth()
     const titolareArchivio = titolareDi(profile)
@@ -758,6 +765,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
             setSalvataggio({ fase: 'chiedi' })
         } catch (err) {
             setErroreDoc(err.message)
+            setNotaAllegato(null)
             setDocumento(null)
             daSalvareRef.current = null
             setSalvataggio(null)
@@ -771,6 +779,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
     async function analizzaDaArchivio(doc) {
         setPickerArchivio(false)
         setErroreDoc(null)
+        setNotaAllegato(null)
         setCaricandoDoc(true)
         daSalvareRef.current = null
         setSalvataggio(null)
@@ -807,6 +816,46 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
         setDocumento(null)
         daSalvareRef.current = null
         setSalvataggio(null)
+        setNotaAllegato(null)
+    }
+
+    // ── File trascinati sul riquadro della domanda (30-10-2026) ──
+    // Entrano come «dal tuo dispositivo», uno alla volta. Prima il browser apriva il file al posto della pagina
+    // oppure (Safari) scriveva nella domanda il suo percorso: Lex riceveva il percorso e mai il documento.
+    const conFile = e => Array.from(e.dataTransfer?.types ?? []).includes('Files')
+
+    function sopraConFile(e) {
+        if (!conFile(e)) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+        if (!trascinando) setTrascinando(true)
+    }
+
+    function fuoriConFile(e) {
+        // dragleave scatta anche passando da un elemento interno all'altro: conta solo l'uscita dal riquadro
+        if (e.currentTarget.contains(e.relatedTarget)) return
+        setTrascinando(false)
+    }
+
+    function lasciaFile(e) {
+        if (!conFile(e)) return
+        e.preventDefault()
+        setTrascinando(false)
+        const files = Array.from(e.dataTransfer.files ?? [])
+        if (files.length === 0 || cercando || caricandoDoc) return
+        if (documento) {
+            setNotaAllegato("C'è già un documento allegato: toglilo per allegarne un altro.")
+            return
+        }
+        const ammessi = files.filter(f => /\.(pdf|docx?|txt)$/i.test(f.name))
+        if (ammessi.length === 0) {
+            setNotaAllegato('Si possono allegare file PDF, Word o di testo.')
+            return
+        }
+        setNotaAllegato(files.length > 1
+            ? `Lex legge un documento alla volta: ho allegato «${ammessi[0].name}». Per gli altri, togli questo e allegali uno per volta.`
+            : null)
+        allegaDocumento(ammessi[0])
     }
 
     // «Salva»: prima lo spazio (stessa regola del server), poi la scelta della categoria
@@ -1362,8 +1411,14 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                 </div>
             )}
 
-            {/* Input area */}
-            <div className="px-4 sm:px-5 py-4 space-y-3 border-t border-white/5">
+            {/* Input area: accetta anche i file trascinati (vedi lasciaFile) */}
+            <div
+                className={`px-4 sm:px-5 py-4 space-y-3 border-t border-white/5 transition-colors ${trascinando ? 'bg-salvia/5 ring-1 ring-inset ring-salvia/40' : ''}`}
+                onDragEnter={sopraConFile}
+                onDragOver={sopraConFile}
+                onDragLeave={fuoriConFile}
+                onDrop={lasciaFile}
+            >
                 {conversazione.length === 0 && (
                     <p className="font-body text-xs text-nebbia/30">
                         Descrivi il caso legale — Lex consulterà norme, giurisprudenza e prassi.
@@ -1394,13 +1449,21 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-salvia/50 resize-none placeholder:text-nebbia/25 disabled:opacity-50"
                 />
 
+                {RE_PERCORSO_FILE.test(domanda) && (
+                    <p className="font-body text-xs text-amber-400/90 flex items-start gap-1.5">
+                        <AlertCircle size={11} className="shrink-0 mt-0.5" />
+                        Hai scritto il percorso di un file del tuo computer: Lex non può aprirlo. Per fargli leggere il
+                        documento, allegalo qui sotto «dal tuo dispositivo» oppure trascinalo in questo riquadro.
+                    </p>
+                )}
+
                 {/* ── Documento allegato: effimero, mai archiviato ── */}
                 <input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.doc,.docx,.txt"
                     className="hidden"
-                    onChange={e => allegaDocumento(e.target.files?.[0])}
+                    onChange={e => { setNotaAllegato(null); allegaDocumento(e.target.files?.[0]) }}
                 />
 
                 {!documento ? (
@@ -1411,7 +1474,7 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                     ) : (
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0">
                             <span className="flex items-center gap-1.5 font-body text-xs text-nebbia/45">
-                                <Plus size={12} /> Allega un documento da analizzare:
+                                <Plus size={12} /> <span>Allega un documento da analizzare<span className="hidden sm:inline">, anche trascinandolo qui</span>:</span>
                             </span>
                             <button
                                 onClick={() => setPickerArchivio(true)}
@@ -1542,6 +1605,12 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             </div>
                         )}
                     </div>
+                )}
+
+                {notaAllegato && (
+                    <p className="font-body text-xs text-amber-400/90 flex items-start gap-1.5">
+                        <AlertCircle size={11} className="shrink-0 mt-0.5" />{notaAllegato}
+                    </p>
                 )}
 
                 {erroreDoc && (
