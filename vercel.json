@@ -4,7 +4,7 @@
     { "source": "/per-avvocati", "destination": "/per-avvocati.html" },
     { "source": "/per-commercialisti", "destination": "/per-commercialisti.html" },
     { "source": "/contatti", "destination": "/contatti.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/app.html" }
   ],
   "headers": [
     {

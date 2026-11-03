@@ -6,6 +6,7 @@ import ClientiLexAnimatedDemo from '@/components/ClientiLexAnimatedDemo'
 import LexAnimatedDemo from '@/components/LexAnimatedDemo'
 import { LinkApp } from '@/components/BadgeApp'
 import SezioneApp from '@/components/SezioneApp'
+import SezioneStrumenti from '@/components/strumenti/SezioneStrumenti'
 import schermataRisposta from '@/assets/app/app-risposta.webp'
 import schermataBancaDati from '@/assets/app/app-banca-dati.webp'
 import {
@@ -907,6 +908,9 @@ export default function Home() {
           </div>
         </section>
       </section>
+
+      {/* 6.5 GLI STRUMENTI GRATIS (03-11-2026) */}
+      <SezioneStrumenti />
 
       {/* 6.6 L'APP SUL TELEFONO (30-10-2026) */}
       <SezioneApp

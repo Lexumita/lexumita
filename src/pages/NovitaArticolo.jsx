@@ -8,8 +8,10 @@ import { Link, useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import ReactMarkdown from 'react-markdown'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { articoloDaSlug, firmaAutore, fmtDataLunga } from '@/lib/novita'
+import { articoloDaSlug, articoliCorrelati, firmaAutore, fmtDataLunga } from '@/lib/novita'
+import { argomentoDaSlug } from '@/lib/argomenti'
 import { IconaInstagram, IconaTikTok } from '@/components/Social'
+import StaticoPronto from '@/components/StaticoPronto'
 
 const SITO = 'https://www.lexum.it'
 
@@ -39,16 +41,19 @@ const TESTO = {
     hr: () => <hr className="border-white/5 my-8" />,
 }
 
-export default function NovitaArticolo() {
+// preArticolo e preCorrelati: già letti da chi prepara il testo dentro l'HTML (src/seo/entry-seo.jsx)
+export default function NovitaArticolo({ preArticolo = null, preCorrelati = null }) {
     const { slug } = useParams()
-    const [articolo, setArticolo] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [articolo, setArticolo] = useState(preArticolo)
+    const [correlati, setCorrelati] = useState(preCorrelati ?? [])
+    const [loading, setLoading] = useState(!preArticolo)
 
     useEffect(() => {
         setLoading(true)
         articoloDaSlug(slug).then(a => {
             setArticolo(a)
             setLoading(false)
+            articoliCorrelati(a).then(setCorrelati)
         })
     }, [slug])
 
@@ -64,6 +69,8 @@ export default function NovitaArticolo() {
         return (
             <div className="min-h-screen bg-petrolio text-nebbia pt-32 px-6">
                 <div className="max-w-2xl mx-auto text-center">
+                    <StaticoPronto />
+                    <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
                     <h1 className="font-display text-3xl font-light mb-3">Articolo non trovato</h1>
                     <p className="font-body text-sm text-nebbia/40 mb-8">Forse è stato spostato o non è più pubblicato.</p>
                     <Link to="/novita" className="inline-flex items-center gap-2 font-body text-sm text-oro hover:underline">
@@ -80,6 +87,7 @@ export default function NovitaArticolo() {
 
     return (
         <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
+            <StaticoPronto />
             <Helmet>
                 <title>{`${articolo.titolo} — Lexum`}</title>
                 <meta name="description" content={descrizione} />
@@ -109,6 +117,12 @@ export default function NovitaArticolo() {
                             {articolo.categoria}
                         </span>
                     )}
+                    {(articolo.argomenti ?? []).map(argomentoDaSlug).filter(Boolean).map(x => (
+                        <Link key={x.slug} to={`/novita/argomento/${x.slug}`}
+                            className="font-body text-xs px-2 py-0.5 border border-white/10 text-nebbia/50 hover:border-oro/30 hover:text-oro transition-colors">
+                            {x.nome}
+                        </Link>
+                    ))}
                     <span className="font-body text-xs text-nebbia/30">
                         {fmtDataLunga(articolo.pubblicato_il)} · {firmaAutore(articolo.autore)}
                     </span>
@@ -156,6 +170,21 @@ export default function NovitaArticolo() {
                         Inizia ora <ArrowRight size={14} />
                     </Link>
                 </div>
+
+                {correlati.length > 0 && (
+                    <div className="mt-14">
+                        <p className="font-body text-xs text-nebbia/30 tracking-[0.25em] uppercase mb-4">Leggi anche</p>
+                        <ul className="space-y-3">
+                            {correlati.map(c => (
+                                <li key={c.slug}>
+                                    <Link to={`/novita/${c.slug}`} className="font-display text-lg font-light text-nebbia hover:text-oro transition-colors">
+                                        {c.titolo}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </article>
         </div>
     )

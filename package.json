@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generate-seo-pages.mjs",
+    "build": "vite build && (vite build --ssr src/seo/entry-seo.jsx --outDir dist-seo --logLevel warn || echo '[seo] testo delle pagine non compilato') && node scripts/generate-seo-pages.mjs",
     "preview": "vite preview",
     "testi:elenco": "node scripts/testi-elenco.mjs",
     "testi:applica": "node scripts/testi-applica.mjs",

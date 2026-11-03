@@ -15,8 +15,8 @@ import CommercialistaLayout from './components/layouts/CommercialistaLayout'
 import CommercialeLayout from './components/layouts/CommercialeLayout'
 import ClienteLayout from './components/layouts/ClienteLayout'
 import UserLayout from './components/layouts/UserLayout'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+import GuscioVetrina from './components/layouts/GuscioVetrina'
+import StaticoPronto from './components/StaticoPronto'
 
 // ── Vetrina ──
 import Home from './pages/Home'
@@ -82,6 +82,9 @@ import ArchivioDettaglio from '@/pages/avvocato/ArchivioDettaglio'
 import Fisco from '@/pages/fisco/Fisco'
 
 // ── Novità (blog della vetrina, scritto dall'admin) ──
+import Strumenti from './pages/strumenti/Strumenti'
+import CalcoloParcella from './pages/strumenti/CalcoloParcella'
+import CreaFattura from './pages/strumenti/CreaFattura'
 import Novita from './pages/Novita'
 import NovitaArticolo from './pages/NovitaArticolo'
 import AdminNovita from './pages/admin/Novita'
@@ -121,15 +124,16 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30
 // ─── Layout vetrina (con Navbar + Footer + Analytics) ───
 // Analytics attivo solo su vetrina + auth: misura il funnel
 // visitatore → registrato. L'area autenticata non viene tracciata.
-function VetrinaLayout({ children }) {
+function VetrinaLayout({ children, aspettaDati = false }) {
   return (
-    <div className="min-h-screen flex flex-col bg-petrolio">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
+    <GuscioVetrina coda={<>
       <Analytics />
       <ContaVisite />
-    </div>
+      {/* Il testo già pronto nell'HTML si toglie qui, o dalla pagina quando ha i suoi dati */}
+      {!aspettaDati && <StaticoPronto />}
+    </>}>
+      {children}
+    </GuscioVetrina>
   )
 }
 
@@ -197,9 +201,13 @@ export default function App() {
               <Route path="/" element={<VetrinaLayout><Home /></VetrinaLayout>} />
               <Route path="/per-avvocati" element={<VetrinaLayout><PerAvvocati /></VetrinaLayout>} />
               <Route path="/per-commercialisti" element={<VetrinaLayout><PerCommercialisti /></VetrinaLayout>} />
-              <Route path="/novita" element={NOVITA_ATTIVA ? <VetrinaLayout><Novita /></VetrinaLayout> : <Navigate to="/" replace />} />
-              <Route path="/novita/:slug" element={NOVITA_ATTIVA ? <VetrinaLayout><NovitaArticolo /></VetrinaLayout> : <Navigate to="/" replace />} />
+              <Route path="/novita" element={NOVITA_ATTIVA ? <VetrinaLayout aspettaDati><Novita /></VetrinaLayout> : <Navigate to="/" replace />} />
+              <Route path="/novita/argomento/:argomento" element={NOVITA_ATTIVA ? <VetrinaLayout aspettaDati><Novita /></VetrinaLayout> : <Navigate to="/" replace />} />
+              <Route path="/novita/:slug" element={NOVITA_ATTIVA ? <VetrinaLayout aspettaDati><NovitaArticolo /></VetrinaLayout> : <Navigate to="/" replace />} />
               <Route path="/lex-ai" element={<Navigate to="/" replace />} />
+              <Route path="/strumenti" element={<VetrinaLayout><Strumenti /></VetrinaLayout>} />
+              <Route path="/strumenti/calcolo-parcella-avvocato" element={<VetrinaLayout><CalcoloParcella /></VetrinaLayout>} />
+              <Route path="/strumenti/crea-fattura" element={<VetrinaLayout><CreaFattura /></VetrinaLayout>} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
               <Route path="/termini" element={<VetrinaLayout><TerminiServizio /></VetrinaLayout>} />

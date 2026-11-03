@@ -72,6 +72,7 @@ i18n
 
 // I testi cambiati dal pannello admin, sovrapposti a quelli del deploy.
 // Non blocca l'avvio: se Storage non risponde resta il deploy.
-avviaOverlay(i18n)
+// Nel build del testo già pronto (src/seo/entry-seo.jsx) non c'è da sovrapporre niente.
+if (!import.meta.env.SSR) avviaOverlay(i18n)
 
 export default i18n

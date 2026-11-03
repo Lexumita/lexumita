@@ -13,10 +13,11 @@ import {
     RefreshCw, AlertCircle, CheckCircle, Newspaper, Link2, CalendarClock,
 } from 'lucide-react'
 import { slugDa, firmaAutore, fmtDataLunga } from '@/lib/novita'
+import { ARGOMENTI } from '@/lib/argomenti'
 
 const VUOTO = {
     titolo: '', slug: '', sommario: '', contenuto: '',
-    autore: '', categoria: '', copertina_url: '', stato: 'bozza',
+    autore: '', categoria: '', argomenti: [], copertina_url: '', stato: 'bozza',
     instagram_url: '', tiktok_url: '', programmato_il: '',
 }
 
@@ -96,6 +97,7 @@ export default function AdminNovita() {
             contenuto: form.contenuto ?? '',
             autore: form.autore?.trim() || null,
             categoria: form.categoria?.trim() || null,
+            argomenti: form.argomenti ?? [],
             copertina_url: form.copertina_url?.trim() || null,
             instagram_url: form.instagram_url?.trim() || null,
             tiktok_url: form.tiktok_url?.trim() || null,
@@ -215,6 +217,23 @@ export default function AdminNovita() {
                                 placeholder="Lexum"
                             />
                             <p className="font-body text-xs text-nebbia/30 mt-1">Se lo lasci vuoto l'articolo si firma Lexum.</p>
+                        </div>
+                    </div>
+
+                    {/* Gli argomenti danno all'articolo un posto nelle pagine /novita/argomento/... */}
+                    <div>
+                        <label className={ETICHETTA}>Argomenti</label>
+                        <div className="flex flex-wrap gap-1.5">
+                            {ARGOMENTI.map(x => {
+                                const scelto = form.argomenti?.includes(x.slug)
+                                return (
+                                    <button key={x.slug} type="button"
+                                        onClick={() => setForm(f => ({ ...f, argomenti: scelto ? f.argomenti.filter(y => y !== x.slug) : [...(f.argomenti ?? []), x.slug] }))}
+                                        className={`font-body text-xs px-3 py-1.5 border transition-colors ${scelto ? 'border-oro/50 bg-oro/10 text-oro' : 'border-white/10 text-nebbia/50 hover:text-nebbia'}`}>
+                                        {x.nome}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
 

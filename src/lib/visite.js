@@ -14,7 +14,16 @@ let primaPagina = true
 // React fa partire gli effetti due volte; un layout può rimontarsi).
 let ultima = { percorso: null, quando: 0 }
 
+// 03-11-2026: non si contano le prove in locale né i browser automatici che si dichiarano tali
+// (gli antivirus delle mail che aprono ogni link, in parte). La stessa regola vale per gli eventi.
+function daNonContare() {
+  try {
+    return /^(localhost|127\.|\[::1\])/.test(window.location.hostname) || navigator.webdriver === true
+  } catch { return false }
+}
+
 export function registraVisita(percorso) {
+  if (daNonContare()) return
   const adesso = Date.now()
   if (percorso === ultima.percorso && adesso - ultima.quando < 2000) return
   ultima = { percorso, quando: adesso }
@@ -27,5 +36,13 @@ export function registraVisita(percorso) {
   }
   // Le statistiche non devono mai disturbare la pagina: un errore si ignora.
   supabase.rpc('registra_visita', { p_percorso: percorso, p_referrer: referrer, p_utm: utm })
+    .then(() => {}, () => {})
+}
+
+// Un gesto che vale la pena contare, come una pagina finta (03-11-2026): /strumenti/fattura/documento
+// = un documento creato con uno strumento gratuito. Compare nelle pagine più viste.
+export function registraEvento(percorso) {
+  if (daNonContare()) return
+  supabase.rpc('registra_visita', { p_percorso: percorso, p_referrer: 'interno', p_utm: null })
     .then(() => {}, () => {})
 }

@@ -31,12 +31,20 @@
 // raggiungibile (cade sul catch-all → SPA), solo senza testata dedicata. Per
 // questo la pubblicazione dall'admin fa ripartire il rilascio.
 //
-// NB: è "head-only" — il <body> resta il mount della SPA. Serve alle anteprime
-// social e a dare a Google una testata corretta anche senza rendering JS. Non è
-// un prerender del contenuto (per quello servirebbe un headless browser).
+// TESTO DELLE PAGINE (03-11-2026): i motori delle AI (GPTBot, ClaudeBot...) non
+// eseguono JavaScript: con la sola testata vedevano titolo e descrizione e nessun
+// testo. Ora, se c'è il build dist-seo (src/seo/entry-seo.jsx), il corpo della
+// pagina entra nell'HTML dentro <div id="statico">; nel browser React disegna in
+// #root (nascosto) e poi lo sostituisce (src/lib/statico.js). Se quel build manca
+// o una pagina non si disegna, resta la sola testata: il rilascio non si ferma.
+//
+// dist/index.html è la home col suo testo e Vercel lo serve per «/»: per tutte le
+// altre rotte il catch-all di vercel.json punta a dist/app.html, il guscio vuoto.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
+import { ARGOMENTI } from '../src/lib/argomenti.js'
+import { HUB_STRUMENTI, STRUMENTI } from '../src/lib/strumenti/testi.js'
 
 const DIST = resolve(process.cwd(), 'dist')
 const SITE = 'https://www.lexum.it'
@@ -47,6 +55,39 @@ if (!existsSync(indexPath)) {
   process.exit(1)
 }
 const base = readFileSync(indexPath, 'utf8')
+writeFileSync(resolve(DIST, 'app.html'), base)
+
+// Il disegno delle pagine in testo (vedi sopra)
+let disegna = null
+try {
+  ;({ disegna } = await import(resolve(process.cwd(), 'dist-seo/entry-seo.js')))
+} catch (err) {
+  console.warn(`[seo] testo delle pagine non disponibile (${err.message}): solo testate.`)
+}
+
+function testoDi(percorso, dati) {
+  if (!disegna) return null
+  try {
+    return disegna(percorso, dati)
+  } catch (err) {
+    console.warn(`[seo] ${percorso} non disegnata (${err.message}): solo testata.`)
+    return null
+  }
+}
+
+let conTesto = 0
+function conCorpo(html, corpo) {
+  if (!corpo) return html
+  conTesto++
+  // funzione come sostituto: nel testo possono esserci «$»
+  return html.replace('<div id="root"></div>', () => `<div id="statico">${corpo}</div>\n  <div id="root" style="display:none"></div>`)
+}
+
+// I dati strutturati: «<» scritto così non può chiudere il tag script
+function datiStrutturati(oggetto) {
+  const json = JSON.stringify({ '@context': 'https://schema.org', ...oggetto }).replace(/</g, '\\u003c')
+  return `  <script type="application/ld+json">${json}</script>\n</head>`
+}
 
 // Testate per rotta (allineate alle <Helmet> delle pagine).
 const PAGES = {
@@ -90,6 +131,9 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').repl
 // Scrive una copia di index.html con la testata della pagina.
 function scriviTestata(fileRelativo, url, m) {
   let html = base
+  if (m.tipoOg) html = replaceFirst(html, /<meta property="og:type"[\s\S]*?\/>/, `<meta property="og:type" content="${m.tipoOg}" />`)
+  for (const dati of m.jsonLd ?? []) html = html.replace('</head>', () => datiStrutturati(dati))
+  if (m.corpo) html = conCorpo(html, m.corpo)
   html = replaceFirst(html, /<title>[\s\S]*?<\/title>/, `<title>${esc(m.title)}</title>`)
   html = replaceFirst(html, /<meta name="description"[\s\S]*?\/>/, `<meta name="description" content="${esc(m.description)}" />`)
   html = replaceFirst(html, /<link rel="canonical"[\s\S]*?\/>/, `<link rel="canonical" href="${url}" />`)
@@ -110,9 +154,52 @@ function scriviTestata(fileRelativo, url, m) {
 
 let count = 0
 for (const [route, m] of Object.entries(PAGES)) {
-  scriviTestata(`${route}.html`, `${SITE}/${route}`, m)
+  scriviTestata(`${route}.html`, `${SITE}/${route}`, { ...m, corpo: testoDi(`/${route}`) })
   count++
 }
+
+// Gli strumenti gratuiti: stessa logica degli articoli, cartelle con index.html
+scriviTestata('strumenti/index.html', `${SITE}${HUB_STRUMENTI.percorso}`, {
+  title: HUB_STRUMENTI.metaTitolo,
+  description: HUB_STRUMENTI.metaDescrizione,
+  ogTitle: HUB_STRUMENTI.metaTitolo,
+  ogDescription: HUB_STRUMENTI.metaDescrizione,
+  corpo: testoDi(HUB_STRUMENTI.percorso),
+})
+count++
+for (const x of STRUMENTI) {
+  const url = `${SITE}${x.percorso}`
+  scriviTestata(`strumenti/${x.slug}/index.html`, url, {
+    title: x.metaTitolo,
+    description: x.metaDescrizione,
+    ogTitle: x.metaTitolo,
+    ogDescription: x.metaDescrizione,
+    corpo: testoDi(x.percorso),
+    jsonLd: [{
+      '@type': 'WebApplication',
+      name: x.nome,
+      description: x.metaDescrizione,
+      url,
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      inLanguage: 'it-IT',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      provider: { '@type': 'Organization', name: 'Lexum', url: `${SITE}/` },
+    }, {
+      '@type': 'FAQPage',
+      mainEntity: x.domande.map(({ d, r }) => ({
+        '@type': 'Question',
+        name: d,
+        acceptedAnswer: { '@type': 'Answer', text: r },
+      })),
+    }],
+  })
+  count++
+}
+
+// La home: stesso file, stessa testata, col testo dentro
+writeFileSync(indexPath, conCorpo(base, testoDi('/')))
 
 // ─── NOVITÀ ───────────────────────────────────────────────────
 
@@ -142,7 +229,7 @@ async function novitaPubblicate() {
     return []
   }
   const query =
-    'select=slug,titolo,sommario,copertina_url,pubblicato_il,updated_at&stato=eq.pubblicato&order=pubblicato_il.desc&limit=200'
+    'select=slug,titolo,sommario,contenuto,copertina_url,autore,categoria,argomenti,instagram_url,tiktok_url,pubblicato_il,updated_at&stato=eq.pubblicato&order=pubblicato_il.desc&limit=200'
   try {
     const res = await fetch(`${url}/rest/v1/novita?${query}`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
@@ -161,24 +248,80 @@ async function novitaPubblicate() {
 // Stesso interruttore di src/lib/novita.js (acceso il 07/10/2026)
 const NOVITA_ATTIVA = true
 const articoli = NOVITA_ATTIVA ? await novitaPubblicate() : []
+// L'elenco non ha bisogno del testo degli articoli
+const elenco = articoli.map(({ contenuto, ...resto }) => resto)
 
 if (NOVITA_ATTIVA) scriviTestata('novita/index.html', `${SITE}/novita`, {
   title: 'Novità — Lexum',
   description: 'Cosa cambia: le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
   ogTitle: 'Novità — Lexum',
   ogDescription: 'Le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
+  corpo: testoDi('/novita', { articoli: elenco }),
 })
 if (NOVITA_ATTIVA) count++
+
+// Le pagine degli argomenti (src/lib/argomenti.js): solo quelli che hanno già articoli
+const argomentiAttivi = ARGOMENTI.filter(x => articoli.some(a => a.argomenti?.includes(x.slug)))
+for (const x of argomentiAttivi) {
+  const url = `${SITE}/novita/argomento/${x.slug}`
+  scriviTestata(`novita/argomento/${x.slug}/index.html`, url, {
+    title: `${x.titolo} — Lexum`,
+    description: x.descrizione,
+    ogTitle: x.titolo,
+    ogDescription: x.descrizione,
+    corpo: testoDi(`/novita/argomento/${x.slug}`, { articoli: elenco }),
+    jsonLd: [{
+      '@type': 'CollectionPage',
+      name: x.titolo,
+      description: x.descrizione,
+      url,
+      inLanguage: 'it-IT',
+      isPartOf: { '@id': `${SITE}/#website` },
+    }],
+  })
+  count++
+}
 
 for (const a of articoli) {
   if (!a?.slug) continue
   const descrizione = a.sommario?.trim() || `${a.titolo} — le novità di Lexum.`
-  scriviTestata(`novita/${a.slug}/index.html`, `${SITE}/novita/${a.slug}`, {
+  const url = `${SITE}/novita/${a.slug}`
+  // Gli stessi di articoliCorrelati (src/lib/novita.js)
+  const correlati = a.argomenti?.length
+    ? elenco.filter(c => c.slug !== a.slug && c.argomenti?.some(x => a.argomenti.includes(x))).slice(0, 3)
+    : []
+  scriviTestata(`novita/${a.slug}/index.html`, url, {
     title: `${a.titolo} — Lexum`,
     description: descrizione,
     ogTitle: a.titolo,
     ogDescription: descrizione,
     image: a.copertina_url || undefined,
+    tipoOg: 'article',
+    corpo: testoDi(`/novita/${a.slug}`, { articolo: a, correlati }),
+    jsonLd: [{
+      '@type': 'Article',
+      headline: a.titolo,
+      description: descrizione,
+      image: a.copertina_url || `${SITE}/logo.png`,
+      datePublished: a.pubblicato_il,
+      dateModified: a.updated_at || a.pubblicato_il,
+      inLanguage: 'it-IT',
+      url,
+      mainEntityOfPage: url,
+      articleSection: a.categoria || undefined,
+      isAccessibleForFree: true,
+      author: a.autore?.trim()
+        ? { '@type': 'Person', name: a.autore.trim() }
+        : { '@type': 'Organization', name: 'Lexum', url: `${SITE}/` },
+      publisher: { '@type': 'Organization', name: 'Lexum', url: `${SITE}/`, logo: { '@type': 'ImageObject', url: `${SITE}/logo.png` } },
+    }, {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Lexum', item: `${SITE}/` },
+        { '@type': 'ListItem', position: 2, name: 'Novità', item: `${SITE}/novita` },
+        { '@type': 'ListItem', position: 3, name: a.titolo, item: url },
+      ],
+    }],
   })
   count++
 }
@@ -192,7 +335,13 @@ if (NOVITA_ATTIVA) {
     const giorno = d => (d ? new Date(d) : new Date()).toISOString().slice(0, 10)
     const voce = (loc, lastmod, freq, prio) =>
       `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${prio}</priority>\n  </url>\n`
-    let voci = voce(`${SITE}/novita`, giorno(articoli[0]?.pubblicato_il), 'weekly', '0.8')
+    let voci = voce(`${SITE}${HUB_STRUMENTI.percorso}`, giorno(), 'monthly', '0.8')
+    for (const x of STRUMENTI) voci += voce(`${SITE}${x.percorso}`, giorno(), 'monthly', '0.8')
+    voci += voce(`${SITE}/novita`, giorno(articoli[0]?.pubblicato_il), 'weekly', '0.8')
+    for (const x of argomentiAttivi) {
+      const recente = articoli.find(a => a.argomenti?.includes(x.slug))
+      voci += voce(`${SITE}/novita/argomento/${x.slug}`, giorno(recente?.pubblicato_il), 'weekly', '0.6')
+    }
     for (const a of articoli) {
       if (!a?.slug) continue
       voci += voce(`${SITE}/novita/${a.slug}`, giorno(a.updated_at || a.pubblicato_il), 'monthly', '0.7')
@@ -205,4 +354,4 @@ if (NOVITA_ATTIVA) {
   }
 }
 
-console.log(`[seo] fatto: ${count} pagine con testata dedicata (${articoli.length} articoli Novità).`)
+console.log(`[seo] fatto: ${count} pagine con testata dedicata (${articoli.length} articoli Novità), ${conTesto} col testo dentro.`)

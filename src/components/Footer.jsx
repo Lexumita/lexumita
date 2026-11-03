@@ -37,6 +37,7 @@ export default function Footer() {
                 { to: '/per-avvocati', key: 'lawyers' },
                 { to: '/#lexai', key: 'lex_ai' },
                 { to: '/novita', key: 'novita' },
+                { to: '/strumenti', key: 'strumenti' },
                 { to: '/contatti', key: 'contacts' },
               ].filter(l => NOVITA_ATTIVA || l.to !== '/novita').map(({ to, key }) => (
                 <li key={to}>

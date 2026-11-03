@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { Menu, X, ArrowRight, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import logo from '@/assets/logo.png'
 import { useAuth } from '@/context/AuthContext'
 import { NOVITA_ATTIVA } from '@/lib/novita'
+import { PARCELLA, FATTURA } from '@/lib/strumenti/testi'
 
 const navLinks = [
   { path: '/', key: 'home' },
   { path: '/per-avvocati', key: 'avvocati' },
   { path: '/per-commercialisti', key: 'commercialisti' },
   { path: '/novita', key: 'novita' },
+  // Gli strumenti gratuiti (03-11-2026): nella tendina si arriva subito allo strumento
+  { path: '/strumenti', key: 'strumenti', sotto: [PARCELLA, FATTURA] },
   { path: '/contatti', key: 'contatti' },
 ].filter(l => NOVITA_ATTIVA || l.path !== '/novita')
 
@@ -53,21 +56,36 @@ export default function Navbar() {
         </NavLink>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map(({ path, key }) => (
-            <NavLink key={path} to={path}
-              end={path === '/'}
-              className={({ isActive }) =>
-                `font-body text-xs tracking-widest uppercase transition-colors ${isActive ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
-                }`
-              }>
-              {t(`navbar.${key}`)}
-            </NavLink>
+        <nav className="hidden lg:flex items-center gap-7">
+          {navLinks.map(({ path, key, sotto }) => (
+            <div key={path} className="relative group">
+              <NavLink to={path}
+                end={path === '/'}
+                className={({ isActive }) =>
+                  `flex items-center gap-1 font-body text-xs tracking-widest uppercase transition-colors ${isActive ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
+                  }`
+                }>
+                {t(`navbar.${key}`)}
+                {sotto && <ChevronDown size={12} />}
+              </NavLink>
+              {sotto && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-4 w-80 invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-opacity">
+                  <div className="bg-slate border border-white/10 shadow-2xl p-2">
+                    {sotto.map(x => (
+                      <Link key={x.percorso} to={x.percorso} className="block p-3 hover:bg-white/5 transition-colors">
+                        <span className="block font-body text-sm text-nebbia">{x.nome}</span>
+                        <span className="block font-body text-xs text-nebbia/40 leading-relaxed mt-0.5">{x.brevissimo}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </nav>
 
         {/* CTA Desktop */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           {profile ? (
             <Link
               to={homeUtente}
@@ -88,23 +106,31 @@ export default function Navbar() {
         </div>
 
         {/* Mobile hamburger */}
-        <button className="md:hidden text-nebbia/50 hover:text-nebbia transition-colors"
+        <button aria-label="Menu" className="lg:hidden text-nebbia/50 hover:text-nebbia transition-colors"
           onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {/* Mobile menu */}
-      <div className={`md:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`lg:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-[34rem] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="bg-petrolio/95 backdrop-blur-sm border-t border-white/5 px-6 py-4 flex flex-col gap-1">
-          {navLinks.map(({ path, key }) => (
-            <NavLink key={path} to={path}
-              className={({ isActive }) =>
-                `py-3 px-2 font-body text-sm border-b border-white/5 transition-colors ${isActive ? 'text-oro' : 'text-nebbia/60 hover:text-nebbia'
-                }`
-              }>
-              {t(`navbar.${key}`)}
-            </NavLink>
+          {navLinks.map(({ path, key, sotto }) => (
+            <div key={path} className="flex flex-col border-b border-white/5">
+              <NavLink to={path}
+                end={path === '/'}
+                className={({ isActive }) =>
+                  `py-3 px-2 font-body text-sm transition-colors ${isActive ? 'text-oro' : 'text-nebbia/60 hover:text-nebbia'
+                  }`
+                }>
+                {t(`navbar.${key}`)}
+              </NavLink>
+              {sotto?.map(x => (
+                <Link key={x.percorso} to={x.percorso} className="pb-3 px-5 font-body text-sm text-nebbia/40 hover:text-nebbia transition-colors">
+                  {x.nome}
+                </Link>
+              ))}
+            </div>
           ))}
 
           {/* CTA Mobile */}

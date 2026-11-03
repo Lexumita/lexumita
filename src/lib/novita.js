@@ -9,9 +9,9 @@ import { supabase } from '@/lib/supabase'
 // torna alla home. Per riaccenderla basta true qui e in scripts/generate-seo-pages.mjs.
 export const NOVITA_ATTIVA = true
 
-const CAMPI_ELENCO = 'slug, titolo, sommario, copertina_url, autore, categoria, pubblicato_il'
+const CAMPI_ELENCO = 'slug, titolo, sommario, copertina_url, autore, categoria, argomenti, pubblicato_il'
 
-export async function elencoNovita(limite = 60) {
+export async function elencoNovita(limite = 200) {
     const { data } = await supabase
         .from('novita')
         .select(CAMPI_ELENCO)
@@ -24,11 +24,25 @@ export async function elencoNovita(limite = 60) {
 export async function articoloDaSlug(slug) {
     const { data } = await supabase
         .from('novita')
-        .select('slug, titolo, sommario, contenuto, copertina_url, autore, categoria, pubblicato_il, instagram_url, tiktok_url')
+        .select('slug, titolo, sommario, contenuto, copertina_url, autore, categoria, argomenti, pubblicato_il, instagram_url, tiktok_url')
         .eq('slug', slug)
         .eq('stato', 'pubblicato')
         .maybeSingle()
     return data ?? null
+}
+
+// Gli altri articoli degli stessi argomenti, i più recenti (03-11-2026)
+export async function articoliCorrelati(articolo, quanti = 3) {
+    if (!articolo?.argomenti?.length) return []
+    const { data } = await supabase
+        .from('novita')
+        .select(CAMPI_ELENCO)
+        .eq('stato', 'pubblicato')
+        .overlaps('argomenti', articolo.argomenti)
+        .neq('slug', articolo.slug)
+        .order('pubblicato_il', { ascending: false })
+        .limit(quanti)
+    return data ?? []
 }
 
 // Senza autore l'articolo si firma Lexum.

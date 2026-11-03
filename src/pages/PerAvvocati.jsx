@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import SezioneApp from '@/components/SezioneApp'
+import SezioneStrumenti from '@/components/strumenti/SezioneStrumenti'
 import schermataRisposta from '@/assets/app/app-risposta.webp'
 import schermataRicerche from '@/assets/app/app-ricerche.webp'
 import { useTranslation, Trans } from 'react-i18next'
@@ -862,6 +863,9 @@ export default function PerAvvocati() {
 
                 </div>
             </section>
+
+            {/* 10a. GLI STRUMENTI GRATIS (03-11-2026) */}
+            <SezioneStrumenti titolo="Calcola la parcella e fai la fattura," evidenza="gratis." />
 
             {/* 10b. L'APP PER L'AVVOCATO (30-10-2026) */}
             <SezioneApp

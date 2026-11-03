@@ -7,6 +7,8 @@ User-agent: *
 Allow: /$
 Allow: /per-avvocati
 Allow: /per-commercialisti
+Allow: /novita
+Allow: /strumenti
 Allow: /contatti
 Allow: /privacy
 Allow: /termini
