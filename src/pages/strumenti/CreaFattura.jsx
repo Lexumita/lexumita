@@ -6,11 +6,14 @@
 //
 // In Italia la fattura valida è l'XML passato dallo SDI: il PDF è la copia di cortesia, e la pagina lo dice.
 // Pro forma e avviso di parcella restano solo PDF.
+// Con `portale` è la stessa pagina dentro l'area degli user: senza l'apertura, le domande frequenti e l'invito.
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Download, FileCode2, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react'
 import { TestataPagina, Apertura, DomandeFrequenti, CAMPO, ETICHETTA } from '@/components/strumenti/Pagina'
 import { usePopupIscrizione } from '@/components/strumenti/PopupIscrizione'
+import { PageHeader } from '@/components/shared'
+import { caricaPdf, preparaPdf } from '@/lib/strumenti/caricaPdf'
 import { CASSE, NATURE_FATTURA, NATURA_SPESE_ESENTI, REGIMI, bolloDovuto, calcolaTotali, etichettaCassa, etichettaNatura } from '@/lib/fatturazione'
 import { costruisciFatturaPA, RIF_FORFETTARIO } from '@/lib/strumenti/fatturaPA'
 import { leggi, scrivi, prendiRigheDallaParcella } from '@/lib/strumenti/memoria'
@@ -110,7 +113,7 @@ function Indirizzo({ dati, aggiorna, estero = false }) {
     )
 }
 
-export default function CreaFattura() {
+export default function CreaFattura({ portale = false }) {
     const [em, setEm] = useState(EMITTENTE_VUOTO)
     const [cl, setCl] = useState(CLIENTE_VUOTO)
     const [doc, setDoc] = useState({
@@ -133,6 +136,7 @@ export default function CreaFattura() {
 
     // Quello che il browser ricorda, e le righe in arrivo dal calcolo della parcella
     useEffect(() => {
+        preparaPdf()
         const salvato = leggi('emittente')
         if (salvato) setEm(x => ({ ...x, ...salvato }))
         aggDoc({ numero: numeroSuccessivo(leggi('ultimoNumero')) })
@@ -219,7 +223,7 @@ export default function CreaFattura() {
         if (m.length || creando) return
         setCreando('pdf')
         try {
-            const { scaricaPdfDocumento } = await import('@/lib/strumenti/pdfStrumenti')
+            const { scaricaPdfDocumento } = await caricaPdf()
             await scaricaPdfDocumento({
                 titolo: tipoDoc.nome,
                 numero: doc.numero.trim(),
@@ -323,16 +327,24 @@ export default function CreaFattura() {
     }
 
     return (
-        <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
-            <TestataPagina percorso={FATTURA.percorso} titolo={FATTURA.metaTitolo} descrizione={FATTURA.metaDescrizione} />
-            <Apertura
-                etichetta="Strumenti gratis"
-                titolo="Crea la tua"
-                evidenza="fattura gratis"
-                testo="Carica il logo, compila i dati e scarica il PDF per il cliente e il file XML da inviare all'Agenzia delle Entrate. C.P.A., ritenuta, bollo e forfettario li calcola lo strumento."
-            />
+        // overflow-x-clip e non hidden: hidden fa della pagina un contenitore a sé e la colonna di destra non segue più lo scorrimento
+        <div className={portale ? 'text-nebbia pb-16' : 'min-h-screen bg-petrolio text-nebbia overflow-x-clip pt-20'}>
+            {portale ? (
+                <PageHeader label="Strumenti" title="Crea fattura"
+                    subtitle="Gratis e senza crediti. I dati restano nel tuo browser." />
+            ) : (
+                <>
+                    <TestataPagina percorso={FATTURA.percorso} titolo={FATTURA.metaTitolo} descrizione={FATTURA.metaDescrizione} />
+                    <Apertura
+                        etichetta="Strumenti gratis"
+                        titolo="Crea la tua"
+                        evidenza="fattura gratis"
+                        testo="Carica il logo, compila i dati e scarica il PDF per il cliente e il file XML da inviare all'Agenzia delle Entrate. C.P.A., ritenuta, bollo e forfettario li calcola lo strumento."
+                    />
+                </>
+            )}
 
-            <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 items-start">
+            <section className={`grid grid-cols-1 gap-5 items-start ${portale ? 'xl:grid-cols-[1fr_380px]' : 'max-w-6xl mx-auto px-4 sm:px-6 pb-16 lg:grid-cols-[1fr_400px]'}`}>
                 <div className="space-y-4 min-w-0">
                     <Scheda titolo="Il documento">
                         <div className="space-y-4">
@@ -528,9 +540,11 @@ export default function CreaFattura() {
                     </Scheda>
                 </div>
 
-                {/* Anteprima e azioni */}
-                <aside className="lg:sticky lg:top-24 space-y-3">
-                    <div className="bg-white text-[#0B1F2A] p-5 font-body text-[11px] leading-snug shadow-2xl shadow-black/40">
+                {/* Anteprima e azioni: seguono lo scorrimento. Se l'anteprima è lunga scorre lei e i pulsanti restano a vista. */}
+                <aside className={`space-y-3 ${portale
+                    ? 'xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:flex xl:flex-col'
+                    : 'lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col'}`}>
+                    <div className="bg-white text-[#0B1F2A] p-5 font-body text-[11px] leading-snug shadow-2xl shadow-black/40 min-h-0 lg:overflow-y-auto">
                         <div className="flex items-start justify-between gap-3 mb-4">
                             <div className="min-w-0">
                                 {em.logo && <img src={em.logo} alt="" className="max-h-10 max-w-[130px] mb-2" />}
@@ -606,22 +620,24 @@ export default function CreaFattura() {
                 </aside>
             </section>
 
-            <section className="max-w-3xl mx-auto px-6 pb-24">
-                <h2 className="font-display text-3xl font-light mb-6">Domande frequenti</h2>
-                <DomandeFrequenti domande={FATTURA.domande} />
-                <p className="font-body text-sm text-nebbia/50 leading-relaxed mt-10">
-                    Sei un avvocato? Calcola prima il compenso con il{' '}
-                    <Link to="/strumenti/calcolo-parcella-avvocato" className="text-oro hover:underline">calcolo della parcella</Link>
-                    {' '}e porta gli importi qui. Le fatture ti arrivano non pagate? Leggi{' '}
-                    <Link to="/novita/fattura-non-pagata-cliente-diffida-decreto-ingiuntivo" className="text-oro hover:underline">cosa fare prima di fare causa</Link>.
-                </p>
-                <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="font-body text-sm text-nebbia/40">Vuoi fatture, clienti e pratiche in un posto solo?</p>
-                    <Link to="/registrati" className="flex items-center gap-2 px-6 py-3 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors">
-                        Prova Lexum <ArrowRight size={14} />
-                    </Link>
-                </div>
-            </section>
+            {!portale && (
+                <section className="max-w-3xl mx-auto px-6 pb-24">
+                    <h2 className="font-display text-3xl font-light mb-6">Domande frequenti</h2>
+                    <DomandeFrequenti domande={FATTURA.domande} />
+                    <p className="font-body text-sm text-nebbia/50 leading-relaxed mt-10">
+                        Sei un avvocato? Calcola prima il compenso con il{' '}
+                        <Link to="/strumenti/calcolo-parcella-avvocato" className="text-oro hover:underline">calcolo della parcella</Link>
+                        {' '}e porta gli importi qui. Le fatture ti arrivano non pagate? Leggi{' '}
+                        <Link to="/novita/fattura-non-pagata-cliente-diffida-decreto-ingiuntivo" className="text-oro hover:underline">cosa fare prima di fare causa</Link>.
+                    </p>
+                    <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <p className="font-body text-sm text-nebbia/40">Vuoi fatture, clienti e pratiche in un posto solo?</p>
+                        <Link to="/registrati" className="flex items-center gap-2 px-6 py-3 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors">
+                            Prova Lexum <ArrowRight size={14} />
+                        </Link>
+                    </div>
+                </section>
+            )}
             {popup}
         </div>
     )

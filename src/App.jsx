@@ -351,6 +351,9 @@ export default function App() {
               <Route path="/area/ricerche" element={<Usr><Ricerche /></Usr>} />
               {/* Archivio dei privati (02-10-2026): 50 MB gratuiti, 2 GB con il Piano Personale */}
               <Route path="/area/archivio" element={<Usr><Archivio /></Usr>} />
+              <Route path="/area/strumenti" element={<Usr><Strumenti portale /></Usr>} />
+              <Route path="/area/strumenti/calcolo-parcella-avvocato" element={<Usr><CalcoloParcella portale /></Usr>} />
+              <Route path="/area/strumenti/crea-fattura" element={<Usr><CreaFattura portale /></Usr>} />
               <Route path="/area/archivio/:id" element={<Usr><ArchivioDettaglio /></Usr>} />
               <Route path="/area/etichette/:id" element={<Usr><EtichettaDettaglio /></Usr>} />
               <Route path="/area/acquista" element={<Usr><Acquista /></Usr>} />

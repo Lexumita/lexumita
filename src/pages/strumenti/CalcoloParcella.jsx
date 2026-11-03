@@ -2,12 +2,15 @@
 //
 // 03-11-2026: il calcolo della parcella forense del gestionale, aperto a tutti: stessi campi e stesso motore
 // di CalcolaParcellaModal (components/avvocato/ParcellaCampi.jsx). Tutto nel browser.
-import { useState } from 'react'
+// Con `portale` è la stessa pagina dentro l'area degli user: senza l'apertura, le spiegazioni e l'invito.
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Download, FileText, Loader2 } from 'lucide-react'
 import { useCalcoloParcella, ParcellaCampi } from '@/components/avvocato/ParcellaCampi'
 import { TestataPagina, Apertura, DomandeFrequenti } from '@/components/strumenti/Pagina'
 import { usePopupIscrizione } from '@/components/strumenti/PopupIscrizione'
+import { PageHeader } from '@/components/shared'
+import { caricaPdf, preparaPdf } from '@/lib/strumenti/caricaPdf'
 import { getCompetenza, SCAGLIONI, DISCLAIMER } from '@/lib/parametriForensi/catalogo'
 import { passaRigheAllaFattura } from '@/lib/strumenti/memoria'
 import { registraEvento } from '@/lib/visite'
@@ -30,7 +33,8 @@ function Riga({ etichetta, valore, forte = false }) {
     )
 }
 
-export default function CalcoloParcella() {
+export default function CalcoloParcella({ portale = false }) {
+    useEffect(() => { preparaPdf() }, [])
     const calcolo = useCalcoloParcella()
     const navigate = useNavigate()
     const { dopoDocumento, popup } = usePopupIscrizione('parcella')
@@ -45,7 +49,7 @@ export default function CalcoloParcella() {
         setCreando(true)
         setErrore('')
         try {
-            const { scaricaPdfParcella } = await import('@/lib/strumenti/pdfStrumenti')
+            const { scaricaPdfParcella } = await caricaPdf()
             await scaricaPdfParcella({
                 competenza: getCompetenza(competenzaKey)?.label,
                 scaglione: isPenale ? null : SCAGLIONI.find(s => s.id === scaglioneId)?.label,
@@ -67,26 +71,36 @@ export default function CalcoloParcella() {
         if (!risultato.ok) return
         passaRigheAllaFattura(risultato.righe)
         registraEvento('/strumenti/parcella/in-fattura')
-        navigate('/strumenti/crea-fattura')
+        navigate(portale ? '/area/strumenti/crea-fattura' : '/strumenti/crea-fattura')
     }
 
     return (
-        <div className="min-h-screen bg-petrolio text-nebbia overflow-x-hidden pt-20">
-            <TestataPagina percorso={PARCELLA.percorso} titolo={PARCELLA.metaTitolo} descrizione={PARCELLA.metaDescrizione} />
-            <Apertura
-                etichetta="Strumenti gratis"
-                titolo="Calcolo"
-                evidenza="parcella avvocato"
-                testo="Il compenso secondo i parametri forensi del DM 55/2014, con le tabelle aggiornate dal DM 147/2022. Lo scarichi in PDF o lo porti direttamente in fattura."
-            />
+        // overflow-x-clip e non hidden: hidden fa della pagina un contenitore a sé e la colonna di destra non segue più lo scorrimento
+        <div className={portale ? 'text-nebbia pb-16' : 'min-h-screen bg-petrolio text-nebbia overflow-x-clip pt-20'}>
+            {portale ? (
+                <PageHeader label="Strumenti" title="Calcolo parcella"
+                    subtitle="Parametri forensi del DM 55/2014. Gratis e senza crediti." />
+            ) : (
+                <>
+                    <TestataPagina percorso={PARCELLA.percorso} titolo={PARCELLA.metaTitolo} descrizione={PARCELLA.metaDescrizione} />
+                    <Apertura
+                        etichetta="Strumenti gratis"
+                        titolo="Calcolo"
+                        evidenza="parcella avvocato"
+                        testo="Il compenso secondo i parametri forensi del DM 55/2014, con le tabelle aggiornate dal DM 147/2022. Lo scarichi in PDF o lo porti direttamente in fattura."
+                    />
+                </>
+            )}
 
-            <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
+            <section className={`grid grid-cols-1 gap-5 items-start ${portale ? 'xl:grid-cols-[1fr_340px]' : 'max-w-6xl mx-auto px-4 sm:px-6 pb-16 lg:grid-cols-[1fr_340px]'}`}>
                 <div className="bg-slate border border-white/5 p-4 sm:p-6 space-y-5 min-w-0">
                     <ParcellaCampi calcolo={calcolo}
                         avvisoFonte="Per questa autorità i valori vengono da una fonte secondaria: controllali sulla Gazzetta Ufficiale." />
                 </div>
 
-                <aside className="lg:sticky lg:top-24 bg-slate border border-oro/20 p-5 space-y-3">
+                <aside className={`bg-slate border border-oro/20 p-5 space-y-3 ${portale
+                    ? 'xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto'
+                    : 'lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto'}`}>
                     <p className="section-label">Il risultato</p>
                     {rp ? (
                         <div className="space-y-2">
@@ -120,36 +134,38 @@ export default function CalcoloParcella() {
                 </aside>
             </section>
 
-            <section className="max-w-3xl mx-auto px-6 pb-24">
-                <h2 className="font-display text-3xl font-light mb-6">Come si calcola la parcella dell'avvocato</h2>
-                <ol className="space-y-5 mb-14">
-                    {PASSI.map((p, i) => (
-                        <li key={p.titolo} className="flex gap-4">
-                            <span className="font-display text-2xl text-oro/70 leading-none w-6 shrink-0">{i + 1}</span>
-                            <div>
-                                <h3 className="font-body text-sm font-medium text-nebbia mb-1">{p.titolo}</h3>
-                                <p className="font-body text-sm text-nebbia/55 leading-relaxed">{p.testo}</p>
-                            </div>
-                        </li>
-                    ))}
-                </ol>
+            {!portale && (
+                <section className="max-w-3xl mx-auto px-6 pb-24">
+                    <h2 className="font-display text-3xl font-light mb-6">Come si calcola la parcella dell'avvocato</h2>
+                    <ol className="space-y-5 mb-14">
+                        {PASSI.map((p, i) => (
+                            <li key={p.titolo} className="flex gap-4">
+                                <span className="font-display text-2xl text-oro/70 leading-none w-6 shrink-0">{i + 1}</span>
+                                <div>
+                                    <h3 className="font-body text-sm font-medium text-nebbia mb-1">{p.titolo}</h3>
+                                    <p className="font-body text-sm text-nebbia/55 leading-relaxed">{p.testo}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
 
-                <h2 className="font-display text-3xl font-light mb-6">Domande frequenti</h2>
-                <DomandeFrequenti domande={PARCELLA.domande} />
+                    <h2 className="font-display text-3xl font-light mb-6">Domande frequenti</h2>
+                    <DomandeFrequenti domande={PARCELLA.domande} />
 
-                <p className="font-body text-sm text-nebbia/50 leading-relaxed mt-10">
-                    Sei un cliente e la parcella ti sembra alta? Leggi{' '}
-                    <Link to="/novita/parcella-avvocato-troppo-alta-come-contestarla" className="text-oro hover:underline">come contestarla</Link>.
-                    {' '}Devi fatturare un altro importo? Usa{' '}
-                    <Link to="/strumenti/crea-fattura" className="text-oro hover:underline">Crea fattura</Link>.
-                </p>
-                <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="font-body text-sm text-nebbia/40">Vuoi che anche la ricerca giuridica sia così veloce?</p>
-                    <Link to="/registrati" className="flex items-center gap-2 px-6 py-3 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors">
-                        Prova Lex gratis <ArrowRight size={14} />
-                    </Link>
-                </div>
-            </section>
+                    <p className="font-body text-sm text-nebbia/50 leading-relaxed mt-10">
+                        Sei un cliente e la parcella ti sembra alta? Leggi{' '}
+                        <Link to="/novita/parcella-avvocato-troppo-alta-come-contestarla" className="text-oro hover:underline">come contestarla</Link>.
+                        {' '}Devi fatturare un altro importo? Usa{' '}
+                        <Link to="/strumenti/crea-fattura" className="text-oro hover:underline">Crea fattura</Link>.
+                    </p>
+                    <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <p className="font-body text-sm text-nebbia/40">Vuoi che anche la ricerca giuridica sia così veloce?</p>
+                        <Link to="/registrati" className="flex items-center gap-2 px-6 py-3 bg-oro text-petrolio font-body text-sm font-medium hover:bg-oro/90 transition-colors">
+                            Prova Lex gratis <ArrowRight size={14} />
+                        </Link>
+                    </div>
+                </section>
+            )}
             {popup}
         </div>
     )
