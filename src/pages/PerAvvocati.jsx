@@ -16,6 +16,7 @@ import SezioneStrumenti from '@/components/strumenti/SezioneStrumenti'
 import schermataRisposta from '@/assets/app/app-risposta.webp'
 import schermataRicerche from '@/assets/app/app-ricerche.webp'
 import { useTranslation, Trans } from 'react-i18next'
+import { useInView } from '@/hooks/useInView'
 
 // Valori tecnici legati per POSIZIONE agli elenchi di per_avvocati.json
 const COLORI_MEMBRI = ['oro', 'oro', 'salvia', 'salvia']
@@ -29,18 +30,6 @@ const APERTI_PARZIALI = [false, false, true]
 const ICONE_SICUREZZA = [ShieldCheck, EyeOff, Activity, FileText]
 
 // ─── Scroll animation hook ───────────────────────────────────
-function useInView(threshold = 0.12) {
-    const ref = useRef(null)
-    const [inView, setInView] = useState(false)
-    useEffect(() => {
-        const obs = new IntersectionObserver(([e]) => {
-            if (e.isIntersecting) { setInView(true); obs.disconnect() }
-        }, { threshold })
-        if (ref.current) obs.observe(ref.current)
-        return () => obs.disconnect()
-    }, [])
-    return [ref, inView]
-}
 
 function FadeIn({ children, delay = 0, className = '' }) {
     const [ref, inView] = useInView()
