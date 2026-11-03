@@ -5,7 +5,7 @@
 // webhook non scattato, omaggio, compensazione errore).
 //
 // STEP 1: Selezione utente destinatario (search dropdown tra user + avvocato)
-// STEP 2: Selezione prodotto + importo + sentenza (se accesso_singolo)
+// STEP 2: Selezione prodotto + importo
 // STEP 3: Motivo + conferma riepilogo + invio
 //
 // Chiama edge function 'admin-attiva-prodotto'.
@@ -19,7 +19,6 @@ import { messaggioErroreInvoke } from '@/lib/password'
 const TIPO_PRODOTTO_LABEL = {
     abbonamento: 'Abbonamento',
     seat_addon: 'Seat add-on',
-    accesso_singolo: 'Accesso singolo sentenza',
     crediti_ai: 'Crediti AI',
     spazio_archiviazione: 'Spazio archiviazione',
     gratuito: 'Prova gratuita',
@@ -42,12 +41,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
     const [prodottoSelezionato, setProdottoSelezionato] = useState(null)
     const [importo, setImporto] = useState('')
 
-    // STEP 2 — sentenza (solo per accesso_singolo)
-    const [searchSentenza, setSearchSentenza] = useState('')
-    const [sentenze, setSentenze] = useState([])
-    const [sentenzaSelezionata, setSentenzaSelezionata] = useState(null)
-    const [loadingSentenze, setLoadingSentenze] = useState(false)
-    const debounceSentenzaRef = useRef(null)
 
     // STEP 3 — motivo + invio
     const [motivo, setMotivo] = useState('')
@@ -82,7 +75,7 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
         async function caricaProdotti() {
             const { data } = await supabase
                 .from('prodotti')
-                .select('id, nome, tipo, prezzo, posti, crediti_ai_mensili, spazio_gb, durata_mesi, include_banca_dati, include_monetizzazione')
+                .select('id, nome, tipo, prezzo, posti, crediti_ai_mensili, spazio_gb, durata_mesi, include_banca_dati')
                 .eq('attivo', true)
                 .order('tipo')
                 .order('prezzo')
@@ -92,35 +85,10 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
         caricaProdotti()
     }, [])
 
-    // ─── STEP 2: search sentenze (solo per accesso_singolo) ─
-    useEffect(() => {
-        if (prodottoSelezionato?.tipo !== 'accesso_singolo') return
-        if (debounceSentenzaRef.current) clearTimeout(debounceSentenzaRef.current)
-        if (!searchSentenza.trim()) {
-            setSentenze([])
-            return
-        }
-        debounceSentenzaRef.current = setTimeout(async () => {
-            setLoadingSentenze(true)
-            const q = searchSentenza.trim()
-            const { data } = await supabase
-                .from('sentenze')
-                .select('id, numero, anno, organo, oggetto, autore:autore_id(nome, cognome)')
-                .or(`numero.ilike.%${q}%,oggetto.ilike.%${q}%,organo.ilike.%${q}%`)
-                .eq('stato', 'pubblica')
-                .limit(15)
-            setSentenze(data ?? [])
-            setLoadingSentenze(false)
-        }, 250)
-        return () => debounceSentenzaRef.current && clearTimeout(debounceSentenzaRef.current)
-    }, [searchSentenza, prodottoSelezionato])
-
     // ─── Quando seleziono prodotto, precompila importo ────
     function handleSelezionaProdotto(p) {
         setProdottoSelezionato(p)
         setImporto(String(p.prezzo ?? 0))
-        setSentenzaSelezionata(null)
-        setSearchSentenza('')
     }
 
     // ─── Reset prodotto se cambia il tipo filtro ──────────
@@ -128,7 +96,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
         setFiltroTipo(t)
         setProdottoSelezionato(null)
         setImporto('')
-        setSentenzaSelezionata(null)
     }
 
     // ─── INVIO ────────────────────────────────────────────
@@ -140,18 +107,12 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
             if (importo === '' || importo === null || isNaN(Number(importo))) throw new Error('Importo non valido')
             if (Number(importo) < 0) throw new Error('Importo non puo essere negativo')
             if (!motivo.trim()) throw new Error('Motivo obbligatorio')
-            if (prodottoSelezionato.tipo === 'accesso_singolo' && !sentenzaSelezionata) {
-                throw new Error('Seleziona una sentenza per accesso singolo')
-            }
 
             const body = {
                 user_id: utenteSelezionato.id,
                 prodotto_id: prodottoSelezionato.id,
                 importo: Number(importo),
                 motivo: motivo.trim(),
-            }
-            if (prodottoSelezionato.tipo === 'accesso_singolo') {
-                body.sentenza_id = sentenzaSelezionata.id
             }
 
             const { data, error } = await supabase.functions.invoke('admin-attiva-prodotto', { body })
@@ -175,7 +136,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
         && importo !== ''
         && !isNaN(Number(importo))
         && Number(importo) >= 0
-        && (prodottoSelezionato.tipo !== 'accesso_singolo' || !!sentenzaSelezionata)
     const isOmaggio = Number(importo) === 0
 
     const prodottiFiltrati = filtroTipo
@@ -409,50 +369,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
                                             </p>
                                         )}
                                     </div>
-
-                                    {/* SENTENZA — solo per accesso_singolo */}
-                                    {prodottoSelezionato.tipo === 'accesso_singolo' && (
-                                        <div className="space-y-2">
-                                            <label className="block font-body text-xs text-nebbia/40 tracking-widest uppercase">
-                                                Sentenza da sbloccare
-                                            </label>
-                                            <div className="relative">
-                                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-nebbia/30" />
-                                                <input
-                                                    placeholder="Cerca per numero, oggetto, organo..."
-                                                    value={searchSentenza}
-                                                    onChange={e => setSearchSentenza(e.target.value)}
-                                                    className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm pl-9 pr-4 py-2.5 outline-none focus:border-oro/50 placeholder:text-nebbia/25"
-                                                />
-                                            </div>
-                                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                                {loadingSentenze ? (
-                                                    <div className="flex items-center justify-center py-4">
-                                                        <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
-                                                    </div>
-                                                ) : sentenze.map(s => {
-                                                    const sel = sentenzaSelezionata?.id === s.id
-                                                    return (
-                                                        <button
-                                                            key={s.id}
-                                                            onClick={() => setSentenzaSelezionata(s)}
-                                                            className={`w-full text-left p-2 border text-xs ${sel
-                                                                ? 'border-oro bg-oro/10'
-                                                                : 'border-white/8 hover:border-white/20 hover:bg-petrolio/40'
-                                                                }`}
-                                                        >
-                                                            <p className="font-body text-nebbia truncate">
-                                                                {s.organo} {s.numero}/{s.anno}
-                                                            </p>
-                                                            {s.oggetto && (
-                                                                <p className="font-body text-nebbia/40 truncate mt-0.5">{s.oggetto}</p>
-                                                            )}
-                                                        </button>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </>
@@ -486,14 +402,6 @@ export default function ModalGeneraAcquisto({ onClose, onSuccess }) {
                                         </span>
                                     </span>
                                 </div>
-                                {sentenzaSelezionata && (
-                                    <div className="flex justify-between border-b border-white/5 pb-2">
-                                        <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Sentenza</span>
-                                        <span className="font-body text-sm text-nebbia text-right">
-                                            {sentenzaSelezionata.organo} {sentenzaSelezionata.numero}/{sentenzaSelezionata.anno}
-                                        </span>
-                                    </div>
-                                )}
                                 <div className="flex justify-between">
                                     <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">Importo</span>
                                     <span className={`font-body text-sm font-medium ${isOmaggio ? 'text-amber-400' : 'text-oro'}`}>

@@ -30,7 +30,6 @@ import {
 } from 'lucide-react'
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
-import { formatPrezzo } from '@/lib/prezzi'
 import { segnalaCreditiCambiati } from '@/hooks/useCreditiDisponibili'
 
 // Un messaggio completato non cambia mai: senza memo, OGNI chunk dello
@@ -1253,38 +1252,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                         </MarkdownMemo>
                                     )}
 
-                                    {!m.meta?.documento && m.meta?.sentenze_marketplace?.length > 0 && (
-                                        <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <BookOpen size={12} className="text-oro" />
-                                                <p className="font-body text-xs font-medium text-oro uppercase tracking-widest">
-                                                    Sentenze annotate da colleghi
-                                                </p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {m.meta.sentenze_marketplace.map(s => (
-                                                    <div key={s.id} className="bg-petrolio border border-oro/15 p-3 flex items-start justify-between gap-3">
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="font-body text-xs font-medium text-nebbia/80">
-                                                                {s.organo} · {s.anno}
-                                                            </p>
-                                                            <p className="font-body text-xs text-nebbia/40 mt-0.5 line-clamp-2">{s.oggetto}</p>
-                                                        </div>
-                                                        <a
-                                                            href={`/banca-dati/avvocato/${s.id}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="shrink-0 flex flex-col items-end gap-1"
-                                                        >
-                                                            <span className="font-display text-base font-semibold text-oro">{formatPrezzo(s.prezzo)}</span>
-                                                            <span className="font-body text-[10px] text-oro/60 uppercase tracking-wider">vedi</span>
-                                                        </a>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {!m.meta?.documento && m.meta?.approfondimenti_disponibili?.length > 0 && (
                                         <div className="mt-5 pt-4 border-t border-white/5 space-y-3">
                                             <div className="flex items-center gap-2">
@@ -1382,7 +1349,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                                 .filter(m => m.role === 'assistant')
                                 .map(m => m.content)
                                 .join('\n\n---\n\n'),
-                            sentenze: conversazione.some(m => m.meta?.sentenze_marketplace?.length > 0),
                             codice
                         }}
                         onRicercaSalvata={onRicercaSalvata}
@@ -1399,7 +1365,6 @@ function RicercaAI({ codice, onRisultato, crediti, setCrediti, messaggi, onAggio
                             .map(m => m.content)
                             .join('\n\n---\n\n')}
                         metadati={{
-                            sentenze: conversazione.some(m => m.meta?.sentenze_marketplace?.length > 0),
                             codice,
                             tipo_query: 'banca_dati',
                             ts: new Date().toISOString(),
@@ -3556,14 +3521,12 @@ function TabSentenze() {
     const [filtroAnno, setFiltroAnno] = useState('')
     const [filtroOrgano, setFiltroOrgano] = useState('')
     const [filtroTipo, setFiltroTipo] = useState('')
-    const [filtroFonte, setFiltroFonte] = useState('tutte')
 
     const [risultati, setRisultati] = useState([])
     const [totaleSentenze, setTotaleSentenze] = useState(0)
     const [paginaSentenze, setPaginaSentenze] = useState(0)
     const [loadingRisultati, setLoadingRisultati] = useState(false)
 
-    const [prezzoAccesso, setPrezzoAccesso] = useState(15)
 
     const PER_PAGINA_SENTENZE = 50
 
@@ -3616,11 +3579,6 @@ function TabSentenze() {
             setConteggiMacroFonte(macroMap)
             setConteggiSottoFonte(sottoMap)
 
-            // 4. Prezzo accesso singolo
-            const { data: prod } = await supabase
-                .from('prodotti').select('prezzo').eq('tipo', 'accesso_singolo').eq('attivo', true).maybeSingle()
-            if (prod) setPrezzoAccesso(prod.prezzo)
-
             setLoading(false)
         }
         caricaDatiBase()
@@ -3635,7 +3593,7 @@ function TabSentenze() {
         categoriaSelezionata?.codice,
         macroFonteSelezionata?.key,
         filtroSottoFonte,
-        ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte,
+        ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo,
     ])
 
     // ═══════════════════════════════════════════════════════════
@@ -3644,7 +3602,7 @@ function TabSentenze() {
     useEffect(() => {
         if (vista !== 'categoria' || !categoriaSelezionata) return
         caricaSentenzeCategoria()
-    }, [vista, categoriaSelezionata, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, filtroFonte, paginaSentenze])
+    }, [vista, categoriaSelezionata, ricercaAttiva, filtroAnno, filtroOrgano, filtroTipo, paginaSentenze])
 
     async function caricaSentenzeCategoria() {
         setLoadingRisultati(true)
@@ -3655,87 +3613,35 @@ function TabSentenze() {
 
         try {
             // ── COUNT ──
-            const countFetchers = []
-            if (filtroFonte !== 'pagamento') {
-                let qc = supabase
-                    .from('giurisprudenza_navigabile')
-                    .select('id', { count: 'exact', head: true })
-                    .contains('categorie_lex', [categoriaSelezionata.codice])
-                    .eq('vigente', true)
-                if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
-                if (filtroOrgano) qc = qc.eq('organo_macro', filtroOrgano)
-                if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
-                if (ricercaAttiva.trim()) {
-                    qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-                }
-                countFetchers.push(qc)
-            } else countFetchers.push(null)
-
-            if (filtroFonte !== 'gratuite') {
-                let qc = supabase
-                    .from('sentenze')
-                    .select('id', { count: 'exact', head: true })
-                    .contains('categorie_lex', [categoriaSelezionata.codice])
-                    .eq('stato', 'pubblica')
-                if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
-                if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
-                if (ricercaAttiva.trim()) {
-                    qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-                }
-                countFetchers.push(qc)
-            } else countFetchers.push(null)
-
-            const [countGiur, countSent] = await Promise.all(
-                countFetchers.map(f => f ?? Promise.resolve({ count: 0 }))
-            )
-            const totale = (countGiur?.count ?? 0) + (countSent?.count ?? 0)
-            setTotaleSentenze(totale)
+            let qc = supabase
+                .from('giurisprudenza_navigabile')
+                .select('id', { count: 'exact', head: true })
+                .contains('categorie_lex', [categoriaSelezionata.codice])
+                .eq('vigente', true)
+            if (filtroAnno) qc = qc.eq('anno', parseInt(filtroAnno))
+            if (filtroOrgano) qc = qc.eq('organo_macro', filtroOrgano)
+            if (filtroTipo) qc = qc.eq('tipo_provvedimento', filtroTipo)
+            if (ricercaAttiva.trim()) {
+                qc = qc.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
+            }
+            const { count: totale } = await qc
+            setTotaleSentenze(totale ?? 0)
 
             // ── DATA ──
-            const fetchers = []
-            if (filtroFonte !== 'pagamento') {
-                let q = supabase
-                    .from('giurisprudenza_navigabile')
-                    .select('id, fonte, organo, organo_macro, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto')
-                    .contains('categorie_lex', [categoriaSelezionata.codice])
-                    .eq('vigente', true)
-                if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
-                if (filtroOrgano) q = q.eq('organo_macro', filtroOrgano)
-                if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
-                if (ricercaAttiva.trim()) {
-                    q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-                }
-                fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).range(offsetStart, offsetEnd))
+            let q = supabase
+                .from('giurisprudenza_navigabile')
+                .select('id, fonte, organo, organo_macro, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto')
+                .contains('categorie_lex', [categoriaSelezionata.codice])
+                .eq('vigente', true)
+            if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
+            if (filtroOrgano) q = q.eq('organo_macro', filtroOrgano)
+            if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
+            if (ricercaAttiva.trim()) {
+                q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
             }
+            const { data: righe } = await q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).range(offsetStart, offsetEnd)
 
-            if (filtroFonte !== 'gratuite') {
-                let q = supabase
-                    .from('sentenze')
-                    .select('id, fonte, organo, sezione, numero, anno, data_deposito, data_pubblicazione, oggetto, tipo_provvedimento, categorie_lex, principio_diritto, autore_id, autore:autore_id(nome, cognome)')
-                    .contains('categorie_lex', [categoriaSelezionata.codice])
-                    .eq('stato', 'pubblica')
-                if (filtroAnno) q = q.eq('anno', parseInt(filtroAnno))
-                if (filtroTipo) q = q.eq('tipo_provvedimento', filtroTipo)
-                if (ricercaAttiva.trim()) {
-                    q = q.or(`oggetto.ilike.%${ricercaAttiva}%,principio_diritto.ilike.%${ricercaAttiva}%`)
-                }
-                fetchers.push(q.order('data_pubblicazione', { ascending: false, nullsFirst: false }).range(offsetStart, offsetEnd))
-            }
-
-            const responses = await Promise.all(fetchers)
-
-            let merged = []
-            if (filtroFonte !== 'pagamento' && responses[0]?.data) {
-                merged = merged.concat(responses[0].data.map(r => ({ ...r, sorgente: 'giurisprudenza' })))
-            }
-            const sentIdx = filtroFonte === 'pagamento' ? 0 : (filtroFonte === 'gratuite' ? -1 : 1)
-            if (sentIdx >= 0 && responses[sentIdx]?.data) {
-                merged = merged.concat(responses[sentIdx].data.map(r => ({
-                    ...r,
-                    sorgente: 'sentenza_avvocato',
-                    organo_macro: null,
-                })))
-            }
+            let merged = (righe ?? []).map(r => ({ ...r, sorgente: 'giurisprudenza' }))
 
             merged.sort((a, b) => {
                 const dA = a.data_pubblicazione ?? a.data_deposito ?? (a.anno ? `${a.anno}-01-01` : '')
@@ -3838,7 +3744,7 @@ function TabSentenze() {
         setCategoriaSelezionata(cat)
         setVista('categoria')
         setRicerca(''); setRicercaAttiva('')
-        setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
+        setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo('')
     }
 
     function apriMacroFonte(macro) {
@@ -4062,22 +3968,9 @@ function TabSentenze() {
                                 {TIPI_FILTRO.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                             </select>
 
-                            <div className="flex gap-1 bg-petrolio border border-white/10 p-0.5">
-                                {[
-                                    { v: 'tutte', l: 'Tutte' },
-                                    { v: 'gratuite', l: 'Gratuite' },
-                                    { v: 'pagamento', l: 'A pagamento' },
-                                ].map(f => (
-                                    <button key={f.v} onClick={() => setFiltroFonte(f.v)}
-                                        className={`px-3 py-1 min-h-[40px] lg:min-h-0 font-body text-xs transition-colors ${filtroFonte === f.v ? 'bg-oro/10 text-oro' : 'text-nebbia/40 hover:text-nebbia'}`}>
-                                        {f.l}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {(filtroAnno || filtroOrgano || filtroTipo || filtroFonte !== 'tutte' || ricercaAttiva) && (
+                            {(filtroAnno || filtroOrgano || filtroTipo || ricercaAttiva) && (
                                 <button onClick={() => {
-                                    setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo(''); setFiltroFonte('tutte')
+                                    setFiltroAnno(''); setFiltroOrgano(''); setFiltroTipo('')
                                     setRicerca(''); setRicercaAttiva('')
                                 }}
                                     className="font-body text-xs text-nebbia/30 hover:text-red-400 transition-colors flex items-center gap-1 min-h-[40px] lg:min-h-0">
@@ -4093,7 +3986,6 @@ function TabSentenze() {
                         totale={totaleSentenze}
                         paginaSentenze={paginaSentenze}
                         setPaginaSentenze={setPaginaSentenze}
-                        prezzoAccesso={prezzoAccesso}
                         navigate={navigate}
                         titoloSentenza={titoloSentenza}
                         labelTipoProvvedimento={labelTipoProvvedimento}
@@ -4216,7 +4108,6 @@ function TabSentenze() {
                         totale={totaleSentenze}
                         paginaSentenze={paginaSentenze}
                         setPaginaSentenze={setPaginaSentenze}
-                        prezzoAccesso={prezzoAccesso}
                         navigate={navigate}
                         titoloSentenza={titoloSentenza}
                         labelTipoProvvedimento={labelTipoProvvedimento}
@@ -4233,7 +4124,7 @@ function TabSentenze() {
 // (mettilo subito prima o dopo TabSentenze nel file)
 function BloccoRisultati({
     loadingRisultati, risultati, totale, paginaSentenze, setPaginaSentenze,
-    prezzoAccesso, navigate, titoloSentenza, labelTipoProvvedimento, perPagina
+    navigate, titoloSentenza, labelTipoProvvedimento, perPagina
 }) {
     if (loadingRisultati) return (
         <div className="flex items-center justify-center py-16">
@@ -4250,17 +4141,16 @@ function BloccoRisultati({
         <>
             <div className="space-y-3">
                 {risultati.map(s => {
-                    const isGratuita = s.sorgente === 'giurisprudenza'
                     const dataVisibile = s.data_pubblicazione ?? s.data_deposito
                     const titolo = titoloSentenza(s)
                     const prefix = window.location.pathname.startsWith('/area') ? '/area' : '/banca-dati'
-                    const targetPath = isGratuita ? `${prefix}/lexum/${s.id}` : `${prefix}/avvocato/${s.id}`
+                    const targetPath = `${prefix}/lexum/${s.id}`
 
                     return (
                         <button
                             key={`${s.sorgente}-${s.id}`}
                             onClick={() => navigate(targetPath)}
-                            className={`w-full text-left bg-slate border p-5 transition-all ${isGratuita ? 'border-white/5 hover:border-salvia/20' : 'border-white/5 hover:border-oro/20'}`}
+                            className="w-full text-left bg-slate border p-5 transition-all border-white/5 hover:border-salvia/20"
                         >
                             <div className="flex flex-col lg:flex-row items-start justify-between gap-3 lg:gap-4">
                                 <div className="flex-1 min-w-0 w-full">
@@ -4281,23 +4171,8 @@ function BloccoRisultati({
                                     {s.principio_diritto && (
                                         <p className="font-body text-xs text-nebbia/50 leading-relaxed line-clamp-2 break-words">{s.principio_diritto}</p>
                                     )}
-                                    {!isGratuita && s.autore && (
-                                        <p className="font-body text-xs text-nebbia/35 mt-2">Caricata da Avv. {s.autore.nome} {s.autore.cognome}</p>
-                                    )}
                                 </div>
 
-                                <div className="shrink-0 flex flex-row lg:flex-col items-start lg:items-end gap-2">
-                                    {isGratuita ? (
-                                        <span className="font-body text-xs text-salvia border border-salvia/30 px-2 py-1 bg-salvia/5">
-                                            Gratuita
-                                        </span>
-                                    ) : (
-                                        <>
-                                            <span className="font-display text-lg font-semibold text-oro">{formatPrezzo(prezzoAccesso)}</span>
-                                            <span className="font-body text-xs text-oro/60">accesso singolo</span>
-                                        </>
-                                    )}
-                                </div>
                             </div>
                         </button>
                     )

@@ -922,9 +922,7 @@ function CardElemento({
     const linkDettaglio = (() => {
         if (el.kind === 'norma') return `${basePathBancaDati}/norma/${el.id}`
         if (el.kind === 'sentenza') {
-            return el.fonte_sentenza === 'lexum'
-                ? `${basePathBancaDati}/lexum/${el.id}`
-                : `${basePathBancaDati}/avvocato/${el.id}`
+            return `${basePathBancaDati}/lexum/${el.id}`
         }
         if (el.kind === 'prassi') return `${basePathBancaDati}/prassi/${el.id}`
         return null
@@ -1798,9 +1796,7 @@ function ColonnaConfronto({ elemento: el, basePathBancaDati }) {
     const linkDettaglio = (() => {
         if (el.kind === 'norma') return `${basePathBancaDati}/norma/${el.id}`
         if (el.kind === 'sentenza') {
-            return el.fonte_sentenza === 'lexum'
-                ? `${basePathBancaDati}/lexum/${el.id}`
-                : `${basePathBancaDati}/avvocato/${el.id}`
+            return `${basePathBancaDati}/lexum/${el.id}`
         }
         if (el.kind === 'prassi') return `${basePathBancaDati}/prassi/${el.id}`
         return null

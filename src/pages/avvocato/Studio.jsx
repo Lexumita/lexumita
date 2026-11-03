@@ -175,7 +175,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
 
             const { data } = await supabase
                 .from('prodotti')
-                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, include_monetizzazione, crediti_ai_mensili, spazio_gb, limite_clienti, target_role')
+                .select('id, nome, tipo, prezzo, posti, durata_mesi, include_banca_dati, crediti_ai_mensili, spazio_gb, limite_clienti, target_role')
                 .eq('attivo', true)
                 .in('tipo', ['abbonamento', 'seat_addon', 'clienti_addon', 'gratuito', 'crediti_ai', 'spazio_archiviazione'])
                 .order('prezzo')
@@ -570,15 +570,13 @@ function BadgeStatoPagamento({ transazione: s }) {
     />
 }
 
-function StoricoTransazioni({ meId, includiSentenze = false }) {
+function StoricoTransazioni({ meId }) {
     const [storico, setStorico] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         if (!meId) return
-        const tipi = includiSentenze
-            ? ['abbonamento', 'seat_addon', 'accesso_singolo', 'crediti_ai', 'spazio_archiviazione']
-            : ['abbonamento', 'seat_addon', 'crediti_ai', 'spazio_archiviazione']
+        const tipi = ['abbonamento', 'seat_addon', 'crediti_ai', 'spazio_archiviazione']
 
         supabase
             .from('transazioni')
@@ -587,7 +585,7 @@ function StoricoTransazioni({ meId, includiSentenze = false }) {
             .in('tipo', tipi)
             .order('created_at', { ascending: false })
             .then(({ data }) => { setStorico(data ?? []); setLoading(false) })
-    }, [meId, includiSentenze])
+    }, [meId])
 
     if (loading) return null
 
@@ -692,7 +690,7 @@ export default function AvvocatoStudio() {
 
         const { data: p } = await supabase
             .from('profiles')
-            .select('id, nome, cognome, email, studio, tipo_account, titolare_id, piano_id, abbonamento_tipo, abbonamento_scadenza, abbonamento_stato, grazia_fino_al, posti_acquistati, posti_usati, include_banca_dati, include_monetizzazione, spazio_gb_piano')
+            .select('id, nome, cognome, email, studio, tipo_account, titolare_id, piano_id, abbonamento_tipo, abbonamento_scadenza, abbonamento_stato, grazia_fino_al, posti_acquistati, posti_usati, include_banca_dati, spazio_gb_piano')
             .eq('id', meId)
             .single()
 
@@ -1183,7 +1181,7 @@ export default function AvvocatoStudio() {
                             Scegli un piano <ChevronRight size={14} />
                         </button>
                     </div>
-                    <StoricoTransazioni meId={meId} includiSentenze={true} />
+                    <StoricoTransazioni meId={meId} />
                 </div>
             )}
 
@@ -1213,7 +1211,6 @@ export default function AvvocatoStudio() {
                                     ['GB inclusi nel piano', `${storage.gb_piano} GB`],
                                     ['GB extra acquistati', `${storage.gb_topup} GB`],
                                     ['Banca dati', profilo?.include_banca_dati ? 'Inclusa' : 'Non inclusa'],
-                                    ['Monetizzazione', profilo?.include_monetizzazione ? 'Inclusa' : 'Non inclusa'],
                                 ].map(([label, value]) => (
                                     <div key={label} className="flex justify-between items-center py-2 border-b border-white/5">
                                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{label}</span>

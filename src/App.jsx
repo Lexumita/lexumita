@@ -37,7 +37,6 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminUtenti from './pages/admin/Utenti'
 import AdminUtentiDettaglio from './pages/admin/UtentiDettaglio'
 import { AdminProdotti, AdminProdottiForm } from './pages/admin/Prodotti'
-import { AdminSentenze, AdminSentenzeDettaglio } from './pages/admin/Sentenze'
 import { AdminPagamenti } from './pages/admin/Pagamenti'
 import AdminCompensi from './pages/admin/Compensi'
 import AdminCodiciSconto from './pages/admin/CodiciSconto'
@@ -251,8 +250,6 @@ export default function App() {
               <Route path="/admin/prodotti/nuovo" element={<Adm><AdminProdottiForm /></Adm>} />
               <Route path="/admin/prodotti/:id" element={<Adm><AdminProdottiForm /></Adm>} />
               <Route path="/admin/novita" element={<Adm><AdminNovita /></Adm>} />
-              <Route path="/admin/sentenze" element={<Adm><AdminSentenze /></Adm>} />
-              <Route path="/admin/sentenze/:id" element={<Adm><AdminSentenzeDettaglio /></Adm>} />
               <Route path="/admin/pagamenti" element={<Adm><AdminPagamenti /></Adm>} />
               <Route path="/admin/compensi" element={<Adm><AdminCompensi /></Adm>} />
               <Route path="/admin/codici-sconto" element={<Adm><AdminCodiciSconto /></Adm>} />
@@ -315,7 +312,6 @@ export default function App() {
               {/* Lex ha la sua pagina (29-10-2026, come nell'app): in Banca Dati resta la ricerca manuale */}
               <Route path="/chat" element={<BancaDatiSharedAvv><NuovaChat /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/lexum/:id" element={<BancaDatiSharedAvv><SentenzaDettaglio fonte="lexum" /></BancaDatiSharedAvv>} />
-              <Route path="/banca-dati/avvocato/:id" element={<BancaDatiSharedAvv><SentenzaDettaglio fonte="avvocato" /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/prassi/:id" element={<BancaDatiSharedAvv><PrassiDettaglio /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/norma/:id" element={<BancaDatiSharedAvv><NormaDettaglio /></BancaDatiSharedAvv>} />
               <Route path="/banca-dati/tributario/:id" element={<BancaDatiSharedAvv><SentenzaTributariaDettaglio /></BancaDatiSharedAvv>} />
@@ -364,7 +360,6 @@ export default function App() {
 
               {/* Banca dati dettagli per user */}
               <Route path="/area/lexum/:id" element={<Usr><SentenzaDettaglio fonte="lexum" /></Usr>} />
-              <Route path="/area/avvocato/:id" element={<Usr><SentenzaDettaglio fonte="avvocato" /></Usr>} />
               <Route path="/area/prassi/:id" element={<Usr><PrassiDettaglio /></Usr>} />
               <Route path="/area/norma/:id" element={<Usr><NormaDettaglio /></Usr>} />
               <Route path="/area/tributario/:id" element={<Usr><SentenzaTributariaDettaglio /></Usr>} />

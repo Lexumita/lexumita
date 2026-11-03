@@ -14,7 +14,6 @@ const TIPO_CONFIG = {
   abbonamento: { label: 'Abbonamento', variant: 'oro' },
   seat_addon: { label: 'Seat add-on', variant: 'gray' },
   clienti_addon: { label: 'Clienti add-on', variant: 'gray' },
-  accesso_singolo: { label: 'Accesso doc.', variant: 'gray' },
   crediti_ai: { label: 'Crediti AI', variant: 'salvia' },
   spazio_archiviazione: { label: 'Storage', variant: 'salvia' },
   gratuito: { label: 'Gratuito', variant: 'salvia' },
@@ -74,7 +73,7 @@ export function AdminProdotti() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5">
-                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Prezzo', 'Durata', 'Revenue', 'Provvigione', 'Stato', ''].map(h => (
+                {['Prodotto', 'Tipo', 'Posti', 'Clienti', 'Crediti AI', 'Storage', 'Prezzo', 'Durata', 'Provvigione', 'Stato', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-body text-xs font-medium text-nebbia/30 tracking-widest uppercase">{h}</th>
                 ))}
               </tr>
@@ -82,7 +81,7 @@ export function AdminProdotti() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
+                  <td colSpan={11} className="px-4 py-12 text-center font-body text-sm text-nebbia/30">
                     Nessun prodotto trovato
                   </td>
                 </tr>
@@ -95,7 +94,7 @@ export function AdminProdotti() {
                     <td className="px-4 py-3 font-body text-sm font-medium text-nebbia">{p.nome}</td>
                     <td className="px-4 py-3"><Badge label={tc.label} variant={tc.variant} /></td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {(p.tipo === 'accesso_singolo' || p.tipo === 'crediti_ai' || isStorage || p.tipo === 'clienti_addon' || p.tipo === 'piano_privato')
+                      {(p.tipo === 'crediti_ai' || isStorage || p.tipo === 'clienti_addon' || p.tipo === 'piano_privato')
                         ? <Dash />
                         : p.posti === null ? 'illim.' : p.posti}
                     </td>
@@ -111,9 +110,6 @@ export function AdminProdotti() {
                     <td className="px-4 py-3 font-body text-sm text-oro font-medium">{formatPrezzo(p.prezzo)}</td>
                     <td className="px-4 py-3 font-body text-sm text-nebbia/60">
                       {p.durata_mesi ? `${p.durata_mesi} ${p.durata_mesi === 1 ? 'mese' : 'mesi'}` : <Dash />}
-                    </td>
-                    <td className="px-4 py-3 font-body text-sm text-nebbia/60">
-                      {p.revenue_pct ? `${p.revenue_pct}%` : <Dash />}
                     </td>
                     <td className="px-4 py-3 font-body text-sm">
                       {p.provvigione_tipo
@@ -154,8 +150,8 @@ export function AdminProdottiForm() {
   const [form, setForm] = useState({
     nome: '', tipo: 'abbonamento', prezzo: '',
     posti: '1', durata_mesi: '12',
-    include_banca_dati: false, include_monetizzazione: false,
-    revenue_pct: '', crediti_ai_mensili: '0', spazio_gb: '0',
+    include_banca_dati: false,
+    crediti_ai_mensili: '0', spazio_gb: '0',
     limite_clienti: '0',
     target_role: 'avvocato',
     provvigione_tipo: '', provvigione_valore: '',
@@ -174,7 +170,6 @@ export function AdminProdottiForm() {
   const isAbb = form.tipo === 'abbonamento'
   const isAddon = form.tipo === 'seat_addon'
   const isClientiAddon = form.tipo === 'clienti_addon'
-  const isAccesso = form.tipo === 'accesso_singolo'
   const isCreditiAI = form.tipo === 'crediti_ai'
   const isStorage = form.tipo === 'spazio_archiviazione'
   const isGratuito = form.tipo === 'gratuito'
@@ -200,8 +195,6 @@ export function AdminProdottiForm() {
         posti: data.posti ?? '1',
         durata_mesi: data.durata_mesi ?? '',
         include_banca_dati: data.include_banca_dati,
-        include_monetizzazione: data.include_monetizzazione,
-        revenue_pct: data.revenue_pct ?? '',
         crediti_ai_mensili: data.crediti_ai_mensili ?? '0',
         spazio_gb: data.spazio_gb ?? '0',
         limite_clienti: data.limite_clienti ?? '0',
@@ -225,7 +218,6 @@ export function AdminProdottiForm() {
       const durataNum = parseFloat(form.durata_mesi)
       if (!form.durata_mesi || isNaN(durataNum) || durataNum <= 0) return setErrore('La durata è obbligatoria')
     }
-    if (isAccesso && (!form.revenue_pct || isNaN(parseInt(form.revenue_pct)))) return setErrore('La % revenue è obbligatoria')
     if (isStorage && (!form.spazio_gb || parseInt(form.spazio_gb) < 1)) return setErrore('Indica i GB del pacchetto')
     if (isClientiAddon && (!form.limite_clienti || parseInt(form.limite_clienti) < 1)) return setErrore('Indica quanti clienti aggiuntivi sblocca questo pacchetto')
     if (form.provvigione_tipo) {
@@ -243,8 +235,6 @@ export function AdminProdottiForm() {
         posti: (isAbb || isAddon || isGratuito) ? parseInt(form.posti) : null,
         durata_mesi: haDurata ? parseFloat(form.durata_mesi) || null : null,
         include_banca_dati: (isAbb || isGratuito) ? form.include_banca_dati : false,
-        include_monetizzazione: (isAbb || isGratuito) ? form.include_monetizzazione : false,
-        revenue_pct: isAccesso ? parseInt(form.revenue_pct) : null,
         crediti_ai_mensili: (isAbb || isCreditiAI || isGratuito || isPianoPrivato) ? parseInt(form.crediti_ai_mensili) || 0 : 0,
         spazio_gb: (isAbb || isStorage || isGratuito || isPianoPrivato) ? parseInt(form.spazio_gb) || 0 : 0,
         limite_clienti: (isAbb || isClientiAddon || isGratuito) ? parseInt(form.limite_clienti) || 0 : null,
@@ -277,7 +267,6 @@ export function AdminProdottiForm() {
     { v: 'abbonamento', l: 'Abbonamento', desc: 'Piano per avvocato o studio — posti determina il tipo' },
     { v: 'seat_addon', l: 'Seat add-on', desc: 'Aggiunge posti a uno studio esistente' },
     { v: 'clienti_addon', l: 'Clienti add-on', desc: 'Alza il limite di clienti registrabili dello studio' },
-    { v: 'accesso_singolo', l: 'Accesso singolo', desc: 'Acquisto di una singola sentenza dalla banca dati' },
     { v: 'crediti_ai', l: 'Crediti AI', desc: 'Pacchetto crediti AI acquistabili separatamente — non scadono mai' },
     { v: 'spazio_archiviazione', l: 'Storage', desc: 'Pacchetto GB extra per archivio documenti — pagamento una tantum con scadenza' },
     { v: 'gratuito', l: 'Gratuito', desc: 'Prova gratuita a tempo limitato — attivabile una sola volta per avvocato' },
@@ -442,39 +431,6 @@ export function AdminProdottiForm() {
                 </button>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Monetizzazione — solo abbonamento */}
-        {(isAbb || isGratuito) && (
-          <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-3">Monetizzazione sentenze *</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { v: false, l: 'Non inclusa', desc: "L'avvocato non può caricare sentenze né guadagnare" },
-                { v: true, l: 'Inclusa', desc: "L'avvocato può caricare sentenze e ricevere compensi" },
-              ].map(({ v, l, desc }) => (
-                <button key={l} type="button" onClick={() => setForm(p => ({ ...p, include_monetizzazione: v }))}
-                  className={`p-3 text-left border transition-all ${form.include_monetizzazione === v ? 'bg-salvia/10 border-salvia/40 text-salvia' : 'text-nebbia/50 border-white/10 hover:border-salvia/20'}`}>
-                  <p className="font-body text-sm font-medium">{l}</p>
-                  <p className={`font-body text-xs mt-0.5 ${form.include_monetizzazione === v ? 'text-salvia/60' : 'text-nebbia/25'}`}>{desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* % Revenue — solo accesso singolo */}
-        {isAccesso && (
-          <div>
-            <label className="block font-body text-xs text-nebbia/50 tracking-widest uppercase mb-2">% Revenue all'avvocato *</label>
-            <input type="number" min="0" max="100" {...f('revenue_pct')} placeholder="60"
-              className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 placeholder:text-nebbia/25" />
-            {form.revenue_pct && (
-              <p className="font-body text-xs text-nebbia/25 mt-1.5">
-                Avvocato: {form.revenue_pct}% · Lexum: {100 - parseInt(form.revenue_pct)}%
-              </p>
-            )}
           </div>
         )}
 

@@ -453,9 +453,7 @@ function CardContenuto({ contenuto: c, onRimuovi, eliminando, aperto, onToggleAp
     }
 
     if (c.tipo === 'sentenza') {
-        const link = c.fonte_sentenza === 'lexum'
-            ? `${basePathBancaDati}/lexum/${c.dati.id}`
-            : `${basePathBancaDati}/avvocato/${c.dati.id}`
+        const link = `${basePathBancaDati}/lexum/${c.dati.id}`
         const titolo = [c.dati.organo, c.dati.sezione, c.dati.numero && `n. ${c.dati.numero}`, c.dati.anno].filter(Boolean).join(' · ')
         return (
             <Link to={link}

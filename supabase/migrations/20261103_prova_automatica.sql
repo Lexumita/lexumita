@@ -61,17 +61,14 @@ begin
 
   -- Lo studio, come con un piano comprato (tagada-webhook): senza, le pagine dello studio restano a metà.
   if v_studio is null then
-    insert into public.studios (nome, titolare_id, piano_id, posti_totali, posti_usati, include_banca_dati,
-                                include_monetizzazione, scadenza, stato)
+    insert into public.studios (nome, titolare_id, piano_id, posti_totali, posti_usati, include_banca_dati, scadenza, stato)
     values (coalesce(nullif(btrim(v_profilo.studio), ''), 'Studio di ' || v_nome, 'Il mio studio'),
-            p_user, v_prodotto.id::text, v_posti, 1, coalesce(v_prodotto.include_banca_dati, false),
-            coalesce(v_prodotto.include_monetizzazione, false), v_fine, 'attivo')
+            p_user, v_prodotto.id::text, v_posti, 1, coalesce(v_prodotto.include_banca_dati, false), v_fine, 'attivo')
     returning id into v_studio;
   else
     update public.studios
        set piano_id = v_prodotto.id::text, posti_totali = v_posti, posti_usati = 1,
            include_banca_dati = coalesce(v_prodotto.include_banca_dati, false),
-           include_monetizzazione = coalesce(v_prodotto.include_monetizzazione, false),
            scadenza = v_fine, stato = 'attivo'
      where id = v_studio and titolare_id = p_user;
   end if;
@@ -89,7 +86,6 @@ begin
          posti_acquistati = v_posti,
          posti_usati = 1,
          include_banca_dati = coalesce(v_prodotto.include_banca_dati, false),
-         include_monetizzazione = coalesce(v_prodotto.include_monetizzazione, false),
          spazio_gb_piano = coalesce(v_prodotto.spazio_gb, 0),
          limite_clienti_piano = coalesce(v_prodotto.limite_clienti, 0),
          limite_clienti_extra = 0,
@@ -139,7 +135,6 @@ begin
             'posti', v_posti,
             'limite_clienti', coalesce(v_prodotto.limite_clienti, 0),
             'include_banca_dati', coalesce(v_prodotto.include_banca_dati, false),
-            'include_monetizzazione', coalesce(v_prodotto.include_monetizzazione, false),
             'app_url', 'https://www.lexum.it')),
         timeout_milliseconds := 30000);
     end if;
@@ -285,3 +280,10 @@ as $function$
     where a.user_id = c.id and a.tipo = c.tipo and a.scadenza = c.scadenza)
   order by c.scadenza
 $function$;
+
+-- Monetizzazione e sentenze a pagamento spariscono dalla circolazione (03-11-2026): il prodotto si spegne e i
+-- segni nei dati si azzerano. Colonne e tabelle restano: non le legge più nessuna pagina.
+update public.prodotti set attivo = false where tipo = 'accesso_singolo' and attivo;
+update public.prodotti set include_monetizzazione = false where include_monetizzazione;
+update public.studios set include_monetizzazione = false where include_monetizzazione;
+update public.profiles set include_monetizzazione = false where include_monetizzazione;

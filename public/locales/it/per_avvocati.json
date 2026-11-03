@@ -1,9 +1,9 @@
 {
   "meta": {
     "title": "Lexum per Studi Legali — Gestionale, AI e collaborazione di team",
-    "description": "Multi-accesso con permessi granulari, calendario condiviso, archivio intelligente, Lex AI e monetizzazione delle sentenze. Tutto il lavoro dello studio in un ambiente coerente.",
+    "description": "Multi-accesso con permessi granulari, calendario condiviso, archivio intelligente e Lex AI. Tutto il lavoro dello studio in un ambiente coerente.",
     "og_title": "Lexum per Studi Legali — Gestionale, AI e team",
-    "og_description": "Gestionale, multi-accesso, calendario, archivio intelligente, Lex AI e monetizzazione dell'archivio. Tutto in un ambiente coerente.",
+    "og_description": "Gestionale, multi-accesso, calendario, archivio intelligente e Lex AI. Tutto in un ambiente coerente.",
     "twitter_title": "Lexum per Studi Legali",
     "twitter_description": "Gestionale, AI e collaborazione di team per studi legali italiani."
   },
@@ -390,39 +390,6 @@
     ],
     "note": "Aperta a chiunque, gratis. Lavoriamo in modo continuo per ampliare e aggiornare le fonti."
   },
-  "monetizzazione": {
-    "label": "Monetizzazione",
-    "title": "Il tuo archivio diventa <hl>una risorsa attiva.</hl>",
-    "subtitle": "Le sentenze che hai gia lavorato, anonimizzate e pubblicate, fanno crescere il sapere collettivo della professione. E ti restituiscono valore economico ogni volta che vengono consultate.",
-    "feature_title": "Anonimizzi, pubblichi, monetizzi",
-    "feature_text": "Selezioni le sentenze che possono avere valore per altri professionisti. Lexum ti aiuta nell'anonimizzazione. Le pubblichi nella banca dati. Quando un altro avvocato le acquista, una quota va al tuo studio. Il lavoro gia fatto continua a produrre valore nel tempo.",
-    "points": [
-      "Selezione libera dei contenuti da pubblicare",
-      "Supporto all'anonimizzazione",
-      "Quota sulle consultazioni",
-      "Visibilita professionale aumentata"
-    ],
-    "visual_label": "Le tue sentenze pubblicate",
-    "items": [
-      {
-        "titolo": "Responsabilita medica - errore diagnostico",
-        "acquisti": "12 acquisti",
-        "quota": "80,00 €"
-      },
-      {
-        "titolo": "Locazione - inadempimento locatore",
-        "acquisti": "8 acquisti",
-        "quota": "110,00 €"
-      },
-      {
-        "titolo": "Omicidio stradale - revoca patente",
-        "acquisti": "5 acquisti",
-        "quota": "45,00 €"
-      }
-    ],
-    "total_label": "Totale ricavi 2026",
-    "total": "235,00 €"
-  },
   "sicurezza": {
     "label": "Sicurezza",
     "title": "Riservatezza <hl>come standard, non come opzione.</hl>",
@@ -431,10 +398,6 @@
       {
         "titolo": "Compartimentazione dati",
         "testo": "Ogni studio e isolato. I tuoi dati non sono mai accessibili ad altri studi, ne agli altri membri del tuo team senza il tuo permesso esplicito."
-      },
-      {
-        "titolo": "Anonimizzazione prima della pubblicazione",
-        "testo": "Prima che una sentenza diventi pubblica nella banca dati, i dati sensibili vengono rimossi. Lexum supporta il processo, ma il controllo finale resta tuo."
       },
       {
         "titolo": "Audit log completo",

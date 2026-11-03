@@ -173,11 +173,6 @@ export default function TerminiServizio() {
               {t('contenuti.licenza.text')}
             </p>
           </Sub>
-          <Sub title={t('contenuti.banca_dati.title')}>
-            <p>
-              {t('contenuti.banca_dati.text')}
-            </p>
-          </Sub>
           <Sub title={t('contenuti.vietati.title')}>
             <p>{t('contenuti.vietati.intro')}</p>
             <ul className="list-disc list-inside space-y-1 pl-2">

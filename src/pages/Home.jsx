@@ -804,52 +804,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6.4 BANCA DATI CONDIVISA */}
-      <section id="bancadati" className="py-24 px-6 border-t border-white/5 scroll-mt-28">
-        <div className="max-w-5xl mx-auto">
-
-          <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-            <SectionLabel>{t('banca_condivisa.label')}</SectionLabel>
-            <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-              <Trans t={t} i18nKey="banca_condivisa.title" components={{ hl: <span className="text-oro" /> }} />
-            </h2>
-            <p className="font-body text-base text-nebbia/40 leading-relaxed">
-              {t('banca_condivisa.subtitle')}
-            </p>
-          </FadeIn>
-
-          <FeatureRow
-            icon={BookOpen}
-            title={t('banca_condivisa.feature_title')}
-            text={t('banca_condivisa.feature_text')}
-            points={t('banca_condivisa.points', { returnObjects: true })}
-          >
-            <VisualBlock label={t('banca_condivisa.visual.label')}>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-body text-xs text-nebbia/30">{t('banca_condivisa.visual.results')}</span>
-                </div>
-                <div className="border border-white/8 p-4">
-                  <p className="font-body text-xs text-nebbia/30 uppercase tracking-widest mb-1">{t('banca_condivisa.visual.category')}</p>
-                  <p className="font-body text-sm font-medium text-nebbia mb-1">{t('banca_condivisa.visual.title')}</p>
-                  <p className="font-body text-xs text-nebbia/40 mb-2">{t('banca_condivisa.visual.author')}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {t('banca_condivisa.visual.tags', { returnObjects: true }).map(tag => (
-                        <span key={tag} className="font-body text-[10px] px-1.5 py-0.5 bg-petrolio border border-white/8 text-nebbia/30">{tag}</span>
-                      ))}
-                    </div>
-                    <span className="font-body text-xs text-oro font-medium">{t('banca_condivisa.visual.price')}</span>
-                  </div>
-                </div>
-              </div>
-            </VisualBlock>
-          </FeatureRow>
-          <div className="pt-12"></div>
-          <Divider />
-
-        </div>
-        {/* 6.5 CLIENTE */}
+      {/* 6.5 CLIENTE */}
+      <section className="border-t border-white/5">
         <section id="cliente" className="pt-12 pb-4 px-6 scroll-mt-12">
           <div className="max-w-5xl mx-auto">
 

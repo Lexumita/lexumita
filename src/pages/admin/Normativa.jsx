@@ -533,7 +533,6 @@ function VistaSentenze() {
                         <p className="font-body text-sm font-medium text-nebbia">Sentenze pubbliche (gratuite)</p>
                         <p className="font-body text-xs text-nebbia/40 mt-1 leading-relaxed">
                             Corpus di giurisprudenza pubblica accessibile a tutti gli avvocati senza pagamento.
-                            Le sentenze caricate dagli avvocati con monetizzazione sono in <a href="/admin/sentenze" className="text-oro hover:text-oro/80">Admin / Sentenze</a>.
                         </p>
                     </div>
                 </div>

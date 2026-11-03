@@ -27,7 +27,7 @@
     "label": "Banca dati",
     "title": "Una banca dati verificata, <hl>aggiornata ogni settimana.</hl>",
     "weekly_badge": "Ogni settimana: normativa italiana ed europea allineata al testo vigente, nuove sentenze e nuova prassi delle autorità.",
-    "anti_noise": "Lex AI consulta oltre 4,5 milioni di documenti verificati, suddivisi tra giurisprudenza, normativa italiana ed europea, prassi delle autorità e contributi professionali. Niente ricerca web casuale, niente fonti generaliste."
+    "anti_noise": "Lex AI consulta oltre 4,5 milioni di documenti verificati, suddivisi tra giurisprudenza, normativa italiana ed europea e prassi delle autorità. Niente ricerca web casuale, niente fonti generaliste."
   },
   "database_card": {
     "label": "Banca dati",
@@ -260,32 +260,6 @@
   "archivio": {
     "title": "I documenti dello studio, <hl>sempre a portata.</hl>",
     "subtitle": "Carichi, ritrovi, condividi. La gestione e la ricerca dell'archivio in un flusso unico, senza mai uscire dal contesto della pratica."
-  },
-  "banca_condivisa": {
-    "label": "Banca dati condivisa",
-    "title": "Il tuo archivio diventa <hl>una risorsa.</hl>",
-    "subtitle": "Le sentenze che hai gia lavorato, anonimizzate e condivise, fanno crescere il sapere collettivo della professione. E ti restituiscono valore economico.",
-    "feature_title": "Valorizza il tuo archivio interno",
-    "feature_text": "Anonimizza le tue sentenze e rendile disponibili in piattaforma. Gli altri avvocati che ne hanno bisogno possono acquistarle, e una quota torna a te. Il lavoro gia svolto diventa una risorsa economica.",
-    "points": [
-      "Anonimizzazione sentenze",
-      "Pubblicazione in piattaforma",
-      "Monetizzazione archivio",
-      "Accesso a contenuti di altri avvocati"
-    ],
-    "visual": {
-      "label": "Banca dati Lexum",
-      "results": "1 risultato - Diritto Civile / Contratti",
-      "category": "Diritto Civile / Contratti / Inadempimento",
-      "title": "Revoca patente - Omicidio stradale - Cass. Ord. n. 8058/2026",
-      "author": "Nino Avvocato - Corte di Cassazione - 2026",
-      "tags": [
-        "revoca patente",
-        "omicidio stradale",
-        "art. 589-bis"
-      ],
-      "price": "5 €"
-    }
   },
   "cliente": {
     "label": "Area cliente",

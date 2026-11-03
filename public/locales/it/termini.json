@@ -115,12 +115,8 @@
       "title": "5.2 Licenza d'uso",
       "text": "Caricando contenuti sulla piattaforma, l'Utente concede a Lexum una licenza limitata, non esclusiva e non trasferibile per elaborare tali contenuti al solo scopo di erogare il servizio (archiviazione, OCR, indicizzazione, ricerca semantica, analisi AI)."
     },
-    "banca_dati": {
-      "title": "5.3 Banca dati condivisa",
-      "text": "Caricando sentenze nella banca dati condivisa, l'Utente dichiara di avere il diritto di condividere tali documenti e accetta che altri avvocati registrati possano acquistare l'accesso al documento. Il compenso per ogni accesso viene ripartito secondo le percentuali indicate al momento del caricamento."
-    },
     "vietati": {
-      "title": "5.4 Contenuti vietati",
+      "title": "5.3 Contenuti vietati",
       "intro": "È vietato caricare sulla piattaforma:",
       "items": [
         "Contenuti che violano diritti di terzi (copyright, privacy, segreti aziendali)",
@@ -131,7 +127,7 @@
       ]
     },
     "responsabilita": {
-      "title": "5.5 Responsabilità sui contenuti",
+      "title": "5.4 Responsabilità sui contenuti",
       "text": "L'Utente è il responsabile del trattamento dei dati personali dei propri clienti ai sensi del GDPR. Lexum agisce quale responsabile del trattamento (data processor) per i dati caricati dall'Utente. Le parti sottoscrivono implicitamente un accordo di trattamento dei dati (DPA) conforme all'art. 28 GDPR con l'accettazione dei presenti Termini."
     }
   },

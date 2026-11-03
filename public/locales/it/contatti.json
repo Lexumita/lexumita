@@ -56,7 +56,7 @@
       },
       {
         "q": "I miei dati restano miei?",
-        "a": "Sì. Lexum è progettato con la riservatezza al centro: i dati di ogni studio sono compartimentati e isolati, ospitati su server europei conformi al GDPR, e non vengono mai venduti o condivisi con terzi. Le sentenze del tuo archivio restano private. Solo se decidi di pubblicarle nella banca dati condivisa vengono prima anonimizzate, e tu mantieni sempre il controllo finale."
+        "a": "Sì. Lexum è progettato con la riservatezza al centro: i dati di ogni studio sono compartimentati e isolati, ospitati su server europei conformi al GDPR, e non vengono mai venduti o condivisi con terzi. Le sentenze del tuo archivio restano private."
       },
       {
         "q": "Come funziona la verifica come avvocato?",
@@ -76,7 +76,6 @@
   "trust": [
     "Dati ospitati in Europa",
     "Conforme al GDPR",
-    "Compartimentazione studio",
-    "Anonimizzazione contenuti"
+    "Compartimentazione studio"
   ]
 }

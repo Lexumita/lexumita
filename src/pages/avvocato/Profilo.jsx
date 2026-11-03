@@ -120,7 +120,7 @@ export default function AvvocatoProfilo() {
 
                 const { data: profilo } = await supabase
                     .from('profiles')
-                    .select('nome, cognome, email, telefono, specializzazioni, studio, tipo_account, verification_status, piano_id, abbonamento_tipo, abbonamento_scadenza, posti_acquistati, include_banca_dati, include_monetizzazione, foro, numero_albo, pec, data_iscrizione_albo, mfa_attivo, mfa_attivato_at, role, partita_iva, cf, regime_fiscale, cassa_previdenza, indirizzo, numero_civico, cap, comune, provincia, paese, iban, codice_destinatario_sdi')
+                    .select('nome, cognome, email, telefono, specializzazioni, studio, tipo_account, verification_status, piano_id, abbonamento_tipo, abbonamento_scadenza, posti_acquistati, include_banca_dati, foro, numero_albo, pec, data_iscrizione_albo, mfa_attivo, mfa_attivato_at, role, partita_iva, cf, regime_fiscale, cassa_previdenza, indirizzo, numero_civico, cap, comune, provincia, paese, iban, codice_destinatario_sdi')
                     .eq('id', user.id)
                     .single()
 
@@ -173,7 +173,6 @@ export default function AvvocatoProfilo() {
                             scadenza: profilo.abbonamento_scadenza ?? null,
                             posti: profilo.posti_acquistati ?? 1,
                             include_banca_dati: profilo.include_banca_dati ?? false,
-                            include_monetizzazione: profilo.include_monetizzazione ?? false,
                         })
                     }
 

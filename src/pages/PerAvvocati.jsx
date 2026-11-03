@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import ArchivioRicercaAnimatedDemo from '@/components/ArchivioRicercaAnimatedDemo'
 import {
-    ArrowRight, BookOpen, TrendingUp, Users, Sparkles,
+    ArrowRight, BookOpen, Users, Sparkles,
     Shield, Check, ChevronDown, Brain, Star, Zap, Lock,
     FileText, FileSignature, Calendar, FolderOpen, Search,
     Eye, EyeOff, UserCheck, Briefcase, CreditCard,
@@ -27,7 +27,7 @@ const STATI_PAGAMENTI = ['pagato', 'pagato', 'in_sospeso']
 const ICONE_LEX = [Search, Scale, Brain, Sparkles, BookOpen, FileSignature]
 const COLORI_TOTALI = ['text-nebbia/55', 'text-nebbia/50', 'text-nebbia/50', 'text-nebbia/50']
 const APERTI_PARZIALI = [false, false, true]
-const ICONE_SICUREZZA = [ShieldCheck, EyeOff, Activity, FileText]
+const ICONE_SICUREZZA = [ShieldCheck, Activity, FileText]
 
 // ─── Scroll animation hook ───────────────────────────────────
 
@@ -765,52 +765,6 @@ export default function PerAvvocati() {
                                     <p className="font-body text-[11px] text-nebbia/55 leading-snug">
                                         {t('banca_dati.note')}
                                     </p>
-                                </div>
-                            </div>
-                        </VisualBlock>
-                    </FeatureRow>
-
-                </div>
-            </section>
-
-            {/* ══════════════════════════════════════════
-          9. MONETIZZAZIONE ARCHIVIO LEGALE
-      ══════════════════════════════════════════ */}
-            <section className="py-24 px-6 bg-slate/20 border-t border-white/5">
-                <div className="max-w-5xl mx-auto">
-
-                    <FadeIn className="text-center mb-16 max-w-2xl mx-auto">
-                        <SectionLabel>{t('monetizzazione.label')}</SectionLabel>
-                        <h2 className="font-display text-3xl md:text-4xl font-light text-nebbia mb-4">
-                            <Trans t={t} i18nKey="monetizzazione.title"
-                                components={{ hl: <span className="text-oro" /> }} />
-                        </h2>
-                        <p className="font-body text-base text-nebbia/40 leading-relaxed">
-                            {t('monetizzazione.subtitle')}
-                        </p>
-                    </FadeIn>
-
-                    <FeatureRow
-                        icon={TrendingUp}
-                        title={t('monetizzazione.feature_title')}
-                        text={t('monetizzazione.feature_text')}
-                        points={lista('monetizzazione.points')}
-                    >
-                        <VisualBlock label={t('monetizzazione.visual_label')}>
-                            <div className="space-y-2">
-                                {lista('monetizzazione.items').map(({ titolo, acquisti, quota }) => (
-                                    <div key={titolo} className="flex items-center gap-3 p-3 bg-petrolio/50 border border-white/5">
-                                        <FileText size={12} className="text-oro shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-body text-xs text-nebbia/70 truncate">{titolo}</p>
-                                            <p className="font-body text-[10px] text-nebbia/30">{acquisti}</p>
-                                        </div>
-                                        <span className="font-body text-xs text-oro font-medium shrink-0">{quota}</span>
-                                    </div>
-                                ))}
-                                <div className="flex items-center justify-between p-3 bg-oro/5 border border-oro/15 mt-2">
-                                    <span className="font-body text-xs text-nebbia/55">{t('monetizzazione.total_label')}</span>
-                                    <span className="font-body text-sm text-oro font-medium">{t('monetizzazione.total')}</span>
                                 </div>
                             </div>
                         </VisualBlock>

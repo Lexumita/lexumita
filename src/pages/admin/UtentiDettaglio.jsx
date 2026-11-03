@@ -123,7 +123,6 @@ function SezioneAvvocato({ utente }) {
             ['Tipo account', utente.tipo_account ?? '—'],
             ['Accessi', `${postiUsati} / ${postiTot}`],
             ['Banca dati', utente.include_banca_dati ? 'Inclusa' : 'Non inclusa'],
-            ['Monetizzazione', utente.include_monetizzazione ? 'Inclusa' : 'Non inclusa'],
             ['Registrato il', new Date(utente.created_at).toLocaleDateString('it-IT')],
             ['Verifica', utente.verification_status === 'approved' ? 'Verificato' : utente.verification_status ?? '—'],
           ].map(([l, v]) => (
