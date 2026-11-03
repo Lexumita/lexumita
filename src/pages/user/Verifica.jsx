@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator, Lock, Unlock, Sparkles, ChevronDown, MessageSquare } from 'lucide-react'
 import { campiMancanti, percentualeProfilo } from '@/lib/profiloCompleto'
+import { attivaProvaGratuita, linkConsulenza, puoAttivareProva } from '@/lib/provaGratuita'
 
 // ── Config per direzione professionale (avvocato | commercialista) ──
 // Stesse chiavi documento (identita/albo/laurea) per entrambe: cambiano solo
@@ -129,10 +130,6 @@ export function SceltaDirezione({ onScelta, loading, nuovoTicket }) {
             <div className="grid md:grid-cols-2 gap-6 items-start">
                 {DIREZIONI.map(({ chiave, titolo, icona: Icona, descrizione, strumenti }) => {
                     const apertaQui = aperte.includes(chiave)
-                    const consulenza = new URLSearchParams({
-                        oggetto: 'Richiesta di consulenza',
-                        messaggio: `Buongiorno, sono ${chiave === 'avvocato' ? 'un avvocato' : 'un commercialista'} e sto valutando Lexum per il mio studio: vorrei una consulenza su quale piano scegliere e cosa posso fare con il profilo professionale. Grazie.`,
-                    })
                     return (
                         <div key={chiave} className={`bg-slate border transition-colors ${apertaQui ? 'border-oro/40' : 'border-white/5 hover:border-oro/30'}`}>
                             <div className="p-8">
@@ -181,7 +178,7 @@ export function SceltaDirezione({ onScelta, loading, nuovoTicket }) {
                                         >
                                             {loading ? <Loader2 size={14} className="animate-spin" /> : <>Verifica come {titolo.toLowerCase()} <ArrowRight size={14} /></>}
                                         </button>
-                                        <Link to={`${nuovoTicket}?${consulenza}`} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
+                                        <Link to={linkConsulenza(chiave, nuovoTicket)} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
                                             <MessageSquare size={14} /> Richiedi una consulenza
                                         </Link>
                                     </div>
@@ -205,6 +202,8 @@ export function UserVerifica() {
     const [salvandoDirezione, setSalvandoDirezione] = useState(false)
     const [errore, setErrore] = useState('')
     const [inviato, setInviato] = useState(false)
+    const [attivandoProva, setAttivandoProva] = useState(false)
+    const [erroreProva, setErroreProva] = useState('')
 
     // ── Dati di fatturazione: sono LORO a sbloccare la piattaforma. Dal 28-10-2026 si compilano in un posto
     // solo, il Profilo (sezione «Dati per la fatturazione»): qui restano l'avanzamento e il collegamento.
@@ -239,6 +238,19 @@ export function UserVerifica() {
     )
 
     const config = PROFILI[direzione] ?? PROFILI.avvocato
+
+    // Il ruolo cambia: la pagina si riapre sullo studio, con il profilo riletto dall'inizio
+    async function handleProva() {
+        setAttivandoProva(true)
+        setErroreProva('')
+        try {
+            await attivaProvaGratuita()
+            window.location.assign('/dashboard')
+        } catch (err) {
+            setErroreProva(err.message)
+            setAttivandoProva(false)
+        }
+    }
 
     async function handleInvia() {
         const daCaricare = config.documenti.filter(d => docs[d.key])
@@ -350,6 +362,27 @@ export function UserVerifica() {
                     </ul>
                 </div>
             </div>
+
+            {/* La prova per chi era già iscritto (03-11-2026): chi si registra ora come professionista ce l'ha già da sola */}
+            {puoAttivareProva({ ...profile, tipo_richiesta: direzione }) && (
+                <div className="bg-slate border border-salvia/25 p-5 flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex-1">
+                        <p className="font-body text-sm font-medium text-nebbia mb-1">Prova lo studio gratis: 3 giorni, con 7 crediti per Lex</p>
+                        <p className="font-body text-xs text-nebbia/50 leading-relaxed">
+                            Un clic e lo studio è attivo: niente carta di credito, niente dati di fatturazione. Alla fine decidi tu se scegliere un piano.
+                        </p>
+                        {erroreProva && <p className="font-body text-xs text-red-400 mt-2">{erroreProva}</p>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 shrink-0">
+                        <button onClick={handleProva} disabled={attivandoProva} className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-40">
+                            {attivandoProva ? <Loader2 size={14} className="animate-spin" /> : <>Attiva la prova gratuita <ArrowRight size={14} /></>}
+                        </button>
+                        <Link to={linkConsulenza(direzione, '/area/assistenza/nuovo')} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
+                            <MessageSquare size={14} /> Richiedi una consulenza
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {/* Avanzamento e dati di fatturazione uno accanto all'altro (29-10-2026) */}
             <div className="grid lg:grid-cols-2 gap-4">

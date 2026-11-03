@@ -67,7 +67,7 @@ export async function scaricaPdfDocumento(d) {
         pageSize: 'A4',
         pageMargins: [40, 40, 40, 50],
         defaultStyle: { font: 'Outfit', fontSize: 9.5, color: PETROLIO, lineHeight: 1.2 },
-        footer: piede(`${d.avvertenza} Creato gratis con Lexum, ${SITO}`),
+        footer: piede(`${d.avvertenza} Creato con Lexum, ${SITO}`),
         content: [
             {
                 columns: [
@@ -173,7 +173,7 @@ export async function scaricaPdfParcella(p) {
         pageSize: 'A4',
         pageMargins: [40, 40, 40, 50],
         defaultStyle: { font: 'Outfit', fontSize: 9.5, color: PETROLIO, lineHeight: 1.2 },
-        footer: piede(`Calcolato gratis con Lexum, ${SITO}`),
+        footer: piede(`Creato con Lexum, ${SITO}`),
         content: [
             { text: 'Calcolo della parcella', fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
             { text: 'Parametri forensi: DM 55/2014, tabelle aggiornate dal DM 147/2022', fontSize: 9, color: GRIGIO, margin: [0, 0, 0, 2] },

@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/shared'
+import AvvisoProva from '@/components/AvvisoProva'
 import {
   Users, CreditCard, Wallet, AlertCircle, Calendar,
   FileText, ChevronRight, MapPin, Video, Phone,
@@ -161,6 +162,7 @@ export default function CommercialistaDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader label="Commercialista" title="Dashboard" subtitle="Il quadro del tuo studio" />
+      <AvvisoProva />
 
       {/* KPI studio */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">

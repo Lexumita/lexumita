@@ -21,6 +21,9 @@ const PROFESSIONI = [
   { v: 'privato', l: 'Privato' },
 ]
 
+// Chi si registra così ha la prova dello studio: parte da sola alla conferma dell'email (trigger nel database).
+const PROFESSIONI_CON_PROVA = ['avvocato', 'commercialista']
+
 export default function Registrati() {
   const navigate = useNavigate()
 
@@ -108,7 +111,9 @@ export default function Registrati() {
           <h2 className="font-display text-2xl sm:text-3xl font-light text-nebbia mb-3">Controlla la tua email</h2>
           <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed">
             Abbiamo inviato un link di conferma a <span className="text-oro">{form.email}</span>.<br />
-            Clicca il link per attivare il tuo account e iniziare a usare Lex AI: la prima ricerca è gratuita.
+            {PROFESSIONI_CON_PROVA.includes(form.professione)
+              ? "Clicca il link per attivare il tuo account: parte da sola la tua prova gratuita, 3 giorni con lo studio completo e 7 crediti per Lex."
+              : 'Clicca il link per attivare il tuo account e iniziare a usare Lex AI: la prima ricerca è gratuita.'}
           </p>
           <p className="font-body text-xs text-nebbia/30">
             Non hai ricevuto nulla? Controlla la cartella spam.
@@ -265,6 +270,11 @@ export default function Registrati() {
               {PROFESSIONI.map(p => <option key={p.v} value={p.v}>{p.l}</option>)}
             </select>
             {errors.professione && <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors.professione}</p>}
+            {PROFESSIONI_CON_PROVA.includes(form.professione) && (
+              <p className="mt-2 font-body text-xs text-salvia leading-relaxed">
+                Prova gratuita compresa: appena confermi l'email parte da sola, 3 giorni con lo studio completo e 7 crediti per Lex. Niente carta di credito.
+              </p>
+            )}
           </div>
 
           {/* Studio — opzionale */}

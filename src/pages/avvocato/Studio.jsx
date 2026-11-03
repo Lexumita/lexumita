@@ -16,6 +16,7 @@ import { AvvisoDatiFatturazione, mancantiAcquisto, messaggioDatiMancanti } from 
 import { vociPiano, etichettaDurata } from '@/lib/vociPiano'
 import CodiceSconto, { useCodiceSconto, PrezzoScontato } from '@/components/CodiceSconto'
 import { useAuth } from '@/context/AuthContext'
+import { attivaProvaGratuita, puoAttivareProva } from '@/lib/provaGratuita'
 
 // ─────────────────────────────────────────────────────────────
 // COSTANTI / HELPERS
@@ -168,7 +169,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
             const { data: { user } } = await supabase.auth.getUser()
             const { data: prof } = await supabase
                 .from('profiles')
-                .select('prova_gratuita_usata')
+                .select('role, professione, tipo_richiesta, verification_status, titolare_id, prova_gratuita_usata')
                 .eq('id', user.id)
                 .single()
 
@@ -187,7 +188,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
             // l'archivio in più al mese dei privati (28-10-2026) non è per lo studio
             setPacchettiStorage(tutti.filter(p => p.tipo === 'spazio_archiviazione' && p.target_role !== 'user'))
 
-            if (!prof?.prova_gratuita_usata && !pianoAttualeId) {
+            if (puoAttivareProva(prof) && !pianoAttualeId) {
                 setTrialProdotto(tutti.find(p => p.tipo === 'gratuito') ?? null)
             }
 
@@ -200,17 +201,7 @@ export function SezioneAcquisto({ pianoAttualeId = null, prezzoAttuale = 0, dura
         setAttivandoTrial(true)
         setErrore('')
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const res = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/activate-trial`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                    body: JSON.stringify({ prodotto_id: trialProdotto.id }),
-                }
-            )
-            const json = await res.json()
-            if (!json.ok) throw new Error(json.error)
+            await attivaProvaGratuita()
             setTrialAttivato(true)
             setTrialProdotto(null)
             setTimeout(() => window.location.reload(), 1500)
