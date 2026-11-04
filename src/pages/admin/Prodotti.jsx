@@ -405,11 +405,11 @@ export function AdminProdottiForm() {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-body text-xs text-nebbia/30">Oppure inserisci:</span>
-              <input type="number" min="0" step="0.01" {...f('durata_mesi')} placeholder={isGratuito ? "es. 0.24" : "es. 24"}
+              <input type="number" min="0" step="0.01" {...f('durata_mesi')} placeholder={isGratuito ? "es. 0.1" : "es. 24"}
                 className="bg-petrolio border border-white/10 text-nebbia font-body text-sm px-3 py-1.5 outline-none focus:border-oro/50 w-24 placeholder:text-nebbia/25" />
               <span className="font-body text-xs text-nebbia/30">mesi</span>
               {isGratuito && (
-                <span className="font-body text-[10px] text-nebbia/30">(0.24 ≈ 7 giorni)</span>
+                <span className="font-body text-[10px] text-nebbia/30">(0.1 = 3 giorni)</span>
               )}
             </div>
           </div>

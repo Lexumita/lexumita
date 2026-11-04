@@ -1,7 +1,8 @@
 -- 03-11-2026: la prova gratuita dello studio parte da sola («tutto in automatico, lasciamo che possono richiedere
--- la consulenza»). Chi si registra come avvocato o commercialista, appena conferma l'email, ha lo studio attivo per
--- la durata del prodotto 'gratuito' (oggi 3 giorni e 7 crediti). Vale per il sito e per l'app: la registrazione è
--- la stessa, e qui non serve che un browser faccia niente.
+-- la consulenza»). Chi si registra come avvocato, appena conferma l'email, ha lo studio attivo per la durata del
+-- prodotto 'gratuito' (oggi 3 giorni e 7 crediti). Vale per il sito e per l'app: la registrazione è la stessa, e qui
+-- non serve che un browser faccia niente.
+-- I commercialisti per ora non hanno la prova (04-11-2026): il loro piano è spento.
 -- Chi era già iscritto non viene toccato: si attiva la prova con un clic da «Completa il profilo» (activate-trial
 -- chiama questa stessa funzione). Spegnendo il prodotto dal pannello si spegne anche la prova automatica.
 -- Prima: activate-trial non creava lo studio e voleva la verifica approvata, e nessuno l'aveva mai usata.
@@ -31,16 +32,16 @@ begin
   if v_profilo.titolare_id is not null then raise exception 'La prova la attiva il titolare dello studio'; end if;
 
   -- Il ruolo: si tiene quello professionale che c'è, altrimenti quello dichiarato. In Italia non c'è approvazione.
-  if v_profilo.role in ('avvocato', 'commercialista') then
-    v_ruolo := v_profilo.role;
+  if v_profilo.role = 'avvocato' then
+    v_ruolo := 'avvocato';
   elsif v_profilo.role = 'user' then
-    v_ruolo := case
-      when v_profilo.tipo_richiesta in ('avvocato', 'commercialista') then v_profilo.tipo_richiesta
-      when v_profilo.professione in ('avvocato', 'commercialista') then v_profilo.professione
-      when v_profilo.verification_status = 'approved' then 'avvocato'
+    v_ruolo := case coalesce(v_profilo.tipo_richiesta, v_profilo.professione)
+      when 'commercialista' then null
+      when 'avvocato' then 'avvocato'
+      else case when v_profilo.verification_status = 'approved' then 'avvocato' end
     end;
   end if;
-  if v_ruolo is null then raise exception 'La prova gratuita è riservata ad avvocati e commercialisti'; end if;
+  if v_ruolo is null then raise exception 'La prova gratuita per ora è riservata agli avvocati'; end if;
 
   -- Il Piano Personale dei privati non conta: non è un piano professionale.
   if v_profilo.piano_id is not null and not exists (
@@ -54,7 +55,7 @@ begin
   order by pr.created_at desc limit 1;
   if not found then raise exception 'La prova gratuita non è disponibile'; end if;
 
-  v_fine   := now() + coalesce(v_prodotto.durata_mesi * 30, 7) * interval '1 day';
+  v_fine   := now() + coalesce(v_prodotto.durata_mesi * 30, 3) * interval '1 day';
   v_posti  := coalesce(v_prodotto.posti, 1);
   v_nome   := nullif(btrim(coalesce(v_profilo.nome, '') || ' ' || coalesce(v_profilo.cognome, '')), '');
   v_studio := v_profilo.studio_id;
@@ -126,7 +127,7 @@ begin
           'templateModel', jsonb_build_object(
             'nome', v_profilo.nome,
             'piano_nome', v_prodotto.nome,
-            'durata_giorni', round(coalesce(v_prodotto.durata_mesi * 30, 7)),
+            'durata_giorni', round(coalesce(v_prodotto.durata_mesi * 30, 3)),
             'scadenza', extract(day from v_fine at time zone 'Europe/Rome')::int || ' '
                         || v_mesi[extract(month from v_fine at time zone 'Europe/Rome')::int] || ' '
                         || extract(year from v_fine at time zone 'Europe/Rome')::int,
@@ -161,7 +162,7 @@ begin
   if exists (
     select 1 from public.profiles p
     where p.id = new.id and p.role = 'user' and not p.prova_gratuita_usata
-      and p.professione in ('avvocato', 'commercialista')
+      and p.professione = 'avvocato'
   ) then
     -- Se la prova non parte, la conferma dell'email deve andare a buon fine lo stesso: resta il pulsante.
     begin

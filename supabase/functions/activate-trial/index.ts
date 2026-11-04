@@ -1,7 +1,7 @@
 // supabase/functions/activate-trial/index.ts
 //
 // Il pulsante «Attiva la prova gratuita» per chi era già iscritto. Dal 03-11-2026 la logica sta nel database, in
-// attiva_prova_gratuita, la stessa che parte da sola quando chi si registra come avvocato o commercialista conferma
+// attiva_prova_gratuita, la stessa che parte da sola quando chi si registra come avvocato conferma
 // l'email: controlli, ruolo, studio, crediti, transazione e mail. Prima questa funzione non creava lo studio e
 // voleva la verifica approvata, che in Italia per i piani non serve più.
 

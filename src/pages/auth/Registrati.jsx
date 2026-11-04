@@ -22,7 +22,7 @@ const PROFESSIONI = [
 ]
 
 // Chi si registra così ha la prova dello studio: parte da sola alla conferma dell'email (trigger nel database).
-const PROFESSIONI_CON_PROVA = ['avvocato', 'commercialista']
+const PROFESSIONI_CON_PROVA = ['avvocato']
 
 export default function Registrati() {
   const navigate = useNavigate()

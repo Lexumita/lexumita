@@ -12,14 +12,14 @@ export default function EmailVerificata() {
                 <CheckCircle size={40} className="text-salvia mx-auto mb-4" />
                 <h2 className="font-display text-2xl sm:text-3xl font-light text-nebbia mb-3">Email verificata</h2>
                 <p className="font-body text-sm text-nebbia/50 mb-7 leading-relaxed">
-                    Registrazione completata. Accedi ora: la Banca Dati è già tua. Se ti sei iscritto come avvocato o commercialista è partita anche la prova gratuita dello studio.
+                    Registrazione completata. Accedi ora: la Banca Dati è già tua. Se ti sei iscritto come avvocato è partita anche la prova gratuita dello studio.
                 </p>
 
                 <div className="text-left space-y-3 mb-7 border border-white/5 p-4 bg-petrolio/40">
                     {[
                         ['1', 'Accedi con email e password'],
                         ['2', 'Trovi la Banca Dati e una domanda a Lex offerta da noi'],
-                        ['3', 'Avvocati e commercialisti: lo studio è già attivo per 3 giorni, con 7 crediti per Lex'],
+                        ['3', 'Avvocati: lo studio è già attivo per 3 giorni, con 7 crediti per Lex'],
                         ['4', 'Quando vuoi, scegli il piano: si attiva subito, senza approvazioni'],
                     ].map(([n, label]) => (
                         <div key={n} className="flex items-start sm:items-center gap-3">

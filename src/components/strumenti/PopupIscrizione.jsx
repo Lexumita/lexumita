@@ -22,7 +22,7 @@ export function usePopupIscrizione(strumento) {
     return { dopoDocumento, popup }
 }
 
-// Una sola strada: la registrazione è una per tutti e si entra come user. Chi è avvocato o commercialista lo dice
+// Una sola strada: la registrazione è una per tutti e si entra come user. Chi è avvocato lo dice
 // nel campo Professione, e allo studio ci arriva dopo, con lo stesso account.
 const VANTAGGI = [
     'Il calcolo della parcella e la fattura, sempre a portata di mano',
@@ -58,7 +58,7 @@ function PopupIscrizione({ strumento, onChiudi }) {
                 </Link>
                 <p className="font-body text-xs text-nebbia/40 text-center mt-2">Niente carta di credito.</p>
                 <p className="font-body text-xs text-nebbia/50 leading-relaxed mt-5 pt-4 border-t border-white/5">
-                    <span className="text-nebbia/80">Sei un avvocato o un commercialista?</span> Ti iscrivi allo stesso modo, indicando la professione: appena confermi l'email parte da sola la prova dello studio, 3 giorni con pratiche, clienti, atti e fatture e 7 crediti per Lex. Se vuoi una mano, puoi richiedere una consulenza con il team.
+                    <span className="text-nebbia/80">Sei un avvocato?</span> Ti iscrivi allo stesso modo, indicando la professione: appena confermi l'email parte da sola la prova dello studio, 3 giorni con pratiche, clienti, atti e fatture e 7 crediti per Lex. Se vuoi una mano, puoi richiedere una consulenza con il team.
                 </p>
                 <button onClick={onChiudi} className="block w-full mt-3 py-2 font-body text-xs text-nebbia/40 hover:text-nebbia transition-colors">
                     Continua senza account

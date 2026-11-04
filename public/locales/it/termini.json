@@ -92,15 +92,14 @@
     },
     "prova": {
       "title": "4.8 Prova gratuita",
-      "intro": "Lexum offre una prova gratuita della durata di 7 giorni (o periodo diverso indicato al momento dell'attivazione) per i nuovi utenti registrati come avvocati. La prova gratuita:",
+      "intro": "Lexum offre una prova gratuita della durata di 3 giorni (o periodo diverso indicato al momento dell'attivazione) per gli utenti che si registrano come avvocati. La prova parte da sola alla conferma dell'indirizzo email; chi era già iscritto può attivarla con un clic dalla propria area. La prova gratuita:",
       "items": [
         "È attivabile una sola volta per account e non è trasferibile",
         "Non richiede l'inserimento di dati di pagamento",
         "Include le funzionalità indicate al momento dell'attivazione",
-        "Si conclude automaticamente alla scadenza senza addebiti",
-        "Alla scadenza, l'accesso alle funzionalità a pagamento viene sospeso",
-        "I dati inseriti durante la prova rimangono accessibili dopo l'acquisto di un piano",
-        "I dati vengono conservati per 30 giorni dalla scadenza della prova, trascorsi i quali possono essere eliminati definitivamente"
+        "Si conclude automaticamente alla scadenza, senza addebiti e senza obbligo di acquistare un piano",
+        "Alla scadenza, senza un piano, non sono più disponibili i crediti della prova, l'aggiunta di nuovi clienti e il caricamento di documenti in archivio",
+        "L'account resta accessibile: i dati inseriti durante la prova restano disponibili e i documenti in archivio consultabili in sola lettura, anche senza acquistare un piano"
       ],
       "modifiche": "Lexum si riserva il diritto di modificare le condizioni della prova gratuita o di sospenderla in qualsiasi momento per i nuovi utenti, senza effetto sulle prove già attivate."
     }
