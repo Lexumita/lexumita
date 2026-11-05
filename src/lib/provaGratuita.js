@@ -1,5 +1,7 @@
-// La prova gratuita dello studio (03-11-2026): parte da sola quando chi si registra come avvocato conferma l'email
-// (trigger nel database, attiva_prova_gratuita). Chi era già iscritto la attiva da qui, con un clic.
+// La prova gratuita dello studio. Dal 05-11-2026 non parte più alla conferma dell'email: si attiva con un clic da
+// «Completa il profilo» quando ci sono documento d'identità, iscrizione all'Albo e dati di fatturazione. Nessuno la
+// deve approvare: il controllo è nel database (attiva_prova_gratuita) e i documenti si guardano dopo. Se l'admin li
+// rifiuta la prova si ferma e l'utente vede il motivo; se li ricarica e vengono approvati, riparte.
 // I commercialisti per ora non la vedono (04-11-2026): il loro piano è spento.
 // La consulenza resta per chi la vuole: è un ticket già scritto.
 import { supabase } from '@/lib/supabase'

@@ -3,8 +3,9 @@
 // Sostituisce la verifica dell'albo come condizione per acquistare: i dati di
 // fatturazione si verificano DA SOLI (una partita IVA sbagliata fa fallire la
 // fattura elettronica), quindi sbloccano subito senza approvazione manuale.
-// La verifica dei documenti resta, ma facoltativa: dà il distintivo
-// "professionista verificato", non il permesso di comprare.
+// La verifica dei documenti non è il permesso di comprare: i documenti servono
+// per la prova gratuita (attiva_prova_gratuita, 05-11-2026) e danno il distintivo.
+// La stessa regola sta in prova_cosa_manca, nel database.
 //
 // Se cambi i campi richiesti, cambiali QUI: la pagina Profilo e la pagina
 // Acquista leggono entrambe da questa funzione e non possono divergere.

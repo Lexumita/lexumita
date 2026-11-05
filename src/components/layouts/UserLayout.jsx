@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { profiloCompleto } from '@/lib/profiloCompleto'
+import { puoAttivareProva } from '@/lib/provaGratuita'
 import logo from '@/assets/logo.png'
 import {
   LogOut, Menu, X, Sparkles, Plus,
@@ -25,6 +26,7 @@ export default function UserLayout({ children }) {
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const { pathname } = useLocation()
   const paginaAcquista = pathname.includes('/area/acquista')
+  const paginaVerifica = pathname.startsWith('/verifica')
   // Negli strumenti la colonna di destra segue lo scorrimento: con overflow-auto sul main non potrebbe
   const paginaStrumenti = pathname.startsWith('/area/strumenti')
 
@@ -36,11 +38,12 @@ export default function UserLayout({ children }) {
   const isUnverified = !status || status === 'none'
 
   // Voce sidebar verifica (nascosta se rejected)
-  // A sbloccare la piattaforma è il PROFILO COMPLETO, non più la verifica dei
-  // documenti: la voce resta finché mancano dati, poi diventa il distintivo.
+  // A sbloccare i piani è il PROFILO COMPLETO, non la verifica dei documenti: la voce resta finché mancano
+  // dati, poi diventa il distintivo. 05-11-2026: resta anche per attivare la prova, e dopo un rifiuto dei documenti.
   const completo = profiloCompleto(profile)
-  const verifyItem = !completo
-    ? { path: '/verifica', label: 'Completa il profilo', icon: ShieldCheck, badge: 'Da fare', badgeColor: 'amber' }
+  const provaDisponibile = !isRejected && puoAttivareProva(profile)
+  const verifyItem = isRejected || provaDisponibile || !completo
+    ? { path: '/verifica', label: 'Completa il profilo', icon: ShieldCheck, badge: isRejected ? 'Da rifare' : 'Da fare', badgeColor: 'amber' }
     : isPending
       ? { path: '/verifica/stato', label: 'Profilo', icon: ShieldCheck, badge: 'In verifica', badgeColor: 'amber' }
       : isApproved
@@ -59,23 +62,29 @@ export default function UserLayout({ children }) {
   ]
 
   // Banner contestuale: non sulla pagina Acquista, dove un privato sceglie già il suo abbonamento (28-10-2026)
-  const banner = bannerDismissed || paginaAcquista ? null
-    : !completo ? {
-      icon: Clock, color: 'amber',
-      text: 'Completa il profilo e scegli un abbonamento: pratiche, clienti, atti e fatture si attivano subito. Bastano due minuti.',
-      link: { to: '/verifica', label: 'Completa ora →' },
+  // 05-11-2026: il rifiuto dei documenti viene prima di tutto, con il motivo. Su «Completa il profilo» c'è già.
+  const banner = bannerDismissed || paginaAcquista || paginaVerifica ? null
+    : isRejected ? {
+      icon: XCircle, color: 'red',
+      text: `${profile?.prova_fermata_il ? 'La prova dello studio è stata fermata: i documenti non sono stati approvati.' : 'I documenti non sono stati approvati.'}${profile?.verification_note ? ` Motivo: ${profile.verification_note}` : ''}`,
+      link: { to: '/verifica', label: 'Ricarica i documenti →' },
     }
-      : !profile?.piano_id ? {
-        icon: CheckCircle, color: 'salvia',
-        text: 'Profilo completo: i piani sono sbloccati. Scegli quello adatto al tuo studio.',
-        link: { to: '/area/acquista', label: 'Vedi piani →' },
+      : provaDisponibile ? {
+        icon: Clock, color: 'amber',
+        text: 'Prova lo studio gratis per 3 giorni: servono documento d\'identità, iscrizione all\'Albo e dati di fatturazione.',
+        link: { to: '/verifica', label: 'Completa ora →' },
       }
-        : isRejected ? {
-          icon: XCircle, color: 'red',
-          text: 'I documenti inviati per il distintivo non sono stati approvati. La piattaforma resta pienamente utilizzabile.',
-          link: { to: '/area/profilo', label: 'Profilo →' },
+        : !completo ? {
+          icon: Clock, color: 'amber',
+          text: 'Completa il profilo e scegli un abbonamento: pratiche, clienti, atti e fatture si attivano subito. Bastano due minuti.',
+          link: { to: '/verifica', label: 'Completa ora →' },
         }
-          : null
+          : !profile?.piano_id ? {
+            icon: CheckCircle, color: 'salvia',
+            text: 'Profilo completo: i piani sono sbloccati. Scegli quello adatto al tuo studio.',
+            link: { to: '/area/acquista', label: 'Vedi piani →' },
+          }
+            : null
 
   const bannerColors = {
     amber: { bg: 'bg-amber-500/8', border: 'border-amber-500/20', text: 'text-amber-400/90', icon: 'text-amber-400' },
@@ -121,11 +130,11 @@ export default function UserLayout({ children }) {
                   : 'text-nebbia/50 hover:text-nebbia hover:bg-white/5'
                 }`
               }>
-              <Icon size={16} strokeWidth={1.5} />
+              <Icon size={16} strokeWidth={1.5} className="shrink-0" />
               <span className="flex-1">{label}</span>
               {path === '/area/assistenza' && <PallinoTicket n={daRispondere} />}
               {badge && (
-                <span className={`font-body text-[10px] px-1.5 py-0.5 border ${badgeColor === 'salvia' ? 'border-salvia/30 text-salvia' : 'border-amber-500/30 text-amber-400'
+                <span className={`font-body text-[10px] px-1.5 py-0.5 border whitespace-nowrap shrink-0 ${badgeColor === 'salvia' ? 'border-salvia/30 text-salvia' : 'border-amber-500/30 text-amber-400'
                   }`}>
                   {badge}
                 </span>

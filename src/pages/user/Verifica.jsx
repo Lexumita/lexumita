@@ -1,33 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { Upload, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator, Lock, Unlock, Sparkles, ChevronDown, MessageSquare } from 'lucide-react'
+import { Upload, Check, CheckCircle, Clock, XCircle, Shield, ArrowRight, Loader2, Scale, Calculator, Unlock, Sparkles, ChevronDown, MessageSquare } from 'lucide-react'
 import { campiMancanti, percentualeProfilo } from '@/lib/profiloCompleto'
 import { attivaProvaGratuita, linkConsulenza, puoAttivareProva } from '@/lib/provaGratuita'
 
 // ── Config per direzione professionale (avvocato | commercialista) ──
 // Stesse chiavi documento (identita/albo/laurea) per entrambe: cambiano solo
 // etichette e testi. Così l'admin (UtentiDettaglio) mostra i doc senza modifiche.
+// 05-11-2026: all'avvocato documento e iscrizione servono per la prova gratuita, gli stessi che controlla il server.
 const PROFILI = {
     avvocato: {
         titolo: 'Completa il tuo profilo — Avvocato',
-        intro: "Compila i dati di fatturazione e puoi subito acquistare un abbonamento: con l'abbonamento si attivano pratiche, clienti, atti e fatture. Nessuna attesa e nessuna approvazione.",
-        badge: 'Avvocato verificato',
+        intro: "Puoi provare lo studio gratis per 3 giorni oppure scegliere subito un abbonamento. Per la prova servono i documenti professionali e i dati di fatturazione; per l'abbonamento bastano i dati di fatturazione, e si attiva subito.",
         documenti: [
-            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: false },
-            { key: 'albo', label: "Iscrizione all'Albo", hint: "Certificato di iscrizione all'Albo degli Avvocati", req: false },
-            { key: 'laurea', label: "Laurea in Giurisprudenza", hint: "Se vuoi, completa il tuo profilo pubblico", req: false },
+            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido" },
+            { key: 'albo', label: "Iscrizione all'Albo", hint: "Tessera o certificato di iscrizione all'Albo degli Avvocati" },
         ],
     },
     commercialista: {
         titolo: 'Completa il tuo profilo — Commercialista',
         intro: "Compila i dati di fatturazione e puoi subito acquistare un abbonamento: con l'abbonamento si attivano pratiche, clienti, atti e fatture. Nessuna attesa e nessuna approvazione.",
-        badge: 'Commercialista verificato',
         documenti: [
-            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido", req: false },
-            { key: 'albo', label: "Iscrizione all'Albo (ODCEC)", hint: "Certificato di iscrizione all'Albo dei Dottori Commercialisti e degli Esperti Contabili", req: false },
-            { key: 'laurea', label: "Laurea in Economia", hint: "Se vuoi, completa il tuo profilo pubblico", req: false },
+            { key: 'identita', label: "Documento di identità", hint: "Carta d'identità o passaporto valido" },
+            { key: 'albo', label: "Iscrizione all'Albo (ODCEC)", hint: "Certificato di iscrizione all'Albo dei Dottori Commercialisti e degli Esperti Contabili" },
+            { key: 'laurea', label: "Laurea in Economia", hint: "Se vuoi, completa il tuo profilo pubblico" },
         ],
     },
 }
@@ -166,9 +164,9 @@ export function SceltaDirezione({ onScelta, loading, nuovoTicket }) {
                                         </ul>
                                     </div>
                                     <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                                        Completi il profilo con i dati di fatturazione in due minuti e scegli il piano: si attiva subito,
-                                        senza attese né approvazioni. Albo e documento d’identità sono facoltativi e ti danno il
-                                        distintivo di professionista verificato.
+                                        {chiave === 'avvocato'
+                                            ? 'Prova lo studio gratis per 3 giorni, con 7 crediti per Lex: servono documento d’identità, iscrizione all’Albo e dati di fatturazione. Oppure scegli subito il piano: bastano i dati di fatturazione e si attiva senza attese.'
+                                            : 'Completi il profilo con i dati di fatturazione in due minuti e scegli il piano: si attiva subito, senza attese né approvazioni. Albo e documento d’identità sono facoltativi e ti danno il distintivo di professionista verificato.'}
                                     </p>
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                                         <button
@@ -193,17 +191,88 @@ export function SceltaDirezione({ onScelta, loading, nuovoTicket }) {
 }
 
 // ── UPLOAD DOCUMENTI ──────────────────────────────────────────
+// Una riga da completare: il numero diventa una spunta quando è fatta.
+function Passo({ numero, fatto, children, azione }) {
+    return (
+        <div className={`border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 ${fatto ? 'border-salvia/30' : 'border-white/5'}`}>
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+                {numero && (
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-body text-xs ${fatto ? 'bg-salvia/15 border border-salvia/30 text-salvia' : 'bg-oro/15 border border-oro/30 text-oro'}`}>
+                        {fatto ? <Check size={12} /> : numero}
+                    </span>
+                )}
+                <div className="min-w-0 flex-1">{children}</div>
+            </div>
+            {azione}
+        </div>
+    )
+}
+
+// Il documento si carica appena scelto: così resta anche se si va nel Profilo a compilare i dati di fatturazione.
+function RigaDocumento({ numero, doc, file, inCarico, onFile }) {
+    return (
+        <Passo
+            numero={numero}
+            fatto={!!file}
+            azione={(
+                <label className={`btn-secondary text-xs px-3 py-3 sm:py-2 w-full sm:w-auto justify-center flex items-center gap-1.5 shrink-0 ${inCarico ? 'opacity-40 cursor-wait' : 'cursor-pointer'}`}>
+                    {inCarico
+                        ? <><Loader2 size={12} className="animate-spin" /> Caricamento…</>
+                        : <><Upload size={12} /> {file ? 'Cambia' : 'Carica'}</>}
+                    <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        disabled={inCarico}
+                        onChange={e => {
+                            const f = e.target.files?.[0]
+                            e.target.value = ''
+                            if (f) onFile(doc.key, f)
+                        }}
+                    />
+                </label>
+            )}
+        >
+            <p className="font-body text-sm text-nebbia mb-0.5">{doc.label}</p>
+            <p className="font-body text-xs text-nebbia/40">{doc.hint}</p>
+            {file && (
+                <p className="font-body text-xs text-salvia mt-1 break-words">
+                    ✓ {file.name}{file.size ? ` (${(file.size / 1024).toFixed(0)} KB)` : ''}
+                </p>
+            )}
+        </Passo>
+    )
+}
+
 export function UserVerifica() {
     const { profile, refreshProfile } = useAuth()
 
-    const [direzione, setDirezione] = useState(profile?.tipo_richiesta ?? null)
-    const [docs, setDocs] = useState({})
+    // Chi si è registrato dichiarando la professione la trova già scelta: l'altra resta a un clic
+    const [direzione, setDirezione] = useState(
+        profile?.tipo_richiesta ?? (['avvocato', 'commercialista'].includes(profile?.professione) ? profile.professione : null)
+    )
+    const [caricati, setCaricati] = useState({})
+    const [letti, setLetti] = useState(false)
+    const [nuovi, setNuovi] = useState(false)
+    const [inCarico, setInCarico] = useState(null)
     const [loading, setLoading] = useState(false)
     const [salvandoDirezione, setSalvandoDirezione] = useState(false)
     const [errore, setErrore] = useState('')
     const [inviato, setInviato] = useState(false)
     const [attivandoProva, setAttivandoProva] = useState(false)
     const [erroreProva, setErroreProva] = useState('')
+
+    // I documenti già sul server: gli stessi che controlla attiva_prova_gratuita. Il più recente di ogni tipo.
+    useEffect(() => {
+        if (!profile?.id) return
+        supabase.storage.from('verification-docs').list(profile.id, { sortBy: { column: 'updated_at', order: 'asc' } })
+            .then(({ data }) => {
+                const presenti = {}
+                for (const f of data ?? []) presenti[f.name.split('.')[0]] = { name: f.name, size: f.metadata?.size }
+                setCaricati(presenti)
+                setLetti(true)
+            })
+    }, [profile?.id])
 
     // ── Dati di fatturazione: sono LORO a sbloccare la piattaforma. Dal 28-10-2026 si compilano in un posto
     // solo, il Profilo (sezione «Dati per la fatturazione»): qui restano l'avanzamento e il collegamento.
@@ -238,6 +307,18 @@ export function UserVerifica() {
     )
 
     const config = PROFILI[direzione] ?? PROFILI.avvocato
+    const stato = profile?.verification_status
+    const respinti = stato === 'rejected'
+    const approvati = stato === 'approved'
+    const provaFermata = !!profile?.prova_fermata_il
+    const inAttesaDiRipartire = provaFermata && stato === 'pending'
+    const provaDisponibile = !respinti && puoAttivareProva({ ...profile, tipo_richiesta: direzione })
+    const documentiMancanti = approvati ? [] : config.documenti.filter(d => !caricati[d.key])
+    const provaPronta = letti && completo && documentiMancanti.length === 0
+    const tuttiCaricati = config.documenti.every(d => caricati[d.key])
+    const puoInviare = !loading && !inCarico && (respinti
+        ? nuovi && tuttiCaricati
+        : nuovi || (stato !== 'pending' && Object.keys(caricati).length > 0))
 
     // Il ruolo cambia: la pagina si riapre sullo studio, con il profilo riletto dall'inizio
     async function handleProva() {
@@ -252,23 +333,35 @@ export function UserVerifica() {
         }
     }
 
+    async function caricaDocumento(key, file) {
+        if (file.size > 10 * 1024 * 1024) { setErrore('File troppo grande. Massimo 10 MB.'); return }
+        setErrore('')
+        setInCarico(key)
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('Utente non autenticato')
+            const ext = file.name.split('.').pop()
+            const { error } = await supabase.storage
+                .from('verification-docs')
+                .upload(`${user.id}/${key}.${ext}`, file, { upsert: true })
+            if (error) throw new Error(`Errore upload: ${error.message}`)
+            setCaricati(c => ({ ...c, [key]: { name: file.name, size: file.size } }))
+            setNuovi(true)
+        } catch (err) {
+            setErrore(err.message)
+        } finally {
+            setInCarico(null)
+        }
+    }
+
+    // I documenti sono già sul server: qui si chiede di guardarli (chi li ricarica dopo un rifiuto, i commercialisti)
     async function handleInvia() {
-        const daCaricare = config.documenti.filter(d => docs[d.key])
-        if (!daCaricare.length || loading) return
+        if (!puoInviare) return
         setLoading(true)
         setErrore('')
         try {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error('Utente non autenticato')
-
-            for (const d of daCaricare) {
-                const file = docs[d.key]
-                const ext = file.name.split('.').pop()
-                const { error: upErr } = await supabase.storage
-                    .from('verification-docs')
-                    .upload(`${user.id}/${d.key}.${ext}`, file, { upsert: true })
-                if (upErr) throw new Error(`Errore upload: ${upErr.message}`)
-            }
 
             const { error: updateErr } = await supabase
                 .from('profiles')
@@ -276,6 +369,7 @@ export function UserVerifica() {
                 .eq('id', user.id)
             if (updateErr) throw new Error(updateErr.message)
 
+            await refreshProfile?.()
             setInviato(true)
         } catch (err) {
             setErrore(err.message)
@@ -289,8 +383,9 @@ export function UserVerifica() {
             <CheckCircle size={48} className="text-salvia mx-auto mb-4" />
             <h2 className="font-display text-4xl font-light text-nebbia mb-3">Documenti inviati</h2>
             <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed max-w-sm mx-auto">
-                Li esamineremo entro 24-48 ore per assegnarti il distintivo di professionista verificato.
-                Nel frattempo puoi continuare a usare Lexum senza limitazioni.
+                {provaFermata
+                    ? 'Li esamineremo entro 24-48 ore: se sono a posto la prova dello studio riparte e ti avvisiamo via email.'
+                    : 'Li esamineremo entro 24-48 ore per assegnarti il distintivo di professionista verificato. Nel frattempo puoi continuare a usare Lexum senza limitazioni.'}
             </p>
             <Link to="/area/acquista" className="btn-primary justify-center inline-flex w-full sm:w-auto">
                 Vedi i piani <ArrowRight size={14} />
@@ -305,6 +400,52 @@ export function UserVerifica() {
                 <h1 className="font-display text-4xl font-light text-nebbia mb-2">{config.titolo}</h1>
                 <p className="font-body text-sm text-nebbia/50 leading-relaxed">{config.intro}</p>
             </div>
+
+            {/* Documenti rifiutati (05-11-2026): il motivo prima di tutto, e la strada per rimediare */}
+            {respinti && (
+                <div className="bg-red-900/10 border border-red-500/25 p-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                        <XCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                            <p className="font-body text-sm font-medium text-nebbia mb-1">
+                                {provaFermata ? 'La prova è stata fermata: i documenti non sono stati approvati' : 'I documenti non sono stati approvati'}
+                            </p>
+                            {profile?.verification_note && (
+                                <p className="font-body text-sm text-nebbia/70 leading-relaxed break-words">
+                                    <span className="text-red-400">Motivo:</span> {profile.verification_note}
+                                </p>
+                            )}
+                            <p className="font-body text-xs text-nebbia/50 leading-relaxed mt-2">
+                                {provaFermata
+                                    ? 'Carica i documenti corretti: li controlliamo e, se sono a posto, la prova riparte. Pratiche e clienti che hai inserito restano conservati.'
+                                    : 'Carica i documenti corretti: li controlliamo di nuovo.'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        {config.documenti.map(doc => (
+                            <RigaDocumento key={doc.key} doc={doc} file={caricati[doc.key]} inCarico={inCarico === doc.key} onFile={caricaDocumento} />
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                        <button disabled={!puoInviare} onClick={handleInvia} className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : <>Invia i nuovi documenti <ArrowRight size={14} /></>}
+                        </button>
+                        <Link to={linkConsulenza(direzione, '/area/assistenza/nuovo')} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
+                            <MessageSquare size={14} /> Scrivi al team
+                        </Link>
+                    </div>
+                </div>
+            )}
+
+            {inAttesaDiRipartire && (
+                <div className="bg-amber-500/8 border border-amber-500/20 px-4 py-3 flex items-center gap-3">
+                    <Clock size={15} className="text-amber-400 shrink-0" />
+                    <p className="font-body text-xs text-amber-400/90 leading-relaxed">
+                        I nuovi documenti sono in verifica: se sono a posto la prova dello studio riparte e ti avvisiamo via email.
+                    </p>
+                </div>
+            )}
 
             {/* La professione sempre visibile (28-10-2026): quella scelta evidenziata, l'altra a un clic.
                 Prima si cambiava solo da un link minuscolo («Non sei un avvocato? Cambia scelta»). */}
@@ -363,18 +504,64 @@ export function UserVerifica() {
                 </div>
             </div>
 
-            {/* La prova per chi era già iscritto (03-11-2026): chi si registra ora come professionista ce l'ha già da sola */}
-            {puoAttivareProva({ ...profile, tipo_richiesta: direzione }) && (
-                <div className="bg-slate border border-salvia/25 p-5 flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex-1">
-                        <p className="font-body text-sm font-medium text-nebbia mb-1">Prova lo studio gratis: 3 giorni, con 7 crediti per Lex</p>
-                        <p className="font-body text-xs text-nebbia/50 leading-relaxed">
-                            Un clic e lo studio è attivo: niente carta di credito, niente dati di fatturazione. Alla fine decidi tu se scegliere un piano.
+            {/* La prova (05-11-2026): automatica, ma con documenti e dati di fatturazione, così prova solo chi è
+                intenzionato. La consulenza si lascia intendere: è la stessa delle domande frequenti. */}
+            {provaDisponibile && (
+                <div className="bg-slate border border-oro/25 p-5 sm:p-6 space-y-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Sparkles size={15} className="text-oro" />
+                            <p className="font-body text-sm font-medium text-oro">Prova lo studio gratis: 3 giorni, con 7 crediti per Lex</p>
+                        </div>
+                        <p className="font-body text-sm text-nebbia/60 leading-relaxed">
+                            La prova è riservata agli avvocati iscritti all'Albo che stanno valutando Lexum per il proprio studio.
+                            Mentre provi, il nostro team è a disposizione per una consulenza di 30 minuti, in videochiamata, sul tuo modo di lavorare.
                         </p>
-                        {erroreProva && <p className="font-body text-xs text-red-400 mt-2">{erroreProva}</p>}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 shrink-0">
-                        <button onClick={handleProva} disabled={attivandoProva} className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-40">
+
+                    <div className="space-y-2">
+                        {approvati ? (
+                            <Passo numero="1" fatto>
+                                <p className="font-body text-sm text-nebbia">Documenti professionali</p>
+                                <p className="font-body text-xs text-salvia mt-0.5">✓ Già verificati</p>
+                            </Passo>
+                        ) : config.documenti.map((doc, i) => (
+                            <RigaDocumento key={doc.key} numero={String(i + 1)} doc={doc} file={caricati[doc.key]} inCarico={inCarico === doc.key} onFile={caricaDocumento} />
+                        ))}
+                        {/* I dati di fatturazione si compilano nel Profilo, in un posto solo */}
+                        <Passo
+                            numero={approvati ? '2' : String(config.documenti.length + 1)}
+                            fatto={completo}
+                            azione={(
+                                <Link to="/area/profilo#fatturazione" className="btn-secondary text-xs px-3 py-3 sm:py-2 w-full sm:w-auto justify-center flex items-center gap-1.5 shrink-0">
+                                    {completo ? 'Vedi i dati' : 'Completa nel Profilo'} <ArrowRight size={12} />
+                                </Link>
+                            )}
+                        >
+                            <p className="font-body text-sm text-nebbia mb-0.5">
+                                Dati di fatturazione {!completo && <span className="text-oro">{percentuale}%</span>}
+                            </p>
+                            {completo
+                                ? <p className="font-body text-xs text-salvia">✓ Completi</p>
+                                : <p className="font-body text-xs text-nebbia/40 leading-relaxed">Da compilare: {mancanti.join(' · ')}</p>}
+                            {!completo && (
+                                <div className="h-1 w-full bg-petrolio overflow-hidden mt-2">
+                                    <div className="h-full bg-oro transition-all duration-500" style={{ width: `${percentuale}%` }} />
+                                </div>
+                            )}
+                        </Passo>
+                    </div>
+
+                    <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                        Nessuna attesa: con tutti i dati si attiva con un clic. Poi controlliamo i documenti: se non risultano validi
+                        la prova si ferma e ti scriviamo il motivo. Niente carta di credito e, alla fine, nessun addebito.
+                        I documenti sono trattati con la massima riservatezza e servono solo per la verifica professionale.
+                    </p>
+
+                    {erroreProva && <p className="font-body text-xs text-red-400">{erroreProva}</p>}
+
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                        <button onClick={handleProva} disabled={!provaPronta || attivandoProva || !!inCarico} className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                             {attivandoProva ? <Loader2 size={14} className="animate-spin" /> : <>Attiva la prova gratuita <ArrowRight size={14} /></>}
                         </button>
                         <Link to={linkConsulenza(direzione, '/area/assistenza/nuovo')} className="inline-flex items-center gap-2 font-body text-sm text-nebbia/60 hover:text-oro transition-colors">
@@ -384,111 +571,87 @@ export function UserVerifica() {
                 </div>
             )}
 
-            {/* Avanzamento e dati di fatturazione uno accanto all'altro (29-10-2026) */}
-            <div className="grid lg:grid-cols-2 gap-4">
-                <div className="bg-slate border border-white/5 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="font-body text-sm font-medium text-nebbia">
-                            {completo ? 'Profilo completo' : 'Profilo completo al'} {!completo && <span className="text-oro">{percentuale}%</span>}
-                        </p>
-                        {completo
-                            ? <span className="font-body text-xs text-salvia flex items-center gap-1"><CheckCircle size={12} /> tutto pronto</span>
-                            : <span className="font-body text-xs text-nebbia/40">mancano {mancanti.length}</span>}
+            {/* Avanzamento e dati di fatturazione uno accanto all'altro (29-10-2026). Nella prova sono il terzo passo. */}
+            {!provaDisponibile && (
+                <div className="grid lg:grid-cols-2 gap-4">
+                    <div className="bg-slate border border-white/5 p-5">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="font-body text-sm font-medium text-nebbia">
+                                {completo ? 'Profilo completo' : 'Profilo completo al'} {!completo && <span className="text-oro">{percentuale}%</span>}
+                            </p>
+                            {completo
+                                ? <span className="font-body text-xs text-salvia flex items-center gap-1"><CheckCircle size={12} /> tutto pronto</span>
+                                : <span className="font-body text-xs text-nebbia/40">mancano {mancanti.length}</span>}
+                        </div>
+                        <div className="h-1 w-full bg-petrolio overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${completo ? 'bg-salvia' : 'bg-oro'}`} style={{ width: `${percentuale}%` }} />
+                        </div>
+                        {!completo && (
+                            <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed">
+                                Da compilare: {mancanti.join(' · ')}
+                            </p>
+                        )}
                     </div>
-                    <div className="h-1 w-full bg-petrolio overflow-hidden">
-                        <div className={`h-full transition-all duration-500 ${completo ? 'bg-salvia' : 'bg-oro'}`} style={{ width: `${percentuale}%` }} />
-                    </div>
-                    {!completo && (
-                        <p className="font-body text-xs text-nebbia/40 mt-3 leading-relaxed">
-                            Da compilare: {mancanti.join(' · ')}
-                        </p>
-                    )}
-                </div>
 
-                {/* Dati di fatturazione — il requisito vero: si compilano nel Profilo, in un posto solo */}
-                <div className="bg-slate border border-white/5 p-5 flex flex-col gap-4">
-                    <div>
-                        <p className="font-body text-sm font-medium text-nebbia mb-1">Dati per la fatturazione</p>
-                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                            Si compilano nel tuo Profilo. Appena completato sblocca subito l'acquisto degli abbonamenti.
-                        </p>
+                    {/* Dati di fatturazione — il requisito vero: si compilano nel Profilo, in un posto solo */}
+                    <div className="bg-slate border border-white/5 p-5 flex flex-col gap-4">
+                        <div>
+                            <p className="font-body text-sm font-medium text-nebbia mb-1">Dati per la fatturazione</p>
+                            <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                                Si compilano nel tuo Profilo. Appena completato sblocca subito l'acquisto degli abbonamenti.
+                            </p>
+                        </div>
+                        <Link to="/area/profilo#fatturazione" className="btn-primary text-sm inline-flex items-center gap-2 self-start mt-auto">
+                            {completo ? 'Vedi i dati' : 'Completa i dati nel Profilo'} <ArrowRight size={14} />
+                        </Link>
                     </div>
-                    <Link to="/area/profilo#fatturazione" className="btn-primary text-sm inline-flex items-center gap-2 self-start mt-auto">
-                        {completo ? 'Vedi i dati' : 'Completa i dati nel Profilo'} <ArrowRight size={14} />
-                    </Link>
                 </div>
-            </div>
+            )}
 
             {completo && (
                 <Link to="/area/acquista" className="flex items-center gap-3 bg-salvia/8 border border-salvia/25 px-4 py-3 group">
                     <Unlock size={15} className="text-salvia shrink-0" />
                     <p className="font-body text-xs text-salvia flex-1">
-                        Il tuo profilo è completo: i piani sono sbloccati.
+                        I tuoi dati di fatturazione sono completi: i piani sono sbloccati.
                     </p>
                     <ArrowRight size={13} className="text-salvia group-hover:translate-x-0.5 transition-transform" />
                 </Link>
             )}
 
-            {/* Documenti — ora facoltativi */}
-            <div className="bg-slate/40 border border-white/5 p-6 space-y-4">
-                <div className="flex items-start gap-3">
-                    <Shield size={16} className="text-nebbia/40 mt-0.5 shrink-0" />
-                    <div>
-                        <p className="font-body text-sm font-medium text-nebbia mb-1">
-                            Documenti professionali
-                            <span className="ml-2 font-body text-[10px] text-nebbia/30 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">Facoltativo</span>
-                        </p>
-                        <p className="font-body text-xs text-nebbia/40 leading-relaxed">
-                            Non servono per acquistare né per usare la piattaforma. Caricandoli ottieni il
-                            distintivo <span className="text-nebbia/70">«{config.badge}»</span>, che i tuoi
-                            clienti vedono nel portale.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="space-y-3">
-                    {config.documenti.map(({ key, label, hint }) => (
-                        <div key={key} className={`border p-4 ${docs[key] ? 'border-salvia/30' : 'border-white/5'}`}>
-                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-body text-sm text-nebbia mb-0.5">{label}</p>
-                                    <p className="font-body text-xs text-nebbia/40">{hint}</p>
-                                    {docs[key] && (
-                                        <p className="font-body text-xs text-salvia mt-1 break-words">
-                                            ✓ {docs[key].name} ({(docs[key].size / 1024).toFixed(0)} KB)
-                                        </p>
-                                    )}
-                                </div>
-                                <label className={`cursor-pointer ${docs[key] ? 'btn-secondary' : 'btn-secondary'} text-xs px-3 py-3 sm:py-2 w-full sm:w-auto justify-center flex items-center gap-1.5`}>
-                                    <Upload size={12} /> {docs[key] ? 'Cambia' : 'Carica'}
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        className="hidden"
-                                        onChange={e => {
-                                            const f = e.target.files?.[0]
-                                            if (!f) return
-                                            if (f.size > 10 * 1024 * 1024) { setErrore('File troppo grande. Massimo 10 MB.'); return }
-                                            setErrore('')
-                                            setDocs(d => ({ ...d, [key]: f }))
-                                        }}
-                                    />
-                                </label>
-                            </div>
+            {/* Documenti facoltativi: per chi non ha la prova (i commercialisti). Danno il distintivo «Verificato». */}
+            {!provaDisponibile && !respinti && !inAttesaDiRipartire && !approvati && (
+                <div className="bg-slate/40 border border-white/5 p-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                        <Shield size={16} className="text-nebbia/40 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="font-body text-sm font-medium text-nebbia mb-1">
+                                Documenti professionali
+                                <span className="ml-2 font-body text-[10px] text-nebbia/30 border border-white/10 px-1.5 py-0.5 uppercase tracking-wider">Facoltativo</span>
+                            </p>
+                            <p className="font-body text-xs text-nebbia/40 leading-relaxed">
+                                Non servono per acquistare né per usare la piattaforma. Caricandoli il team verifica il tuo
+                                profilo e ottieni il distintivo <span className="text-nebbia/70">«Verificato»</span>.
+                            </p>
                         </div>
-                    ))}
-                </div>
+                    </div>
 
-                <button
-                    disabled={!Object.keys(docs).length || loading}
-                    onClick={handleInvia}
-                    className="btn-secondary w-full justify-center disabled:opacity-30 disabled:cursor-not-allowed text-sm"
-                >
-                    {loading
-                        ? <><Loader2 size={16} className="animate-spin" /> Caricamento in corso…</>
-                        : <><ArrowRight size={16} /> Invia per il distintivo</>}
-                </button>
-            </div>
+                    <div className="space-y-3">
+                        {config.documenti.map(doc => (
+                            <RigaDocumento key={doc.key} doc={doc} file={caricati[doc.key]} inCarico={inCarico === doc.key} onFile={caricaDocumento} />
+                        ))}
+                    </div>
+
+                    <button
+                        disabled={!puoInviare}
+                        onClick={handleInvia}
+                        className="btn-secondary w-full justify-center disabled:opacity-30 disabled:cursor-not-allowed text-sm"
+                    >
+                        {loading
+                            ? <><Loader2 size={16} className="animate-spin" /> Invio in corso…</>
+                            : <><ArrowRight size={16} /> Invia per la verifica</>}
+                    </button>
+                </div>
+            )}
 
             {errore && (
                 <div className="bg-red-900/15 border border-red-500/20 px-4 py-3">
@@ -505,7 +668,9 @@ export function UserVerificaStato() {
     const stato = profile?.verification_status ?? 'pending'
 
     const CONFIG = {
-        pending: { icon: Clock, color: 'text-amber-400', title: 'Verifica in corso', desc: 'Il team Lexum sta esaminando i tuoi documenti per il distintivo di professionista verificato: riceverai un\u2019email entro 24-48 ore. Nel frattempo puoi usare Lexum e acquistare un abbonamento senza aspettare.' },
+        pending: { icon: Clock, color: 'text-amber-400', title: 'Verifica in corso', desc: profile?.prova_fermata_il
+            ? 'Il team Lexum sta esaminando i tuoi nuovi documenti: riceverai un\u2019email entro 24-48 ore e, se sono a posto, la prova dello studio riparte. Nel frattempo puoi usare Lexum e acquistare un abbonamento senza aspettare.'
+            : 'Il team Lexum sta esaminando i tuoi documenti per il distintivo di professionista verificato: riceverai un\u2019email entro 24-48 ore. Nel frattempo puoi usare Lexum e acquistare un abbonamento senza aspettare.' },
         approved: { icon: CheckCircle, color: 'text-salvia', title: 'Verifica approvata!', desc: 'I tuoi documenti sono stati verificati: hai il distintivo di professionista verificato. Se non l\u2019hai già fatto, scegli un abbonamento per attivare pratiche, clienti, atti e fatture.' },
         rejected: { icon: XCircle, color: 'text-red-400', title: 'Verifica non approvata', desc: 'Non è stato possibile verificare la tua identità con i documenti forniti.' },
     }
@@ -535,7 +700,7 @@ export function UserVerificaStato() {
                     <div className="bg-red-900/10 border border-red-500/20 p-4 text-left">
                         <p className="font-body text-xs text-red-400 mb-1">Motivazione</p>
                         <p className="font-body text-sm text-nebbia/60">
-                            {profile?.note_iniziali || 'Documenti non leggibili o incompleti. Ricarica i file in alta qualità.'}
+                            {profile?.verification_note || 'Documenti non leggibili o incompleti. Ricarica i file in alta qualità.'}
                         </p>
                     </div>
                     <Link to="/verifica" className="btn-primary justify-center inline-flex w-full sm:w-auto">Ricarica documenti</Link>

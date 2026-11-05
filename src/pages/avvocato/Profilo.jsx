@@ -63,7 +63,7 @@ const FATT_VUOTO = {
 }
 
 export default function AvvocatoProfilo() {
-    const { refreshProfile } = useAuth()
+    const { profile, refreshProfile } = useAuth()
     const [loading, setLoading] = useState(true)
     const [tipoAccount, setTipoAccount] = useState(null)
     const [verificato, setVerificato] = useState(false)
@@ -382,7 +382,10 @@ export default function AvvocatoProfilo() {
                 {[
                     ['Tipo account', tipoLabel],
                     dati.studio ? ['Studio', dati.studio] : null,
-                    ['Verifica identità', verificato ? 'Identità verificata ✓' : 'In attesa di verifica'],
+                    ['Verifica identità', verificato ? 'Identità verificata ✓'
+                        : profile?.verification_status === 'pending' ? 'Documenti in verifica'
+                            : profile?.verification_status === 'rejected' ? `Documenti non approvati${profile?.verification_note ? `: ${profile.verification_note}` : ''}`
+                                : 'Documenti non inviati'],
                 ].filter(Boolean).map(([l, v]) => (
                     <div key={l} className="flex flex-wrap justify-between gap-x-3 gap-y-1 border-b border-white/5 pb-2">
                         <span className="font-body text-xs text-nebbia/30 uppercase tracking-widest">{l}</span>

@@ -21,7 +21,7 @@ const PROFESSIONI = [
   { v: 'privato', l: 'Privato' },
 ]
 
-// Chi si registra così ha la prova dello studio: parte da sola alla conferma dell'email (trigger nel database).
+// Chi si registra così può attivare la prova dello studio da «Completa il profilo», con documenti e dati di fatturazione.
 const PROFESSIONI_CON_PROVA = ['avvocato']
 
 export default function Registrati() {
@@ -112,7 +112,7 @@ export default function Registrati() {
           <p className="font-body text-sm text-nebbia/50 mb-6 leading-relaxed">
             Abbiamo inviato un link di conferma a <span className="text-oro">{form.email}</span>.<br />
             {PROFESSIONI_CON_PROVA.includes(form.professione)
-              ? "Clicca il link per attivare il tuo account: parte da sola la tua prova gratuita, 3 giorni con lo studio completo e 7 crediti per Lex."
+              ? "Clicca il link per attivare il tuo account. Poi, da «Completa il profilo», puoi attivare la prova gratuita dello studio: 3 giorni con 7 crediti per Lex."
               : 'Clicca il link per attivare il tuo account e iniziare a usare Lex AI: la prima ricerca è gratuita.'}
           </p>
           <p className="font-body text-xs text-nebbia/30">
@@ -272,7 +272,7 @@ export default function Registrati() {
             {errors.professione && <p className="mt-1 font-body text-xs text-red-400 flex items-center gap-1"><AlertCircle size={11} />{errors.professione}</p>}
             {PROFESSIONI_CON_PROVA.includes(form.professione) && (
               <p className="mt-2 font-body text-xs text-salvia leading-relaxed">
-                Prova gratuita compresa: appena confermi l'email parte da sola, 3 giorni con lo studio completo e 7 crediti per Lex. Niente carta di credito.
+                Prova gratuita dello studio: 3 giorni con 7 crediti per Lex. La attivi da «Completa il profilo» con documento d'identità, iscrizione all'Albo e dati di fatturazione. Niente carta di credito.
               </p>
             )}
           </div>

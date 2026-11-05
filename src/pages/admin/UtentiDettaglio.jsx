@@ -474,29 +474,31 @@ function CampoRiga({ label, value }) {
   )
 }
 
-function SezioneUser({ utente, onDecision, onModificaAnagrafica }) {
+// I documenti di verifica e la decisione. 05-11-2026: anche per chi è già in prova, che ha il ruolo «avvocato»: la
+// prova si attiva senza approvazione e i documenti si guardano dopo. Il rifiuto ferma la prova (reject-verifica).
+function BloccoDocumentiVerifica({ utente, onDecision }) {
   const [motivazione, setMotivazione] = useState('')
   const [elaborando, setElaborando] = useState(false)
   const [errore, setErrore] = useState('')
-  const [decisione, setDecisione] = useState(utente.verification_status)
   const [docs, setDocs] = useState([])
   const [loadingDocs, setLoadingDocs] = useState(true)
-  const [emailStatus, setEmailStatus] = useState(null)
+  const [inProva, setInProva] = useState(false)
 
-  // Carica documenti di verifica + stato email
   useEffect(() => {
     async function caricaDati() {
       setLoadingDocs(true)
-      const [{ data: docsData }, { data: emailData }] = await Promise.all([
+      const [{ data: docsData }, { data: prodotto }] = await Promise.all([
         supabase.storage.from('verification-docs').list(utente.id),
-        supabase.rpc('admin_get_email_status', { p_user_id: utente.id }),
+        utente.piano_id
+          ? supabase.from('prodotti').select('tipo').eq('id', utente.piano_id).maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
       setDocs(docsData ?? [])
-      setEmailStatus(Array.isArray(emailData) ? emailData[0] : emailData)
+      setInProva(prodotto?.tipo === 'gratuito')
       setLoadingDocs(false)
     }
     caricaDati()
-  }, [utente.id])
+  }, [utente.id, utente.piano_id])
 
   // 08-10-2026: il documento si apre con l'accesso dell'admin, senza collegamento
   // temporaneo (lib/fileSpazio). Se non si apre, come prima non succede niente.
@@ -520,15 +522,92 @@ function SezioneUser({ utente, onDecision, onModificaAnagrafica }) {
       )
       const json = await res.json()
       if (!json.ok) throw new Error(messaggioErroreFunzione(json))
-      setDecisione(tipo); onDecision(tipo)
+      setMotivazione('')
+      await onDecision(tipo)
     } catch (err) { setErrore(messaggioErroreFunzione(err)) } finally { setElaborando(false) }
   }
+
+  const labelDocs = { identita: 'Documento identità', albo: 'Iscrizione Albo', laurea: 'Laurea' }
+
+  return (
+    <div className="space-y-4">
+      {/* Documenti di verifica */}
+      <div className="bg-slate border border-white/5 p-5">
+        <p className="section-label mb-4">Documenti di verifica</p>
+        {loadingDocs ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="flex items-center gap-2 p-3 border border-white/5">
+            <FileText size={13} className="text-nebbia/30" />
+            <span className="font-body text-xs text-nebbia/40">Nessun documento caricato.</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {docs.map(d => {
+              const tipo = d.name.split('.')[0]
+              return (
+                <button key={d.name} onClick={() => apriDoc(d.name)}
+                  className="w-full flex items-center gap-3 p-3 bg-petrolio border border-white/5 hover:border-oro/20 transition-colors text-left">
+                  <FileText size={13} className="text-oro/50 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-body text-sm text-nebbia/70">{labelDocs[tipo] ?? d.name}</p>
+                    <p className="font-body text-[10px] text-nebbia/30 mt-0.5">{formatSize(d.metadata?.size)}</p>
+                  </div>
+                  <span className="font-body text-xs text-oro/60">Apri →</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Decisione (solo se in pending) */}
+      {utente.verification_status === 'pending' && (
+        <div className="bg-slate border border-oro/20 p-5 space-y-4">
+          <p className="section-label">Decisione verifica</p>
+          {inProva && (
+            <p className="font-body text-xs text-amber-400/90 leading-relaxed p-3 bg-amber-500/8 border border-amber-500/20">
+              La prova è già attiva. Se approvi continua; se rifiuti si ferma subito e l'utente vede il motivo.
+            </p>
+          )}
+          <textarea rows={3} value={motivazione} onChange={e => setMotivazione(e.target.value)}
+            placeholder="Motivazione (obbligatoria in caso di rifiuto: la vede l'utente)..."
+            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25" />
+          {errore && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errore}</div>}
+          <div className="flex gap-3">
+            <button onClick={() => handleDecisione('approved')} disabled={elaborando}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40">
+              {elaborando ? <span className="animate-spin w-4 h-4 border-2 border-salvia border-t-transparent rounded-full" /> : <><CheckCircle size={14} /> Approva</>}
+            </button>
+            <button onClick={() => handleDecisione('rejected')} disabled={elaborando}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-900/10 border border-red-500/30 text-red-400 font-body text-sm hover:bg-red-900/20 transition-colors disabled:opacity-40">
+              {elaborando ? <span className="animate-spin w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full" /> : <><XCircle size={14} /> {inProva ? 'Rifiuta e ferma la prova' : 'Rifiuta'}</>}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SezioneUser({ utente, onDecision, onModificaAnagrafica }) {
+  const [emailStatus, setEmailStatus] = useState(null)
+
+  // Carica stato email
+  useEffect(() => {
+    async function caricaDati() {
+      const { data: emailData } = await supabase.rpc('admin_get_email_status', { p_user_id: utente.id })
+      setEmailStatus(Array.isArray(emailData) ? emailData[0] : emailData)
+    }
+    caricaDati()
+  }, [utente.id])
 
   const isPersonaGiuridica = utente.tipo_soggetto === 'persona_giuridica'
   const haDatiAvvocato = utente.foro || utente.numero_albo || utente.pec || utente.data_iscrizione_albo
   const haDatiResidenza = utente.indirizzo || utente.comune || utente.cap || utente.provincia
   const haNoteAdmin = utente.note_admin || utente.verification_note
-  const labelDocs = { identita: 'Documento identità', albo: 'Iscrizione Albo', laurea: 'Laurea' }
 
   return (
     <div className="space-y-4">
@@ -665,58 +744,7 @@ function SezioneUser({ utente, onDecision, onModificaAnagrafica }) {
         </div>
       )}
 
-      {/* Documenti di verifica */}
-      <div className="bg-slate border border-white/5 p-5">
-        <p className="section-label mb-4">Documenti di verifica</p>
-        {loadingDocs ? (
-          <div className="flex items-center justify-center py-4">
-            <span className="animate-spin w-4 h-4 border-2 border-oro border-t-transparent rounded-full" />
-          </div>
-        ) : docs.length === 0 ? (
-          <div className="flex items-center gap-2 p-3 border border-white/5">
-            <FileText size={13} className="text-nebbia/30" />
-            <span className="font-body text-xs text-nebbia/40">Nessun documento caricato.</span>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {docs.map(d => {
-              const tipo = d.name.split('.')[0]
-              return (
-                <button key={d.name} onClick={() => apriDoc(d.name)}
-                  className="w-full flex items-center gap-3 p-3 bg-petrolio border border-white/5 hover:border-oro/20 transition-colors text-left">
-                  <FileText size={13} className="text-oro/50 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-body text-sm text-nebbia/70">{labelDocs[tipo] ?? d.name}</p>
-                    <p className="font-body text-[10px] text-nebbia/30 mt-0.5">{formatSize(d.metadata?.size)}</p>
-                  </div>
-                  <span className="font-body text-xs text-oro/60">Apri →</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Decisione (solo se in pending) */}
-      {decisione === 'pending' && (
-        <div className="bg-slate border border-oro/20 p-5 space-y-4">
-          <p className="section-label">Decisione verifica</p>
-          <textarea rows={3} value={motivazione} onChange={e => setMotivazione(e.target.value)}
-            placeholder="Motivazione (obbligatoria in caso di rifiuto)..."
-            className="w-full bg-petrolio border border-white/10 text-nebbia font-body text-sm px-4 py-3 outline-none focus:border-oro/50 resize-none placeholder:text-nebbia/25" />
-          {errore && <div className="flex items-center gap-2 text-red-400 text-xs font-body p-3 bg-red-900/10 border border-red-500/20"><AlertCircle size={14} /> {errore}</div>}
-          <div className="flex gap-3">
-            <button onClick={() => handleDecisione('approved')} disabled={elaborando}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-salvia/10 border border-salvia/30 text-salvia font-body text-sm hover:bg-salvia/20 transition-colors disabled:opacity-40">
-              {elaborando ? <span className="animate-spin w-4 h-4 border-2 border-salvia border-t-transparent rounded-full" /> : <><CheckCircle size={14} /> Approva</>}
-            </button>
-            <button onClick={() => handleDecisione('rejected')} disabled={elaborando}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-900/10 border border-red-500/30 text-red-400 font-body text-sm hover:bg-red-900/20 transition-colors disabled:opacity-40">
-              {elaborando ? <span className="animate-spin w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full" /> : <><XCircle size={14} /> Rifiuta</>}
-            </button>
-          </div>
-        </div>
-      )}
+      <BloccoDocumentiVerifica utente={utente} onDecision={onDecision} />
     </div>
   )
 }
@@ -1138,7 +1166,7 @@ function BoxStatoVerifica({ utente }) {
 
   const testo =
     stato === 'approved' ? "Verifica approvata — l'utente può accedere come avvocato"
-      : stato === 'rejected' ? 'Verifica rifiutata'
+      : stato === 'rejected' ? (utente.prova_fermata_il ? 'Documenti rifiutati: prova fermata' : 'Verifica rifiutata')
         : stato === 'pending' ? 'Verifica identità in attesa di revisione'
           : 'Nessuna richiesta di verifica'
 
@@ -1154,6 +1182,9 @@ function BoxStatoVerifica({ utente }) {
           </span>
         )}
       </div>
+      {stato === 'rejected' && utente.verification_note && (
+        <p className="font-body text-xs text-nebbia/50 leading-relaxed mt-2 break-words">Motivo: {utente.verification_note}</p>
+      )}
     </div>
   )
 }
@@ -1403,6 +1434,12 @@ export default function AdminUtentiDettaglio() {
     carica()
   }, [id])
 
+  // Dopo una decisione sui documenti si rilegge dal DB: il rifiuto può aver fermato la prova, l'approvazione farla ripartire
+  async function rileggi() {
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).single()
+    if (data) setUtente(data)
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-40">
       <span className="animate-spin w-6 h-6 border-2 border-oro border-t-transparent rounded-full" />
@@ -1471,13 +1508,13 @@ export default function AdminUtentiDettaglio() {
           onAggiorna={(patch) => setUtente(prev => ({ ...prev, ...patch }))}
         />
       )}
+      {['avvocato', 'commercialista'].includes(utente.role) && utente.verification_status !== 'none' && (
+        <BloccoDocumentiVerifica utente={utente} onDecision={rileggi} />
+      )}
       {utente.role === 'avvocato' && <SezioneAvvocato utente={utente} />}
       {utente.role === 'cliente' && <SezioneCliente utente={utente} />}
       {utente.role === 'user' && (
-        <SezioneUser utente={utente} onModificaAnagrafica={() => setModificaAnagrafica(true)} onDecision={(tipo) => setUtente(prev => ({
-          ...prev, verification_status: tipo,
-          role: tipo === 'approved' ? 'avvocato' : prev.role,
-        }))} />
+        <SezioneUser utente={utente} onModificaAnagrafica={() => setModificaAnagrafica(true)} onDecision={rileggi} />
       )}
       {utente.role === 'admin' && (
         <div className="bg-slate border border-white/5 p-5">

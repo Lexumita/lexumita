@@ -28,6 +28,7 @@
         "Indirizzo email e numero di telefono",
         "Dati dello studio legale o professionale",
         "Dati di fatturazione (ragione sociale, codice fiscale/partita IVA, indirizzo)",
+        "Documento di identità e attestazione di iscrizione all'Albo, se richiedi la prova gratuita o la verifica del profilo professionale",
         "Contenuti caricati sulla piattaforma (documenti, sentenze, pratiche)",
         "Comunicazioni inviate tramite la piattaforma"
       ]
@@ -59,6 +60,11 @@
         "finalita": "Fatturazione e adempimenti fiscali",
         "base": "Obbligo legale (art. 6.1.c GDPR)",
         "desc": "Emissione di fatture, gestione dei pagamenti tramite un fornitore di servizi di pagamento, conservazione della documentazione contabile secondo la legge svizzera e italiana."
+      },
+      {
+        "finalita": "Verifica del profilo professionale",
+        "base": "Esecuzione del contratto (art. 6.1.b GDPR)",
+        "desc": "Controllo del documento di identità e dell'iscrizione all'Albo per l'attivazione della prova gratuita e per il distintivo di professionista verificato. I documenti sono visibili solo al team di Lexum."
       },
       {
         "finalita": "Sicurezza della piattaforma",
