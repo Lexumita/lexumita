@@ -6,7 +6,7 @@
 export const HUB_STRUMENTI = {
     percorso: '/strumenti',
     metaTitolo: 'Strumenti gratis per avvocati e professionisti — Lexum',
-    metaDescrizione: 'Calcolo della parcella forense e creazione di fatture con PDF e XML: gratis, senza registrazione, con i dati che restano nel tuo browser.',
+    metaDescrizione: 'Calcolo della parcella forense, fatture con PDF e XML e calcolo del danno biologico con i valori ufficiali: gratis e senza registrazione.',
 }
 
 export const PARCELLA = {
@@ -73,4 +73,45 @@ export const FATTURA = {
     ],
 }
 
-export const STRUMENTI = [PARCELLA, FATTURA]
+// 05-11-2026: stessi conti e stessi valori di Lex (calcola_danno_biologico). Se cambiano gli importi, si aggiornano anche queste domande.
+export const DANNO = {
+    slug: 'calcolo-danno-biologico',
+    percorso: '/strumenti/calcolo-danno-biologico',
+    nome: 'Calcolo danno biologico',
+    brevissimo: 'Art. 139, Tabella Unica e Tabelle milanesi, con i valori 2026.',
+    breve: 'Il risarcimento del danno alla persona con i valori ufficiali: art. 139 del codice delle assicurazioni, Tabella Unica Nazionale e Tabelle milanesi. Basta inserire punti, età e giorni di inabilità.',
+    metaTitolo: 'Calcolo danno biologico 2026 gratis: art. 139, Tabella Unica e Tabelle di Milano — Lexum',
+    metaDescrizione: 'Calcola gratis il danno biologico con i valori ufficiali 2026: micropermanenti art. 139 (988,45 euro il primo punto), Tabella Unica Nazionale da 10 punti e Tabelle milanesi 2024, con l\'inabilità temporanea.',
+    domande: [
+        {
+            d: 'Quale tabella si usa?',
+            r: 'Fino a 9 punti, per circolazione stradale e responsabilità sanitaria, si applica l\'art. 139 del codice delle assicurazioni. Negli altri casi, per esempio una caduta in un negozio, si usano di regola le Tabelle milanesi. Da 10 punti il parametro è la Tabella Unica Nazionale: per la Cassazione (n. 8630/2026) vale anche fuori da strada e sanità, e il giudice può preferire una tabella come quella milanese solo con una motivazione puntuale.',
+        },
+        {
+            d: 'I valori sono aggiornati?',
+            r: 'Sì. Art. 139: 988,45 euro il primo punto e 57,64 euro al giorno, dal decreto 20 luglio 2026. Tabella Unica: tabelle del decreto 28 settembre 2026, in vigore da aprile 2026. Tabelle milanesi: edizione 2024, con i valori all\'1 gennaio 2024.',
+        },
+        {
+            d: 'Quale età devo inserire?',
+            r: 'Gli anni compiuti del danneggiato. Né l\'art. 139 né le Tabelle milanesi dicono a quale momento si conta: se l\'età al fatto e quella alla stabilizzazione dei postumi sono diverse, prova con entrambe e scegli in base al caso.',
+        },
+        {
+            d: 'Come si contano i giorni di inabilità parziale?',
+            r: 'In proporzione: 30 giorni al 50% valgono 15 giorni di inabilità assoluta. Inserisci i periodi indicati nella perizia e lo strumento fa la somma.',
+        },
+        {
+            d: 'Che cosa non è compreso?',
+            r: 'La personalizzazione, la rivalutazione, gli interessi e il danno patrimoniale, come spese mediche e perdita di reddito. La personalizzazione arriva fino al 20% con l\'art. 139, fino al 30% con la Tabella Unica e, con le Tabelle milanesi, fino a una percentuale che dipende dai punti.',
+        },
+        {
+            d: 'Il risultato è quanto spetta?',
+            r: 'No. È il punto di partenza: la liquidazione dipende dalla prova del danno, dalla responsabilità e dalla valutazione del giudice.',
+        },
+        {
+            d: 'I miei dati finiscono da qualche parte?',
+            r: 'Al nostro server arrivano solo tre numeri, punti, età e giorni, per leggere le tabelle: nessun nome e nessun dato del caso. Il PDF si crea nel tuo browser.',
+        },
+    ],
+}
+
+export const STRUMENTI = [PARCELLA, FATTURA, DANNO]

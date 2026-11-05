@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import logo from '@/assets/logo.png'
 import { useAuth } from '@/context/AuthContext'
 import { NOVITA_ATTIVA } from '@/lib/novita'
-import { PARCELLA, FATTURA } from '@/lib/strumenti/testi'
+import { PARCELLA, FATTURA, DANNO } from '@/lib/strumenti/testi'
 
 const navLinks = [
   { path: '/', key: 'home' },
@@ -13,7 +13,7 @@ const navLinks = [
   { path: '/per-commercialisti', key: 'commercialisti' },
   { path: '/novita', key: 'novita' },
   // Gli strumenti gratuiti (03-11-2026): nella tendina si arriva subito allo strumento
-  { path: '/strumenti', key: 'strumenti', sotto: [PARCELLA, FATTURA] },
+  { path: '/strumenti', key: 'strumenti', sotto: [PARCELLA, FATTURA, DANNO] },
   { path: '/contatti', key: 'contatti' },
 ].filter(l => NOVITA_ATTIVA || l.path !== '/novita')
 

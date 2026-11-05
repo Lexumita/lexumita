@@ -28,7 +28,7 @@ export function TestataPagina({ percorso, titolo, descrizione }) {
     )
 }
 
-export function Apertura({ etichetta, titolo, evidenza, testo }) {
+export function Apertura({ etichetta, titolo, evidenza, testo, garanzie = ['Gratis', 'Senza registrazione', 'I dati restano nel tuo browser'] }) {
     return (
         <section className="relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
@@ -41,7 +41,7 @@ export function Apertura({ etichetta, titolo, evidenza, testo }) {
                 </h1>
                 <p className="font-body text-base text-nebbia/50 leading-relaxed max-w-2xl mx-auto">{testo}</p>
                 <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-6">
-                    {['Gratis', 'Senza registrazione', 'I dati restano nel tuo browser'].map(t => (
+                    {garanzie.map(t => (
                         <li key={t} className="flex items-center gap-2 font-body text-xs text-nebbia/50">
                             <Check size={13} className="text-salvia" /> {t}
                         </li>

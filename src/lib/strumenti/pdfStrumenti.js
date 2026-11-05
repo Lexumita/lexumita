@@ -220,3 +220,38 @@ export async function scaricaPdfParcella(p) {
     const blob = await creaBlob(definizione)
     scaricaBlob(blob, `${pulisciNome(`Parcella ${p.competenza}`)}.pdf`)
 }
+
+// ─── Danno biologico ─────────────────────────────────────────────────────────
+// d: { dati: testo con punti, età e giorni, riferimento, blocchi: [{ titolo, sottotitolo, righe: [[etichetta, valore]], totale: [etichetta, valore], nota }], avvertenza }
+export async function scaricaPdfDanno(d) {
+    const definizione = {
+        pageSize: 'A4',
+        pageMargins: [40, 40, 40, 50],
+        defaultStyle: { font: 'Outfit', fontSize: 9.5, color: PETROLIO, lineHeight: 1.2 },
+        footer: piede(`Creato con Lexum, ${SITO}`),
+        content: [
+            { text: 'Calcolo del danno biologico', fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
+            { text: d.dati, fontSize: 9, color: GRIGIO, margin: [0, 0, 0, 3] },
+            { text: d.riferimento, fontSize: 9, color: GRIGIO, margin: [0, 0, 0, 14] },
+            ...d.blocchi.flatMap((b) => ([
+                { text: b.titolo, bold: true, fontSize: 11, margin: [0, 4, 0, 2] },
+                { text: b.sottotitolo, fontSize: 8.5, color: GRIGIO, margin: [0, 0, 0, 5] },
+                {
+                    table: {
+                        widths: ['*', 110],
+                        body: [
+                            ...b.righe.map(([e, v]) => ([{ text: e }, { text: v, alignment: 'right' }])),
+                            ...(b.totale ? [[{ text: b.totale[0], bold: true }, { text: b.totale[1], bold: true, alignment: 'right' }]] : []),
+                        ],
+                    },
+                    layout: lineeTabella,
+                    margin: [0, 0, 0, 4],
+                },
+                { text: b.nota, fontSize: 8, italics: true, color: GRIGIO, margin: [0, 0, 0, 12] },
+            ])),
+            { text: d.avvertenza, fontSize: 8, italics: true, color: GRIGIO, margin: [0, 4, 0, 0] },
+        ],
+    }
+    const blob = await creaBlob(definizione)
+    scaricaBlob(blob, 'Calcolo danno biologico.pdf')
+}

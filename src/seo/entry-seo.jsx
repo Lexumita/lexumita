@@ -20,6 +20,7 @@ import NovitaArticolo from '@/pages/NovitaArticolo'
 import Strumenti from '@/pages/strumenti/Strumenti'
 import CalcoloParcella from '@/pages/strumenti/CalcoloParcella'
 import CreaFattura from '@/pages/strumenti/CreaFattura'
+import CalcoloDanno from '@/pages/strumenti/CalcoloDanno'
 
 // dati: { articoli, articolo, correlati }, letti da Supabase dallo script
 export function disegna(percorso, dati = {}) {
@@ -38,6 +39,7 @@ export function disegna(percorso, dati = {}) {
                             <Route path="/strumenti" element={pagina(<Strumenti />)} />
                             <Route path="/strumenti/calcolo-parcella-avvocato" element={pagina(<CalcoloParcella />)} />
                             <Route path="/strumenti/crea-fattura" element={pagina(<CreaFattura />)} />
+                            <Route path="/strumenti/calcolo-danno-biologico" element={pagina(<CalcoloDanno />)} />
                             <Route path="/novita" element={pagina(<Novita preArticoli={dati.articoli} />)} />
                             <Route path="/novita/argomento/:argomento" element={pagina(<Novita preArticoli={dati.articoli} />)} />
                             <Route path="/novita/:slug" element={pagina(<NovitaArticolo preArticolo={dati.articolo} preCorrelati={dati.correlati} />)} />

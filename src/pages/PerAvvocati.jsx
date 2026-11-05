@@ -808,7 +808,7 @@ export default function PerAvvocati() {
             </section>
 
             {/* 10a. GLI STRUMENTI GRATIS (03-11-2026) */}
-            <SezioneStrumenti titolo="Calcola la parcella e fai la fattura," evidenza="gratis." />
+            <SezioneStrumenti titolo="Parcella, fattura e danno biologico," evidenza="gratis." />
 
             {/* 10b. L'APP PER L'AVVOCATO (30-10-2026) */}
             <SezioneApp
