@@ -11,7 +11,8 @@ export const NOVITA_ATTIVA = true
 
 const CAMPI_ELENCO = 'slug, titolo, sommario, copertina_url, autore, categoria, argomenti, pubblicato_il'
 
-export async function elencoNovita(limite = 200) {
+// Tutti in una volta: la ricerca della pagina lavora su questi (05-11-2026)
+export async function elencoNovita(limite = 1000) {
     const { data } = await supabase
         .from('novita')
         .select(CAMPI_ELENCO)
@@ -43,6 +44,21 @@ export async function articoliCorrelati(articolo, quanti = 3) {
         .order('pubblicato_il', { ascending: false })
         .limit(quanti)
     return data ?? []
+}
+
+const normalizza = (testo) => (testo ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+
+// La ricerca della pagina: ogni parola scritta deve stare nel titolo, nel sommario o nella categoria.
+export function filtraArticoli(articoli, cerca) {
+    const parole = normalizza(cerca).split(/\s+/).filter(Boolean)
+    if (parole.length === 0) return articoli
+    return articoli.filter(a => {
+        const testo = normalizza(`${a.titolo} ${a.sommario} ${a.categoria}`)
+        return parole.every(p => testo.includes(p))
+    })
 }
 
 // Senza autore l'articolo si firma Lexum.

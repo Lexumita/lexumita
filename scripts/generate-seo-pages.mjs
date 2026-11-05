@@ -252,10 +252,10 @@ const articoli = NOVITA_ATTIVA ? await novitaPubblicate() : []
 const elenco = articoli.map(({ contenuto, ...resto }) => resto)
 
 if (NOVITA_ATTIVA) scriviTestata('novita/index.html', `${SITE}/novita`, {
-  title: 'Novità — Lexum',
-  description: 'Cosa cambia: le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
-  ogTitle: 'Novità — Lexum',
-  ogDescription: 'Le norme nuove, le sentenze e le novità di Lexum, ogni settimana.',
+  title: 'Articoli di legge spiegati in modo semplice — Lexum',
+  description: 'Leggi, sentenze e casi di attualità spiegati in modo semplice, con le fonti: casa, lavoro, famiglia, penale, fisco e altro ancora.',
+  ogTitle: 'Articoli di legge spiegati in modo semplice — Lexum',
+  ogDescription: 'Leggi, sentenze e casi di attualità spiegati in modo semplice, con le fonti.',
   corpo: testoDi('/novita', { articoli: elenco }),
 })
 if (NOVITA_ATTIVA) count++
@@ -318,7 +318,7 @@ for (const a of articoli) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Lexum', item: `${SITE}/` },
-        { '@type': 'ListItem', position: 2, name: 'Novità', item: `${SITE}/novita` },
+        { '@type': 'ListItem', position: 2, name: 'Articoli', item: `${SITE}/novita` },
         { '@type': 'ListItem', position: 3, name: a.titolo, item: url },
       ],
     }],

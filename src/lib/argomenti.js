@@ -6,6 +6,12 @@
 
 export const ARGOMENTI = [
     {
+        slug: 'attualita',
+        nome: 'Attualità',
+        titolo: 'Attualità: i casi di cronaca spiegati con la legge',
+        descrizione: 'Dai fatti di cui si parla alle regole che valgono per tutti: che cosa dice la legge, chi risponde e che cosa puoi fare, con le fonti citate.',
+    },
+    {
         slug: 'casa-e-condominio',
         nome: 'Casa e condominio',
         titolo: 'Casa e condominio: affitti, spese e diritti spiegati',

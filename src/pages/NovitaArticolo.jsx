@@ -1,6 +1,6 @@
 // src/pages/NovitaArticolo.jsx
 //
-// Vetrina, il singolo articolo delle Novità. Il testo è markdown scritto
+// Vetrina, il singolo articolo della pagina Articoli. Il testo è markdown scritto
 // dall'admin: react-markdown lo rende senza eseguire HTML.
 
 import { useEffect, useState } from 'react'
@@ -108,7 +108,7 @@ export default function NovitaArticolo({ preArticolo = null, preCorrelati = null
 
             <article className="max-w-3xl mx-auto px-6 pt-12 pb-24">
                 <Link to="/novita" className="inline-flex items-center gap-2 font-body text-sm text-nebbia/40 hover:text-oro transition-colors mb-8">
-                    <ArrowLeft size={14} /> Novità
+                    <ArrowLeft size={14} /> Articoli
                 </Link>
 
                 <div className="flex flex-wrap items-center gap-2 mb-4">
