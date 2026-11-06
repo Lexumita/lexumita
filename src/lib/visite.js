@@ -10,6 +10,35 @@
 import { supabase } from '@/lib/supabase'
 
 let primaPagina = true
+// 06-11-2026: le visite che arrivano dalle mail o senza provenienza si contano solo dopo un gesto vero (mouse,
+// scorrimento, tocco, tastiera). I filtri antivirus della posta aprono ogni link della mail da soli e non fanno
+// niente: il 05/11 avevano gonfiato le visite (privacy, iscrizione e home quasi pari, 24 passaggi a una seconda
+// pagina su 3.883). Chi arriva da Google, dalle AI, dai social o da un altro sito si conta subito, come prima.
+let aspetta = false
+let gestoFatto = false
+const coda = []
+const GESTI = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'wheel', 'touchstart']
+
+function invia(args) {
+  if (aspetta && !gestoFatto) { coda.push(args); return }
+  // Le statistiche non devono mai disturbare la pagina: un errore si ignora.
+  supabase.rpc('registra_visita', args).then(() => {}, () => {})
+}
+
+function aspettaUnGesto() {
+  aspetta = true
+  const via = () => {
+    GESTI.forEach(g => window.removeEventListener(g, via, true))
+    gestoFatto = true
+    coda.splice(0).forEach(invia)
+  }
+  GESTI.forEach(g => window.addEventListener(g, via, { capture: true, passive: true }))
+}
+
+// Un altro sito (Google, un'AI, un social) ha mandato qui la persona: non è un link aperto da un filtro della posta
+function daFuori(referrer) {
+  return !!referrer && referrer !== window.location.hostname
+}
 // La stessa pagina chiesta di nuovo entro 2 secondi non si conta due volte (in sviluppo
 // React fa partire gli effetti due volte; un layout può rimontarsi).
 let ultima = { percorso: null, quando: 0 }
@@ -33,16 +62,14 @@ export function registraVisita(percorso) {
     primaPagina = false
     try { referrer = document.referrer ? new URL(document.referrer).hostname : null } catch { referrer = null }
     try { utm = new URLSearchParams(window.location.search).get('utm_source') } catch { utm = null }
+    if (utm === 'email' || (!utm && !daFuori(referrer))) aspettaUnGesto()
   }
-  // Le statistiche non devono mai disturbare la pagina: un errore si ignora.
-  supabase.rpc('registra_visita', { p_percorso: percorso, p_referrer: referrer, p_utm: utm })
-    .then(() => {}, () => {})
+  invia({ p_percorso: percorso, p_referrer: referrer, p_utm: utm })
 }
 
 // Un gesto che vale la pena contare, come una pagina finta (03-11-2026): /strumenti/fattura/documento
 // = un documento creato con uno strumento gratuito. Compare nelle pagine più viste.
 export function registraEvento(percorso) {
   if (daNonContare()) return
-  supabase.rpc('registra_visita', { p_percorso: percorso, p_referrer: 'interno', p_utm: null })
-    .then(() => {}, () => {})
+  invia({ p_percorso: percorso, p_referrer: 'interno', p_utm: null })
 }

@@ -61,21 +61,41 @@ function confronto(ora, prima) {
   return `${d >= 0 ? '+' : ''}${d}% sul periodo prima`
 }
 
-/* Grafico a barre per giorno; con «chiave2» la parte di quella serie è più chiara */
-function BarreGiorni({ dati, chiave, chiave2, etichetta, etichetta2 }) {
+/* Grafico a barre per giorno; con «chiave2» la parte di quella serie è più chiara.
+   05-11-2026: il valore di ogni colonna, sopra la colonna (fino a un mese di giorni, sugli schermi larghi) e nella riga in
+   alto, che segue il mouse o il dito; senza, mostra l'ultimo giorno. */
+function BarreGiorni({ dati, chiave, chiave2, etichetta, etichetta2, etichettaUna }) {
+  const [scelto, setScelto] = useState(null)
   if (!dati?.length) return <p className="font-body text-sm text-nebbia/30">Ancora nessun dato.</p>
   const max = Math.max(1, ...dati.map(d => d[chiave] ?? 0))
+  const conNumeri = dati.length <= 31
+  const attivo = dati[scelto ?? dati.length - 1]
+  const va = attivo[chiave] ?? 0
+  const oggi = new Date().toDateString() === new Date(attivo.giorno).toDateString()
   return (
     <div>
-      <div className="flex items-end gap-[2px] h-36">
-        {dati.map(d => {
+      <p className="font-body text-xs text-nebbia/60 mb-3 min-h-[1rem]">
+        <span className="text-nebbia/40">{oggi ? 'Oggi, ' : ''}{dataBreve(attivo.giorno)}:</span>{' '}
+        <span className="text-oro font-medium">{fmt(va)}</span> {va === 1 && etichettaUna ? etichettaUna : etichetta}
+        {chiave2 && <>, di cui <span className="text-salvia font-medium">{fmt(attivo[chiave2] ?? 0)}</span> {etichetta2}</>}
+      </p>
+      <div className={`flex items-end gap-[2px] h-36 ${conNumeri ? 'sm:pt-4' : ''}`} onMouseLeave={() => setScelto(null)}>
+        {dati.map((d, i) => {
           const v = d[chiave] ?? 0
           const v2 = chiave2 ? (d[chiave2] ?? 0) : 0
+          const alto = (v / max) * 100
           return (
-            <div key={d.giorno} className="flex-1 h-full flex flex-col justify-end group relative"
-              title={`${dataBreve(d.giorno)}: ${fmt(v)} ${etichetta}${chiave2 ? `, di cui ${fmt(v2)} ${etichetta2}` : ''}`}>
-              <div className="w-full bg-oro/50 group-hover:bg-oro transition-colors flex flex-col justify-end"
-                style={{ height: `${(v / max) * 100}%`, minHeight: v ? 2 : 0 }}>
+            <div key={d.giorno} className="flex-1 h-full flex flex-col justify-end group relative cursor-default"
+              onMouseEnter={() => setScelto(i)} onClick={() => setScelto(i)}
+              aria-label={`${dataBreve(d.giorno)}: ${fmt(v)} ${etichetta}${chiave2 ? `, di cui ${fmt(v2)} ${etichetta2}` : ''}`}>
+              {conNumeri && v > 0 && (
+                <span className="hidden sm:block absolute inset-x-0 text-center font-body text-[10px] leading-none text-nebbia/50 pointer-events-none"
+                  style={{ bottom: `calc(${alto}% + 3px)` }}>
+                  {fmt(v)}
+                </span>
+              )}
+              <div className={`w-full transition-colors flex flex-col justify-end ${i === scelto ? 'bg-oro' : 'bg-oro/50 group-hover:bg-oro'}`}
+                style={{ height: `${alto}%`, minHeight: v ? 2 : 0 }}>
                 {chiave2 && v2 > 0 && <div className="w-full bg-salvia/80" style={{ height: `${(v2 / v) * 100}%` }} />}
               </div>
             </div>
@@ -223,7 +243,7 @@ export default function Metriche() {
           </div>
 
           <Riquadro titolo="Visite al giorno">
-            <BarreGiorni dati={sito.per_giorno} chiave="visite" chiave2="articoli" etichetta="visite" etichetta2="agli articoli" />
+            <BarreGiorni dati={sito.per_giorno} chiave="visite" chiave2="articoli" etichetta="visite" etichettaUna="visita" etichetta2="agli articoli" />
           </Riquadro>
 
           <div className="grid lg:grid-cols-2 gap-4">
@@ -290,7 +310,7 @@ export default function Metriche() {
 
           <div className="grid lg:grid-cols-2 gap-4">
             <Riquadro titolo="Iscritti al giorno">
-              <BarreGiorni dati={iscritti.per_giorno} chiave="iscritti" etichetta="iscritti" />
+              <BarreGiorni dati={iscritti.per_giorno} chiave="iscritti" etichetta="iscritti" etichettaUna="iscritto" />
             </Riquadro>
             <Riquadro titolo="Per tipo di utente">
               {(iscritti.per_ruolo ?? []).length === 0 ? (
