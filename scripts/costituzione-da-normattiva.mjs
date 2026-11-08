@@ -68,10 +68,13 @@ function livelliDi(numNir) {
 const ACUTE = /^(perch|poich|affinch|bench|finch|giacch|sicch|nonch|purch|anzich|cosicch|s|n|ventitr|trentatr)e'$/i
 const VOCALI = { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù', A: 'À', E: 'È', I: 'Ì', O: 'Ò', U: 'Ù' }
 function accenti(testo) {
-    return testo.replace(/([A-Za-zÀ-ÿ]*)([aeiouAEIOU])'(?=[\s.,;:)\]!?»"]|$)/g, (tutto, prima, vocale) => {
-        if ((vocale === 'e' || vocale === 'E') && ACUTE.test(tutto)) return prima + (vocale === 'e' ? 'é' : 'É')
-        return prima + VOCALI[vocale]
-    })
+    return testo
+        .replace(/([A-Za-zÀ-ÿ]*)([aeiouAEIOU])'(?=[\s.,;:)\]!?»"]|$)/g, (tutto, prima, vocale) => {
+            if ((vocale === 'e' || vocale === 'E') && ACUTE.test(tutto)) return prima + (vocale === 'e' ? 'é' : 'É')
+            return prima + VOCALI[vocale]
+        })
+        .replace(/\bpuo\b/g, 'può')    // art. 76: a Normattiva manca anche l'apostrofo
+        .replace(/\bVallee d'Aoste\b/g, "Vallée d'Aoste")   // art. 116: il nome francese ha l'accento
 }
 
 // Le righe di un articolo: i commi e, dopo la riga di trattini, le note «AGGIORNAMENTO» di Normattiva

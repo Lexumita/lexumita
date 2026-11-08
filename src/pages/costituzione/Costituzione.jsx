@@ -58,7 +58,7 @@ export default function Costituzione() {
                 etichetta="Costituzione"
                 titolo="La Costituzione italiana,"
                 evidenza="articolo per articolo."
-                testo={`Il testo in vigore della Costituzione della Repubblica italiana, aggiornato all'ultima modifica del ${dataLunga(AGGIORNATA_AL)}. Per ogni articolo: le modifiche, la fonte ufficiale e le sentenze nella Banca Dati.`}
+                testo={`Il testo in vigore della Costituzione della Repubblica italiana, aggiornato all'ultima modifica del ${dataLunga(AGGIORNATA_AL)}. Per ogni articolo: la spiegazione in parole semplici, le modifiche, la fonte ufficiale e le sentenze nella Banca Dati.`}
                 garanzie={['Testo in vigore', 'Fonte: Normattiva', 'Gratis, senza registrazione']}
             />
 

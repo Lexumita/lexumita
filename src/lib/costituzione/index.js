@@ -17,8 +17,9 @@ export const CON_PAGINA = VOCI.filter(v => !v.abrogato)
 
 export const percorsoDi = (voce) => `${PERCORSO}/${voce.slug}`
 export const vocePerSlug = (slug) => CON_PAGINA.find(v => v.slug === slug) ?? null
-export const nomeDi = (voce) => (voce.tipo === 'articolo' ? NOMI[voce.numero] : null) ?? null
-export const spiegazioneDi = (voce) => (voce.tipo === 'articolo' ? SPIEGAZIONI[voce.numero] : null) ?? null
+// Le chiavi sono i numeri: arabi per gli articoli, romani per le disposizioni transitorie e finali
+export const nomeDi = (voce) => NOMI[voce.numero] ?? null
+export const spiegazioneDi = (voce) => SPIEGAZIONI[voce.numero] ?? null
 
 // «Articolo 13 della Costituzione», «XII disposizione transitoria e finale»
 export function titoloDi(voce) {
@@ -110,14 +111,14 @@ export function dataLunga(iso) {
 // Titolo e descrizione per Google, uguali nella pagina e nell'HTML preparato al rilascio
 export const META_INDICE = {
     titolo: 'Costituzione italiana: testo in vigore, articolo per articolo — Lexum',
-    descrizione: "Il testo in vigore della Costituzione della Repubblica italiana, articolo per articolo: principi fondamentali, diritti e doveri, ordinamento della Repubblica, con le modifiche e la fonte ufficiale.",
+    descrizione: "Il testo in vigore della Costituzione della Repubblica italiana, articolo per articolo e spiegato in parole semplici: principi fondamentali, diritti e doveri, ordinamento della Repubblica.",
 }
 
 export function metaDi(voce) {
     const nome = nomeDi(voce)
     const titolo = voce.tipo === 'articolo'
         ? `Art. ${voce.numero} Costituzione: ${nome ? nome.charAt(0).toLowerCase() + nome.slice(1) : 'testo in vigore'} — Lexum`
-        : `${voce.numero} disposizione transitoria e finale della Costituzione — Lexum`
+        : `${voce.numero} disposizione transitoria e finale della Costituzione${nome ? `: ${nome.charAt(0).toLowerCase() + nome.slice(1)}` : ''} — Lexum`
     const chi = voce.tipo === 'articolo' ? `dell'art. ${voce.numero} della Costituzione` : `della ${voce.numero} disposizione transitoria e finale`
     const descrizione = `Il testo in vigore ${chi}: «${anteprima(voce, 95)}»${spiegazioneDi(voce) ? ' Con la spiegazione in parole semplici.' : ''}`
     return { titolo, descrizione }
