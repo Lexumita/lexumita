@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { articoloDaSlug, articoliCorrelati, firmaAutore, fmtDataLunga } from '@/lib/novita'
 import { argomentoDaSlug } from '@/lib/argomenti'
+import { paginaDaNormattiva } from '@/lib/costituzione'
 import { IconaInstagram, IconaTikTok } from '@/components/Social'
 import StaticoPronto from '@/components/StaticoPronto'
 
@@ -25,9 +26,12 @@ const TESTO = {
     ol: ({ children }) => <ol className="list-decimal pl-5 space-y-2 mb-5 font-body text-base text-nebbia/70">{children}</ol>,
     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
     strong: ({ children }) => <strong className="text-nebbia font-medium">{children}</strong>,
-    a: ({ href, children }) => (
-        <a href={href} target="_blank" rel="noreferrer noopener" className="text-oro hover:underline">{children}</a>
-    ),
+    // Gli articoli della Costituzione portano alla nostra pagina, che rimanda a Normattiva (08-11-2026)
+    a: ({ href, children }) => {
+        const interna = paginaDaNormattiva(href)
+        if (interna) return <Link to={interna} className="text-oro hover:underline">{children}</Link>
+        return <a href={href} target="_blank" rel="noreferrer noopener" className="text-oro hover:underline">{children}</a>
+    },
     blockquote: ({ children }) => (
         <blockquote className="border-l-2 border-oro/40 pl-4 my-6 font-body text-base text-nebbia/50 italic">{children}</blockquote>
     ),

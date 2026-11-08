@@ -7,15 +7,27 @@ import { useAuth } from '@/context/AuthContext'
 import { NOVITA_ATTIVA } from '@/lib/novita'
 import { PARCELLA, FATTURA, DANNO } from '@/lib/strumenti/testi'
 
+// Avvocati e commercialisti in una tendina sola (09-11-2026): la voce non è una pagina, apre la tendina
+const PROFESSIONISTI = [
+  { percorso: '/per-avvocati', chiave: 'avvocati' },
+  { percorso: '/per-commercialisti', chiave: 'commercialisti' },
+]
+
 const navLinks = [
   { path: '/', key: 'home' },
-  { path: '/per-avvocati', key: 'avvocati' },
-  { path: '/per-commercialisti', key: 'commercialisti' },
-  { path: '/novita', key: 'novita' },
+  { key: 'professionisti', sotto: PROFESSIONISTI },
+  // La Costituzione articolo per articolo (08-11-2026)
+  { path: '/costituzione', key: 'costituzione' },
   // Gli strumenti gratuiti (03-11-2026): nella tendina si arriva subito allo strumento
   { path: '/strumenti', key: 'strumenti', sotto: [PARCELLA, FATTURA, DANNO] },
+  // Articoli prima di Contatti (09-11-2026)
+  { path: '/novita', key: 'novita' },
   { path: '/contatti', key: 'contatti' },
 ].filter(l => NOVITA_ATTIVA || l.path !== '/novita')
+
+// Le voci della tendina: gli strumenti hanno nome e descrizione loro, i professionisti li prendono dai testi
+const nomeVoce = (x, t) => x.nome ?? t(`navbar.${x.chiave}`)
+const breveVoce = (x, t) => x.brevissimo ?? t(`navbar.${x.chiave}_breve`)
 
 // Mappa ruolo → URL della home interna
 const HOME_PER_RUOLO = {
@@ -58,23 +70,31 @@ export default function Navbar() {
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-7">
           {navLinks.map(({ path, key, sotto }) => (
-            <div key={path} className="relative group">
-              <NavLink to={path}
-                end={path === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-1 font-body text-xs tracking-widest uppercase transition-colors ${isActive ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
-                  }`
-                }>
-                {t(`navbar.${key}`)}
-                {sotto && <ChevronDown size={12} />}
-              </NavLink>
+            <div key={key} className="relative group">
+              {path ? (
+                <NavLink to={path}
+                  end={path === '/'}
+                  className={({ isActive }) =>
+                    `flex items-center gap-1 whitespace-nowrap font-body text-xs tracking-widest uppercase transition-colors ${isActive ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
+                    }`
+                  }>
+                  {t(`navbar.${key}`)}
+                  {sotto && <ChevronDown size={12} />}
+                </NavLink>
+              ) : (
+                <button type="button" aria-haspopup="true"
+                  className={`flex items-center gap-1 whitespace-nowrap font-body text-xs tracking-widest uppercase transition-colors ${sotto.some(x => x.percorso === location.pathname) ? 'text-oro' : 'text-nebbia/40 hover:text-nebbia'
+                    }`}>
+                  {t(`navbar.${key}`)} <ChevronDown size={12} />
+                </button>
+              )}
               {sotto && (
                 <div className="absolute left-1/2 -translate-x-1/2 top-full pt-4 w-80 invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-opacity">
                   <div className="bg-slate border border-white/10 shadow-2xl p-2">
                     {sotto.map(x => (
                       <Link key={x.percorso} to={x.percorso} className="block p-3 hover:bg-white/5 transition-colors">
-                        <span className="block font-body text-sm text-nebbia">{x.nome}</span>
-                        <span className="block font-body text-xs text-nebbia/40 leading-relaxed mt-0.5">{x.brevissimo}</span>
+                        <span className="block font-body text-sm text-nebbia">{nomeVoce(x, t)}</span>
+                        <span className="block font-body text-xs text-nebbia/40 leading-relaxed mt-0.5">{breveVoce(x, t)}</span>
                       </Link>
                     ))}
                   </div>
@@ -113,21 +133,25 @@ export default function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      <div className={`lg:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-[34rem] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`lg:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-[38rem] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="bg-petrolio/95 backdrop-blur-sm border-t border-white/5 px-6 py-4 flex flex-col gap-1">
           {navLinks.map(({ path, key, sotto }) => (
-            <div key={path} className="flex flex-col border-b border-white/5">
-              <NavLink to={path}
-                end={path === '/'}
-                className={({ isActive }) =>
-                  `py-3 px-2 font-body text-sm transition-colors ${isActive ? 'text-oro' : 'text-nebbia/60 hover:text-nebbia'
-                  }`
-                }>
-                {t(`navbar.${key}`)}
-              </NavLink>
+            <div key={key} className="flex flex-col border-b border-white/5">
+              {path ? (
+                <NavLink to={path}
+                  end={path === '/'}
+                  className={({ isActive }) =>
+                    `py-3 px-2 font-body text-sm transition-colors ${isActive ? 'text-oro' : 'text-nebbia/60 hover:text-nebbia'
+                    }`
+                  }>
+                  {t(`navbar.${key}`)}
+                </NavLink>
+              ) : (
+                <span className="py-3 px-2 font-body text-sm text-nebbia/60">{t(`navbar.${key}`)}</span>
+              )}
               {sotto?.map(x => (
                 <Link key={x.percorso} to={x.percorso} className="pb-3 px-5 font-body text-sm text-nebbia/40 hover:text-nebbia transition-colors">
-                  {x.nome}
+                  {nomeVoce(x, t)}
                 </Link>
               ))}
             </div>

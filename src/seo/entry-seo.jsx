@@ -21,8 +21,10 @@ import Strumenti from '@/pages/strumenti/Strumenti'
 import CalcoloParcella from '@/pages/strumenti/CalcoloParcella'
 import CreaFattura from '@/pages/strumenti/CreaFattura'
 import CalcoloDanno from '@/pages/strumenti/CalcoloDanno'
+import Costituzione from '@/pages/costituzione/Costituzione'
+import CostituzioneArticolo from '@/pages/costituzione/CostituzioneArticolo'
 
-// dati: { articoli, articolo, correlati }, letti da Supabase dallo script
+// dati: { articoli, articolo, correlati, citazioni }, letti da Supabase dallo script
 export function disegna(percorso, dati = {}) {
     const queryClient = new QueryClient()
     const pagina = (el) => <GuscioVetrina>{el}</GuscioVetrina>
@@ -40,6 +42,8 @@ export function disegna(percorso, dati = {}) {
                             <Route path="/strumenti/calcolo-parcella-avvocato" element={pagina(<CalcoloParcella />)} />
                             <Route path="/strumenti/crea-fattura" element={pagina(<CreaFattura />)} />
                             <Route path="/strumenti/calcolo-danno-biologico" element={pagina(<CalcoloDanno />)} />
+                            <Route path="/costituzione" element={pagina(<Costituzione />)} />
+                            <Route path="/costituzione/:slug" element={pagina(<CostituzioneArticolo preCitazioni={dati.citazioni} />)} />
                             <Route path="/novita" element={pagina(<Novita preArticoli={dati.articoli} />)} />
                             <Route path="/novita/argomento/:argomento" element={pagina(<Novita preArticoli={dati.articoli} />)} />
                             <Route path="/novita/:slug" element={pagina(<NovitaArticolo preArticolo={dati.articolo} preCorrelati={dati.correlati} />)} />

@@ -45,6 +45,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { ARGOMENTI } from '../src/lib/argomenti.js'
 import { HUB_STRUMENTI, STRUMENTI } from '../src/lib/strumenti/testi.js'
+import { PERCORSO as COSTITUZIONE, AGGIORNATA_AL, META_INDICE, CON_PAGINA, percorsoDi, titoloDi, metaDi, citatoDa } from '../src/lib/costituzione/index.js'
 
 const DIST = resolve(process.cwd(), 'dist')
 const SITE = 'https://www.lexum.it'
@@ -326,6 +327,65 @@ for (const a of articoli) {
   count++
 }
 
+// ─── COSTITUZIONE (08-11-2026) ─────────────────────────────────
+// Il testo è nel codice (src/lib/costituzione/testo.js): una cartella per articolo, come gli strumenti.
+// «Ne abbiamo parlato» viene dagli articoli del blog appena letti.
+scriviTestata('costituzione/index.html', `${SITE}${COSTITUZIONE}`, {
+  title: META_INDICE.titolo,
+  description: META_INDICE.descrizione,
+  ogTitle: META_INDICE.titolo,
+  ogDescription: META_INDICE.descrizione,
+  corpo: testoDi(COSTITUZIONE),
+  jsonLd: [{
+    '@type': 'Legislation',
+    name: 'Costituzione della Repubblica italiana',
+    legislationIdentifier: 'urn:nir:stato:costituzione:1947-12-27',
+    legislationType: 'Costituzione',
+    legislationJurisdiction: 'IT',
+    legislationDate: '1947-12-27',
+    legislationLegalForce: 'InForce',
+    dateModified: AGGIORNATA_AL,
+    inLanguage: 'it-IT',
+    url: `${SITE}${COSTITUZIONE}`,
+    sameAs: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:costituzione:1947-12-27',
+  }],
+})
+count++
+for (const voce of CON_PAGINA) {
+  const url = `${SITE}${percorsoDi(voce)}`
+  const meta = metaDi(voce)
+  scriviTestata(`${percorsoDi(voce).slice(1)}/index.html`, url, {
+    title: meta.titolo,
+    description: meta.descrizione,
+    ogTitle: meta.titolo.replace(/ — Lexum$/, ''),
+    ogDescription: meta.descrizione,
+    corpo: testoDi(percorsoDi(voce), { citazioni: citatoDa(voce, articoli) }),
+    jsonLd: [{
+      '@type': 'Legislation',
+      name: `Costituzione della Repubblica italiana, ${voce.tipo === 'articolo' ? `art. ${voce.numero}` : `disposizione transitoria e finale ${voce.numero}`}`,
+      alternateName: titoloDi(voce),
+      legislationIdentifier: voce.tipo === 'articolo' ? `urn:nir:stato:costituzione:1947-12-27~art${voce.numero}` : undefined,
+      legislationType: 'Costituzione',
+      legislationJurisdiction: 'IT',
+      legislationDate: '1947-12-27',
+      legislationLegalForce: 'InForce',
+      dateModified: voce.inVigoreDal || undefined,
+      inLanguage: 'it-IT',
+      url,
+      sameAs: voce.normattiva,
+      isPartOf: { '@type': 'Legislation', name: 'Costituzione della Repubblica italiana', url: `${SITE}${COSTITUZIONE}` },
+    }, {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Lexum', item: `${SITE}/` },
+        { '@type': 'ListItem', position: 2, name: 'Costituzione', item: `${SITE}${COSTITUZIONE}` },
+        { '@type': 'ListItem', position: 3, name: voce.etichetta, item: url },
+      ],
+    }],
+  })
+  count++
+}
+
 // Sitemap: public/sitemap.xml ha le pagine fisse; il blog ci entra qui, a ogni
 // rilascio (pubblicare un articolo fa ripartire il rilascio), così Google trova
 // /novita e ogni articolo senza aggiornare il file a mano.
@@ -337,6 +397,8 @@ if (NOVITA_ATTIVA) {
       `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${prio}</priority>\n  </url>\n`
     let voci = voce(`${SITE}${HUB_STRUMENTI.percorso}`, giorno(), 'monthly', '0.8')
     for (const x of STRUMENTI) voci += voce(`${SITE}${x.percorso}`, giorno(), 'monthly', '0.8')
+    voci += voce(`${SITE}${COSTITUZIONE}`, AGGIORNATA_AL, 'monthly', '0.8')
+    for (const v of CON_PAGINA) voci += voce(`${SITE}${percorsoDi(v)}`, v.inVigoreDal || AGGIORNATA_AL, 'yearly', '0.6')
     voci += voce(`${SITE}/novita`, giorno(articoli[0]?.pubblicato_il), 'weekly', '0.8')
     for (const x of argomentiAttivi) {
       const recente = articoli.find(a => a.argomenti?.includes(x.slug))
@@ -349,7 +411,7 @@ if (NOVITA_ATTIVA) {
     const xml = readFileSync(sitemapPath, 'utf8')
     if (!xml.includes(`${SITE}/novita<`)) {
       writeFileSync(sitemapPath, xml.replace('</urlset>', `\n${voci}</urlset>`))
-      console.log(`[seo] sitemap: aggiunte /novita e ${articoli.length} articoli`)
+      console.log(`[seo] sitemap: aggiunte /novita, ${articoli.length} articoli e ${CON_PAGINA.length + 1} pagine della Costituzione`)
     }
   }
 }

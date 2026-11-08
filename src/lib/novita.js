@@ -46,6 +46,18 @@ export async function articoliCorrelati(articolo, quanti = 3) {
     return data ?? []
 }
 
+// Gli articoli che contengono un collegamento, per le pagine della Costituzione (08-11-2026)
+export async function articoliCheCitano(segno, quanti = 6) {
+    const { data } = await supabase
+        .from('novita')
+        .select('slug, titolo')
+        .eq('stato', 'pubblicato')
+        .like('contenuto', `%${segno}%`)
+        .order('pubblicato_il', { ascending: false })
+        .limit(quanti)
+    return data ?? []
+}
+
 const normalizza = (testo) => (testo ?? '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')

@@ -85,6 +85,8 @@ import Strumenti from './pages/strumenti/Strumenti'
 import CalcoloParcella from './pages/strumenti/CalcoloParcella'
 import CreaFattura from './pages/strumenti/CreaFattura'
 import CalcoloDanno from './pages/strumenti/CalcoloDanno'
+import Costituzione from './pages/costituzione/Costituzione'
+import CostituzioneArticolo from './pages/costituzione/CostituzioneArticolo'
 import Novita from './pages/Novita'
 import NovitaArticolo from './pages/NovitaArticolo'
 import AdminNovita from './pages/admin/Novita'
@@ -209,6 +211,8 @@ export default function App() {
               <Route path="/strumenti/calcolo-parcella-avvocato" element={<VetrinaLayout><CalcoloParcella /></VetrinaLayout>} />
               <Route path="/strumenti/crea-fattura" element={<VetrinaLayout><CreaFattura /></VetrinaLayout>} />
               <Route path="/strumenti/calcolo-danno-biologico" element={<VetrinaLayout><CalcoloDanno /></VetrinaLayout>} />
+              <Route path="/costituzione" element={<VetrinaLayout><Costituzione /></VetrinaLayout>} />
+              <Route path="/costituzione/:slug" element={<VetrinaLayout><CostituzioneArticolo /></VetrinaLayout>} />
               <Route path="/contatti" element={<VetrinaLayout><Contatti /></VetrinaLayout>} />
               <Route path="/privacy" element={<VetrinaLayout><PrivacyPolicy /></VetrinaLayout>} />
               <Route path="/termini" element={<VetrinaLayout><TerminiServizio /></VetrinaLayout>} />
